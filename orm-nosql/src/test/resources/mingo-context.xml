@@ -1,0 +1,6 @@
+<context>
+	<querySetConfig dbName="mingotest">
+		<querySet path="/mingo/reviewQuerySet.xml" />
+	</querySetConfig>
+	<mongo port="27017" host="localhost" />
+</context>

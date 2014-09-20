@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.butfly.albacore.entity.BasicEntity">
+	<sql id="basic">id, deleted</sql>
+	<sql id="creator">,creator,create_from,created </sql>
+	<sql id="updator">,updator,update_from,updated </sql>
+	<sql id="deletor">,deletor,delete_from,deleted </sql>
+	<sql id="PAGED_PREFIX">
+		<if test="_PAGE_MIN_ROW_NUM != null"><![CDATA[select * from (select TMP_A__.*,rownum row_num__ from (]]></if>
+	</sql>
+	<!-- select * from mytable t order by t.id desc -->
+	<sql id="PAGED_SUFFIX">
+		<if test="_PAGE_MIN_ROW_NUM != null"><![CDATA[) TMP_A__ ) TMP_B__ where TMP_B__.ROW_NUM__ between #{_PAGE_MIN_ROW_NUM} and #{_PAGE_MAX_ROW_NUM}]]></if>
+	</sql>
+</mapper>

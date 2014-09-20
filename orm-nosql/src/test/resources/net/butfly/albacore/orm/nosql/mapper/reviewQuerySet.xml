@@ -1,0 +1,6 @@
+<querySet>
+    <config collectionName="review"/>
+    <query id="getByMultipleParameters" type="aggregation">
+        {$match : { "moderationStatus": { $in: "#statuses"}, "created": { "$gt" : "#created"}}}, { $limit : 5 }
+    </query>
+</querySet>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src/java"/>
+	<classpathentry kind="src" path="src/conf"/>
+	<classpathentry kind="con" path="org.eclipse.jst.j2ee.internal.web.container"/>
+	<classpathentry kind="con" path="org.eclipse.jst.j2ee.internal.module.container"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/core"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/frame"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/orm"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/utils"/>
+	<classpathentry kind="lib" path="../../../.dependency/lib/spring/spring-3.0.6-core.jar"/>
+	<classpathentry kind="lib" path="../../../.dependency/lib/spring/spring-3.0.6-web.jar"/>
+	<classpathentry kind="lib" path="../../../.dependency/lib/mybatis/mybatis-spring-1.0.1.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="output" path="build/classes"/>
+</classpath>

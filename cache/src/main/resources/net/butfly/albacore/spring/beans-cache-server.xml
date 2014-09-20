@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd">
+	<bean name="springLoginInterceptor" 
+			class="net.butfly.albacore.cache.utils.autoproxy.Cache4DaoAutoProxy" >
+	</bean>
+	
+	<bean id="cacheConfigDAO" parent="entityDAOBase" class="net.butfly.albacore.cache.utils.config.configdao.CacheConfigDAOImpl">
+		<property name="namespace" value="EWIN_CACHE_CONFIG" />
+	</bean>
+	
+	<bean id="cacheConfigService" class="net.butfly.albacore.cache.utils.config.configdao.CacheConfigServiceImpl">
+		<property name="cacheConfigDAO" ref="cacheConfigDAO" />
+	</bean>
+	
+	<bean id="cacheConfigBase" class="net.butfly.albacore.cache.config.CacheConfigBase">
+		<property name="cacheConfigService" ref="cacheConfigService" />
+	</bean>
+	
+	<bean id="cacheInit" class="net.butfly.albacore.cache.utils.init.CacheInit" init-method="init">
+		<property name="cacheConfigService" ref="cacheConfigService" />
+		<property name="asyncHelper" ref="asyncHelper" />
+	</bean>
+</beans>
