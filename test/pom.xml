@@ -1,0 +1,41 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>net.butfly.albacore</groupId>
+		<artifactId>albacore</artifactId>
+		<version>2.0.0</version>
+	</parent>
+	<artifactId>albacore-test</artifactId>
+	<name>albacore-test</name>
+	<build>
+		<finalName>albacore-test</finalName>
+	</build>
+	<dependencies>
+		<dependency>
+			<groupId>net.butfly.albacore</groupId>
+			<artifactId>albacore-core</artifactId>
+			<version>2.0.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-context</artifactId>
+			<version>4.1.0.RELEASE</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-jdbc</artifactId>
+			<version>4.1.0.RELEASE</version>
+		</dependency>
+		<dependency>
+			<groupId>org.aspectj</groupId>
+			<artifactId>aspectjweaver</artifactId>
+			<version>1.6.12</version>
+		</dependency>
+		<dependency>
+			<groupId>directory-naming</groupId>
+			<artifactId>naming-java</artifactId>
+			<version>0.8</version>
+		</dependency>
+	</dependencies>
+</project>
