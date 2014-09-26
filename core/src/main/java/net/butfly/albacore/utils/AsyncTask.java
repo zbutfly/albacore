@@ -17,5 +17,4 @@ public abstract class AsyncTask<OUT> implements Callable<OUT> {
 	public static interface AsyncCallback<T> {
 		void callback(T result);
 	}
-
 }
