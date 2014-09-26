@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <sqlMap namespace="net.butfly.albacore.entity.BasicEntity">
 	<sql id="basic">id, deleted</sql>
 	<sql id="creator">,creator,create_from,created </sql>
@@ -8,7 +8,7 @@
 	<sql id="PAGED_PREFIX">
 		<isNotNull property="_PAGE_MIN_ROW_NUM"><![CDATA[
 select TT.* from (select rownumber() over() as rn,
-		]]></isNotNull> 
+		]]></isNotNull>
 		<isNull property="_PAGE_MIN_ROW_NUM"><![CDATA[
 select 
 		]]></isNull>
@@ -17,6 +17,6 @@ select
 	<sql id="PAGED_SUFFIX">
 		<isNotNull property="_PAGE_MIN_ROW_NUM"><![CDATA[
 ) TT WHERE TT.rn between #{_PAGE_MIN_ROW_NUM} and #{_PAGE_MAX_ROW_NUM}
-		]]></isNotNull> 
+		]]></isNotNull>
 	</sql>
 </sqlMap>

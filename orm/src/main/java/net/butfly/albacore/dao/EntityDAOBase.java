@@ -15,6 +15,12 @@ import org.mybatis.spring.SqlSessionTemplate;
 public abstract class EntityDAOBase extends BizUnitBase implements EntityDAO {
 	private static final long serialVersionUID = -1599466753909389837L;
 	protected SqlSessionTemplate template, batchTemplate;
+	protected String namespace;
+
+	public EntityDAOBase() {
+		this.namespace = this.getClass().getName().replaceAll("(?i)dao", "").replaceAll("(?i)impl", ".") + ".";
+		this.namespace = this.namespace.replaceAll("\\.+", ".");
+	}
 
 	protected <E> E entityInstance(Class<E> entityClass) {
 		try {
@@ -33,7 +39,7 @@ public abstract class EntityDAOBase extends BizUnitBase implements EntityDAO {
 	 * @return
 	 */
 	protected String getSqlId(String sqlId) {
-		return this.getClass().getName().replaceAll("DAOImpl$", "") + "." + sqlId;
+		return this.namespace + sqlId;
 	}
 
 	/*********************************************************************************************/
@@ -64,7 +70,10 @@ public abstract class EntityDAOBase extends BizUnitBase implements EntityDAO {
 
 	@Override
 	public <K extends Serializable, E extends Entity<K>> int delete(Class<E> entityClass, K[] keys) {
-		return this.batchTemplate.delete(this.getSqlId(DAOContext.DELETE_STATMENT_ID + entityClass.getSimpleName()), keys);
+		int c = 0;
+		for (K key : keys)
+			c += this.batchTemplate.delete(this.getSqlId(DAOContext.DELETE_STATMENT_ID + entityClass.getSimpleName()), key);
+		return c;
 	}
 
 	@Override
