@@ -8,6 +8,7 @@
 	</parent>
 	<artifactId>albacore-frame</artifactId>
 	<name>albacore-frame</name>
+	<version>2.0.1-SNAPSHOT</version>
 	<build>
 		<finalName>albacore-frame</finalName>
 	</build>
@@ -15,7 +16,7 @@
 		<dependency>
 			<groupId>net.butfly.albacore</groupId>
 			<artifactId>albacore-core</artifactId>
-			<version>2.0.0</version>
+			<version>2.0.1-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>junit</groupId>

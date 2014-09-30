@@ -1,54 +1,24 @@
 package net.butfly.albacore.dbo.interceptor;
 
-import java.sql.Connection;
-
-import org.apache.ibatis.builder.SqlSourceBuilder;
-import org.apache.ibatis.cache.CacheKey;
-import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.executor.statement.StatementHandler;
-import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.mapping.MappedStatement;
+import org.apache.ibatis.mapping.SqlCommandType;
 import org.apache.ibatis.mapping.SqlSource;
-import org.apache.ibatis.plugin.Intercepts;
 import org.apache.ibatis.plugin.Invocation;
-import org.apache.ibatis.plugin.Signature;
 import org.apache.ibatis.reflection.MetaObject;
 import org.apache.ibatis.reflection.factory.DefaultObjectFactory;
 import org.apache.ibatis.reflection.factory.ObjectFactory;
 import org.apache.ibatis.reflection.wrapper.DefaultObjectWrapperFactory;
 import org.apache.ibatis.reflection.wrapper.ObjectWrapperFactory;
-import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
 
-@Intercepts({
-		@Signature(method = "prepare", type = StatementHandler.class, args = { Connection.class }),
-		@Signature(method = "query", type = Executor.class, args = { MappedStatement.class, Object.class, RowBounds.class,
-				ResultHandler.class }) })
 public abstract class PaginationInterceptor extends AbstractInterceptor {
 	private static final ObjectFactory DEFAULT_OBJECT_FACTORY = new DefaultObjectFactory();
 	private static final ObjectWrapperFactory DEFAULT_OBJECT_WRAPPER_FACTORY = new DefaultObjectWrapperFactory();
 
-	// private final Map<String, String> cache = new ConcurrentHashMap<String,
-	// String>();
-
 	@Override
 	public Object intercept(Invocation invocation) throws Throwable {
-		if (invocation.getTarget() instanceof StatementHandler) this.pagination((StatementHandler) invocation.getTarget());
-		else if (invocation.getTarget() instanceof Executor) {
-//			Object paramObj = invocation.getArgs()[1];
-//			MappedStatement ms = (MappedStatement) invocation.getArgs()[0];
-//			RowBounds rowBounds = (RowBounds) invocation.getArgs()[2];
-//			BoundSql boundSql = ms.getBoundSql(paramObj);
-//			if (rowBounds != null) {
-//				String sql = this.pagination(boundSql.getSql(), rowBounds.getOffset(), rowBounds.getLimit());
-////				BoundSql newBoundSql = new BoundSql(ms.getConfiguration(), sql, boundSql.getParameterMappings(),
-////						paramObj);
-//				SqlSourceBuilder sqlBuilder = new SqlSourceBuilder(ms.getConfiguration());
-//				SqlSource newSqlSource = sqlBuilder.parse(sql, null == paramObj?null:paramObj.getClass(), null);
-//				invocation.getArgs()[0] = copyFromMappedStatement(ms, newSqlSource);
-//				invocation.getArgs()[2] = null;
-//			}
-		}
+		this.pagination((StatementHandler) invocation.getTarget());
 		return invocation.proceed();
 	}
 
@@ -63,16 +33,17 @@ public abstract class PaginationInterceptor extends AbstractInterceptor {
 			meta = MetaObject.forObject(object, DEFAULT_OBJECT_FACTORY, DEFAULT_OBJECT_WRAPPER_FACTORY);
 		}
 		RowBounds rowBounds = (RowBounds) meta.getValue("delegate.rowBounds");
-		if (rowBounds != null && rowBounds.getOffset() != RowBounds.NO_ROW_OFFSET) {
+		if ((SqlCommandType) meta.getValue("delegate.mappedStatement.sqlCommandType") == SqlCommandType.SELECT
+				&& rowBounds != null && rowBounds.getOffset() != RowBounds.NO_ROW_OFFSET) {
 			String boundSql = (String) meta.getValue("delegate.boundSql.sql");
-			meta.setValue("delegate.boundSql.sql", this.pagination(boundSql, rowBounds.getOffset(), rowBounds.getLimit()));
+			meta.setValue("delegate.boundSql.sql", this.pagination(boundSql, rowBounds.getOffset() - 1, rowBounds.getLimit()));
 			meta.setValue("delegate.rowBounds.offset", RowBounds.NO_ROW_OFFSET);
 			meta.setValue("delegate.rowBounds.limit", RowBounds.NO_ROW_LIMIT);
 			logger.trace("page sql generated: " + handler.getBoundSql().getSql());
 		}
 	}
 
-	private MappedStatement copyFromMappedStatement(MappedStatement ms, SqlSource newSqlSource) {
+	protected MappedStatement copyFromMappedStatement(MappedStatement ms, SqlSource newSqlSource) {
 		MappedStatement.Builder builder = new MappedStatement.Builder(ms.getConfiguration(), ms.getId(), newSqlSource,
 				ms.getSqlCommandType());
 		builder.resource(ms.getResource());

@@ -47,7 +47,7 @@ public abstract class EntityDAOBase extends BizUnitBase implements EntityDAO {
 	@Override
 	public <K extends Serializable, E extends Entity<K>> K insert(E entity) {
 		if (null == entity) return null;
-		if (this.template.insert(this.getSqlId(DAOContext.INSERT_STATMENT_ID + entity.getClass().getSimpleName()), entity) == 1) return entity
+		if (this.batchTemplate.insert(this.getSqlId(DAOContext.INSERT_STATMENT_ID + entity.getClass().getSimpleName()), entity) == 1) return entity
 				.getId();
 		else return null;
 	}
@@ -55,7 +55,7 @@ public abstract class EntityDAOBase extends BizUnitBase implements EntityDAO {
 	@Override
 	public <K extends Serializable, E extends Entity<K>> int insert(E[] entities) {
 		if (null == entities || entities.length == 0) return 0;
-		return this.template.insert(
+		return this.batchTemplate.insert(
 				this.getSqlId(DAOContext.INSERT_STATMENT_ID + entities.getClass().getComponentType().getSimpleName() + "List"),
 				entities);
 	}
@@ -64,27 +64,33 @@ public abstract class EntityDAOBase extends BizUnitBase implements EntityDAO {
 	public <K extends Serializable, E extends Entity<K>> E delete(Class<E> entityClass, K key) {
 		E e = this.select(entityClass, key);
 		if (null == e) return null;
-		return this.template.delete(this.getSqlId(DAOContext.DELETE_STATMENT_ID + entityClass.getSimpleName()), key) > 0 ? e
+		return this.batchTemplate.delete(this.getSqlId(DAOContext.DELETE_STATMENT_ID + entityClass.getSimpleName()), key) > 0 ? e
 				: null;
 	}
 
+	// TODO: batch
 	@Override
 	public <K extends Serializable, E extends Entity<K>> int delete(Class<E> entityClass, K[] keys) {
 		int c = 0;
 		for (K key : keys)
 			c += this.batchTemplate.delete(this.getSqlId(DAOContext.DELETE_STATMENT_ID + entityClass.getSimpleName()), key);
 		return c;
+		// return
+		// this.batchTemplate.delete(this.getSqlId(DAOContext.DELETE_STATMENT_ID
+		// + entityClass.getSimpleName()) + "List",
+		// keys);
 	}
 
 	@Override
 	public <K extends Serializable, E extends Entity<K>> boolean update(E entity) {
 		if (null == entity) return false;
-		return this.template.update(this.getSqlId(DAOContext.UPDATE_STATMENT_ID + entity.getClass().getSimpleName()), entity) > 0;
+		return this.batchTemplate.update(this.getSqlId(DAOContext.UPDATE_STATMENT_ID + entity.getClass().getSimpleName()),
+				entity) > 0;
 	}
 
 	@Override
 	public <K extends Serializable, E extends Entity<K>> E select(Class<E> entityClass, K key) {
-		return this.template.selectOne(this.getSqlId(DAOContext.SELECT_STATMENT_ID + entityClass.getSimpleName()), key);
+		return this.batchTemplate.selectOne(this.getSqlId(DAOContext.SELECT_STATMENT_ID + entityClass.getSimpleName()), key);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -100,7 +106,8 @@ public abstract class EntityDAOBase extends BizUnitBase implements EntityDAO {
 
 	@Override
 	public <K extends Serializable, E extends Entity<K>> int delete(Class<E> entityClass, Criteria criteria) {
-		return this.template.delete(this.getSqlId(DAOContext.DELETE_STATMENT_ID + entityClass.getSimpleName()),
+		return this.batchTemplate.delete(
+				this.getSqlId(DAOContext.DELETE_STATMENT_ID + entityClass.getSimpleName() + "ByCriteria"),
 				criteria.getParameters());
 	}
 
@@ -127,7 +134,7 @@ public abstract class EntityDAOBase extends BizUnitBase implements EntityDAO {
 
 	@Override
 	public <K extends Serializable, E extends Entity<K>> int count(Class<E> entityClass, Criteria criteria) {
-		Object r = this.template.selectOne(
+		Object r = this.batchTemplate.selectOne(
 				this.getSqlId(DAOContext.COUNT_STATMENT_ID + entityClass.getSimpleName() + "ByCriteria"),
 				criteria.getParameters());
 		return null == r ? 0 : ((Number) r).intValue();
@@ -137,10 +144,10 @@ public abstract class EntityDAOBase extends BizUnitBase implements EntityDAO {
 			String selectSqlId, Object arg, Page page) {
 		if (null == page) throw new SystemException("Query must be limited by page.");
 		if (page.getTotal() < 0) {
-			Object total = this.template.selectOne(this.getSqlId(countSqlId), arg);
+			Object total = this.batchTemplate.selectOne(this.getSqlId(countSqlId), arg);
 			page.setTotal(null != total ? ((Number) total).intValue() : 0);
 		}
-		List<K> list = this.template.selectList(this.getSqlId(selectSqlId), arg, page.toRowBounds());
+		List<K> list = this.batchTemplate.selectList(this.getSqlId(selectSqlId), arg, page.toRowBounds());
 		K[] keys = list.toArray(Entity.getKeyBuffer(entityClass, list.size()));
 		return this.select(entityClass, keys);
 	}
@@ -149,11 +156,12 @@ public abstract class EntityDAOBase extends BizUnitBase implements EntityDAO {
 			String selectSqlId, Object arg, Page page) {
 		if (null == page) throw new SystemException("Query must be limited by page.");
 		if (page.getTotal() < 0) {
-			Object total = this.template.selectOne(this.getSqlId(countSqlId + entityClass.getSimpleName() + "ByCriteria"), arg);
+			Object total = this.batchTemplate.selectOne(this.getSqlId(countSqlId + entityClass.getSimpleName() + "ByCriteria"),
+					arg);
 			page.setTotal(null != total ? ((Number) total).intValue() : 0);
 		}
-		List<K> list = this.template.selectList(this.getSqlId(selectSqlId + entityClass.getSimpleName() + "ByCriteria"), arg,
-				page.toRowBounds());
+		List<K> list = this.batchTemplate.selectList(this.getSqlId(selectSqlId + entityClass.getSimpleName() + "ByCriteria"),
+				arg, page.toRowBounds());
 		return list.toArray(Entity.getKeyBuffer(entityClass, list.size()));
 	}
 

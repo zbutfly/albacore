@@ -8,6 +8,7 @@
 	</parent>
 	<artifactId>albacore-core</artifactId>
 	<name>albacore-core</name>
+	<version>2.0.1-SNAPSHOT</version>
 	<build>
 		<finalName>albacore-core</finalName>
 	</build>
