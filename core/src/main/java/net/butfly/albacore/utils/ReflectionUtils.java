@@ -1,6 +1,7 @@
 package net.butfly.albacore.utils;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -51,12 +52,13 @@ public final class ReflectionUtils extends UtilsBase {
 		return reflections(packagePrefix).getTypesAnnotatedWith(annotationClass).toArray(new Class[0]);
 	}
 
-	public static Object safeMethodInvoke(Method method, Object object, Object... args) throws BusinessException {
+	@SuppressWarnings("unchecked")
+	public static <T> T safeMethodInvoke(Method method, Object object, Object... args) throws BusinessException {
 		boolean accessible = method.isAccessible();
 		try {
 			method.setAccessible(true);
-			return Proxy.isProxyClass(object.getClass()) ? Proxy.getInvocationHandler(object).invoke(object, method, args)
-					: method.invoke(object, args);
+			return Proxy.isProxyClass(object.getClass()) ? (T) Proxy.getInvocationHandler(object).invoke(object, method, args)
+					: (T) method.invoke(object, args);
 		} catch (IllegalAccessException e) {
 			throw new SystemException("", e);
 		} catch (IllegalArgumentException e) {
@@ -72,11 +74,32 @@ public final class ReflectionUtils extends UtilsBase {
 		}
 	}
 
-	public static Object safeFieldGet(Field field, Object owner) {
+	public static <T> T safeConstruct(Constructor<T> constructor, Object... args) throws BusinessException {
+		boolean accessible = constructor.isAccessible();
+		try {
+			constructor.setAccessible(true);
+			return constructor.newInstance(args);
+		} catch (IllegalAccessException e) {
+			throw new SystemException("", e);
+		} catch (IllegalArgumentException e) {
+			throw new SystemException("", e);
+		} catch (InvocationTargetException e) {
+			Class<? extends Throwable> causeClass = e.getCause().getClass();
+			if (BusinessException.class.isAssignableFrom(causeClass)) throw BusinessException.class.cast(causeClass);
+			else throw new SystemException("", e.getCause());
+		} catch (Throwable e) {
+			throw new SystemException("", e);
+		} finally {
+			constructor.setAccessible(accessible);
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	public static <T> T safeFieldGet(Field field, Object owner) {
 		boolean accessible = field.isAccessible();
 		try {
 			field.setAccessible(true);
-			return field.get(owner);
+			return (T) field.get(owner);
 		} catch (IllegalAccessException e) {
 			throw new SystemException("", e);
 		} catch (IllegalArgumentException e) {
