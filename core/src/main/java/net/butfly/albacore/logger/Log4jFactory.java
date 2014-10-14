@@ -44,9 +44,7 @@ class Log4jFactory {
 						PropertyConfigurator.configure(prop);
 						return;
 					}
-				} catch (Exception ex) {
-					ex.printStackTrace();
-				} finally {
+				} catch (Exception ex) {} finally {
 					if (in != null) try {
 						in.close();
 					} catch (IOException e) {}
