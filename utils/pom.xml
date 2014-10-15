@@ -53,6 +53,11 @@
 			<artifactId>httpclient</artifactId>
 			<version>4.4-alpha1</version>
 		</dependency>
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpasyncclient</artifactId>
+			<version>4.0.2</version>
+		</dependency>
 		<!-- HTTP Client Extends Component. -->
 		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>
