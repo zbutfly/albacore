@@ -4,19 +4,18 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import com.caucho.burlap.io.BurlapInput;
+import com.caucho.burlap.io.BurlapOutput;
 import com.caucho.hessian.io.AbstractSerializerFactory;
-import com.caucho.hessian.io.Hessian2StreamingInput;
-import com.caucho.hessian.io.Hessian2StreamingOutput;
 import com.caucho.hessian.io.SerializerFactory;
 
-public class HessianSerializer extends HTTPStreamingSupport implements Serializer, SerializerFactorySupport {
+public class BurlapSerializer extends HTTPStreamingSupport implements Serializer, SerializerFactorySupport {
 	private SerializerFactory factory;
 
 	@Override
 	public void write(OutputStream os, Object obj) throws IOException {
-		Hessian2StreamingOutput ho = new Hessian2StreamingOutput(os);
-		if (null != factory) ho.getHessian2Output().setSerializerFactory(factory);
-		ho.setCloseStreamOnClose(false);
+		BurlapOutput ho = new BurlapOutput(os);
+		if (null != factory) ho.setSerializerFactory(factory);
 		try {
 			ho.writeObject(obj);
 		} finally {
@@ -28,7 +27,7 @@ public class HessianSerializer extends HTTPStreamingSupport implements Serialize
 	@SuppressWarnings("unchecked")
 	@Override
 	public <T> T read(InputStream is, Class<?>... types) throws IOException {
-		Hessian2StreamingInput hi = new Hessian2StreamingInput(is);
+		BurlapInput hi = new BurlapInput(is);
 		if (null != factory) hi.setSerializerFactory(factory);
 		try {
 			return (T) hi.readObject();
@@ -39,18 +38,7 @@ public class HessianSerializer extends HTTPStreamingSupport implements Serialize
 
 	@Override
 	public void readThenWrite(InputStream is, OutputStream os, Class<?>... types) throws IOException {
-		Hessian2StreamingInput hi = new Hessian2StreamingInput(is);
-		if (null != factory) hi.setSerializerFactory(factory);
-		try {
-			hi.startPacket().readToOutputStream(os);
-			hi.endPacket();
-		} finally {
-			hi.close();
-		}
-	}
-
-	public void setFactory(SerializerFactory factory) {
-		this.factory = factory;
+		write(os, read(is, types));
 	}
 
 	@Override
@@ -60,11 +48,12 @@ public class HessianSerializer extends HTTPStreamingSupport implements Serialize
 
 	@Override
 	public String[] getContentTypes() {
-		return new String[] { "x-application/hessian" };
+		return new String[] { "x-application/burlap" };
 	}
 
 	@Override
 	public void addFactory(AbstractSerializerFactory factory) {
+		if (this.factory == null) this.factory = new SerializerFactory();
 		this.factory.addFactory(factory);
 	}
 }

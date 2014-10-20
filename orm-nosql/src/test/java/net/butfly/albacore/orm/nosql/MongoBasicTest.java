@@ -8,6 +8,5 @@ public class MongoBasicTest {
 		Context context = ContextLoader.getInstance().load("/mingo/mingo-context.xml");
 		JMingoTemplate mingoTemplate = new JMingoTemplate(context);
 		IReviewRepository reviewRepository = new ReviewRepository(mingoTemplate);
-
 	}
 }

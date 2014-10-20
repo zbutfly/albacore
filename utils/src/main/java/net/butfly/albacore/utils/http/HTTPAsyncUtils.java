@@ -1,27 +1,18 @@
 package net.butfly.albacore.utils.http;
 
-import java.util.concurrent.TimeUnit;
-
 import net.butfly.albacore.exception.SystemException;
+import net.butfly.albacore.utils.UtilsBase;
 
-import org.apache.http.conn.HttpClientConnectionManager;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.impl.nio.client.HttpAsyncClients;
 import org.apache.http.impl.nio.conn.PoolingNHttpClientConnectionManager;
 import org.apache.http.impl.nio.reactor.DefaultConnectingIOReactor;
 import org.apache.http.nio.conn.NHttpClientConnectionManager;
 import org.apache.http.nio.reactor.IOReactorException;
-import org.reflections.util.Utils;
 
-public class HttpClientUtils extends Utils {
-	private static HttpClientConnectionManager connman;
+public class HTTPAsyncUtils extends UtilsBase {
 	private static NHttpClientConnectionManager asyncman;
 	static {
-		long time = Long.parseLong(System.getProperty("albacore.http.pool.live", "60"));
-		connman = new PoolingHttpClientConnectionManager(time, TimeUnit.SECONDS);
 		try {
 			asyncman = new PoolingNHttpClientConnectionManager(new DefaultConnectingIOReactor());
 		} catch (IOReactorException e) {
@@ -29,11 +20,7 @@ public class HttpClientUtils extends Utils {
 		}
 	}
 
-	public static CloseableHttpClient create() {
-		return HttpClients.createMinimal(connman);
-	}
-
-	public static CloseableHttpAsyncClient createAsync() {
+	public static CloseableHttpAsyncClient create() {
 		return HttpAsyncClients.createMinimal(asyncman);
 	}
 }

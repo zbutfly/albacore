@@ -5,23 +5,15 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.Reader;
-import java.io.Writer;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 
-public class JSONSerializer implements Serializer {
+public class JSONSerializer extends HTTPStreamingSupport implements Serializer {
 	private Gson gson = new Gson();
 	private JsonParser parser = new JsonParser();
-
-	@Override
-	public void write(Writer writer, Object obj) throws IOException {
-		gson.toJson(obj, writer);
-		writer.flush();
-	}
 
 	@Override
 	public void write(OutputStream os, Object obj) throws IOException {
@@ -31,7 +23,8 @@ public class JSONSerializer implements Serializer {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T> T read(Reader reader, Class<?>... types) throws IOException {
+	public <T> T read(InputStream is, Class<?>... types) throws IOException {
+		InputStreamReader reader = new InputStreamReader(is);
 		try {
 			JsonElement ele = parser.parse(reader);
 			if (ele.isJsonNull()) return null;
@@ -54,22 +47,17 @@ public class JSONSerializer implements Serializer {
 	}
 
 	@Override
-	public <T> T read(InputStream is, Class<?>... types) throws IOException {
-		return read(new InputStreamReader(is), types);
-	}
-
-	@Override
-	public void read(Reader reader, Writer writer, Class<?>... types) throws IOException {
-		write(writer, read(reader, types));
-	}
-
-	@Override
-	public void read(InputStream is, OutputStream os, Class<?>... types) throws IOException {
-		read(new InputStreamReader(is), new OutputStreamWriter(os), types);
+	public void readThenWrite(InputStream is, OutputStream os, Class<?>... types) throws IOException {
+		write(os, read(is, types));
 	}
 
 	@Override
 	public boolean supportHTTPStream() {
 		return true;
+	}
+
+	@Override
+	public String[] getContentTypes() {
+		return new String[] { "application/json" };
 	}
 }
