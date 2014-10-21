@@ -12,7 +12,7 @@ public class AsyncUtils extends UtilsBase {
 	private static ListeningExecutorService listener = MoreExecutors.listeningDecorator(Executors.newWorkStealingPool());
 
 	public static <IN, OUT> void invoke(final AsyncTask<OUT> task) {
-		invoke(task, 0);
+		invoke(task, -1);
 	}
 
 	public static <IN, OUT> void invoke(final AsyncTask<OUT> task, final long timeout) {
@@ -29,5 +29,4 @@ public class AsyncUtils extends UtilsBase {
 			}
 		}, listener);
 	}
-
 }
