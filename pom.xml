@@ -17,5 +17,6 @@
 		<module>orm</module>
 		<module>utils</module>
 		<module>test</module>
+		<module>orm-nosql</module>
 	</modules>
 </project>
