@@ -22,11 +22,9 @@ public final class MongoContext {
 	Map<String, MappedClass> mcmap;
 	Map<String, MappedField[]> mfmap;
 
-	public void setMongoClient(MongoClient client) {
+	public MongoContext(MongoClient client, String database, String mapperPackage) {
 		this.client = client;
-	}
-
-	public void setMapperPackage(String mapperPackage) throws ClassNotFoundException {
+		this.store = this.morphia.createDatastore(this.client, database);
 		MapperOptions opts = new MapperOptions();
 		this.mapper = new Mapper(opts);
 		this.morphia = new Morphia(mapper).mapPackage(mapperPackage, true);
@@ -35,11 +33,6 @@ public final class MongoContext {
 		for (String className : this.mcmap.keySet()) {
 			this.mfmap.put(className, this.mcmap.get(className).getPersistenceFields().toArray(new MappedField[0]));
 		}
-
-	}
-
-	public void setMapperDatabase(String database) {
-		this.store = this.morphia.createDatastore(this.client, database);
 	}
 
 	public MappedField[] getAllFields(Class<? extends MongoEntity> entityClass) {

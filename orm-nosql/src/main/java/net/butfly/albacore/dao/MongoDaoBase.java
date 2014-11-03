@@ -126,4 +126,8 @@ public abstract class MongoDaoBase<E extends MongoEntity> extends DAOBase implem
 		}
 		return q;
 	}
+
+	protected Query<E> createQuery() {
+		return this.context.store.createQuery(entityClass);
+	}
 }

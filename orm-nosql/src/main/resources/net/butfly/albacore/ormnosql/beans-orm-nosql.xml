@@ -12,10 +12,13 @@
 	<bean id="mongoClient" class="com.mongodb.MongoClient">
 		<constructor-arg ref="mongoClientURI" />
 	</bean>
+	<bean id="mongoContext" class="net.butfly.albacore.dao.MongoContext">
+		<constructor-arg ref="mongoClient" />
+		<constructor-arg value="${albacore.orm.nosql.mongo.mapperDatabase}" />
+		<constructor-arg value="${albacore.orm.nosql.mongo.mapperPackage}" />
+	</bean>
 	<bean id="mongoDao" class="net.butfly.albacore.dao.MongoDaoBase"
 		abstract="true">
-		<property name="mongoClient" ref="mongoClient" />
-		<property name="mapperPackage" value="${albacore.orm.nosql.mongo.mapperPackage}" />
-		<property name="mapperDatabase" value="${albacore.orm.nosql.mongo.mapperDatabase}" />
+		<property name="mongoContext" ref="mongoContext" />
 	</bean>
 </beans>

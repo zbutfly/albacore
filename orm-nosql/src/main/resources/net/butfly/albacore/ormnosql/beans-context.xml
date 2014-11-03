@@ -10,6 +10,6 @@
 	<bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
 		<property name="order" value="2" />
 		<property name="ignoreUnresolvablePlaceholders" value="true" />
-		<property name="location" value="classpath:/net/butfly/albacore/frame/context/albacore-frame.properties" />
+		<property name="location" value="classpath:/net/butfly/albacore/ormnosql/context/albacore-orm-nosql.properties" />
 	</bean>
 </beans>
