@@ -19,6 +19,6 @@
 	</bean>
 	<bean id="mongoDao" class="net.butfly.albacore.dao.MongoDaoBase"
 		abstract="true">
-		<property name="mongoContext" ref="mongoContext" />
+		<property name="context" ref="mongoContext" />
 	</bean>
 </beans>
