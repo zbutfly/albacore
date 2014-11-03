@@ -24,7 +24,6 @@ public final class MongoContext {
 
 	public MongoContext(MongoClient client, String database, String mapperPackage) {
 		this.client = client;
-		this.store = this.morphia.createDatastore(this.client, database);
 		MapperOptions opts = new MapperOptions();
 		this.mapper = new Mapper(opts);
 		this.morphia = new Morphia(mapper).mapPackage(mapperPackage, true);
@@ -33,6 +32,7 @@ public final class MongoContext {
 		for (String className : this.mcmap.keySet()) {
 			this.mfmap.put(className, this.mcmap.get(className).getPersistenceFields().toArray(new MappedField[0]));
 		}
+		this.store = this.morphia.createDatastore(this.client, database);
 	}
 
 	public MappedField[] getAllFields(Class<? extends MongoEntity> entityClass) {
