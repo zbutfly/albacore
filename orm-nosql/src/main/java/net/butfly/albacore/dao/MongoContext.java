@@ -29,9 +29,8 @@ public final class MongoContext {
 		this.morphia = new Morphia(mapper).mapPackage(mapperPackage, true);
 		this.mcmap = this.mapper.getMCMap();
 		this.mfmap = new HashMap<String, MappedField[]>();
-		for (String className : this.mcmap.keySet()) {
+		for (String className : this.mcmap.keySet())
 			this.mfmap.put(className, this.mcmap.get(className).getPersistenceFields().toArray(new MappedField[0]));
-		}
 		this.store = this.morphia.createDatastore(this.client, database);
 	}
 
