@@ -38,7 +38,7 @@ public final class ReflectionUtils extends UtilsBase {
 		Reflections r = reflections.get(packagePrefix);
 		if (null != r) return r;
 		FilterBuilder filterBuilder = new FilterBuilder().includePackage(packagePrefix);
-		Collection<URL> urls = ClasspathHelper.forPackage(packagePrefix);
+		Collection<URL> urls = ClasspathHelper.forClassLoader();
 		Scanner methodScanner = new MethodAnnotationsScanner().filterResultsBy(filterBuilder);
 		Scanner subTypesScanner = new SubTypesScanner(false);
 		Configuration configuration = new ConfigurationBuilder().filterInputsBy(filterBuilder).setUrls(urls)
