@@ -1,6 +1,6 @@
 package net.butfly.albacore.utils.async;
 
-public abstract class Signal extends RuntimeException {
+public abstract class Signal extends Throwable {
 	protected Signal(Throwable cause) {
 		super(cause);
 	}

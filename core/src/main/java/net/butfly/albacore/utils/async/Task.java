@@ -1,7 +1,5 @@
 package net.butfly.albacore.utils.async;
 
-import java.util.concurrent.Callable;
-
 public class Task<T> {
 	protected Callable<T> task;
 	protected Callback<T> callback;

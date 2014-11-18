@@ -38,6 +38,7 @@ public class Options {
 	 * @param waiting
 	 *            Stepping of waiting and checking status of forked threads.
 	 */
+	@Deprecated
 	public Options fork(long waiting) {
 		this.mode = ForkMode.BOTH_AND_WAIT;
 		this.waiting = waiting;

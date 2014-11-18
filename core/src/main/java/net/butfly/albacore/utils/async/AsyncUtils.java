@@ -1,6 +1,5 @@
 package net.butfly.albacore.utils.async;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -23,25 +22,19 @@ public final class AsyncUtils extends UtilsBase {
 	private static ListeningExecutorService listenee = MoreExecutors.listeningDecorator(EXECUTOR);
 	private static ListeningExecutorService listener = MoreExecutors.listeningDecorator(EXECUTOR);
 
-	public static <OUT> OUT execute(final Task<OUT> task) {
+	public static <OUT> OUT execute(final Task<OUT> task) throws Signal {
 		return execute(EXECUTOR, task);
 	}
 
-	public static <OUT> OUT execute(final ExecutorService executor, final Task<OUT> task) {
+	public static <OUT> OUT execute(final ExecutorService executor, final Task<OUT> task) throws Signal {
 		if (task.options().mode() == ForkMode.NONE) {
-			try {
-				OUT result = task.task().call();
-				if (null != task.callback()) task.callback().callback(result);
-				return result;
-			} catch (SystemException e) {
-				throw e;
-			} catch (Exception e) {
-				throw new SystemException("", e);
-			}
+			OUT result = task.task().call();
+			if (null != task.callback()) task.callback().callback(result);
+			return result;
 		}
 		if (task.options().mode() == ForkMode.PRODUCER)
 			try {
-				return fetch(executor.submit(task.task()), task.options().timeout());
+				return fetch(executor.submit(wrap(task.task())), task.options().timeout());
 			} catch (RejectedExecutionException e) {
 				throw new SystemException(SystemExceptions.ASYNC_SATURATED,
 						"async task executing rejected for pool saturated.", e);
@@ -49,18 +42,14 @@ public final class AsyncUtils extends UtilsBase {
 		if (task.options().mode() == ForkMode.CONSUMER)
 			try {
 				OUT result;
-				try {
-					result = task.task().call();
-				} catch (Exception e) {
-					throw new SystemException("", e);
-				}
-				fetch(executor.submit(new Callable<OUT>() {
+				result = task.task().call();
+				fetch(executor.submit(wrap(new Callable<OUT>() {
 					@Override
-					public OUT call() throws Exception {
+					public OUT call() throws Signal {
 						task.callback().callback(result);
 						return result;
 					}
-				}), task.options().timeout());
+				})), task.options().timeout());
 				return result;
 			} catch (RejectedExecutionException e) {
 				throw new SystemException(SystemExceptions.ASYNC_SATURATED,
@@ -68,16 +57,16 @@ public final class AsyncUtils extends UtilsBase {
 			}
 		ListenableFuture<OUT> future;
 		try {
-			future = listenee.submit(task.task());
+			future = listenee.submit(wrap(task.task()));
 		} catch (RejectedExecutionException e) {
 			throw new SystemException(SystemExceptions.ASYNC_SATURATED, "async task executing rejected for pool saturated.", e);
 		}
-		future.addListener(new Runnable() {
+		future.addListener(wrap(new Runnable() {
 			@Override
-			public void run() {
+			public void run() throws Throwable {
 				task.callback().callback(fetch(future, task.options().timeout()));
 			}
-		}, listener);
+		}), listener);
 		if (task.options().mode() == ForkMode.LISTEN) throw new Signal.Completed();
 		if (task.options().mode() == ForkMode.BOTH_AND_WAIT) {
 			while (!future.isCancelled() && !future.isDone())
@@ -93,7 +82,7 @@ public final class AsyncUtils extends UtilsBase {
 		throw new IllegalArgumentException();
 	}
 
-	private static <OUT> OUT fetch(Future<OUT> future, long timeout) {
+	private static <OUT> OUT fetch(Future<OUT> future, long timeout) throws Signal {
 		try {
 			return timeout > 0 ? future.get(timeout, TimeUnit.MILLISECONDS) : future.get();
 		} catch (InterruptedException e) {
@@ -106,5 +95,44 @@ public final class AsyncUtils extends UtilsBase {
 			future.cancel(true);
 			throw new Signal.Completed(e.getCause());
 		}
+	}
+
+	public static <R> java.util.concurrent.Callable<R> wrap(Callable<R> callback) {
+		return new java.util.concurrent.Callable<R>() {
+			@Override
+			public R call() throws Exception {
+				try {
+					return callback.call();
+				} catch (Throwable e) {
+					if (e instanceof Exception) throw (Exception) e;
+					else throw new Exception(e);
+				}
+			}
+		};
+	}
+
+	public static java.lang.Runnable wrap(Runnable runnable) {
+		return new java.lang.Runnable() {
+			@Override
+			public void run() {
+				try {
+					runnable.run();
+				} catch (Throwable e) {
+					if (e instanceof RuntimeException) throw (RuntimeException) e;
+					else throw new RuntimeException(e);
+				}
+			}
+		};
+	}
+
+	public static void handleSignal(Signal signal) throws Signal {
+		// TODO
+		if (signal instanceof Signal.Completed) {
+			Throwable cause = ((Signal.Completed) signal).getCause();
+			if (cause != null) {
+				if (cause instanceof RuntimeException) throw (RuntimeException) cause;
+				else throw new RuntimeException("Operation completed by signal.", cause);
+			} else return;
+		} else throw signal;
 	}
 }
