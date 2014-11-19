@@ -11,9 +11,8 @@ import java.util.Iterator;
 import java.util.List;
 
 import net.butfly.albacore.exception.SystemException;
+import net.butfly.albacore.helper.HelperBase;
 import net.butfly.albacore.helper.XMLHelper;
-import net.butfly.albacore.logger.Logger;
-import net.butfly.albacore.logger.LoggerFactory;
 
 import org.dom4j.Attribute;
 import org.dom4j.Document;
@@ -22,9 +21,8 @@ import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
 
 @SuppressWarnings("unchecked")
-public class XMLHelperImpl implements XMLHelper {
+public class XMLHelperImpl extends HelperBase implements XMLHelper {
 	private static final long serialVersionUID = -4707024323691670456L;
-	private final Logger log = LoggerFactory.getLogger(XMLHelperImpl.class);
 
 	@Override
 	public Document getDocument(Reader pReader) {
@@ -34,7 +32,7 @@ public class XMLHelperImpl implements XMLHelper {
 		try {
 			document = reader.read(pReader);
 		} catch (DocumentException e) {
-			log.error(e.getMessage(), e);
+			logger.error(e.getMessage(), e);
 			throw new SystemException("SYS003", "加载XML文档失败!", e);
 		}
 		return document;
@@ -48,7 +46,7 @@ public class XMLHelperImpl implements XMLHelper {
 		try {
 			document = reader.read(is);
 		} catch (DocumentException e) {
-			log.error(e.getMessage(), e);
+			logger.error(e.getMessage(), e);
 			throw new SystemException("SYS003", "加载XML文档失败!", e);
 		}
 		return document;
@@ -60,7 +58,7 @@ public class XMLHelperImpl implements XMLHelper {
 		try {
 			in = new BufferedReader(new FileReader(filename));
 		} catch (FileNotFoundException e1) {
-			log.error(e1.getMessage(), e1);
+			logger.error(e1.getMessage(), e1);
 			throw new SystemException("SYS004", "读取XML文档失败!", e1);
 		}
 		SAXReader reader = new SAXReader();
@@ -68,7 +66,7 @@ public class XMLHelperImpl implements XMLHelper {
 		try {
 			document = reader.read(in);
 		} catch (DocumentException e) {
-			log.error(e.getMessage(), e);
+			logger.error(e.getMessage(), e);
 			throw new SystemException("SYS003", "加载XML文档失败!", e);
 		}
 		return document;

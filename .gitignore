@@ -1,6 +1,7 @@
 *.class
 # maven
 target
+.dbeaver-data-sources.xml
 
 # eclipse
 bin

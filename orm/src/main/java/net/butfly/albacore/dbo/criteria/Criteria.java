@@ -15,6 +15,10 @@ public class Criteria extends ObjectSupport<Criteria> {
 	protected Map<String, Object> params;
 	protected List<OrderField> orderFields;
 
+	public List<OrderField> getOrderFields() {
+		return orderFields;
+	}
+
 	public Criteria() {
 		this.params = new HashMap<String, Object>();
 		this.orderFields = new ArrayList<Criteria.OrderField>();
@@ -46,20 +50,27 @@ public class Criteria extends ObjectSupport<Criteria> {
 	}
 
 	public Map<String, Object> getParameters() {
+		return this.getParameters(false);
+	}
+
+	public Map<String, Object> getParameters(boolean pure) {
 		Map<String, Object> p = new HashMap<String, Object>(this.params);
-		if (this.orderFields.size() > 0) p.put(ORDER_FIELDS_PARAM_NAME,
-				this.orderFields.toArray(new OrderField[this.orderFields.size()]));
-		else p.remove(ORDER_FIELDS_PARAM_NAME);
+		if (!pure)
+			if (this.orderFields.size() > 0) p.put(ORDER_FIELDS_PARAM_NAME,
+					this.orderFields.toArray(new OrderField[this.orderFields.size()]));
+			else p.remove(ORDER_FIELDS_PARAM_NAME);
 		return p;
 	}
 
 	public static final class OrderField {
 		private String field;
-		private String asc;
+		private boolean asc;
+		private String ascv;
 
 		private OrderField(String field, boolean asc) {
 			this.field = field;
-			this.asc = asc ? "ASC" : "DESC";
+			this.asc = asc;
+			this.ascv = asc ? "ASC" : "DESC";
 		}
 
 		public String getField() {
@@ -67,8 +78,11 @@ public class Criteria extends ObjectSupport<Criteria> {
 		}
 
 		public String getAsc() {
-			return asc;
+			return ascv;
 		}
 
+		public boolean desc() {
+			return !asc;
+		}
 	}
 }

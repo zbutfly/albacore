@@ -19,20 +19,18 @@ package net.butfly.albacore.utils.collections;
 import java.util.Map;
 
 /**
- * Abstract Pair class to assist with creating correct
- * {@link java.util.Map.Entry Map.Entry} implementations.
+ * Abstract Pair class to assist with creating correct {@link java.util.Map.Entry Map.Entry}
+ * implementations.
  * 
  * @since Commons Collections 3.0
- * @version $Revision: 646777 $ $Date: 2008-04-10 13:33:15 +0100 (Thu, 10 Apr
- *          2008) $
+ * @version $Revision: 646777 $ $Date: 2008-04-10 13:33:15 +0100 (Thu, 10 Apr 2008) $
  * 
  * @author James Strachan
  * @author Michael A. Smith
  * @author Neil O'Toole
  * @author Stephen Colebourne
  */
-public abstract class AbstractMapEntry extends AbstractKeyValue implements Map.Entry<String, Object> {
-
+public abstract class MapEntry extends KeyValue implements Map.Entry<String, Object> {
 	/**
 	 * Constructs a new entry with the given key and given value.
 	 * 
@@ -41,7 +39,7 @@ public abstract class AbstractMapEntry extends AbstractKeyValue implements Map.E
 	 * @param value
 	 *            the value for the entry, may be null
 	 */
-	protected AbstractMapEntry(String key, Object value) {
+	protected MapEntry(String key, Object value) {
 		super(key, value);
 	}
 
@@ -50,8 +48,7 @@ public abstract class AbstractMapEntry extends AbstractKeyValue implements Map.E
 	/**
 	 * Sets the value stored in this <code>Map.Entry</code>.
 	 * <p>
-	 * This <code>Map.Entry</code> is not connected to a Map, so only the local
-	 * data is changed.
+	 * This <code>Map.Entry</code> is not connected to a Map, so only the local data is changed.
 	 * 
 	 * @param value
 	 *            the new value
@@ -66,8 +63,7 @@ public abstract class AbstractMapEntry extends AbstractKeyValue implements Map.E
 	/**
 	 * Compares this <code>Map.Entry</code> with another <code>Map.Entry</code>.
 	 * <p>
-	 * Implemented per API documentation of
-	 * {@link java.util.Map.Entry#equals(Object)}
+	 * Implemented per API documentation of {@link java.util.Map.Entry#equals(Object)}
 	 * 
 	 * @param obj
 	 *            the object to compare to
@@ -84,13 +80,11 @@ public abstract class AbstractMapEntry extends AbstractKeyValue implements Map.E
 	/**
 	 * Gets a hashCode compatible with the equals method.
 	 * <p>
-	 * Implemented per API documentation of
-	 * {@link java.util.Map.Entry#hashCode()}
+	 * Implemented per API documentation of {@link java.util.Map.Entry#hashCode()}
 	 * 
 	 * @return a suitable hash code
 	 */
 	public int hashCode() {
 		return (getKey() == null ? 0 : getKey().hashCode()) ^ (getValue() == null ? 0 : getValue().hashCode());
 	}
-
 }

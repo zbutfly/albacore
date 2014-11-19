@@ -16,22 +16,22 @@
  */
 package net.butfly.albacore.utils.collections;
 
-import org.apache.commons.collections.KeyValue;
+import java.util.Map;
+
 
 /**
- * Abstract pair class to assist with creating <code>KeyValue</code> and
- * {@link java.util.Map.Entry Map.Entry} implementations.
+ * Abstract pair class to assist with creating <code>KeyValue</code> and {@link java.util.Map.Entry
+ * Map.Entry} implementations.
  * 
  * @since Commons Collections 3.0
- * @version $Revision: 646777 $ $Date: 2008-04-10 13:33:15 +0100 (Thu, 10 Apr
- *          2008) $
+ * @version $Revision: 646777 $ $Date: 2008-04-10 13:33:15 +0100 (Thu, 10 Apr 2008) $
  * 
  * @author James Strachan
  * @author Michael A. Smith
  * @author Neil O'Toole
  * @author Stephen Colebourne
  */
-public abstract class AbstractKeyValue implements KeyValue {
+public abstract class KeyValue implements org.apache.commons.collections4.KeyValue<String, Object> {
 
 	/** The key */
 	protected String key;
@@ -46,7 +46,7 @@ public abstract class AbstractKeyValue implements KeyValue {
 	 * @param value
 	 *            the value for the entry, may be null
 	 */
-	protected AbstractKeyValue(String key, Object value) {
+	protected KeyValue(String key, Object value) {
 		super();
 		this.key = key;
 		this.value = value;
@@ -79,4 +79,11 @@ public abstract class AbstractKeyValue implements KeyValue {
 		return new StringBuffer().append(getKey()).append('=').append(getValue()).toString();
 	}
 
+	public boolean equals(Object obj) {
+		if (obj == this) { return true; }
+		if (obj instanceof Map.Entry == false) { return false; }
+		Map.Entry<?, ?> other = (Map.Entry<?, ?>) obj;
+		return (getKey() == null ? other.getKey() == null : getKey().equals(other.getKey()))
+				&& (getValue() == null ? other.getValue() == null : getValue().equals(other.getValue()));
+	}
 }

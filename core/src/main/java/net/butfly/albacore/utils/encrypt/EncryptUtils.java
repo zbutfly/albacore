@@ -1,4 +1,4 @@
-package net.butfly.albacore.utils;
+package net.butfly.albacore.utils.encrypt;
 
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
@@ -7,6 +7,7 @@ import java.security.NoSuchAlgorithmException;
 
 import net.butfly.albacore.exception.EncryptException;
 import net.butfly.albacore.exception.SystemException;
+import net.butfly.albacore.utils.ByteUtils;
 
 public final class EncryptUtils {
 

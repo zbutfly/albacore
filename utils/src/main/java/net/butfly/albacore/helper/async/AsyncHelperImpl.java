@@ -43,7 +43,6 @@ public class AsyncHelperImpl extends HelperBase implements AsyncHelper {
 		this.startTimeout = startTimeout;
 	}
 
-	@SuppressWarnings({ "unchecked" })
 	protected final AsyncTaskExecutor getExecutor(Class<? extends AsyncTaskExecutor> executorClass, Map<String, Object> params) {
 		AsyncTaskExecutor executor;
 		try {
