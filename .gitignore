@@ -1,7 +1,7 @@
 *.class
 # maven
-
 target
+
 # eclipse
 bin
 .metadata
