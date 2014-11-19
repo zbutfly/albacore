@@ -2,7 +2,7 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
-		<groupId>net.butfly.albacore.albacore-parent</groupId>
+		<groupId>net.butfly.parent</groupId>
 		<artifactId>parent</artifactId>
 		<version>1.0.0</version>
 	</parent>
@@ -11,6 +11,12 @@
 	<version>2.0.1-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<name>albacore</name>
+	<scm>
+		<connection>git@github.com:zbutfly/albacore.git</connection>
+		<developerConnection>git@github.com:zbutfly/albacore.git</developerConnection>
+		<tag>MASTER</tag>
+		<url>https://github.com/zbutfly/albacore</url>
+	</scm>
 	<modules>
 		<module>core</module>
 		<module>frame</module>
