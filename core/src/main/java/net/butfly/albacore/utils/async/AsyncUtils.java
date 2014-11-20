@@ -26,11 +26,18 @@ public final class AsyncUtils extends UtilsBase {
 		return execute(EXECUTOR, task);
 	}
 
-	public static <OUT> OUT execute(final ExecutorService executor, final Task<OUT> task) throws Signal {
+	@Deprecated
+	public static <OUT> OUT execute(final Task<OUT> task, final ExecutorService executor) throws Signal {
+		return execute(executor, task);
+	}
+
+	private static <OUT> OUT execute(final ExecutorService executor, final Task<OUT> task) throws Signal {
 		if (task.options().mode() == ForkMode.NONE) {
 			OUT result = task.task().call();
-			if (null != task.callback()) task.callback().callback(result);
-			return result;
+			if (null != task.callback()) {
+				task.callback().callback(result);
+				return null;
+			} else return result;
 		}
 		if (task.options().mode() == ForkMode.PRODUCER)
 			try {
@@ -43,18 +50,20 @@ public final class AsyncUtils extends UtilsBase {
 			try {
 				OUT result;
 				result = task.task().call();
-				fetch(executor.submit(wrap(new Callable<OUT>() {
+				assert (null == fetch(executor.submit(wrap(new Callable<OUT>() {
 					@Override
 					public OUT call() throws Signal {
 						task.callback().callback(result);
-						return result;
+						return null;
 					}
-				})), task.options().timeout());
-				return result;
+				})), task.options().timeout()));
+				return null;
 			} catch (RejectedExecutionException e) {
 				throw new SystemException(SystemExceptions.ASYNC_SATURATED,
 						"async task executing rejected for pool saturated.", e);
 			}
+
+		// TODO: Use listenee/listener for executor, not default.
 		ListenableFuture<OUT> future;
 		try {
 			future = listenee.submit(wrap(task.task()));
@@ -67,7 +76,7 @@ public final class AsyncUtils extends UtilsBase {
 				task.callback().callback(fetch(future, task.options().timeout()));
 			}
 		}), listener);
-		if (task.options().mode() == ForkMode.LISTEN) throw new Signal.Completed();
+		if (task.options().mode() == ForkMode.LISTEN) return null;
 		if (task.options().mode() == ForkMode.BOTH_AND_WAIT) {
 			while (!future.isCancelled() && !future.isDone())
 				if (task.options().waiting() > 0) try {
@@ -76,8 +85,9 @@ public final class AsyncUtils extends UtilsBase {
 					throw new Signal.Completed(e);
 				}
 			// XXX
-			if (future.isDone()) throw new Signal.Completed();
-			else throw new Signal.Completed(null);
+			return null;
+			// if (future.isDone()) throw new Signal.Completed();
+			// else throw new Signal.Completed(null);
 		}
 		throw new IllegalArgumentException();
 	}
@@ -123,16 +133,5 @@ public final class AsyncUtils extends UtilsBase {
 				}
 			}
 		};
-	}
-
-	public static void handleSignal(Signal signal) throws Signal {
-		// TODO
-		if (signal instanceof Signal.Completed) {
-			Throwable cause = ((Signal.Completed) signal).getCause();
-			if (cause != null) {
-				if (cause instanceof RuntimeException) throw (RuntimeException) cause;
-				else throw new RuntimeException("Operation completed by signal.", cause);
-			} else return;
-		} else throw signal;
 	}
 }

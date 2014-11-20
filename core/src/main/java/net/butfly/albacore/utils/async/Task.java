@@ -8,11 +8,11 @@ public class Task<T> {
 	protected Task() {}
 
 	public Task(Callable<T> task) {
-		this(task, null, new Options());
+		this(task, null, null);
 	}
 
 	public Task(Callable<T> task, Callback<T> callback) {
-		this(task, callback, new Options());
+		this(task, callback, null);
 	}
 
 	public Task(Callable<T> task, Options options) {
