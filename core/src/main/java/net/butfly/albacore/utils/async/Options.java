@@ -61,23 +61,4 @@ public class Options {
 	long timeout() {
 		return timeout;
 	}
-
-//	public static final Options DEFAULT = new Options() {
-//		public Options fork(boolean producer) {
-//			throw new UnsupportedOperationException();
-//		}
-//
-//		public Options fork() {
-//			throw new UnsupportedOperationException();
-//		}
-//
-//		@Deprecated
-//		public Options fork(long waiting) {
-//			throw new UnsupportedOperationException();
-//		}
-//
-//		public Options timeout(long timeout) {
-//			throw new UnsupportedOperationException();
-//		}
-//	};
 }

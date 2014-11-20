@@ -32,6 +32,7 @@ public final class AsyncUtils extends UtilsBase {
 	}
 
 	private static <OUT> OUT execute(final ExecutorService executor, final Task<OUT> task) throws Signal {
+		if (task.options() == null) task.options = new Options();
 		if (task.options().mode() == ForkMode.NONE) {
 			OUT result = task.task().call();
 			if (null != task.callback()) {
