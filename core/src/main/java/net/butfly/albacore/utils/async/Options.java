@@ -2,12 +2,17 @@ package net.butfly.albacore.utils.async;
 
 public class Options {
 	enum ForkMode {
-		NONE, PRODUCER, CONSUMER, LISTEN, @Deprecated BOTH_AND_WAIT
+		NONE(false), PRODUCER(false), CONSUMER(true), LISTEN(true);
+		boolean async;
+
+		private ForkMode(boolean async) {
+			this.async = async;
+		}
 	}
 
-	private ForkMode mode = ForkMode.NONE;
-	private long timeout = -1;
-	private long waiting = -1;
+	ForkMode mode = ForkMode.NONE;
+	long timeout = -1;
+	boolean unblock = ForkMode.NONE.async;
 
 	/**
 	 * Forking producer (Callable task) or consumer (Callback routine), another
@@ -18,8 +23,7 @@ public class Options {
 	 * @return
 	 */
 	public Options fork(boolean producer) {
-		this.mode = producer ? ForkMode.PRODUCER : ForkMode.CONSUMER;
-		return this;
+		return this.mode(producer ? ForkMode.PRODUCER : ForkMode.CONSUMER);
 	}
 
 	/**
@@ -27,30 +31,7 @@ public class Options {
 	 * continuing immediately.
 	 */
 	public Options fork() {
-		this.mode = ForkMode.LISTEN;
-		return this;
-	}
-
-	/**
-	 * Forking both producer and consumer to a new thread, and current thread is
-	 * waiting for consumer finished with stepping {@link #waiting} ms.
-	 * 
-	 * @param waiting
-	 *            Stepping of waiting and checking status of forked threads.
-	 */
-	@Deprecated
-	public Options fork(long waiting) {
-		this.mode = ForkMode.BOTH_AND_WAIT;
-		this.waiting = waiting;
-		return this;
-	}
-
-	ForkMode mode() {
-		return mode;
-	}
-
-	long waiting() {
-		return waiting;
+		return this.mode(ForkMode.LISTEN);
 	}
 
 	public Options timeout(long timeout) {
@@ -58,7 +39,23 @@ public class Options {
 		return this;
 	}
 
-	long timeout() {
-		return timeout;
+	public Options block() {
+		this.unblock = false;
+		return this;
+	}
+
+	public Options unblock() {
+		this.unblock = true;
+		return this;
+	}
+
+	public boolean needCallback() {
+		return this.mode.async;
+	}
+
+	private Options mode(ForkMode mode) {
+		this.mode = mode;
+		this.unblock = mode.async;
+		return this;
 	}
 }
