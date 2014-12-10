@@ -10,11 +10,11 @@
 
 	<bean id="template" class="org.mybatis.spring.SqlSessionTemplate">
 		<constructor-arg index="0" ref="sqlSessionFactory" />
-		<constructor-arg index="1" value="${ibatis.template}" />
+		<constructor-arg index="1" value="${ibatis.template}" /><!-- internal default BATCH -->
 	</bean>
 	<bean id="batchTemplate" class="org.mybatis.spring.SqlSessionTemplate">
 		<constructor-arg index="0" ref="sqlSessionFactory" />
-		<constructor-arg index="1" value="${ibatis.template.batch}" />
+		<constructor-arg index="1" value="${ibatis.template.batch}" /><!-- internal default BATCH -->
 	</bean>
 
 	<bean id="dao" class="net.butfly.albacore.dao.DAOBase" abstract="true" parent="bizUnit" />
