@@ -12,7 +12,7 @@ import net.butfly.albacore.exception.SystemException;
 
 import org.mybatis.spring.SqlSessionTemplate;
 
-public abstract class EntityDAOBase extends BizUnitBase implements EntityDAO {
+public abstract class EntityDAOBase extends DAOBase implements EntityDAO {
 	private static final long serialVersionUID = -1599466753909389837L;
 	protected SqlSessionTemplate template, batchTemplate;
 	protected String namespace;
