@@ -4,6 +4,4 @@ import java.io.Serializable;
 
 import net.butfly.albacore.base.BizUnit;
 
-public interface Facade extends BizUnit, Serializable {
-	public boolean isDebug();
-}
+public interface Facade extends BizUnit, Serializable {}
