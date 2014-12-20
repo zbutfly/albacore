@@ -12,6 +12,7 @@ public class GUID implements Serializable {
 	private static volatile SecureRandom numberGenerator = null;
 	private byte[] data;
 
+
 	public GUID(byte[] data) {
 		if (null == data || GUID_BUFF_SIZE != data.length)
 			throw new SystemException("SYS_100", "GUID should be initialized by a " + GUID_BUFF_SIZE + " byte buffer.");

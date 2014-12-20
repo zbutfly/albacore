@@ -11,8 +11,6 @@ import java.util.Map;
 
 import net.butfly.albacore.support.BeanMap;
 import net.butfly.albacore.support.CloneSupport;
-import net.butfly.albacore.support.EnumSupport;
-import net.butfly.albacore.support.GenericEnumSupport;
 import net.butfly.albacore.support.ObjectSupport;
 
 import org.apache.commons.lang3.NotImplementedException;
@@ -88,11 +86,14 @@ public class ObjectUtils {
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static Object castValue(Object value, Class<?> setClass, Class<?> getClass) {
 		// 枚举类型和integer的互换
-		if (isEnum(setClass) && isInteger(getClass)) {
-			return EnumUtils.valueOfGeneric((Class<GenericEnumSupport>) setClass, ((Number) value).intValue());
-		} else if (isInteger(setClass) && isEnum(getClass)) return ((EnumSupport<?>) value).value();
+		// if (isEnum(setClass) && isInteger(getClass))
+		// return EnumUtils.valueOfGeneric((Class<GenericEnumSupport>) setClass, ((Number)
+		// value).intValue());
+		// elseif (isInteger(setClass) && isEnum(getClass)) return ((EnumSupport<?>) value).value();
+		// else
 		// String和byte[]的互换
-		else if (isBytes(setClass) && isString(getClass)) return ByteUtils.hex2byte((String) value);
+
+		if (isBytes(setClass) && isString(getClass)) return ByteUtils.hex2byte((String) value);
 		else if (isString(setClass) && isBytes(getClass)) return ByteUtils.byte2hex((byte[]) value);
 		// integer和 String的互换
 		else if (isString(setClass) && isInteger(getClass)) return Integer.toString(((Number) value).intValue());
@@ -117,7 +118,7 @@ public class ObjectUtils {
 	}
 
 	private static boolean isEnum(Class<?> clazz) {
-		return GenericEnumSupport.class.isAssignableFrom(clazz);
+		return Enum.class.isAssignableFrom(clazz);
 	}
 
 	public static void copyByField(CloneSupport<?> dst, CloneSupport<?> src) {
@@ -168,7 +169,8 @@ public class ObjectUtils {
 		if (null == o1) return -1;
 		if (null == o2) return 1;
 
-		if (o1.getClass().isPrimitive()) throw new NotImplementedException("Comparation between primitive objects is not implemented.");
+		if (o1.getClass().isPrimitive())
+			throw new NotImplementedException("Comparation between primitive objects is not implemented.");
 		if (Number.class.isAssignableFrom(o1.getClass()) && Number.class.isAssignableFrom(o2.getClass()))
 			return numberComparator.compare((Number) o1, (Number) o2);
 		if (o1.getClass().isArray() && o2.getClass().isArray()) return arrayComparator.compare((Object[]) o1, (Object[]) o2);
