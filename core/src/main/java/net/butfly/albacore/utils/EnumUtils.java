@@ -1,40 +1,46 @@
 package net.butfly.albacore.utils;
 
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 
 public class EnumUtils extends UtilsBase {
 	public static final String ENUM_VALUE_METHOD_NAME = "value";
-	public static final String ENUM_VALUE_PARSE_NAME = "parse";
 
-	public static byte value(Enum<?> enumObject) {
+	@SuppressWarnings("unchecked")
+	public static <E extends Enum<E>> byte value(E enumObject) {
 		if (enumObject == null) throw new RuntimeException("Null could not be parsed as enum.");
-		Method valueMethod = null;
-		try {
-			valueMethod = enumObject.getClass().getDeclaredMethod(ENUM_VALUE_METHOD_NAME);
-		} catch (Exception e) {}
-		if (null == valueMethod) try {
-			valueMethod = enumObject.getClass().getDeclaredMethod("getValue");
-		} catch (Exception e) {}
+		Method valueMethod = getValueMethod(enumObject.getClass());
 		if (null == valueMethod) return (byte) enumObject.ordinal();
-		try {
+		else try {
 			return (byte) valueMethod.invoke(enumObject);
 		} catch (Exception e) {
 			throw new RuntimeException("Failure on parsing as enum.", e);
 		}
 	}
 
-	@SuppressWarnings("unchecked")
+	enum temp {
+		a, b, c
+	}
+
 	public static <E extends Enum<E>> E parse(Class<E> type, byte enumValue) {
-		Method parseMethod = null;
+		E[] enums = type.getEnumConstants();
+		Method valueMethod = getValueMethod(type);
+		if (null == valueMethod) return enums[enumValue];// use ordinal;
+		else for (E e : enums)
+			try {
+				if (enumValue == (byte) valueMethod.invoke(e)) return e;
+			} catch (Exception ex) {
+				throw new RuntimeException("Failure on parsing as enum.", ex);
+			}
+		return null;
+	}
+
+	private static <E extends Enum<E>> Method getValueMethod(Class<E> enumClass) {
 		try {
-			parseMethod = type.getDeclaredMethod(ENUM_VALUE_PARSE_NAME);
-		} catch (Exception e) {}
-		if (null == parseMethod || !Modifier.isStatic(parseMethod.getModifiers())) return type.getEnumConstants()[enumValue];
-		try {
-			return (E) parseMethod.invoke(null, enumValue);
+			Method valueMethod = enumClass.getDeclaredMethod(ENUM_VALUE_METHOD_NAME);
+			if (null == valueMethod) valueMethod = enumClass.getDeclaredMethod("getValue");
+			return valueMethod;
 		} catch (Exception e) {
-			throw new RuntimeException("Failure on parsing as enum.", e);
+			return null;
 		}
 	}
 }
