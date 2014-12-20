@@ -6,7 +6,7 @@ public class EnumUtils extends UtilsBase {
 	public static final String ENUM_VALUE_METHOD_NAME = "value";
 
 	@SuppressWarnings("unchecked")
-	public static <E extends Enum<E>> byte value(E enumObject) {
+	public static byte value(Enum<? extends Enum<?>> enumObject) {
 		if (enumObject == null) throw new RuntimeException("Null could not be parsed as enum.");
 		Method valueMethod = getValueMethod(enumObject.getClass());
 		if (null == valueMethod) return (byte) enumObject.ordinal();
