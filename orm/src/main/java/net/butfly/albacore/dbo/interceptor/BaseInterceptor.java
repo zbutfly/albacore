@@ -2,7 +2,7 @@ package net.butfly.albacore.dbo.interceptor;
 
 import java.util.Properties;
 
-import net.butfly.albacore.utils.MybatisUtils;
+import net.butfly.albacore.utils.ObjectUtils;
 
 import org.apache.ibatis.plugin.Interceptor;
 import org.apache.ibatis.plugin.Invocation;
@@ -15,7 +15,7 @@ public abstract class BaseInterceptor implements Interceptor {
 	protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	protected final MetaObject createMeta(Invocation invocation) {
-		return MybatisUtils.createMeta(invocation.getTarget());
+		return ObjectUtils.createMeta(invocation.getTarget());
 	}
 
 	@Override

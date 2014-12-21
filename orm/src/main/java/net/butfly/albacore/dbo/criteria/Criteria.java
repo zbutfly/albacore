@@ -5,13 +5,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.ibatis.reflection.MetaObject;
-
 import net.butfly.albacore.entity.Entity;
-import net.butfly.albacore.support.ObjectSupport;
-import net.butfly.albacore.utils.MybatisUtils;
+import net.butfly.albacore.support.AdvanceObjectSupport;
+import net.butfly.albacore.utils.ObjectUtils;
 
-public class Criteria extends ObjectSupport<Criteria> {
+public class Criteria extends AdvanceObjectSupport<Criteria> {
 	private static final long serialVersionUID = 4775216639071589206L;
 	@Deprecated
 	private static final String SCHEMA_PARAM_NAME = "schema";
@@ -49,8 +47,7 @@ public class Criteria extends ObjectSupport<Criteria> {
 	}
 
 	public Criteria setEntity(Entity<?> entity) {
-		MetaObject meta = MybatisUtils.createMeta(entity);
-		this.params.putAll(MybatisUtils.convertToMap(meta));
+		this.params.putAll(ObjectUtils.toMap(entity));
 		return this;
 	}
 

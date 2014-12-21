@@ -3,7 +3,7 @@ package net.butfly.albacore.dbo.key;
 import java.io.Serializable;
 import java.sql.Statement;
 
-import net.butfly.albacore.utils.MybatisUtils;
+import net.butfly.albacore.utils.ObjectUtils;
 
 import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.executor.keygen.KeyGenerator;
@@ -21,7 +21,7 @@ public abstract class JavaKeyGenerator<K extends Serializable> implements KeyGen
 	@Override
 	public void processBefore(Executor executor, MappedStatement ms, Statement stmt, Object parameter) {
 		if (parameter == null) return;
-		MetaObject meta = MybatisUtils.createMeta(parameter);
+		MetaObject meta = ObjectUtils.createMeta(parameter);
 		String[] ids = ms.getKeyProperties();
 		for (String id : ids == null ? DEFAULT_KEY_PROPERTIES : ids)
 			if (meta.hasGetter(id) && meta.getValue(id) == null && meta.hasSetter(id)) meta.setValue(id, this.generateKey());

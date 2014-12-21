@@ -1,10 +1,10 @@
 package net.butfly.albacore.dbo.criteria;
 
-import net.butfly.albacore.support.ObjectSupport;
+import net.butfly.albacore.support.AdvanceObjectSupport;
 
 import org.apache.ibatis.session.RowBounds;
 
-public final class Page extends ObjectSupport<Page> {
+public final class Page extends AdvanceObjectSupport<Page> {
 	private static final long serialVersionUID = 7953408535935745025L;
 	// the first page index of the current query.
 	private final static int FIRST_PAGE = 1;
@@ -36,13 +36,19 @@ public final class Page extends ObjectSupport<Page> {
 	// the total count of records of the current query.
 	private int total = TOTAL_NOT_SET;
 
-	public Page() {}
-
-	public Page(int total, int capacity) {
-		this(total, capacity, FIRST_PAGE);
+	public Page() {
+		this(DEFAULT_PAGE_SIZE);
 	}
 
-	public Page(int total, int capacity, int curr) {
+	public Page(int capacity) {
+		this(capacity, FIRST_PAGE);
+	}
+
+	public Page(int capacity, int curr) {
+		this(TOTAL_NOT_SET, capacity, curr);
+	}
+
+	private Page(int total, int capacity, int curr) {
 		if (capacity <= 0) { throw new RuntimeException("0 capacity page!"); }
 		this.capacity = capacity;
 		this.total = total;
