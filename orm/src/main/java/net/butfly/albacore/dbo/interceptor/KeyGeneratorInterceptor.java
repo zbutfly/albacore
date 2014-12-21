@@ -1,31 +1,42 @@
 package net.butfly.albacore.dbo.interceptor;
 
-import java.io.Serializable;
+import java.util.HashSet;
+import java.util.Properties;
+import java.util.Set;
 
+import net.butfly.albacore.utils.ReflectionUtils;
+
+import org.apache.ibatis.executor.Executor;
+import org.apache.ibatis.executor.keygen.KeyGenerator;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.SqlCommandType;
+import org.apache.ibatis.plugin.Intercepts;
 import org.apache.ibatis.plugin.Invocation;
-import org.apache.ibatis.reflection.MetaObject;
-import org.apache.ibatis.session.Configuration;
+import org.apache.ibatis.plugin.Signature;
 
-public abstract class KeyGeneratorInterceptor<K extends Serializable> extends AbstractInterceptor {
+@Intercepts({ @Signature(type = Executor.class, method = "update", args = { MappedStatement.class, Object.class }) })
+public class KeyGeneratorInterceptor extends BaseExecutorInterceptor {
+	private final Set<String> altered = new HashSet<String>();
+	private KeyGenerator keyGenerator;
+
 	@Override
-	public final Object intercept(Invocation invocation) throws Throwable {
-		Object[] queryArgs = invocation.getArgs();
-		MappedStatement ms = (MappedStatement) queryArgs[0];
-		if (ms.getSqlCommandType() == SqlCommandType.INSERT) {
-			Configuration conf = ms.getConfiguration();
-			final MetaObject meta = conf.newMetaObject(queryArgs[1]);
-			String[] keys = ms.getKeyProperties();
-			if (null != keys) for (String key : keys) {
-				if (null != key && meta.hasSetter(key) && (!meta.hasGetter(key) || null == meta.getValue(key))) {
-					meta.setValue(key, this.generatorKey());
-					queryArgs[1] = meta.getOriginalObject();
-				}
-			}
+	public Object intercept(Invocation invocation) throws Throwable {
+		MappedStatement stat = (MappedStatement) invocation.getArgs()[0];
+		String statId = stat.getId();
+		if (!altered.contains(statId)) {
+			altered.add(statId);
+			if (stat.getSqlCommandType() == SqlCommandType.INSERT)
+				ReflectionUtils.safeFieldSet(MappedStatement.class.getDeclaredField("keyGenerator"), stat, keyGenerator);
 		}
 		return invocation.proceed();
 	}
 
-	protected abstract K generatorKey();
+	@Override
+	public void setProperties(Properties properties) {
+		try {
+			this.keyGenerator = (KeyGenerator) Class.forName(properties.getProperty("keyGeneratorClass")).newInstance();
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
 }

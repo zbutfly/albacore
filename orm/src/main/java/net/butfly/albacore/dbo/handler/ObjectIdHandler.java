@@ -16,6 +16,6 @@ public class ObjectIdHandler extends JdbcTypeHandler<ObjectId, String> {
 
 	@Override
 	protected JdbcType getSQLType() {
-		return JdbcType.CHAR;
+		return JdbcType.VARCHAR;
 	}
 }
