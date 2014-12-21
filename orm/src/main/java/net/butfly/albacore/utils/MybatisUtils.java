@@ -1,5 +1,6 @@
 package net.butfly.albacore.utils;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.ibatis.reflection.MetaObject;
@@ -28,7 +29,9 @@ public class MybatisUtils extends UtilsBase {
 	}
 
 	public static Map<? extends String, ? extends Object> convertToMap(MetaObject meta) {
-		// TODO Auto-generated method stub
-		return null;
+		Map<String, Object> map = new HashMap<String, Object>();
+		for (String getter : meta.getGetterNames())
+			if (!"METHOD_SET".equals(getter) && !"METHOD_GET".equals(getter)) map.put(getter, meta.getValue(getter));
+		return map;
 	}
 }

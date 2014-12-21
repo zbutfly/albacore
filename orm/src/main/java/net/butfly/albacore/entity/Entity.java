@@ -4,7 +4,6 @@ import java.io.Serializable;
 import java.lang.reflect.Array;
 
 import net.butfly.albacore.exception.SystemException;
-import net.butfly.albacore.utils.GenericUtils;
 
 public abstract class Entity<K extends Serializable> extends AbstractEntity {
 	private static final long serialVersionUID = 1L;
@@ -46,7 +45,7 @@ public abstract class Entity<K extends Serializable> extends AbstractEntity {
 
 	public static Class<?> getKeyClass(Class<? extends Entity<?>> entityClass) {
 		try {
-			return GenericUtils.getDeclaredField(entityClass, "id").getType();
+			return entityClass.getMethod("getId").getReturnType();
 		} catch (SecurityException e) {
 			throw new SystemException("", e);
 		} catch (Throwable e) {
