@@ -18,8 +18,7 @@ public interface EntityDAO extends DAO {
 	/**
 	 * Batch insert columns into table.
 	 * 
-	 * Default using statement with id "insertBatch" in mapper file. the
-	 * statement should look like:
+	 * Default using statement with id "insertBatch" in mapper file. the statement should look like:
 	 * "INSERT INTO tbl_name (a,b,c) VALUES(1,2,3),(4,5,6),(7,8,9);"
 	 * 
 	 * @param entities
@@ -50,4 +49,6 @@ public interface EntityDAO extends DAO {
 	<K extends Serializable, E extends Entity<K>> E[] select(Class<E> entityClass, K[] key);
 
 	<K extends Serializable, E extends Entity<K>> E[] select(Class<E> entityClass, Criteria criteria, Page page);
+
+	<K extends Serializable, E extends Entity<K>> K[] selectKeys(Class<E> entityClass, Criteria criteria, Page page);
 }

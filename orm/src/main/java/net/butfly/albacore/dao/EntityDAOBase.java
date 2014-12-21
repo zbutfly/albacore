@@ -114,9 +114,7 @@ public abstract class EntityDAOBase extends DAOBase implements EntityDAO {
 	public <K extends Serializable, E extends Entity<K>> int update(E entity, Criteria criteria) {
 		int c = 0;
 		Class<E> entityClass = (Class<E>) entity.getClass();
-		K[] keys = this.getKeyPage(entityClass, DAOContext.COUNT_STATMENT_ID, DAOContext.SELECT_STATMENT_ID,
-				criteria.getParameters(), Page.ALL_RECORD);
-		for (K k : keys) {
+		for (K k : this.selectKeys(entityClass, criteria, Page.ALL_RECORD)) {
 			entity.setId(k);
 			if (this.update(entity)) c++;
 		}
@@ -124,10 +122,24 @@ public abstract class EntityDAOBase extends DAOBase implements EntityDAO {
 	}
 
 	@Override
+	public <K extends Serializable, E extends Entity<K>> K[] selectKeys(Class<E> entityClass, Criteria criteria, Page page) {
+		if (null == page) throw new SystemException("Query must be limited by page.");
+		if (page.getTotal() < 0) { // dirty page
+			Object total = this.batchTemplate.selectOne(
+					this.getSqlId(DAOContext.COUNT_STATMENT_ID + entityClass.getSimpleName() + "ByCriteria"),
+					criteria.getParameters());
+			page.setTotal(null != total ? ((Number) total).intValue() : 0);
+		}
+		List<K> list = this.batchTemplate.selectList(
+				this.getSqlId(DAOContext.SELECT_STATMENT_ID + entityClass.getSimpleName() + "ByCriteria"),
+				criteria.getParameters(), page.toRowBounds());
+
+		return list.toArray(Entity.getKeyBuffer(entityClass, list.size()));
+	}
+
+	@Override
 	public <K extends Serializable, E extends Entity<K>> E[] select(Class<E> entityClass, Criteria criteria, Page page) {
-		K[] keys = this.getKeyPage(entityClass, DAOContext.COUNT_STATMENT_ID, DAOContext.SELECT_STATMENT_ID,
-				criteria.getParameters(), page);
-		return this.select(entityClass, keys);
+		return this.select(entityClass, this.selectKeys(entityClass, criteria, page));
 	}
 
 	@Override
@@ -136,31 +148,6 @@ public abstract class EntityDAOBase extends DAOBase implements EntityDAO {
 				this.getSqlId(DAOContext.COUNT_STATMENT_ID + entityClass.getSimpleName() + "ByCriteria"),
 				criteria.getParameters());
 		return null == r ? 0 : ((Number) r).intValue();
-	}
-
-	protected <K extends Serializable, E extends Entity<K>> E[] getEntityPage(Class<E> entityClass, String countSqlId,
-			String selectSqlId, Object arg, Page page) {
-		if (null == page) throw new SystemException("Query must be limited by page.");
-		if (page.getTotal() < 0) {
-			Object total = this.batchTemplate.selectOne(this.getSqlId(countSqlId), arg);
-			page.setTotal(null != total ? ((Number) total).intValue() : 0);
-		}
-		List<K> list = this.batchTemplate.selectList(this.getSqlId(selectSqlId), arg, page.toRowBounds());
-		K[] keys = list.toArray(Entity.getKeyBuffer(entityClass, list.size()));
-		return this.select(entityClass, keys);
-	}
-
-	protected <K extends Serializable, E extends Entity<K>> K[] getKeyPage(Class<E> entityClass, String countSqlId,
-			String selectSqlId, Object arg, Page page) {
-		if (null == page) throw new SystemException("Query must be limited by page.");
-		if (page.getTotal() < 0) {
-			Object total = this.batchTemplate.selectOne(this.getSqlId(countSqlId + entityClass.getSimpleName() + "ByCriteria"),
-					arg);
-			page.setTotal(null != total ? ((Number) total).intValue() : 0);
-		}
-		List<K> list = this.batchTemplate.selectList(this.getSqlId(selectSqlId + entityClass.getSimpleName() + "ByCriteria"),
-				arg, page.toRowBounds());
-		return list.toArray(Entity.getKeyBuffer(entityClass, list.size()));
 	}
 
 	public void setTemplate(SqlSessionTemplate template) {

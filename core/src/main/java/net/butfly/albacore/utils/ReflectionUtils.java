@@ -87,7 +87,7 @@ public final class ReflectionUtils extends UtilsBase {
 			Class<? extends Throwable> causeClass = e.getCause().getClass();
 			if (BusinessException.class.isAssignableFrom(causeClass)) throw BusinessException.class.cast(causeClass);
 			else throw new SystemException("", e.getCause());
-		} catch (Throwable e) {
+		} catch (InstantiationException e) {
 			throw new SystemException("", e);
 		} finally {
 			constructor.setAccessible(accessible);
@@ -154,4 +154,11 @@ public final class ReflectionUtils extends UtilsBase {
 		return s.toArray(new Method[s.size()]);
 	}
 
+	public static Class<?> getMainClass() {
+		try {
+			return Class.forName(System.getProperty("sun.java.command"));
+		} catch (ClassNotFoundException e) {
+			throw new RuntimeException(e);
+		}
+	}
 }

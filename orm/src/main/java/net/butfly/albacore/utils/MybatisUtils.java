@@ -1,5 +1,7 @@
 package net.butfly.albacore.utils;
 
+import java.util.Map;
+
 import org.apache.ibatis.reflection.MetaObject;
 import org.apache.ibatis.reflection.factory.DefaultObjectFactory;
 import org.apache.ibatis.reflection.factory.ObjectFactory;
@@ -23,5 +25,10 @@ public class MybatisUtils extends UtilsBase {
 			}
 		}
 		return meta;
+	}
+
+	public static Map<? extends String, ? extends Object> convertToMap(MetaObject meta) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }
