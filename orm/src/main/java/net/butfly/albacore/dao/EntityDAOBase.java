@@ -46,9 +46,8 @@ public abstract class EntityDAOBase extends DAOBase implements EntityDAO {
 	@Override
 	public <K extends Serializable, E extends Entity<K>> K insert(E entity) {
 		if (null == entity) return null;
-		if (this.batchTemplate.insert(this.getSqlId(DAOContext.INSERT_STATMENT_ID + entity.getClass().getSimpleName()), entity) == 1) return entity
-				.getId();
-		else return null;
+		this.batchTemplate.insert(this.getSqlId(DAOContext.INSERT_STATMENT_ID + entity.getClass().getSimpleName()), entity);
+		return entity.getId();
 	}
 
 	@Override
@@ -63,8 +62,8 @@ public abstract class EntityDAOBase extends DAOBase implements EntityDAO {
 	public <K extends Serializable, E extends Entity<K>> E delete(Class<E> entityClass, K key) {
 		E e = this.select(entityClass, key);
 		if (null == e) return null;
-		return this.batchTemplate.delete(this.getSqlId(DAOContext.DELETE_STATMENT_ID + entityClass.getSimpleName()), key) > 0 ? e
-				: null;
+		this.batchTemplate.delete(this.getSqlId(DAOContext.DELETE_STATMENT_ID + entityClass.getSimpleName()), key);
+		return e;
 	}
 
 	// TODO: batch
