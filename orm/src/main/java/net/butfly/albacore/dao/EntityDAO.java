@@ -13,7 +13,7 @@ public interface EntityDAO extends DAO {
 
 	<K extends Serializable, E extends Entity<K>> E delete(Class<E> entityClass, K key);
 
-	<K extends Serializable, E extends Entity<K>> boolean update(E entity);
+	<K extends Serializable, E extends Entity<K>> E update(E entity);
 
 	/**
 	 * Batch insert columns into table.

@@ -81,18 +81,34 @@ public class ObjectUtils extends UtilsBase {
 		return meta;
 	}
 
-	public static Map<? extends String, ? extends Object> toMap(Object target) {
+	public static Map<String, Object> toMap(Object target) {
 		if (!(target instanceof MetaObject)) return toMap(createMeta(target));
 		Map<String, Object> map = new HashMap<String, Object>();
+		MetaObject meta = (MetaObject) target;
+		// TODO: avoid cache, use "transient"
 		Set<Object> loopCheck = new HashSet<Object>();
-		loopCheck.add(((MetaObject) target).getOriginalObject());
-		for (String getter : ((MetaObject) target).getGetterNames()) {
-			Object value = ((MetaObject) target).getValue(getter);
-			if (loopCheck.contains(value)) continue;
-			loopCheck.add(value);
+		loopCheck.add(meta.getOriginalObject());
+		for (String getter : meta.getGetterNames()) {
+			Object value = meta.getValue(getter);
+			 if (loopCheck.contains(value)) continue;
+			 loopCheck.add(value);
 			map.put(getter, value);
 		}
 		return map;
+	}
+
+	public static void fromMap(Object target, Map<String, Object> map) {
+		if (target == null) throw new NullPointerException();
+		if (Class.class.isAssignableFrom(target.getClass())) try {
+			target = ((Class) target).newInstance();
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+		MetaObject meta;
+		if (target instanceof MetaObject) meta = (MetaObject) target;
+		else meta = createMeta(target);
+		for (String setter : meta.getSetterNames())
+			if (map.containsKey(setter)) meta.setValue(setter, map.get(setter));
 	}
 
 	private static final ObjectFactory DEFAULT_OBJECT_FACTORY = new DefaultObjectFactory();

@@ -79,11 +79,13 @@ public abstract class EntityDAOBase extends DAOBase implements EntityDAO {
 		// keys);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
-	public <K extends Serializable, E extends Entity<K>> boolean update(E entity) {
-		if (null == entity) return false;
-		return this.batchTemplate.update(this.getSqlId(DAOContext.UPDATE_STATMENT_ID + entity.getClass().getSimpleName()),
-				entity) > 0;
+	public <K extends Serializable, E extends Entity<K>> E update(E entity) {
+		E existed = (E) this.select(entity.getClass(), entity.getId());
+		if (null != existed)
+			this.batchTemplate.update(this.getSqlId(DAOContext.UPDATE_STATMENT_ID + entity.getClass().getSimpleName()), entity);
+		return existed;
 	}
 
 	@Override
@@ -115,7 +117,7 @@ public abstract class EntityDAOBase extends DAOBase implements EntityDAO {
 		Class<E> entityClass = (Class<E>) entity.getClass();
 		for (K k : this.selectKeys(entityClass, criteria, Page.ALL_RECORD)) {
 			entity.setId(k);
-			if (this.update(entity)) c++;
+			if (null != this.update(entity)) c++;
 		}
 		return c;
 	}

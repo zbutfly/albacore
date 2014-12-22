@@ -4,6 +4,7 @@ package net.butfly.albacore.entity;
 @SuppressWarnings("unchecked")
 public abstract class Key<K extends Key<K>> extends Entity<K> {
 	private static final long serialVersionUID = 1L;
+	protected transient K id;
 
 	public Key() {
 		this.id = (K) this;
@@ -14,6 +15,6 @@ public abstract class Key<K extends Key<K>> extends Entity<K> {
 	}
 
 	public void setId(K id) {
-		this.copy(id);
+		this.id.copy(id);
 	}
 }
