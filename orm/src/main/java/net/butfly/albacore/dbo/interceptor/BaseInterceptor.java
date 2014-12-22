@@ -1,7 +1,5 @@
 package net.butfly.albacore.dbo.interceptor;
 
-import java.util.Properties;
-
 import net.butfly.albacore.utils.ObjectUtils;
 
 import org.apache.ibatis.plugin.Interceptor;
@@ -22,7 +20,4 @@ public abstract class BaseInterceptor implements Interceptor {
 	public Object plugin(Object target) {
 		return Plugin.wrap(target, this);
 	}
-
-	@Override
-	public void setProperties(Properties properties) {}
 }
