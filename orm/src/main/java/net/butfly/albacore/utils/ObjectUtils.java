@@ -3,11 +3,13 @@ package net.butfly.albacore.utils;
 import java.lang.reflect.Array;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
-import net.butfly.albacore.support.ObjectSupport;
 import net.butfly.albacore.support.AdvanceObjectSupport;
+import net.butfly.albacore.support.ObjectSupport;
 
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.ibatis.reflection.MetaObject;
@@ -19,13 +21,17 @@ import org.apache.ibatis.reflection.wrapper.ObjectWrapperFactory;
 @SuppressWarnings("rawtypes")
 public class ObjectUtils extends UtilsBase {
 	public static ObjectSupport clone(ObjectSupport src, Class<? extends ObjectSupport> dstClass) {
+		return clone(src, dstClass, true);
+	}
+
+	public static ObjectSupport clone(ObjectSupport src, Class<? extends ObjectSupport> dstClass, boolean cloneNull) {
 		ObjectSupport dst = null;
 		try {
 			dst = dstClass.newInstance();
 		} catch (Exception ex) {
 			throw new RuntimeException("Failure create an instance for class: " + dstClass.getName());
 		}
-		copy(dst, src);
+		copy(dst, src, cloneNull);
 		return dst;
 	}
 
@@ -43,6 +49,54 @@ public class ObjectUtils extends UtilsBase {
 		}
 		return r;
 	}
+
+	public static void copy(ObjectSupport src, ObjectSupport dst) {
+		copy(src, dst, true);
+	}
+
+	public static void copy(ObjectSupport src, ObjectSupport dst, boolean copyNull) {
+		if (src == null) return;
+		if (dst == null) throw new RuntimeException("Failure to copy a non-null object to a null instance.");
+		MetaObject metaSrc = createMeta(src);
+		MetaObject metaDst = createMeta(dst);
+		for (String prop : metaSrc.getGetterNames())
+			if (metaDst.hasSetter(prop)) {
+				Object v = metaSrc.getValue(prop);
+				if (copyNull || v != null) metaDst.setValue(prop, v);
+			}
+	}
+
+	public static final MetaObject createMeta(Object target) {
+		MetaObject meta = MetaObject.forObject(target, DEFAULT_OBJECT_FACTORY, DEFAULT_OBJECT_WRAPPER_FACTORY);
+		while (meta.hasGetter("target") || meta.hasGetter("h")) {
+			while (meta.hasGetter("h")) {
+				Object object = meta.getValue("h");
+				meta = MetaObject.forObject(object, DEFAULT_OBJECT_FACTORY, DEFAULT_OBJECT_WRAPPER_FACTORY);
+			}
+			while (meta.hasGetter("target")) {
+				Object object = meta.getValue("target");
+				meta = MetaObject.forObject(object, DEFAULT_OBJECT_FACTORY, DEFAULT_OBJECT_WRAPPER_FACTORY);
+			}
+		}
+		return meta;
+	}
+
+	public static Map<? extends String, ? extends Object> toMap(Object target) {
+		if (!(target instanceof MetaObject)) return toMap(createMeta(target));
+		Map<String, Object> map = new HashMap<String, Object>();
+		Set<Object> loopCheck = new HashSet<Object>();
+		loopCheck.add(((MetaObject) target).getOriginalObject());
+		for (String getter : ((MetaObject) target).getGetterNames()) {
+			Object value = ((MetaObject) target).getValue(getter);
+			if (loopCheck.contains(value)) continue;
+			loopCheck.add(value);
+			map.put(getter, value);
+		}
+		return map;
+	}
+
+	private static final ObjectFactory DEFAULT_OBJECT_FACTORY = new DefaultObjectFactory();
+	private static final ObjectWrapperFactory DEFAULT_OBJECT_WRAPPER_FACTORY = new DefaultObjectWrapperFactory();
 
 	@SuppressWarnings("unchecked")
 	public static Object castValue(Object value, Class<?> dstClass) {
@@ -68,31 +122,6 @@ public class ObjectUtils extends UtilsBase {
 
 	}
 
-	public static void copy(ObjectSupport src, ObjectSupport dst) {
-		if (src == null) return;
-		if (dst == null) throw new RuntimeException("Failure to copy a non-null object to a null instance.");
-		MetaObject metaSrc = createMeta(src);
-		MetaObject metaDst = createMeta(dst);
-		for (String prop : metaSrc.getGetterNames())
-			if (metaDst.hasSetter(prop)) metaDst.setValue(prop, metaSrc.getValue(prop));
-	}
-
-	public static <T> boolean equals(T o1, T o2) {
-		if (null == o1 && null == o2) return true;
-		if (null == o1 || null == o2) return false;
-		if (o1.getClass().isPrimitive()) return o1 == o2;
-		if (Number.class.isAssignableFrom(o1.getClass()) && Number.class.isAssignableFrom(o2.getClass())) return o1.equals(o2);
-		if (o1.getClass().isArray() && o2.getClass().isArray())
-			return TypeComparators.arrayComparator.compare((Object[]) o1, (Object[]) o2) == 0;
-		if (Map.class.isAssignableFrom(o1.getClass()) && Map.class.isAssignableFrom(o2.getClass()))
-			return TypeComparators.mapComparator.compare((Map) o1, (Map) o2) == 0;
-		if (Iterable.class.isAssignableFrom(o1.getClass()) && Iterable.class.isAssignableFrom(o2.getClass()))
-			return TypeComparators.iterableComparator.compare((Iterable) o1, (Iterable) o2) == 0;
-
-		if (!o1.getClass().equals(o2.getClass())) return false;
-		return TypeComparators.mapComparator.compare(toMap(o1), toMap(o2)) == 0;
-	}
-
 	public static <T> int compare(T o1, T o2) {
 		if (null == o1 && null == o2) return 0;
 		if (null == o1) return -1;
@@ -114,53 +143,20 @@ public class ObjectUtils extends UtilsBase {
 		return TypeComparators.mapComparator.compare(toMap(o1), toMap(o2));
 	}
 
-	public static final MetaObject createMeta(Object target) {
-		MetaObject meta = MetaObject.forObject(target, DEFAULT_OBJECT_FACTORY, DEFAULT_OBJECT_WRAPPER_FACTORY);
-		while (meta.hasGetter("target") || meta.hasGetter("h")) {
-			while (meta.hasGetter("h")) {
-				Object object = meta.getValue("h");
-				meta = MetaObject.forObject(object, DEFAULT_OBJECT_FACTORY, DEFAULT_OBJECT_WRAPPER_FACTORY);
-			}
-			while (meta.hasGetter("target")) {
-				Object object = meta.getValue("target");
-				meta = MetaObject.forObject(object, DEFAULT_OBJECT_FACTORY, DEFAULT_OBJECT_WRAPPER_FACTORY);
-			}
-		}
-		return meta;
-	}
+	public static <T> boolean equals(T o1, T o2) {
+		if (null == o1 && null == o2) return true;
+		if (null == o1 || null == o2) return false;
+		if (o1.getClass().isPrimitive()) return o1 == o2;
+		if (Number.class.isAssignableFrom(o1.getClass()) && Number.class.isAssignableFrom(o2.getClass())) return o1.equals(o2);
+		if (o1.getClass().isArray() && o2.getClass().isArray())
+			return TypeComparators.arrayComparator.compare((Object[]) o1, (Object[]) o2) == 0;
+		if (Map.class.isAssignableFrom(o1.getClass()) && Map.class.isAssignableFrom(o2.getClass()))
+			return TypeComparators.mapComparator.compare((Map) o1, (Map) o2) == 0;
+		if (Iterable.class.isAssignableFrom(o1.getClass()) && Iterable.class.isAssignableFrom(o2.getClass()))
+			return TypeComparators.iterableComparator.compare((Iterable) o1, (Iterable) o2) == 0;
 
-	public static Map<? extends String, ? extends Object> toMap(Object target) {
-		if (!(target instanceof MetaObject)) return toMap(createMeta(target));
-		MetaObject meta = (MetaObject) target;
-		Map<String, Object> map = new HashMap<String, Object>();
-		for (String getter : meta.getGetterNames())
-			if (!"METHOD_SET".equals(getter) && !"METHOD_GET".equals(getter)) map.put(getter, meta.getValue(getter));
-		return map;
-	}
-
-	private static final ObjectFactory DEFAULT_OBJECT_FACTORY = new DefaultObjectFactory();
-	private static final ObjectWrapperFactory DEFAULT_OBJECT_WRAPPER_FACTORY = new DefaultObjectWrapperFactory();
-
-	private interface TypeChecker {
-		static boolean isInteger(Class<?> clazz) {
-			return int.class.equals(clazz) || Integer.class.equals(clazz);
-		}
-
-		static boolean isObjectSupportted(Class<?> clazz) {
-			return ObjectSupport.class.isAssignableFrom(clazz);
-		}
-
-		static boolean isString(Class<?> clazz) {
-			return String.class.equals(clazz);
-		}
-
-		static boolean isBytes(Class<?> clazz) {
-			return byte[].class.equals(clazz);
-		}
-
-		static boolean isEnum(Class<?> clazz) {
-			return Enum.class.isAssignableFrom(clazz);
-		}
+		if (!o1.getClass().equals(o2.getClass())) return false;
+		return TypeComparators.mapComparator.compare(toMap(o1), toMap(o2)) == 0;
 	}
 
 	private interface TypeComparators {
@@ -210,5 +206,27 @@ public class ObjectUtils extends UtilsBase {
 				return iterableComparator.compare(o1.entrySet(), o2.entrySet());
 			}
 		};
+	}
+
+	private interface TypeChecker {
+		static boolean isInteger(Class<?> clazz) {
+			return int.class.equals(clazz) || Integer.class.equals(clazz);
+		}
+
+		static boolean isObjectSupportted(Class<?> clazz) {
+			return ObjectSupport.class.isAssignableFrom(clazz);
+		}
+
+		static boolean isString(Class<?> clazz) {
+			return String.class.equals(clazz);
+		}
+
+		static boolean isBytes(Class<?> clazz) {
+			return byte[].class.equals(clazz);
+		}
+
+		static boolean isEnum(Class<?> clazz) {
+			return Enum.class.isAssignableFrom(clazz);
+		}
 	}
 }

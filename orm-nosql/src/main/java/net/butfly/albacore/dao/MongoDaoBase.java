@@ -117,7 +117,7 @@ public abstract class MongoDaoBase<E extends MongoEntity> extends DAOBase implem
 
 	protected Query<E> createSimpleQuery(Criteria criteria) {
 		Query<E> q = this.context.store.createQuery(entityClass);
-		for (Entry<String, Object> e : criteria.getParameters(true).entrySet())
+		for (Entry<String, Object> e : criteria.getParameters().entrySet())
 			q.field(this.context.getMongoField(entityClass, e.getKey())).equal(e.getValue());
 		for (OrderField f : criteria.getOrderFields()) {
 			String o = f.getField();

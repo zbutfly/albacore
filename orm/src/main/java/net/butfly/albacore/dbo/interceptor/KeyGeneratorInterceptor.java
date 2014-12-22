@@ -26,7 +26,7 @@ public class KeyGeneratorInterceptor extends BaseExecutorInterceptor {
 		if (!altered.contains(statId)) {
 			altered.add(statId);
 			if (stat.getSqlCommandType() == SqlCommandType.INSERT)
-				ReflectionUtils.safeFieldSet(MappedStatement.class.getDeclaredField("keyGenerator"), stat, keyGenerator);
+				ReflectionUtils.safeFieldSet(stat, "keyGenerator", keyGenerator);
 		}
 		return invocation.proceed();
 	}
@@ -34,7 +34,7 @@ public class KeyGeneratorInterceptor extends BaseExecutorInterceptor {
 	@Override
 	public void setProperties(Properties properties) {
 		try {
-			this.keyGenerator = (KeyGenerator) Class.forName(properties.getProperty("keyGeneratorClass")).newInstance();
+			this.keyGenerator = (KeyGenerator) Class.forName(properties.getProperty("keyGenerator")).newInstance();
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}

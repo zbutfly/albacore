@@ -105,8 +105,7 @@ public abstract class EntityDAOBase extends DAOBase implements EntityDAO {
 	@Override
 	public <K extends Serializable, E extends Entity<K>> int delete(Class<E> entityClass, Criteria criteria) {
 		return this.batchTemplate.delete(
-				this.getSqlId(DAOContext.DELETE_STATMENT_ID + entityClass.getSimpleName() + "ByCriteria"),
-				criteria.getParameters());
+				this.getSqlId(DAOContext.DELETE_STATMENT_ID + entityClass.getSimpleName() + "ByCriteria"), criteria);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -126,13 +125,12 @@ public abstract class EntityDAOBase extends DAOBase implements EntityDAO {
 		if (null == page) throw new SystemException("Query must be limited by page.");
 		if (page.getTotal() < 0) { // dirty page
 			Object total = this.batchTemplate.selectOne(
-					this.getSqlId(DAOContext.COUNT_STATMENT_ID + entityClass.getSimpleName() + "ByCriteria"),
-					criteria.getParameters());
+					this.getSqlId(DAOContext.COUNT_STATMENT_ID + entityClass.getSimpleName() + "ByCriteria"), criteria);
 			page.setTotal(null != total ? ((Number) total).intValue() : 0);
 		}
 		List<K> list = this.batchTemplate.selectList(
-				this.getSqlId(DAOContext.SELECT_STATMENT_ID + entityClass.getSimpleName() + "ByCriteria"),
-				criteria.getParameters(), page.toRowBounds());
+				this.getSqlId(DAOContext.SELECT_STATMENT_ID + entityClass.getSimpleName() + "ByCriteria"), criteria,
+				page.toRowBounds());
 
 		return list.toArray(Entity.getKeyBuffer(entityClass, list.size()));
 	}
@@ -145,8 +143,7 @@ public abstract class EntityDAOBase extends DAOBase implements EntityDAO {
 	@Override
 	public <K extends Serializable, E extends Entity<K>> int count(Class<E> entityClass, Criteria criteria) {
 		Object r = this.batchTemplate.selectOne(
-				this.getSqlId(DAOContext.COUNT_STATMENT_ID + entityClass.getSimpleName() + "ByCriteria"),
-				criteria.getParameters());
+				this.getSqlId(DAOContext.COUNT_STATMENT_ID + entityClass.getSimpleName() + "ByCriteria"), criteria);
 		return null == r ? 0 : ((Number) r).intValue();
 	}
 
