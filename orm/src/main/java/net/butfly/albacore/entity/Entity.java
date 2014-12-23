@@ -5,43 +5,10 @@ import java.lang.reflect.Array;
 
 import net.butfly.albacore.exception.SystemException;
 
-public abstract class Entity<K extends Serializable> extends AbstractEntity {
-	private static final long serialVersionUID = 1L;
-	protected K id;
-	private String tableName;
+public interface Entity<K extends Serializable> extends AbstractEntity {
+	K getId();
 
-	public Entity() {
-		super();
-		this.tableName = this.generateTableName();
-	}
-
-	protected String generateTableName() {
-		return this.getClass().getSimpleName().replaceAll("([a-z])([A-Z])", "$1_$2").replaceAll("([A-Z])([A-Z][a-z])", "$1_$2")
-				.toUpperCase();
-	}
-
-	public String getNamespace() {
-		return this.getClass().getName();
-	}
-
-	public String getTableName() {
-		return tableName;
-	}
-
-	public K getId() {
-		return id;
-	}
-
-	public void setId(K id) {
-		this.id = id;
-	}
-
-	@SuppressWarnings("unchecked")
-	@Override
-	public boolean equals(Object object) {
-		if (object == null || this.getId() == null || !object.getClass().equals(this.getClass())) return false;
-		return this.getId().equals(((Entity<K>) object).getId());
-	}
+	void setId(K id);
 
 	public static Class<?> getKeyClass(Class<? extends Entity<?>> entityClass) {
 		try {

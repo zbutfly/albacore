@@ -4,7 +4,7 @@ public abstract class BaseObjectSupport<T extends ObjectSupport<T>> implements O
 	private static final long serialVersionUID = -2877820654223090498L;
 
 	@Override
-	final public int compareTo(T object) {
+	public int compareTo(T object) {
 		return this.equals(object) ? 0 : 1;
 	}
 

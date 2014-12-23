@@ -138,7 +138,7 @@ public class ObjectUtils extends UtilsBase {
 
 	}
 
-	public static <T> int compare(T o1, T o2) {
+	public static <T1, T2> int compare(T1 o1, T2 o2) {
 		if (null == o1 && null == o2) return 0;
 		if (null == o1) return -1;
 		if (null == o2) return 1;
@@ -154,12 +154,10 @@ public class ObjectUtils extends UtilsBase {
 		if (Iterable.class.isAssignableFrom(o1.getClass()) && Iterable.class.isAssignableFrom(o2.getClass()))
 			return TypeComparators.iterableComparator.compare((Iterable) o1, (Iterable) o2);
 
-		if (!o1.getClass().equals(o2.getClass()))
-			throw new NotImplementedException("Comparation between objects with different classes is not implemented.");
 		return TypeComparators.mapComparator.compare(toMap(o1), toMap(o2));
 	}
 
-	public static <T> boolean equals(T o1, T o2) {
+	public static <T1, T2> boolean equals(T1 o1, T2 o2) {
 		if (null == o1 && null == o2) return true;
 		if (null == o1 || null == o2) return false;
 		if (o1.getClass().isPrimitive()) return o1 == o2;

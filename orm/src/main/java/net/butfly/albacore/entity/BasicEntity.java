@@ -2,7 +2,7 @@ package net.butfly.albacore.entity;
 
 import java.io.Serializable;
 
-public abstract class BasicEntity<K extends Serializable> extends Entity<K> {
+public abstract class BasicEntity<K extends Serializable> extends SimpleEntity<K> {
 	private static final long serialVersionUID = 1L;
 	private boolean deleted;
 
