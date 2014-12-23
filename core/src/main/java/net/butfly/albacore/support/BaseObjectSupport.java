@@ -10,4 +10,9 @@ public abstract class BaseObjectSupport<T extends ObjectSupport<T>> implements O
 			return this;
 		}
 	}
+
+	@Override
+	public int compareTo(T o) {
+		throw new UnsupportedOperationException();
+	}
 }
