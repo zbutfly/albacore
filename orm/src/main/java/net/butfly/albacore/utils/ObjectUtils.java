@@ -18,6 +18,8 @@ import org.apache.ibatis.reflection.factory.ObjectFactory;
 import org.apache.ibatis.reflection.wrapper.DefaultObjectWrapperFactory;
 import org.apache.ibatis.reflection.wrapper.ObjectWrapperFactory;
 
+import com.google.common.primitives.Primitives;
+
 @SuppressWarnings("rawtypes")
 public class ObjectUtils extends UtilsBase {
 	public static ObjectSupport clone(ObjectSupport src, Class<? extends ObjectSupport> dstClass) {

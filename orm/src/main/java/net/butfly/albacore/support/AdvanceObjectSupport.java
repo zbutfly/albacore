@@ -12,6 +12,12 @@ public abstract class AdvanceObjectSupport<T extends ObjectSupport<T>> extends B
 	}
 
 	@Override
+	public int compareTo(T object) {
+		if (null == object) throw new NullPointerException();
+		return ObjectUtils.compare(this, object);
+	}
+
+	@Override
 	public boolean equals(Object object) {
 		return ObjectUtils.equals(this, object);
 	}

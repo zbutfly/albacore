@@ -20,7 +20,7 @@ public abstract class Key<K extends Key<K>> extends AdvanceObjectSupport<Abstrac
 	@SuppressWarnings("rawtypes")
 	@Override
 	public int compareTo(AbstractEntity key) {
-		if (null == key) return -1;
+		if (null == key) throw new NullPointerException();
 		if (!key.getClass().isAssignableFrom(this.getClass()) && !this.getClass().isAssignableFrom(key.getClass())) return -1;
 		return ObjectUtils.compare((DualKey) key, this);
 	}

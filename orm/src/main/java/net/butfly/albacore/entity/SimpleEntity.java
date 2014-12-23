@@ -3,6 +3,7 @@ package net.butfly.albacore.entity;
 import java.io.Serializable;
 
 import net.butfly.albacore.support.AdvanceObjectSupport;
+import net.butfly.albacore.utils.ObjectUtils;
 
 public abstract class SimpleEntity<K extends Serializable> extends AdvanceObjectSupport<AbstractEntity> implements Entity<K> {
 	private static final long serialVersionUID = -1L;
@@ -18,11 +19,11 @@ public abstract class SimpleEntity<K extends Serializable> extends AdvanceObject
 		this.id = id;
 	}
 
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings("rawtypes")
 	@Override
-	public boolean equals(Object object) {
-		if (object == null || this.getId() == null || !object.getClass().equals(this.getClass())) return false;
-		if (object instanceof Entity) return this.getId().equals(((Entity<K>) object).getId());
-		else return super.equals(object);
+	public int compareTo(AbstractEntity key) {
+		if (null == key) throw new NullPointerException();
+		if (!key.getClass().isAssignableFrom(this.getClass()) && !this.getClass().isAssignableFrom(key.getClass())) return -1;
+		return ObjectUtils.compare((DualKey) key, this);
 	}
 }
