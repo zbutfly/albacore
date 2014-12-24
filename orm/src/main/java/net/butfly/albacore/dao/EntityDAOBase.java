@@ -6,7 +6,7 @@ import java.util.List;
 
 import net.butfly.albacore.dbo.criteria.Criteria;
 import net.butfly.albacore.dbo.criteria.Page;
-import net.butfly.albacore.entity.Entity;
+import net.butfly.albacore.entity.AbstractEntity;
 import net.butfly.albacore.exception.SystemException;
 
 import org.mybatis.spring.SqlSessionTemplate;
@@ -44,14 +44,14 @@ public abstract class EntityDAOBase extends DAOBase implements EntityDAO {
 	/*********************************************************************************************/
 
 	@Override
-	public <K extends Serializable, E extends Entity<K>> K insert(E entity) {
+	public <K extends Serializable, E extends AbstractEntity<K>> K insert(E entity) {
 		if (null == entity) return null;
 		this.batchTemplate.insert(this.getSqlId(DAOContext.INSERT_STATMENT_ID + entity.getClass().getSimpleName()), entity);
 		return entity.getId();
 	}
 
 	@Override
-	public <K extends Serializable, E extends Entity<K>> int insert(E[] entities) {
+	public <K extends Serializable, E extends AbstractEntity<K>> int insert(E[] entities) {
 		if (null == entities || entities.length == 0) return 0;
 		return this.batchTemplate.insert(
 				this.getSqlId(DAOContext.INSERT_STATMENT_ID + entities.getClass().getComponentType().getSimpleName() + "List"),
@@ -59,7 +59,7 @@ public abstract class EntityDAOBase extends DAOBase implements EntityDAO {
 	}
 
 	@Override
-	public <K extends Serializable, E extends Entity<K>> E delete(Class<E> entityClass, K key) {
+	public <K extends Serializable, E extends AbstractEntity<K>> E delete(Class<E> entityClass, K key) {
 		E e = this.select(entityClass, key);
 		if (null == e) return null;
 		this.batchTemplate.delete(this.getSqlId(DAOContext.DELETE_STATMENT_ID + entityClass.getSimpleName()), key);
@@ -68,7 +68,7 @@ public abstract class EntityDAOBase extends DAOBase implements EntityDAO {
 
 	// TODO: batch
 	@Override
-	public <K extends Serializable, E extends Entity<K>> int delete(Class<E> entityClass, K[] keys) {
+	public <K extends Serializable, E extends AbstractEntity<K>> int delete(Class<E> entityClass, K[] keys) {
 		int c = 0;
 		for (K key : keys)
 			c += this.batchTemplate.delete(this.getSqlId(DAOContext.DELETE_STATMENT_ID + entityClass.getSimpleName()), key);
@@ -81,7 +81,7 @@ public abstract class EntityDAOBase extends DAOBase implements EntityDAO {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <K extends Serializable, E extends Entity<K>> E update(E entity) {
+	public <K extends Serializable, E extends AbstractEntity<K>> E update(E entity) {
 		E existed = (E) this.select(entity.getClass(), entity.getId());
 		if (null != existed)
 			this.batchTemplate.update(this.getSqlId(DAOContext.UPDATE_STATMENT_ID + entity.getClass().getSimpleName()), entity);
@@ -89,13 +89,13 @@ public abstract class EntityDAOBase extends DAOBase implements EntityDAO {
 	}
 
 	@Override
-	public <K extends Serializable, E extends Entity<K>> E select(Class<E> entityClass, K key) {
+	public <K extends Serializable, E extends AbstractEntity<K>> E select(Class<E> entityClass, K key) {
 		return this.batchTemplate.selectOne(this.getSqlId(DAOContext.SELECT_STATMENT_ID + entityClass.getSimpleName()), key);
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <K extends Serializable, E extends Entity<K>> E[] select(Class<E> entityClass, K[] keys) {
+	public <K extends Serializable, E extends AbstractEntity<K>> E[] select(Class<E> entityClass, K[] keys) {
 		E[] entities = (E[]) Array.newInstance(entityClass, keys.length);
 		for (int i = 0; i < keys.length; i++)
 			entities[i] = this.select(entityClass, keys[i]);
@@ -105,14 +105,14 @@ public abstract class EntityDAOBase extends DAOBase implements EntityDAO {
 	/*********************************************************************************************/
 
 	@Override
-	public <K extends Serializable, E extends Entity<K>> int delete(Class<E> entityClass, Criteria criteria) {
+	public <K extends Serializable, E extends AbstractEntity<K>> int delete(Class<E> entityClass, Criteria criteria) {
 		return this.batchTemplate.delete(
 				this.getSqlId(DAOContext.DELETE_STATMENT_ID + entityClass.getSimpleName() + "ByCriteria"), criteria);
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <K extends Serializable, E extends Entity<K>> int update(E entity, Criteria criteria) {
+	public <K extends Serializable, E extends AbstractEntity<K>> int update(E entity, Criteria criteria) {
 		int c = 0;
 		Class<E> entityClass = (Class<E>) entity.getClass();
 		for (K k : this.selectKeys(entityClass, criteria, Page.ALL_RECORD)) {
@@ -123,7 +123,7 @@ public abstract class EntityDAOBase extends DAOBase implements EntityDAO {
 	}
 
 	@Override
-	public <K extends Serializable, E extends Entity<K>> K[] selectKeys(Class<E> entityClass, Criteria criteria, Page page) {
+	public <K extends Serializable, E extends AbstractEntity<K>> K[] selectKeys(Class<E> entityClass, Criteria criteria, Page page) {
 		if (null == page) throw new SystemException("Query must be limited by page.");
 		if (page.getTotal() < 0) { // dirty page
 			Object total = this.batchTemplate.selectOne(
@@ -134,16 +134,16 @@ public abstract class EntityDAOBase extends DAOBase implements EntityDAO {
 				this.getSqlId(DAOContext.SELECT_STATMENT_ID + entityClass.getSimpleName() + "ByCriteria"), criteria,
 				page.toRowBounds());
 
-		return list.toArray(Entity.getKeyBuffer(entityClass, list.size()));
+		return list.toArray(AbstractEntity.getKeyBuffer(entityClass, list.size()));
 	}
 
 	@Override
-	public <K extends Serializable, E extends Entity<K>> E[] select(Class<E> entityClass, Criteria criteria, Page page) {
+	public <K extends Serializable, E extends AbstractEntity<K>> E[] select(Class<E> entityClass, Criteria criteria, Page page) {
 		return this.select(entityClass, this.selectKeys(entityClass, criteria, page));
 	}
 
 	@Override
-	public <K extends Serializable, E extends Entity<K>> int count(Class<E> entityClass, Criteria criteria) {
+	public <K extends Serializable, E extends AbstractEntity<K>> int count(Class<E> entityClass, Criteria criteria) {
 		Object r = this.batchTemplate.selectOne(
 				this.getSqlId(DAOContext.COUNT_STATMENT_ID + entityClass.getSimpleName() + "ByCriteria"), criteria);
 		return null == r ? 0 : ((Number) r).intValue();

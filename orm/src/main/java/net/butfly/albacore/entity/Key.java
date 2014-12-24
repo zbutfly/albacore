@@ -3,7 +3,7 @@ package net.butfly.albacore.entity;
 import net.butfly.albacore.support.AdvanceObjectSupport;
 import net.butfly.albacore.utils.ObjectUtils;
 
-public abstract class Key<K extends Key<K>> extends AdvanceObjectSupport<AbstractEntity> implements Entity<K> {
+public abstract class Key<K extends Key<K>> extends AdvanceObjectSupport<AbstractEntity<K>> implements AbstractEntity<K> {
 	private static final long serialVersionUID = 1L;
 
 	@SuppressWarnings("unchecked")

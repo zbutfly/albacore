@@ -4,16 +4,16 @@ import java.io.Serializable;
 
 import net.butfly.albacore.dbo.criteria.Criteria;
 import net.butfly.albacore.dbo.criteria.Page;
-import net.butfly.albacore.entity.Entity;
+import net.butfly.albacore.entity.AbstractEntity;
 
 public interface EntityDAO extends DAO {
-	<K extends Serializable, E extends Entity<K>> int count(Class<E> entityClass, Criteria criteria);
+	<K extends Serializable, E extends AbstractEntity<K>> int count(Class<E> entityClass, Criteria criteria);
 
-	<K extends Serializable, E extends Entity<K>> K insert(E entity);
+	<K extends Serializable, E extends AbstractEntity<K>> K insert(E entity);
 
-	<K extends Serializable, E extends Entity<K>> E delete(Class<E> entityClass, K key);
+	<K extends Serializable, E extends AbstractEntity<K>> E delete(Class<E> entityClass, K key);
 
-	<K extends Serializable, E extends Entity<K>> E update(E entity);
+	<K extends Serializable, E extends AbstractEntity<K>> E update(E entity);
 
 	/**
 	 * Batch insert columns into table.
@@ -24,7 +24,7 @@ public interface EntityDAO extends DAO {
 	 * @param entities
 	 * @return
 	 */
-	<K extends Serializable, E extends Entity<K>> int insert(E[] entities);
+	<K extends Serializable, E extends AbstractEntity<K>> int insert(E[] entities);
 
 	/**
 	 * Delete multiply items gracefully (with probably cache discarding).
@@ -32,7 +32,7 @@ public interface EntityDAO extends DAO {
 	 * @param keys
 	 * @return
 	 */
-	public <K extends Serializable, E extends Entity<K>> int delete(Class<E> entityClass, K[] keys);
+	public <K extends Serializable, E extends AbstractEntity<K>> int delete(Class<E> entityClass, K[] keys);
 
 	/**
 	 * Delete multiply items directly (without probably cache discarding).
@@ -40,15 +40,15 @@ public interface EntityDAO extends DAO {
 	 * @param criteria
 	 * @return
 	 */
-	<K extends Serializable, E extends Entity<K>> int delete(Class<E> entityClass, Criteria criteria);
+	<K extends Serializable, E extends AbstractEntity<K>> int delete(Class<E> entityClass, Criteria criteria);
 
-	<K extends Serializable, E extends Entity<K>> int update(E entity, Criteria criteria);
+	<K extends Serializable, E extends AbstractEntity<K>> int update(E entity, Criteria criteria);
 
-	<K extends Serializable, E extends Entity<K>> E select(Class<E> entityClass, K key);
+	<K extends Serializable, E extends AbstractEntity<K>> E select(Class<E> entityClass, K key);
 
-	<K extends Serializable, E extends Entity<K>> E[] select(Class<E> entityClass, K[] key);
+	<K extends Serializable, E extends AbstractEntity<K>> E[] select(Class<E> entityClass, K[] key);
 
-	<K extends Serializable, E extends Entity<K>> E[] select(Class<E> entityClass, Criteria criteria, Page page);
+	<K extends Serializable, E extends AbstractEntity<K>> E[] select(Class<E> entityClass, Criteria criteria, Page page);
 
-	<K extends Serializable, E extends Entity<K>> K[] selectKeys(Class<E> entityClass, Criteria criteria, Page page);
+	<K extends Serializable, E extends AbstractEntity<K>> K[] selectKeys(Class<E> entityClass, Criteria criteria, Page page);
 }

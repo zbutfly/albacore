@@ -1,31 +1,29 @@
 package net.butfly.albacore.entity;
 
 import java.io.Serializable;
-import java.lang.reflect.Array;
 
-import net.butfly.albacore.exception.SystemException;
+import net.butfly.albacore.support.AdvanceObjectSupport;
+import net.butfly.albacore.utils.ObjectUtils;
 
-public interface Entity<K extends Serializable> extends AbstractEntity {
-	K getId();
+public abstract class Entity<K extends Serializable> extends AdvanceObjectSupport<AbstractEntity<K>> implements AbstractEntity<K> {
+	private static final long serialVersionUID = -1L;
+	protected K id;
 
-	void setId(K id);
-
-	public static Class<?> getKeyClass(Class<? extends Entity<?>> entityClass) {
-		try {
-			return entityClass.getMethod("getId").getReturnType();
-		} catch (SecurityException e) {
-			throw new SystemException("", e);
-		} catch (Throwable e) {
-			throw new SystemException("", e);
-		}
+	@Override
+	public K getId() {
+		return id;
 	}
 
-	@SuppressWarnings("unchecked")
-	public static <K extends Serializable> K[] getKeyBuffer(Class<? extends Entity<K>> entityClass, int length) {
-		return (K[]) Array.newInstance(getKeyClass(entityClass), length);
+	@Override
+	public void setId(K id) {
+		this.id = id;
 	}
 
-	public static <K extends Serializable> K[] getKeyBuffer(Class<? extends BasicEntity<K>> entityClass) {
-		return getKeyBuffer(entityClass, 0);
+	@SuppressWarnings("rawtypes")
+	@Override
+	public int compareTo(AbstractEntity key) {
+		if (null == key) throw new NullPointerException();
+		if (!key.getClass().isAssignableFrom(this.getClass()) && !this.getClass().isAssignableFrom(key.getClass())) return -1;
+		return ObjectUtils.compare((DualKey) key, this);
 	}
 }

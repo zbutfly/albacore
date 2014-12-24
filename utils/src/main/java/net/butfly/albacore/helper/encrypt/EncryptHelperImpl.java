@@ -5,6 +5,7 @@ import net.butfly.albacore.helper.HelperBase;
 import net.butfly.albacore.utils.encrypt.Algorithm;
 
 public class EncryptHelperImpl extends HelperBase implements EncryptHelper {
+	private static final long serialVersionUID = 6716198640704602577L;
 	protected String key;
 	protected Algorithm algorithm;
 

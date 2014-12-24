@@ -3,7 +3,7 @@ package net.butfly.albacore.entity;
 import java.io.Serializable;
 import java.util.Date;
 
-public final class EntityStub<K extends Serializable> extends SimpleEntity<K> {
+public final class EntityStub<K extends Serializable> extends Entity<K> {
 	private static final long serialVersionUID = -5066977312870476308L;
 	private K userID;
 	private String ip;

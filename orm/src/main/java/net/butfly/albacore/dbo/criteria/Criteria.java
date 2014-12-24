@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import net.butfly.albacore.entity.Entity;
+import net.butfly.albacore.entity.AbstractEntity;
 import net.butfly.albacore.support.AdvanceObjectSupport;
 import net.butfly.albacore.utils.ObjectUtils;
 
@@ -46,7 +46,7 @@ public class Criteria extends AdvanceObjectSupport<Criteria> {
 		return this;
 	}
 
-	public Criteria setEntity(Entity<?> entity) {
+	public Criteria setEntity(AbstractEntity<?> entity) {
 		this.params.putAll(ObjectUtils.toMap(entity));
 		return this;
 	}
