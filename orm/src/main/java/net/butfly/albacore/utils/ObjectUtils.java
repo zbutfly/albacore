@@ -150,7 +150,7 @@ public class ObjectUtils extends UtilsBase {
 			case NUMBER:
 				return dstClass.cast(srcNumCat.primitiveClass.cast(value));
 			case ENUM:
-				return EnumUtils.parse((Class<Enum>) dstClass, (byte) srcNumCat.primitiveClass.cast(value));
+				return EnumUtils.parse((Class<Enum>) dstClass, byte.class.cast(srcNumCat.primitiveClass.cast(value)));
 			case STRING:
 				return srcNumCat.numberClass.cast(value).toString();
 			default:
@@ -398,8 +398,7 @@ public class ObjectUtils extends UtilsBase {
 			if (String.class.equals(clazz) || char.class.equals(clazz) || Character.class.equals(clazz))
 				return PrimaryCategory.STRING;
 			if (clazz.isArray() || Iterable.class.isAssignableFrom(clazz)) return PrimaryCategory.ARRAY_COLLECTION;
-			if (Map.class.isAssignableFrom(clazz) || Beanable.class.isAssignableFrom(clazz))
-				return PrimaryCategory.OBJECT_MAP;
+			if (Map.class.isAssignableFrom(clazz) || Beanable.class.isAssignableFrom(clazz)) return PrimaryCategory.OBJECT_MAP;
 			return PrimaryCategory.ORIGINAL_OBJ;
 		}
 
