@@ -1,8 +1,8 @@
 import java.util.Arrays;
 
-import org.apache.ibatis.reflection.MetaObject;
-
 import net.butfly.albacore.utils.ObjectUtils;
+
+import org.apache.ibatis.reflection.MetaObject;
 
 public class MetaTest {
 	static class A {
@@ -19,7 +19,9 @@ public class MetaTest {
 	}
 
 	public static void main(String[] args) {
-		printMetaInfo(123);
+		double d = 12345678.345;
+		Double dd = Double.class.cast(d);
+		byte by = (byte)d; 
 		printMetaInfo(true);
 		printMetaInfo("sdfsfsdfdsf");
 		printMetaInfo(new Byte((byte) 12));

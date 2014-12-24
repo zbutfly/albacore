@@ -2,7 +2,7 @@ package net.butfly.albacore.support;
 
 import net.butfly.albacore.utils.ObjectUtils;
 
-public abstract class AdvanceObjectSupport<T extends ObjectSupport<T>> extends BaseObjectSupport<T> implements ObjectSupport<T> {
+public abstract class Bean<T extends Beanable<T>> extends BasicBean<T> implements Beanable<T> {
 	private static final long serialVersionUID = 1L;
 
 	@SuppressWarnings("unchecked")
@@ -22,7 +22,7 @@ public abstract class AdvanceObjectSupport<T extends ObjectSupport<T>> extends B
 		return ObjectUtils.equals(this, object);
 	}
 
-	public ObjectSupport<T> copy(ObjectSupport<?> src) {
+	public Beanable<T> copy(Beanable<?> src) {
 		if (null != src) ObjectUtils.copy(src, this);
 		return this;
 	}

@@ -1,6 +1,6 @@
 package net.butfly.albacore.support;
 
-public abstract class BaseObjectSupport<T extends ObjectSupport<T>> implements ObjectSupport<T> {
+public abstract class BasicBean<T extends Beanable<T>> implements Beanable<T> {
 	private static final long serialVersionUID = -2877820654223090498L;
 
 	public Object shadowClone() {

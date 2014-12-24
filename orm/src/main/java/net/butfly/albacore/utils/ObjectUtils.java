@@ -1,6 +1,10 @@
 package net.butfly.albacore.utils;
 
 import java.lang.reflect.Array;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -8,8 +12,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import net.butfly.albacore.support.AdvanceObjectSupport;
-import net.butfly.albacore.support.ObjectSupport;
+import net.butfly.albacore.support.Bean;
+import net.butfly.albacore.support.Beanable;
 
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.ibatis.reflection.MetaObject;
@@ -18,14 +22,16 @@ import org.apache.ibatis.reflection.factory.ObjectFactory;
 import org.apache.ibatis.reflection.wrapper.DefaultObjectWrapperFactory;
 import org.apache.ibatis.reflection.wrapper.ObjectWrapperFactory;
 
+import com.google.common.base.Defaults;
+
 @SuppressWarnings("rawtypes")
 public class ObjectUtils extends UtilsBase {
-	public static ObjectSupport clone(ObjectSupport src, Class<? extends ObjectSupport> dstClass) {
+	public static Beanable clone(Beanable src, Class<? extends Beanable> dstClass) {
 		return clone(src, dstClass, true);
 	}
 
-	public static ObjectSupport clone(ObjectSupport src, Class<? extends ObjectSupport> dstClass, boolean cloneNull) {
-		ObjectSupport dst = null;
+	public static Beanable clone(Beanable src, Class<? extends Beanable> dstClass, boolean cloneNull) {
+		Beanable dst = null;
 		try {
 			dst = dstClass.newInstance();
 		} catch (Exception ex) {
@@ -37,11 +43,11 @@ public class ObjectUtils extends UtilsBase {
 
 	@SuppressWarnings("unchecked")
 	public static <T> T shadowClone(T object) {
-		return object == null ? null : (T) ((AdvanceObjectSupport<?>) object).shadowClone();
+		return object == null ? null : (T) ((Bean<?>) object).shadowClone();
 	}
 
 	@SuppressWarnings("unchecked")
-	public static <D extends ObjectSupport<D>> D[] copy(ObjectSupport[] src, Class<D> clazz) {
+	public static <D extends Beanable<D>> D[] copy(Beanable[] src, Class<D> clazz) {
 		if (null == src) return null;
 		D[] r = (D[]) Array.newInstance(clazz, src.length);
 		for (int i = 0; i < src.length; i++) {
@@ -50,11 +56,11 @@ public class ObjectUtils extends UtilsBase {
 		return r;
 	}
 
-	public static void copy(ObjectSupport src, ObjectSupport dst) {
+	public static void copy(Beanable src, Beanable dst) {
 		copy(src, dst, true);
 	}
 
-	public static void copy(ObjectSupport src, ObjectSupport dst, boolean copyNull) {
+	public static void copy(Beanable src, Beanable dst, boolean copyNull) {
 		if (src == null) return;
 		if (dst == null) throw new RuntimeException("Failure to copy a non-null object to a null instance.");
 		MetaObject metaSrc = createMeta(src);
@@ -62,7 +68,8 @@ public class ObjectUtils extends UtilsBase {
 		for (String prop : metaSrc.getGetterNames())
 			if (metaDst.hasSetter(prop)) {
 				Object v = metaSrc.getValue(prop);
-				if (copyNull || v != null) metaDst.setValue(prop, v);
+				Object val = castValue(v, metaDst.getSetterType(prop));
+				if (copyNull || (v != null && val != null)) metaDst.setValue(prop, val);
 			}
 	}
 
@@ -90,8 +97,8 @@ public class ObjectUtils extends UtilsBase {
 		loopCheck.add(meta.getOriginalObject());
 		for (String getter : meta.getGetterNames()) {
 			Object value = meta.getValue(getter);
-			 if (loopCheck.contains(value)) continue;
-			 loopCheck.add(value);
+			if (loopCheck.contains(value)) continue;
+			loopCheck.add(value);
 			map.put(getter, value);
 		}
 		return map;
@@ -116,26 +123,154 @@ public class ObjectUtils extends UtilsBase {
 
 	@SuppressWarnings("unchecked")
 	public static Object castValue(Object value, Class<?> dstClass) {
-		if (null == value) return value;
-		Class<?> srcClass = value.getClass();
-		// 枚举类型和integer的互换
-		if (TypeChecker.isEnum(dstClass) && TypeChecker.isInteger(srcClass)) return EnumUtils.parse((Class<Enum>) dstClass,
-				((Number) value).byteValue());
-		else if (TypeChecker.isInteger(dstClass) && TypeChecker.isEnum(srcClass)) return EnumUtils.value((Enum) value);
-		// String和byte[]的互换
-		else if (TypeChecker.isBytes(dstClass) && TypeChecker.isString(srcClass)) return ByteUtils.hex2byte((String) value);
-		else if (TypeChecker.isString(dstClass) && TypeChecker.isBytes(srcClass)) return ByteUtils.byte2hex((byte[]) value);
-		// integer和 String的互换
-		else if (TypeChecker.isString(dstClass) && TypeChecker.isInteger(srcClass)) return Integer.toString(((Number) value)
-				.intValue());
-		else if (TypeChecker.isInteger(dstClass) && TypeChecker.isString(srcClass)) return Integer.parseInt(value.toString());
-		else if (TypeChecker.isObjectSupportted(dstClass) && TypeChecker.isObjectSupportted(dstClass)) return clone(
-				(ObjectSupport) value, (Class<ObjectSupport>) dstClass);
-		else { // TODO: deeply copy, be done later.
-				// 其他直接转换
-			return value;
-		}
+		if (dstClass == null) return value;
+		if (null == value) return dstClass.isPrimitive() ? Defaults.defaultValue(dstClass) : null;
 
+		Class<?> srcClass = value.getClass();
+		if (dstClass.isAssignableFrom(srcClass)) return value;
+
+		PrimaryCategory srcCat = TypeChecker.getPrimaryCategory(srcClass);
+		PrimaryCategory dstCat = TypeChecker.getPrimaryCategory(dstClass);
+
+		switch (srcCat) {
+		case ENUM:
+			switch (dstCat) {
+			case ENUM:
+				return EnumUtils.parse((Class<Enum>) dstClass, EnumUtils.value((Enum) value));
+			case NUMBER:
+				return EnumUtils.value((Enum) value);
+			case STRING:
+				return ((Enum) value).name();
+			default:
+				return null;
+			}
+		case NUMBER:
+			NumberCategory srcNumCat = NumberCategory.whichNumber(srcClass);
+			switch (dstCat) {
+			case NUMBER:
+				return dstClass.cast(srcNumCat.primitiveClass.cast(value));
+			case ENUM:
+				return EnumUtils.parse((Class<Enum>) dstClass, (byte) srcNumCat.primitiveClass.cast(value));
+			case STRING:
+				return srcNumCat.numberClass.cast(value).toString();
+			default:
+				return null;
+			}
+		case STRING:
+			switch (dstCat) {
+			case NUMBER:
+				NumberCategory dstNumCat = NumberCategory.whichNumber(dstClass);
+				Method vof;
+				try {
+					vof = dstNumCat.numberClass.getMethod("valueOf", String.class);
+				} catch (Exception e) {
+					return null;
+				}
+				if (null == vof || !Modifier.isStatic(vof.getModifiers()))
+					throw new IllegalArgumentException("Could not parse Number class: " + dstNumCat.numberClass.getName());
+				try {
+					return vof.invoke(null, value);
+				} catch (Exception e) {
+					return null;
+				}
+			case ENUM:
+				return Enum.valueOf((Class<Enum>) dstClass, (String) value);
+			case STRING:
+				return (String) value;
+			default:
+				return null;
+			}
+		case OBJECT_MAP:
+			switch (dstCat) {
+			case STRING:
+				return value.toString();
+			case OBJECT_MAP:
+				return clone((Beanable) value, (Class<? extends Beanable>) dstClass);
+			default:
+				return null;
+			}
+		case ORIGINAL_OBJ:
+			switch (dstCat) {
+			case STRING:
+				return value.toString();
+			case ORIGINAL_OBJ:
+				return value;
+			default:
+				return null;
+			}
+		case ARRAY_COLLECTION:
+			switch (dstCat) {
+			case ARRAY_COLLECTION:
+				if (srcClass.isArray()) {
+					int len = ReflectionUtils.safeFieldGet(value, "length");
+					if (dstClass.isArray()) { // source is an Array
+						Object dst = Array.newInstance(dstClass.getComponentType(), len);
+						for (int i = 0; i < len; i++)
+							Array.set(dst, i, castValue(Array.get(value, i), dstClass.getComponentType()));
+						return dst;
+					} else if (Collection.class.isAssignableFrom(dstClass)) {
+						Class<?> dstComponentType = TypeChecker.getIterableClass(dstClass);
+						Collection dst;
+						try {
+							dst = (Collection) dstClass.newInstance();
+						} catch (ReflectiveOperationException e) {
+							return null;
+						}
+						for (int i = 0; i < len; i++)
+							dst.add(castValue(Array.get(value, i), dstComponentType));
+						return dst;
+					} else return null;
+				} else {
+					if (Collection.class.isAssignableFrom(srcClass)) { // source is a Collection
+						Collection co = (Collection) value;
+						Iterator it = co.iterator();
+						int size = co.size();
+						if (dstClass.isArray()) {
+							Object dst = Array.newInstance(dstClass.getComponentType(), size);
+							for (int i = 0; i < size; i++)
+								Array.set(dst, i, castValue(it.next(), dstClass.getComponentType()));
+							return dst;
+						} else if (Collection.class.isAssignableFrom(dstClass)) {
+							Collection dst;
+							try {
+								dst = (Collection) dstClass.newInstance();
+							} catch (ReflectiveOperationException e) {
+								return null;
+							}
+							Class<?> dstComponentType = TypeChecker.getIterableClass(dstClass);
+							for (int i = 0; i < size; i++)
+								dst.add(castValue(it.next(), dstComponentType));
+							return dst;
+						} else return null;
+					} else { // source is an Iterable
+						Iterable itt = (Iterable) value;
+						Iterator it = itt.iterator();
+						Class<?> srcComponentType = TypeChecker.getIterableClass(srcClass);
+						Class<?> dstComponentType = TypeChecker.getIterableClass(dstClass);
+						if (dstClass.isArray()) {
+							ArrayList dst = new ArrayList();
+							while (it.hasNext())
+								dst.add(castValue(castValue(it.next(), dstComponentType), dstClass.getComponentType()));
+							return dst.toArray((Object[]) Array.newInstance(srcComponentType, dst.size()));
+						} else if (Collection.class.isAssignableFrom(dstClass)) {
+							Collection dst;
+							try {
+								dst = (Collection) dstClass.newInstance();
+							} catch (ReflectiveOperationException e) {
+								return null;
+							}
+							while (it.hasNext())
+								dst.add(castValue(it.next(), dstComponentType));
+							return dst;
+						} else return null;
+					}
+				}
+			default:
+				return null;
+			}
+
+		}
+		return null;
 	}
 
 	public static <T1, T2> int compare(T1 o1, T2 o2) {
@@ -222,25 +357,58 @@ public class ObjectUtils extends UtilsBase {
 		};
 	}
 
+	private enum PrimaryCategory {
+		STRING, NUMBER, ARRAY_COLLECTION, OBJECT_MAP, ORIGINAL_OBJ, ENUM
+	}
+
+	private enum NumberCategory {
+		INT(int.class, Integer.class), LONG(long.class, Long.class), BYTE(byte.class, Byte.class), SHORT(short.class,
+				Short.class), FLOAT(float.class, Float.class), DOUBLE(double.class, Double.class), NUMBER(null, null);
+		private static final Set<Class<?>> ALL_NUMBER_CLASSES = new HashSet<Class<?>>();
+		private Class<?> primitiveClass;
+		private Class<? extends Number> numberClass;
+
+		NumberCategory(Class<?> primitiveClass, Class<? extends Number> numberClass) {
+			this.primitiveClass = primitiveClass;
+			this.numberClass = numberClass;
+			if (primitiveClass != null) add(primitiveClass);
+			if (numberClass != null) add(numberClass);
+		}
+
+		private void add(Class<?> cl) {
+			ALL_NUMBER_CLASSES.add(cl);
+		}
+
+		static boolean isNumber(Class<?> clazz) {
+			return ALL_NUMBER_CLASSES.contains(clazz);
+		}
+
+		static NumberCategory whichNumber(Class<?> clazz) {
+			for (NumberCategory cat : NumberCategory.values()) {
+				if (cat.primitiveClass.equals(clazz) || cat.numberClass.isAssignableFrom(clazz)) return cat;
+			}
+			return null;
+		}
+	}
+
 	private interface TypeChecker {
-		static boolean isInteger(Class<?> clazz) {
-			return int.class.equals(clazz) || Integer.class.equals(clazz);
+		static PrimaryCategory getPrimaryCategory(Class<?> clazz) {
+			if (Enum.class.isAssignableFrom(clazz)) return PrimaryCategory.ENUM;
+			if (NumberCategory.isNumber(clazz)) return PrimaryCategory.NUMBER;
+			if (String.class.equals(clazz) || char.class.equals(clazz) || Character.class.equals(clazz))
+				return PrimaryCategory.STRING;
+			if (clazz.isArray() || Iterable.class.isAssignableFrom(clazz)) return PrimaryCategory.ARRAY_COLLECTION;
+			if (Map.class.isAssignableFrom(clazz) || Beanable.class.isAssignableFrom(clazz))
+				return PrimaryCategory.OBJECT_MAP;
+			return PrimaryCategory.ORIGINAL_OBJ;
 		}
 
-		static boolean isObjectSupportted(Class<?> clazz) {
-			return ObjectSupport.class.isAssignableFrom(clazz);
-		}
-
-		static boolean isString(Class<?> clazz) {
-			return String.class.equals(clazz);
-		}
-
-		static boolean isBytes(Class<?> clazz) {
-			return byte[].class.equals(clazz);
-		}
-
-		static boolean isEnum(Class<?> clazz) {
-			return Enum.class.isAssignableFrom(clazz);
+		static Class<?> getIterableClass(Class<?> clazz) {
+			if (clazz.isArray()) return clazz.getComponentType();
+			if (Iterable.class.isAssignableFrom(clazz)) {
+				Class<?> cl = GenericUtils.getGenericParamClass(clazz, Iterable.class, "T");
+				return null == cl ? Object.class : cl;
+			} else return null;
 		}
 	}
 }

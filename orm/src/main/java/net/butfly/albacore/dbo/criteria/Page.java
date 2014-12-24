@@ -1,10 +1,10 @@
 package net.butfly.albacore.dbo.criteria;
 
-import net.butfly.albacore.support.AdvanceObjectSupport;
+import net.butfly.albacore.support.Bean;
 
 import org.apache.ibatis.session.RowBounds;
 
-public final class Page extends AdvanceObjectSupport<Page> {
+public final class Page extends Bean<Page> {
 	private static final long serialVersionUID = 7953408535935745025L;
 	// the first page index of the current query.
 	private final static int FIRST_PAGE = 1;

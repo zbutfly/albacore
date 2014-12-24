@@ -6,10 +6,10 @@ import java.util.List;
 import java.util.Map;
 
 import net.butfly.albacore.entity.AbstractEntity;
-import net.butfly.albacore.support.AdvanceObjectSupport;
+import net.butfly.albacore.support.Bean;
 import net.butfly.albacore.utils.ObjectUtils;
 
-public class Criteria extends AdvanceObjectSupport<Criteria> {
+public class Criteria extends Bean<Criteria> {
 	private static final long serialVersionUID = 4775216639071589206L;
 	public static final String ORDER_FIELDS_PARAM_NAME = "orderFields";
 	protected Map<String, Object> params;
