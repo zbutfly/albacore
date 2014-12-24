@@ -11,7 +11,7 @@ public class EnumUtils extends UtilsBase {
 		Method valueMethod = getValueMethod(enumObject.getClass());
 		if (null == valueMethod) return (byte) enumObject.ordinal();
 		else try {
-			return (byte) valueMethod.invoke(enumObject);
+			return byte.class.cast(valueMethod.invoke(enumObject));
 		} catch (Exception e) {
 			throw new RuntimeException("Failure on parsing as enum.", e);
 		}
@@ -27,7 +27,7 @@ public class EnumUtils extends UtilsBase {
 		if (null == valueMethod) return enums[enumValue];// use ordinal;
 		else for (E e : enums)
 			try {
-				if (enumValue == (byte) valueMethod.invoke(e)) return e;
+				if (enumValue == byte.class.cast(valueMethod.invoke(e))) return e;
 			} catch (Exception ex) {
 				throw new RuntimeException("Failure on parsing as enum.", ex);
 			}

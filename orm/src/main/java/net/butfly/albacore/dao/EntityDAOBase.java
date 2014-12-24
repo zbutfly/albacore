@@ -7,6 +7,7 @@ import java.util.List;
 import net.butfly.albacore.dbo.criteria.Criteria;
 import net.butfly.albacore.dbo.criteria.Page;
 import net.butfly.albacore.entity.AbstractEntity;
+import net.butfly.albacore.entity.Entity;
 import net.butfly.albacore.exception.SystemException;
 
 import org.mybatis.spring.SqlSessionTemplate;
@@ -134,7 +135,7 @@ public abstract class EntityDAOBase extends DAOBase implements EntityDAO {
 				this.getSqlId(DAOContext.SELECT_STATMENT_ID + entityClass.getSimpleName() + "ByCriteria"), criteria,
 				page.toRowBounds());
 
-		return list.toArray(AbstractEntity.getKeyBuffer(entityClass, list.size()));
+		return list.toArray(Entity.getKeyBuffer(entityClass, list.size()));
 	}
 
 	@Override

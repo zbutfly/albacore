@@ -54,10 +54,10 @@ public final class AsyncUtils extends UtilsBase {
 				if (task.options.unblock) return null;
 				try {
 					return consumer.get(task.options.timeout, TimeUnit.MILLISECONDS);
-				} catch (InterruptedException | ExecutionException | TimeoutException e) {}
+				} catch (Exception e) {}
 			}
 		case LISTEN:
-			Future<OUT> producer;
+			final Future<OUT> producer;
 			try {
 				producer = executor.submit(wrap(task.task));
 			} catch (RejectedExecutionException e) {
@@ -97,7 +97,7 @@ public final class AsyncUtils extends UtilsBase {
 		}
 	}
 
-	public static <R> java.util.concurrent.Callable<R> wrap(Callable<R> callback) {
+	public static <R> java.util.concurrent.Callable<R> wrap(final Callable<R> callback) {
 		return new java.util.concurrent.Callable<R>() {
 			@Override
 			public R call() throws Exception {
@@ -111,7 +111,7 @@ public final class AsyncUtils extends UtilsBase {
 		};
 	}
 
-	public static java.lang.Runnable wrap(Runnable runnable) {
+	public static java.lang.Runnable wrap(final Runnable runnable) {
 		return new java.lang.Runnable() {
 			@Override
 			public void run() {

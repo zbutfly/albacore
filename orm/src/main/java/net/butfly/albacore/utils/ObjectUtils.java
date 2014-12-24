@@ -391,7 +391,7 @@ public class ObjectUtils extends UtilsBase {
 		}
 	}
 
-	private interface TypeChecker {
+	private static class TypeChecker {
 		static PrimaryCategory getPrimaryCategory(Class<?> clazz) {
 			if (Enum.class.isAssignableFrom(clazz)) return PrimaryCategory.ENUM;
 			if (NumberCategory.isNumber(clazz)) return PrimaryCategory.NUMBER;
