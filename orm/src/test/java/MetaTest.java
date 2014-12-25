@@ -1,0 +1,57 @@
+import java.util.Arrays;
+
+import net.butfly.albacore.utils.ObjectUtils;
+
+import org.apache.ibatis.reflection.MetaObject;
+
+public class MetaTest {
+	static class A {
+		String a;
+	}
+
+	static class B {
+		int b;
+		A a;
+	}
+
+	static class BB extends B {
+		String bb;
+	}
+
+	public static void main(String[] args) {
+		double d = 12345678.345;
+		Double dd = Double.class.cast(d);
+		byte by = (byte)d; 
+		printMetaInfo(true);
+		printMetaInfo("sdfsfsdfdsf");
+		printMetaInfo(new Byte((byte) 12));
+		A a = new A();
+		a.a = "stringA";
+		printMetaInfo(a);
+		B b = new B();
+		b.b = 123456;
+		b.a = a;
+		printMetaInfo(b);
+		BB bb = new BB();
+		bb.b = 123456;
+		bb.a = a;
+		bb.bb = "stringBB";
+		printMetaInfo(bb);
+		BB[] bbs = new BB[] { bb };
+		printMetaInfo(Arrays.asList(bbs));
+		MetaObject meta = ObjectUtils.createMeta(bbs);
+		System.out.println(meta.getValue("a.a"));
+		System.out.println(meta.findProperty("a.a", true));
+	}
+
+	private static void printMetaInfo(Object target) {
+		System.out.println(target.getClass().getName());
+		MetaObject meta = ObjectUtils.createMeta(target);
+		for (String name : meta.getGetterNames())
+			System.out.println("<==" + "get [" + name + "]: " + meta.getValue(name) + "[" + meta.getGetterType(name).getName()
+					+ "]");
+		for (String name : meta.getSetterNames())
+			System.out.println("==>" + "set [" + name + "]: " + "[" + meta.getGetterType(name).getName() + "]");
+		System.out.println("=================================");
+	}
+}

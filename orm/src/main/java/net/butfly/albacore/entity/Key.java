@@ -1,27 +1,27 @@
 package net.butfly.albacore.entity;
 
-import net.butfly.albacore.support.BeanMap;
+import net.butfly.albacore.support.Bean;
 import net.butfly.albacore.utils.ObjectUtils;
 
-@SuppressWarnings("unchecked")
-public abstract class Key<K extends Key<K>> extends Entity<K> {
+public abstract class Key<K extends Key<K>> extends Bean<AbstractEntity<K>> implements AbstractEntity<K> {
 	private static final long serialVersionUID = 1L;
 
-	public Key() {
-		this.id = (K) this;
-	}
-
+	@SuppressWarnings("unchecked")
 	@Override
-	public boolean equals(Object object) {
-		if (object == null || !object.getClass().equals(this.getClass())) return false;
-		return ObjectUtils.equals(new BeanMap<Key<K>>(this), new BeanMap<Object>(object));
-	}
-
 	public K getId() {
 		return (K) this;
 	}
 
+	@Override
 	public void setId(K id) {
-		this.copy(id);
+		ObjectUtils.copy(id, this);
+	}
+
+	@SuppressWarnings("rawtypes")
+	@Override
+	public int compareTo(AbstractEntity key) {
+		if (null == key) throw new NullPointerException();
+		if (!key.getClass().isAssignableFrom(this.getClass()) && !this.getClass().isAssignableFrom(key.getClass())) return -1;
+		return ObjectUtils.compare((DualKey) key, this);
 	}
 }

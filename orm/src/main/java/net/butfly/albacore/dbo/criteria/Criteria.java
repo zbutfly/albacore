@@ -5,13 +5,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import net.butfly.albacore.support.ObjectSupport;
+import net.butfly.albacore.entity.AbstractEntity;
+import net.butfly.albacore.support.Bean;
+import net.butfly.albacore.utils.ObjectUtils;
 
-public class Criteria extends ObjectSupport<Criteria> {
+public class Criteria extends Bean<Criteria> {
 	private static final long serialVersionUID = 4775216639071589206L;
-	@Deprecated
-	private static final String SCHEMA_PARAM_NAME = "schema";
-	private static final String ORDER_FIELDS_PARAM_NAME = "orderFields";
+	public static final String ORDER_FIELDS_PARAM_NAME = "orderFields";
 	protected Map<String, Object> params;
 	protected List<OrderField> orderFields;
 
@@ -19,16 +19,18 @@ public class Criteria extends ObjectSupport<Criteria> {
 		return orderFields;
 	}
 
+	public String getOrderBy() {
+		if (orderFields.size() == 0) return null;
+		StringBuilder sb = new StringBuilder(" ORDER BY");
+		for (OrderField of : this.orderFields)
+			sb.append(" ").append(of.field).append(" ").append(of.ascv);
+		return sb.toString();
+	}
+
 	public Criteria() {
 		this.params = new HashMap<String, Object>();
 		this.orderFields = new ArrayList<Criteria.OrderField>();
 	};
-
-	@Deprecated
-	public Criteria(String schema) {
-		this();
-		this.params.put(SCHEMA_PARAM_NAME, schema);
-	}
 
 	public Criteria addOrder(String orderField) {
 		return this.addOrder(orderField, true);
@@ -44,22 +46,18 @@ public class Criteria extends ObjectSupport<Criteria> {
 		return this;
 	}
 
+	public Criteria setEntity(AbstractEntity<?> entity) {
+		this.params.putAll(ObjectUtils.toMap(entity));
+		return this;
+	}
+
 	public Criteria set(String key, Object value) {
 		this.params.put(key, value);
 		return this;
 	}
 
 	public Map<String, Object> getParameters() {
-		return this.getParameters(false);
-	}
-
-	public Map<String, Object> getParameters(boolean pure) {
-		Map<String, Object> p = new HashMap<String, Object>(this.params);
-		if (!pure)
-			if (this.orderFields.size() > 0) p.put(ORDER_FIELDS_PARAM_NAME,
-					this.orderFields.toArray(new OrderField[this.orderFields.size()]));
-			else p.remove(ORDER_FIELDS_PARAM_NAME);
-		return p;
+		return this.params;
 	}
 
 	public static final class OrderField {

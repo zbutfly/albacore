@@ -5,18 +5,22 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import net.butfly.albacore.exception.BusinessException;
 import net.butfly.albacore.exception.SystemException;
 
+import org.apache.commons.lang3.ClassUtils;
 import org.reflections.Configuration;
 import org.reflections.Reflections;
 import org.reflections.scanners.MethodAnnotationsScanner;
@@ -87,28 +91,72 @@ public final class ReflectionUtils extends UtilsBase {
 			Class<? extends Throwable> causeClass = e.getCause().getClass();
 			if (BusinessException.class.isAssignableFrom(causeClass)) throw BusinessException.class.cast(causeClass);
 			else throw new SystemException("", e.getCause());
-		} catch (Throwable e) {
+		} catch (InstantiationException e) {
 			throw new SystemException("", e);
 		} finally {
 			constructor.setAccessible(accessible);
 		}
 	}
 
+	public static Field[] getAllFieldsDeeply(Class<?> clazz) {
+		List<Field> fs = new ArrayList<Field>();
+		fs.addAll(Arrays.asList(clazz.getDeclaredFields()));
+
+		for (Class<?> cl : ClassUtils.getAllSuperclasses(clazz))
+			fs.addAll(Arrays.asList(cl.getDeclaredFields()));
+		for (Class<?> cl : ClassUtils.getAllSuperclasses(clazz))
+			fs.addAll(Arrays.asList(cl.getDeclaredFields()));
+		return fs.toArray(new Field[fs.size()]);
+	}
+
+	public static Field[] getFieldsDeeply(Class<?> clazz, String name, boolean staticOnly) {
+		List<Field> fs = new ArrayList<Field>();
+		try {
+			Field f = clazz.getDeclaredField(name);
+			if (!staticOnly || Modifier.isStatic(f.getModifiers())) fs.add(f);
+		} catch (Exception e) {}
+		for (Class<?> cl : ClassUtils.getAllSuperclasses(clazz))
+			try {
+				Field f = cl.getDeclaredField(name);
+				if (!staticOnly || Modifier.isStatic(f.getModifiers())) fs.add(f);
+			} catch (Exception e) {}
+		for (Class<?> cl : ClassUtils.getAllSuperclasses(clazz))
+			try {
+				Field f = cl.getDeclaredField(name);
+				if (!staticOnly || Modifier.isStatic(f.getModifiers())) fs.add(f);
+			} catch (Exception e) {}
+		return fs.toArray(new Field[fs.size()]);
+	}
+
+	/**
+	 * @param owner
+	 *            instance for non-static field and class for static field.
+	 * @param name
+	 * @return
+	 */
 	@SuppressWarnings("unchecked")
-	public static <T> T safeFieldGet(Field field, Object owner) {
+	public static <T> T safeFieldGet(Object owner, String name) {
+		if (null == owner) throw new NullPointerException();
+		boolean forClass = Class.class.isAssignableFrom(owner.getClass());
+		Class<?> clazz = forClass ? (Class<?>) owner : owner.getClass();
+		Field[] fs = getFieldsDeeply(clazz, name, forClass);
+		if (fs.length == 0) throw new RuntimeException(new NoSuchFieldException());
+
+		Field field = fs[0];
 		boolean accessible = field.isAccessible();
 		try {
 			field.setAccessible(true);
-			return (T) field.get(owner);
+			return (T) field.get(forClass ? null : owner);
 		} catch (IllegalAccessException e) {
-			throw new SystemException("", e);
-		} catch (IllegalArgumentException e) {
 			throw new SystemException("", e);
 		} finally {
 			field.setAccessible(accessible);
 		}
 	}
 
+	/**
+	 * set field by field instance directly.
+	 */
 	public static void safeFieldSet(Field field, Object owner, Object value) {
 		boolean accessible = field.isAccessible();
 		try {
@@ -121,6 +169,24 @@ public final class ReflectionUtils extends UtilsBase {
 		} finally {
 			field.setAccessible(accessible);
 		}
+	}
+
+	/**
+	 * set field by name.
+	 * 
+	 * @param owner
+	 *            instance for non-static field and class for static field.
+	 */
+	public static void safeFieldSet(Object owner, String name, Object value) {
+		if (null == owner) throw new NullPointerException();
+		boolean forClass = Class.class.isAssignableFrom(owner.getClass());
+		Class<?> clazz = forClass ? (Class<?>) owner : owner.getClass();
+		Field[] fs = getFieldsDeeply(clazz, name, forClass);
+		if (fs.length == 0) throw new RuntimeException(new NoSuchFieldException());
+
+		for (Field field : fs)
+			if (null == value || field.getType().isAssignableFrom(value.getClass()))
+				safeFieldSet(field, forClass ? null : owner, value);
 	}
 
 	public static <T> Set<Class<? extends T>> getSubClasses(Class<T> parentClass, String packagePrefix) {
@@ -154,4 +220,17 @@ public final class ReflectionUtils extends UtilsBase {
 		return s.toArray(new Method[s.size()]);
 	}
 
+	public static Class<?> getMainClass() {
+		try {
+			return Class.forName(System.getProperty("sun.java.command"));
+		} catch (ClassNotFoundException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	public <T> T unwrapProxy(T object) {
+		if (null == object) return null;
+		if (!Proxy.isProxyClass(object.getClass())) return object;
+		return safeFieldGet(object, "h");
+	}
 }

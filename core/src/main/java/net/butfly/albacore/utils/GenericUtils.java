@@ -3,7 +3,6 @@ package net.butfly.albacore.utils;
 import java.lang.reflect.Field;
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
@@ -14,9 +13,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
-import java.util.concurrent.ConcurrentHashMap;
-
-import net.butfly.albacore.support.CloneSupport;
 
 @SuppressWarnings("unchecked")
 public final class GenericUtils extends UtilsBase {
@@ -51,63 +47,6 @@ public final class GenericUtils extends UtilsBase {
 	public static Class<?> resolveType(Type genericType, Map<TypeVariable<Class<?>>, Type> typeVariableMap) {
 		Type rawType = getRawType(genericType, typeVariableMap);
 		return (rawType instanceof Class<?>) ? (Class<?>) rawType : java.lang.Object.class;
-	}
-
-	@SuppressWarnings("rawtypes")
-	public static Map<String, Field> getAllFields(Class<? extends CloneSupport> clazz) {
-		Map<String, Field> map = FIELDS_CACHE.get(clazz);
-		if (null != map) { return map; }
-		map = new HashMap<String, Field>();
-		Class<?> cl = clazz.getSuperclass();
-		if (cl != CloneSupport.class) {
-			map.putAll(GenericUtils.getAllFields((Class<? extends CloneSupport>) cl));
-		}
-
-		for (Field f : clazz.getDeclaredFields()) {
-			int modifies = f.getModifiers();
-			String name = f.getName();
-			if ("serialVersionUID".equals(name) || Modifier.isStatic(modifies) || Modifier.isFinal(modifies)) {
-				continue;
-			}
-			map.put(name, f);
-		}
-		FIELDS_CACHE.put(clazz, map);
-		return map;
-	}
-
-	public static Map<String, Method[]> getAllProperties(Class<?> clazz) {
-		Map<String, Method[]> properties = PROPERTIES_CACHE.get(clazz);
-		if (null == properties) {
-			properties = new HashMap<String, Method[]>();
-			for (Method f : clazz.getMethods()) {
-				String name = f.getName();
-				int type = -1;
-				if (name.startsWith("set") && 1 == f.getParameterTypes().length) {
-					name = getPropertyName(name, 3);
-					type = CloneSupport.METHOD_SET;
-				} else if (name.startsWith("get") && 0 == f.getParameterTypes().length) {
-					name = getPropertyName(name, 3);
-					type = CloneSupport.METHOD_GET;
-				} else if (name.startsWith("is") && 0 == f.getParameterTypes().length) {
-					name = getPropertyName(name, 2);
-					type = CloneSupport.METHOD_GET;
-				} else {
-					continue;
-				}
-				// ignore getClass for Object class...
-				if ("class".equals(name) && CloneSupport.METHOD_GET == type) {
-					continue;
-				}
-				Method[] fs = properties.get(name);
-				if (null == fs) {
-					fs = new Method[] { null, null };
-					properties.put(name, fs);
-				}
-				fs[type] = f;
-			}
-			PROPERTIES_CACHE.put(clazz, properties);
-		}
-		return properties;
 	}
 
 	private static Type extractBoundForTypeVariable(TypeVariable<Class<?>> typeVariable) {
@@ -193,12 +132,6 @@ public final class GenericUtils extends UtilsBase {
 
 	private static final Map<Class<?>, Map<TypeVariable<Class<?>>, Type>> typeVariableCache = Collections
 			.synchronizedMap(new WeakHashMap<Class<?>, Map<TypeVariable<Class<?>>, Type>>());
-	private final static Map<Class<?>, Map<String, Field>> FIELDS_CACHE = new ConcurrentHashMap<Class<?>, Map<String, Field>>();
-	private final static Map<Class<?>, Map<String, Method[]>> PROPERTIES_CACHE = new ConcurrentHashMap<Class<?>, Map<String, Method[]>>();
-
-	private static String getPropertyName(final String methodName, final int prefix) {
-		return methodName.substring(prefix, prefix + 1).toLowerCase() + methodName.substring(prefix + 1);
-	}
 
 	private static Map<TypeVariable<Class<?>>, Type> getTypeVariableMap(Class<?> clazz) {
 		Map<TypeVariable<Class<?>>, Type> typeVariableMap = typeVariableCache.get(clazz);
@@ -247,4 +180,19 @@ public final class GenericUtils extends UtilsBase {
 		}
 		return set.toArray(new Field[set.size()]);
 	}
+//	private final static Map<Class<?>, Map<String, Field>> FIELDS_CACHE = new ConcurrentHashMap<Class<?>, Map<String, Field>>();
+//	public static Map<String, Field> getAllFields(Class<? extends Beanable<?>> clazz) {
+//		Map<String, Field> map = FIELDS_CACHE.get(clazz);
+//		if (null != map) return map;
+//		map = new HashMap<String, Field>();
+//		for (Class<?> cl = clazz; !Object.class.equals(cl); cl = cl.getSuperclass())
+//			for (Field f : clazz.getDeclaredFields()) {
+//				int modifies = f.getModifiers();
+//				String name = f.getName();
+//				if (!"serialVersionUID".equals(name) && !Modifier.isStatic(modifies) && !Modifier.isFinal(modifies))
+//					map.put(name, f);
+//			}
+//		FIELDS_CACHE.put(clazz, map);
+//		return map;
+//	}
 }
