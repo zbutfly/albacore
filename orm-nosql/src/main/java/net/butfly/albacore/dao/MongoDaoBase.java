@@ -5,9 +5,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map.Entry;
 
+import net.butfly.albacore.dbo.MongoCriteria;
+import net.butfly.albacore.dbo.MongoCriteria.OrderField;
 import net.butfly.albacore.dbo.MongoEntity;
-import net.butfly.albacore.dbo.criteria.Criteria;
-import net.butfly.albacore.dbo.criteria.Criteria.OrderField;
 import net.butfly.albacore.dbo.criteria.Page;
 import net.butfly.albacore.utils.GenericUtils;
 
@@ -115,7 +115,7 @@ public abstract class MongoDaoBase<E extends MongoEntity> extends DAOBase implem
 		return opts;
 	}
 
-	protected Query<E> createSimpleQuery(Criteria criteria) {
+	protected Query<E> createSimpleQuery(MongoCriteria criteria) {
 		Query<E> q = this.context.store.createQuery(entityClass);
 		for (Entry<String, Object> e : criteria.getParameters().entrySet())
 			q.field(this.context.getMongoField(entityClass, e.getKey())).equal(e.getValue());

@@ -181,7 +181,7 @@ public final class GenericUtils extends UtilsBase {
 		return set.toArray(new Field[set.size()]);
 	}
 //	private final static Map<Class<?>, Map<String, Field>> FIELDS_CACHE = new ConcurrentHashMap<Class<?>, Map<String, Field>>();
-//	public static Map<String, Field> getAllFields(Class<? extends Beanable<?>> clazz) {
+//	public static Map<String, Field> getAllFields(Class<? extends Beans<?>> clazz) {
 //		Map<String, Field> map = FIELDS_CACHE.get(clazz);
 //		if (null != map) return map;
 //		map = new HashMap<String, Field>();

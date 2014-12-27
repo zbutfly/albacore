@@ -5,7 +5,7 @@ import java.sql.Driver;
 import org.springframework.jdbc.datasource.AbstractDataSource;
 import org.springframework.jdbc.datasource.SimpleDriverDataSource;
 
-public final class ORMUtils {
+public final class ORMUtils extends UtilsBase {
 	private ORMUtils() {}
 
 	@SuppressWarnings("unchecked")

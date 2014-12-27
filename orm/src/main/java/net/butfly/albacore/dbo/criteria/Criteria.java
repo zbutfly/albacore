@@ -1,8 +1,6 @@
 package net.butfly.albacore.dbo.criteria;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import net.butfly.albacore.entity.AbstractEntity;
@@ -11,25 +9,12 @@ import net.butfly.albacore.utils.ObjectUtils;
 
 public class Criteria extends Bean<Criteria> {
 	private static final long serialVersionUID = 4775216639071589206L;
-	public static final String ORDER_FIELDS_PARAM_NAME = "orderFields";
+	public static final String ORDER_BY_PARAM_NAME = "__orderBy";
+	public static final String QUERY_TYPE_PARAM_NAME = "__queryType";
 	protected Map<String, Object> params;
-	protected List<OrderField> orderFields;
-
-	public List<OrderField> getOrderFields() {
-		return orderFields;
-	}
-
-	public String getOrderBy() {
-		if (orderFields.size() == 0) return null;
-		StringBuilder sb = new StringBuilder(" ORDER BY");
-		for (OrderField of : this.orderFields)
-			sb.append(" ").append(of.field).append(" ").append(of.ascv);
-		return sb.toString();
-	}
 
 	public Criteria() {
 		this.params = new HashMap<String, Object>();
-		this.orderFields = new ArrayList<Criteria.OrderField>();
 	};
 
 	public Criteria addOrder(String orderField) {
@@ -37,8 +22,15 @@ public class Criteria extends Bean<Criteria> {
 	}
 
 	public Criteria addOrder(String orderField, boolean asc) {
-		this.orderFields.add(new OrderField(orderField, asc));
+		String existed = (String) this.params.get(ORDER_BY_PARAM_NAME);
+		StringBuilder sb = new StringBuilder(null == existed ? " ORDER BY" : existed);
+		sb.append(" ").append(orderField).append(" ").append(asc ? "ASC" : "DESC");
+		this.params.put(ORDER_BY_PARAM_NAME, sb.toString());
 		return this;
+	}
+
+	public String getOrderBy() {
+		return (String) this.params.get(ORDER_BY_PARAM_NAME);
 	}
 
 	public Criteria setParameters(Map<String, ?> params) {
@@ -60,27 +52,12 @@ public class Criteria extends Bean<Criteria> {
 		return this.params;
 	}
 
-	public static final class OrderField {
-		private String field;
-		private boolean asc;
-		private String ascv;
+	public Criteria setType(QueryType type) {
+		this.params.put(QUERY_TYPE_PARAM_NAME, type);
+		return this;
+	}
 
-		private OrderField(String field, boolean asc) {
-			this.field = field;
-			this.asc = asc;
-			this.ascv = asc ? "ASC" : "DESC";
-		}
-
-		public String getField() {
-			return field;
-		}
-
-		public String getAsc() {
-			return ascv;
-		}
-
-		public boolean desc() {
-			return !asc;
-		}
+	public enum QueryType {
+		COUNT, LIST
 	}
 }

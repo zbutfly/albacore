@@ -1,8 +1,9 @@
 import java.util.Arrays;
+import java.util.Map;
 
+import net.butfly.albacore.dbo.criteria.Page;
 import net.butfly.albacore.utils.ObjectUtils;
-
-import org.apache.ibatis.reflection.MetaObject;
+import net.butfly.albacore.utils.imports.meta.MetaObject;
 
 public class MetaTest {
 	static class A {
@@ -19,9 +20,15 @@ public class MetaTest {
 	}
 
 	public static void main(String[] args) {
+		Page page = new Page(15, 1);
+		Map<String, Object> map = ObjectUtils.toMap(page);
+		for (String k : map.keySet()) {
+			System.out.println(k + ":" + map.get(k).getClass().getName());
+		}
+
 		double d = 12345678.345;
 		Double dd = Double.class.cast(d);
-		byte by = (byte)d; 
+		byte by = (byte) d;
 		printMetaInfo(true);
 		printMetaInfo("sdfsfsdfdsf");
 		printMetaInfo(new Byte((byte) 12));

@@ -2,7 +2,7 @@ package net.butfly.albacore.support;
 
 import net.butfly.albacore.utils.ObjectUtils;
 
-public abstract class Bean<T extends Beanable<T>> extends BasicBean<T> implements Beanable<T> {
+public abstract class Bean<T extends Beans<T>> implements Beans<T> {
 	private static final long serialVersionUID = 1L;
 
 	@SuppressWarnings("unchecked")
@@ -22,7 +22,7 @@ public abstract class Bean<T extends Beanable<T>> extends BasicBean<T> implement
 		return ObjectUtils.equals(this, object);
 	}
 
-	public Beanable<T> copy(Beanable<?> src) {
+	public Beans<T> copy(Beans<?> src) {
 		if (null != src) ObjectUtils.copy(src, this);
 		return this;
 	}
@@ -30,5 +30,13 @@ public abstract class Bean<T extends Beanable<T>> extends BasicBean<T> implement
 	@Override
 	public String toString() {
 		return ObjectUtils.toMap(this).toString();
+	}
+
+	public Object shadowClone() {
+		try {
+			return super.clone();
+		} catch (CloneNotSupportedException e) {
+			return this;
+		}
 	}
 }

@@ -13,25 +13,25 @@ import java.util.Map;
 import java.util.Set;
 
 import net.butfly.albacore.support.Bean;
-import net.butfly.albacore.support.Beanable;
+import net.butfly.albacore.support.Beans;
+import net.butfly.albacore.utils.imports.meta.MetaObject;
+import net.butfly.albacore.utils.imports.meta.factory.DefaultObjectFactory;
+import net.butfly.albacore.utils.imports.meta.factory.ObjectFactory;
+import net.butfly.albacore.utils.imports.meta.wrapper.DefaultObjectWrapperFactory;
+import net.butfly.albacore.utils.imports.meta.wrapper.ObjectWrapperFactory;
 
 import org.apache.commons.lang3.NotImplementedException;
-import org.apache.ibatis.reflection.MetaObject;
-import org.apache.ibatis.reflection.factory.DefaultObjectFactory;
-import org.apache.ibatis.reflection.factory.ObjectFactory;
-import org.apache.ibatis.reflection.wrapper.DefaultObjectWrapperFactory;
-import org.apache.ibatis.reflection.wrapper.ObjectWrapperFactory;
 
 import com.google.common.base.Defaults;
 
 @SuppressWarnings("rawtypes")
 public class ObjectUtils extends UtilsBase {
-	public static Beanable clone(Beanable src, Class<? extends Beanable> dstClass) {
+	public static Beans clone(Beans src, Class<? extends Beans> dstClass) {
 		return clone(src, dstClass, true);
 	}
 
-	public static Beanable clone(Beanable src, Class<? extends Beanable> dstClass, boolean cloneNull) {
-		Beanable dst = null;
+	public static Beans clone(Beans src, Class<? extends Beans> dstClass, boolean cloneNull) {
+		Beans dst = null;
 		try {
 			dst = dstClass.newInstance();
 		} catch (Exception ex) {
@@ -47,7 +47,7 @@ public class ObjectUtils extends UtilsBase {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static <D extends Beanable<D>> D[] copy(Beanable[] src, Class<D> clazz) {
+	public static <D extends Beans<D>> D[] copy(Beans[] src, Class<D> clazz) {
 		if (null == src) return null;
 		D[] r = (D[]) Array.newInstance(clazz, src.length);
 		for (int i = 0; i < src.length; i++) {
@@ -56,11 +56,11 @@ public class ObjectUtils extends UtilsBase {
 		return r;
 	}
 
-	public static void copy(Beanable src, Beanable dst) {
+	public static void copy(Beans src, Beans dst) {
 		copy(src, dst, true);
 	}
 
-	public static void copy(Beanable src, Beanable dst, boolean copyNull) {
+	public static void copy(Beans src, Beans dst, boolean copyNull) {
 		if (src == null) return;
 		if (dst == null) throw new RuntimeException("Failure to copy a non-null object to a null instance.");
 		MetaObject metaSrc = createMeta(src);
@@ -148,7 +148,8 @@ public class ObjectUtils extends UtilsBase {
 			NumberCategory srcNumCat = NumberCategory.whichNumber(srcClass);
 			switch (dstCat) {
 			case NUMBER:
-				return dstClass.cast(srcNumCat.primitiveClass.cast(value));
+				// TODO: different number type casting!
+				return value;
 			case ENUM:
 				return EnumUtils.parse((Class<Enum>) dstClass, byte.class.cast(srcNumCat.primitiveClass.cast(value)));
 			case STRING:
@@ -185,7 +186,7 @@ public class ObjectUtils extends UtilsBase {
 			case STRING:
 				return value.toString();
 			case OBJECT_MAP:
-				return clone((Beanable) value, (Class<? extends Beanable>) dstClass);
+				return clone((Beans) value, (Class<? extends Beans>) dstClass);
 			default:
 				return null;
 			}
@@ -361,22 +362,32 @@ public class ObjectUtils extends UtilsBase {
 		STRING, NUMBER, ARRAY_COLLECTION, OBJECT_MAP, ORIGINAL_OBJ, ENUM
 	}
 
+	private static final Set<Class<?>> ALL_NUMBER_CLASSES = new HashSet<Class<?>>();
+
 	private enum NumberCategory {
 		INT(int.class, Integer.class), LONG(long.class, Long.class), BYTE(byte.class, Byte.class), SHORT(short.class,
 				Short.class), FLOAT(float.class, Float.class), DOUBLE(double.class, Double.class), NUMBER(null, null);
-		private static final Set<Class<?>> ALL_NUMBER_CLASSES = new HashSet<Class<?>>();
 		private Class<?> primitiveClass;
 		private Class<? extends Number> numberClass;
+//		private Method valueMethod;
 
 		NumberCategory(Class<?> primitiveClass, Class<? extends Number> numberClass) {
 			this.primitiveClass = primitiveClass;
 			this.numberClass = numberClass;
+//			if (this.numberClass != null && this.primitiveClass != null)
+//				for (Method m : numberClass.getDeclaredMethods())
+//					if (m.getName().endsWith("Value") && m.getParameterTypes().length == 0
+//							&& m.getReturnType().equals(this.primitiveClass)) {
+//						this.valueMethod = m;
+//						break;
+//					}
+
 			if (primitiveClass != null) add(primitiveClass);
 			if (numberClass != null) add(numberClass);
 		}
 
 		private void add(Class<?> cl) {
-			ALL_NUMBER_CLASSES.add(cl);
+			if (null != cl) ALL_NUMBER_CLASSES.add(cl);
 		}
 
 		static boolean isNumber(Class<?> clazz) {
@@ -398,7 +409,7 @@ public class ObjectUtils extends UtilsBase {
 			if (String.class.equals(clazz) || char.class.equals(clazz) || Character.class.equals(clazz))
 				return PrimaryCategory.STRING;
 			if (clazz.isArray() || Iterable.class.isAssignableFrom(clazz)) return PrimaryCategory.ARRAY_COLLECTION;
-			if (Map.class.isAssignableFrom(clazz) || Beanable.class.isAssignableFrom(clazz)) return PrimaryCategory.OBJECT_MAP;
+			if (Map.class.isAssignableFrom(clazz) || Beans.class.isAssignableFrom(clazz)) return PrimaryCategory.OBJECT_MAP;
 			return PrimaryCategory.ORIGINAL_OBJ;
 		}
 

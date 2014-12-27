@@ -10,13 +10,12 @@ public class ByteUtils {
 	}
 
 	public static String byte2hex(byte[] data) {
-		if (null == data) { return null; }
+		if (null == data) return null;
 		StringBuffer sb = new StringBuffer();
 		for (int i = 0; i < data.length; i++) {
 			String temp = Integer.toHexString(((int) data[i]) & 0xFF);
-			for (int t = temp.length(); t < 2; t++) {
+			for (int t = temp.length(); t < 2; t++)
 				sb.append("0");
-			}
 			sb.append(temp);
 		}
 		return sb.toString();
