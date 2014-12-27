@@ -1,11 +1,10 @@
 package net.butfly.albacore.dbo.interceptor;
 
 import java.sql.Connection;
-import java.util.Map;
 import java.util.Properties;
 
-import net.butfly.albacore.dbo.criteria.Criteria;
-import net.butfly.albacore.dbo.criteria.Criteria.QueryType;
+import net.butfly.albacore.dbo.criteria.CriteriaMap;
+import net.butfly.albacore.dbo.criteria.CriteriaMap.QueryType;
 import net.butfly.albacore.dbo.dialect.Dialect;
 import net.butfly.albacore.utils.ObjectUtils;
 import net.butfly.albacore.utils.imports.meta.MetaObject;
@@ -25,7 +24,6 @@ public class StatementInterceptor extends BaseInterceptor {
 	private static final Logger logger = LoggerFactory.getLogger(StatementInterceptor.class);
 	private Dialect dialect;
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public Object intercept(Invocation invocation) throws Throwable {
 		MetaObject meta = ObjectUtils.createMeta(invocation.getTarget());
@@ -36,10 +34,10 @@ public class StatementInterceptor extends BaseInterceptor {
 			if (null != rowBounds) {
 				// append order
 				Object paramsObject = meta.getValue("delegate.boundSql.parameterObject");
-				if (paramsObject instanceof Map) {
-					Map<String, Object> params = (Map<String, Object>) paramsObject;
-					QueryType type = (QueryType) params.get(Criteria.QUERY_TYPE_PARAM_NAME);
-					String orderBy = (String) params.get(Criteria.ORDER_BY_PARAM_NAME);
+				if (paramsObject instanceof CriteriaMap) {
+					CriteriaMap params = (CriteriaMap) paramsObject;
+					QueryType type = params.getType();
+					String orderBy = params.getOrderBy();
 					if (null != params && QueryType.LIST == type && null != orderBy) {
 						sql = sql + orderBy;
 						logger.trace("OrderBy is appendded on SQL: " + sql.replaceAll("[\\n]", "").replaceAll("[ \t]+", " "));

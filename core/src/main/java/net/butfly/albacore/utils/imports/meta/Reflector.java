@@ -228,17 +228,13 @@ public class Reflector {
 			}
 			if (field.isAccessible()) {
 				int modifiers = field.getModifiers();
-				if (!setMethods.containsKey(field.getName())) {
-					// issue #379 - removed the check for final because JDK 1.5 allows
-					// modification of final fields through reflection (JSR-133). (JGB)
-					// pr #16 - final static can only be set by the classloader
-					if (!(Modifier.isFinal(modifiers) && Modifier.isStatic(modifiers))) addSetField(field);
-
-				}
-				if (!getMethods.containsKey(field.getName())) {
-					//XXX: avoid loop in toString
-					if (!(Modifier.isFinal(modifiers) && Modifier.isStatic(modifiers))) addGetField(field);
-				}
+				boolean add = !(Modifier.isFinal(modifiers) && Modifier.isStatic(modifiers));
+				// issue #379 - removed the check for final because JDK 1.5 allows
+				// modification of final fields through reflection (JSR-133). (JGB)
+				// pr #16 - final static can only be set by the classloader
+				if (!setMethods.containsKey(field.getName()) && add) addSetField(field);
+				// XXX: avoid loop in toString
+				if (!getMethods.containsKey(field.getName()) && add) addGetField(field);
 			}
 		}
 		if (clazz.getSuperclass() != null) {

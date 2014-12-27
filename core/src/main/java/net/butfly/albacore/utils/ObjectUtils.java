@@ -93,13 +93,16 @@ public class ObjectUtils extends UtilsBase {
 		Map<String, Object> map = new HashMap<String, Object>();
 		MetaObject meta = (MetaObject) target;
 		// TODO: avoid cache, use "transient"
-		Set<Object> loopCheck = new HashSet<Object>();
-		loopCheck.add(meta.getOriginalObject());
+		Set<Object> objectPool = new HashSet<Object>();
+		objectPool.add(meta.getOriginalObject());
 		for (String getter : meta.getGetterNames()) {
 			Object value = meta.getValue(getter);
-			if (loopCheck.contains(value)) continue;
-			loopCheck.add(value);
-			map.put(getter, value);
+			PrimaryCategory cat = TypeChecker.getPrimaryCategory(meta.getGetterType(getter));
+			if (cat == PrimaryCategory.STRING || cat == PrimaryCategory.NUMBER) map.put(getter, value);
+			else if (!objectPool.contains(value)) {
+				objectPool.add(value);
+				map.put(getter, value);
+			}
 		}
 		return map;
 	}
@@ -369,18 +372,19 @@ public class ObjectUtils extends UtilsBase {
 				Short.class), FLOAT(float.class, Float.class), DOUBLE(double.class, Double.class), NUMBER(null, null);
 		private Class<?> primitiveClass;
 		private Class<? extends Number> numberClass;
-//		private Method valueMethod;
+
+		// private Method valueMethod;
 
 		NumberCategory(Class<?> primitiveClass, Class<? extends Number> numberClass) {
 			this.primitiveClass = primitiveClass;
 			this.numberClass = numberClass;
-//			if (this.numberClass != null && this.primitiveClass != null)
-//				for (Method m : numberClass.getDeclaredMethods())
-//					if (m.getName().endsWith("Value") && m.getParameterTypes().length == 0
-//							&& m.getReturnType().equals(this.primitiveClass)) {
-//						this.valueMethod = m;
-//						break;
-//					}
+			// if (this.numberClass != null && this.primitiveClass != null)
+			// for (Method m : numberClass.getDeclaredMethods())
+			// if (m.getName().endsWith("Value") && m.getParameterTypes().length == 0
+			// && m.getReturnType().equals(this.primitiveClass)) {
+			// this.valueMethod = m;
+			// break;
+			// }
 
 			if (primitiveClass != null) add(primitiveClass);
 			if (numberClass != null) add(numberClass);

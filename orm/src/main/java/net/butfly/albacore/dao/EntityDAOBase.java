@@ -5,7 +5,7 @@ import java.lang.reflect.Array;
 import java.util.List;
 
 import net.butfly.albacore.dbo.criteria.Criteria;
-import net.butfly.albacore.dbo.criteria.Criteria.QueryType;
+import net.butfly.albacore.dbo.criteria.CriteriaMap.QueryType;
 import net.butfly.albacore.dbo.criteria.Page;
 import net.butfly.albacore.entity.AbstractEntity;
 import net.butfly.albacore.entity.Entity;
