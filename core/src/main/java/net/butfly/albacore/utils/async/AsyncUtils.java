@@ -5,6 +5,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -12,8 +13,13 @@ import net.butfly.albacore.exception.SystemException;
 import net.butfly.albacore.exception.SystemExceptions;
 import net.butfly.albacore.utils.UtilsBase;
 
+import com.google.common.util.concurrent.MoreExecutors;
+
 public final class AsyncUtils extends UtilsBase {
-	private static ExecutorService EXECUTOR = Executors.newWorkStealingPool();
+	private static ExecutorService EXECUTOR = MoreExecutors.getExitingExecutorService((ThreadPoolExecutor) Executors
+			.newCachedThreadPool());
+
+	// Executors.newWorkStealingPool();
 
 	public static <OUT> OUT execute(final Task<OUT> task) throws Signal {
 		return execute(EXECUTOR, task);

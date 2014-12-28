@@ -32,14 +32,6 @@ public class CriteriaMap extends HashMap<String, Object> {
 		return orderFields.toArray(new OrderField[this.orderFields.size()]);
 	}
 
-	public String getOrderBy() {
-		if (this.orderFields.size() == 0) return null;
-		StringBuilder sb = new StringBuilder(" ORDER BY");
-		for (OrderField o : this.orderFields)
-			sb.append(" ").append(o.toString());
-		return sb.toString();
-	}
-
 	public void addOrder(String orderField, boolean asc) {
 		this.orderFields.add(new OrderField(orderField, asc));
 	}

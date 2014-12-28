@@ -1,10 +1,10 @@
 package net.butfly.albacore.dbo.key;
 
-import java.util.UUID;
+import net.butfly.albacore.utils.KeyUtils;
 
-public class UUIDKeyGenerator extends JavaKeyGenerator<UUID> {
+public class UUIDKeyGenerator extends JavaKeyGenerator<String> {
 	@Override
-	protected UUID generateKey() {
-		return UUID.randomUUID();
+	protected String generateKey() {
+		return KeyUtils.generateUUID();
 	}
 }

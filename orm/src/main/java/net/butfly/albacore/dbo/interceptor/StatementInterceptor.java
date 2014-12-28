@@ -29,17 +29,17 @@ public class StatementInterceptor extends BaseInterceptor {
 		MetaObject meta = ObjectUtils.createMeta(invocation.getTarget());
 		// misc hacking
 		if (((MappedStatement) meta.getValue("delegate.mappedStatement")).getSqlCommandType() == SqlCommandType.SELECT) {
-			RowBounds rowBounds = (RowBounds) meta.getValue("delegate.rowBounds");
 			String sql = (String) meta.getValue("delegate.boundSql.sql");
+			// logger.trace("Statement preparing intercepted with orininal sql: \n\t" + sql);
+			RowBounds rowBounds = (RowBounds) meta.getValue("delegate.rowBounds");
+
 			if (null != rowBounds) {
 				// append order
 				Object paramsObject = meta.getValue("delegate.boundSql.parameterObject");
 				if (paramsObject instanceof CriteriaMap) {
 					CriteriaMap params = (CriteriaMap) paramsObject;
-					QueryType type = params.getType();
-					String orderBy = params.getOrderBy();
-					if (null != params && QueryType.LIST == type && null != orderBy) {
-						sql = sql + orderBy;
+					if (null != params && params.getType() == QueryType.LIST) {
+						sql = this.dialect.orderByWrap(sql, params.getOrderFields());
 						logger.trace("OrderBy is appendded on SQL: " + sql.replaceAll("[\\n]", "").replaceAll("[ \t]+", " "));
 					}
 				}

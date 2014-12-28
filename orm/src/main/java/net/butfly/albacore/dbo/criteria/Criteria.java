@@ -27,10 +27,6 @@ public class Criteria extends Bean<Criteria> {
 		return this;
 	}
 
-	public String getOrderBy() {
-		return this.params.getOrderBy();
-	}
-
 	public OrderField[] getOrderFields() {
 		return this.params.getOrderFields();
 	}
