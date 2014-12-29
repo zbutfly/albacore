@@ -18,7 +18,6 @@ import com.google.common.util.concurrent.MoreExecutors;
 public final class AsyncUtils extends UtilsBase {
 	private static ExecutorService EXECUTOR = MoreExecutors.getExitingExecutorService((ThreadPoolExecutor) Executors
 			.newCachedThreadPool());
-
 	// Executors.newWorkStealingPool();
 
 	public static <OUT> OUT execute(final Task<OUT> task) throws Signal {
