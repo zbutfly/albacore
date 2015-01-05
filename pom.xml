@@ -21,8 +21,9 @@
 		<module>core</module>
 		<module>frame</module>
 		<module>orm</module>
+		<module>orm-nosql</module>
 		<module>utils</module>
 		<module>test</module>
-		<module>orm-nosql</module>
+		<module>demo</module>
 	</modules>
 </project>
