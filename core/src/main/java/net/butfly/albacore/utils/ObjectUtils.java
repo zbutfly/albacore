@@ -217,7 +217,7 @@ public class ObjectUtils extends UtilsBase {
 						Collection dst;
 						try {
 							dst = (Collection) dstClass.newInstance();
-						} catch (ReflectiveOperationException e) {
+						} catch (Exception e) {
 							return null;
 						}
 						for (int i = 0; i < len; i++)
@@ -238,7 +238,7 @@ public class ObjectUtils extends UtilsBase {
 							Collection dst;
 							try {
 								dst = (Collection) dstClass.newInstance();
-							} catch (ReflectiveOperationException e) {
+							} catch (Exception e) {
 								return null;
 							}
 							Class<?> dstComponentType = TypeChecker.getIterableClass(dstClass);
@@ -260,7 +260,7 @@ public class ObjectUtils extends UtilsBase {
 							Collection dst;
 							try {
 								dst = (Collection) dstClass.newInstance();
-							} catch (ReflectiveOperationException e) {
+							} catch (Exception e) {
 								return null;
 							}
 							while (it.hasNext())

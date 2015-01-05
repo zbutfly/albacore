@@ -1,6 +1,7 @@
 package net.butfly.albacore.utils.async;
 
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -16,10 +17,6 @@ import net.butfly.albacore.utils.UtilsBase;
 import com.google.common.util.concurrent.MoreExecutors;
 
 public final class AsyncUtils extends UtilsBase {
-	private static ExecutorService EXECUTOR = MoreExecutors.getExitingExecutorService((ThreadPoolExecutor) Executors
-			.newCachedThreadPool());
-	// Executors.newWorkStealingPool();
-
 	public static <OUT> OUT execute(final Task<OUT> task) throws Signal {
 		return execute(EXECUTOR, task);
 	}
@@ -161,5 +158,12 @@ public final class AsyncUtils extends UtilsBase {
 		public V get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
 			return result;
 		}
+	}
+
+	private static ExecutorService EXECUTOR = MoreExecutors.getExitingExecutorService((ThreadPoolExecutor) Executors
+			.newCachedThreadPool());// Executors.newWorkStealingPool();
+
+	public static Executor getDefaultExecutor() {
+		return EXECUTOR;
 	}
 }

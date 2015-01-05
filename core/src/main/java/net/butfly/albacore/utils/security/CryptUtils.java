@@ -1,12 +1,14 @@
 package net.butfly.albacore.utils.security;
 
 import java.security.MessageDigest;
-import java.util.Base64;
 
 import javax.crypto.KeyGenerator;
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+
+import sun.misc.BASE64Decoder;
+import sun.misc.BASE64Encoder;
 
 /**
  * 基础加密组件
@@ -33,6 +35,9 @@ public class CryptUtils {
 	 */
 	public static final String KEY_MAC = "HmacMD5";
 
+	private static final BASE64Encoder BASE64_EN = new BASE64Encoder();
+	private static final BASE64Decoder BASE64_DE = new BASE64Decoder();
+
 	/**
 	 * BASE64解密
 	 * 
@@ -41,7 +46,7 @@ public class CryptUtils {
 	 * @throws Exception
 	 */
 	public static byte[] decryptBASE64(String key) throws Exception {
-		return Base64.getDecoder().decode(key);
+		return BASE64_DE.decodeBuffer(key);
 	}
 
 	/**
@@ -52,7 +57,7 @@ public class CryptUtils {
 	 * @throws Exception
 	 */
 	public static String encryptBASE64(byte[] key) throws Exception {
-		return Base64.getEncoder().encodeToString(key);
+		return BASE64_EN.encode(key);
 	}
 
 	/**
