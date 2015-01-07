@@ -27,7 +27,7 @@ public class KeyUtils extends UtilsBase {
 		StringBuilder sb = new StringBuilder();
 		for (String tt : list)
 			sb.append(tt).append(split);
-		return sb.substring(0, sb.length() - 1);
+		return sb.substring(0, sb.length() - split.length());
 	}
 
 	/**
