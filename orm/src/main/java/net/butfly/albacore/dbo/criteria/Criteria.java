@@ -1,5 +1,6 @@
 package net.butfly.albacore.dbo.criteria;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,6 +17,7 @@ public class Criteria extends Bean<Criteria> {
 
 	public Criteria() {
 		this.params = new HashMap<String, Object>();
+		this.orderFields = new ArrayList<OrderField>();
 	};
 
 	public Criteria setParameters(Map<String, ?> params) {
@@ -41,11 +43,13 @@ public class Criteria extends Bean<Criteria> {
 		return orderFields.toArray(new OrderField[this.orderFields.size()]);
 	}
 
-	public void addOrder(String orderField, boolean asc) {
+	public Criteria addOrder(String orderField, boolean asc) {
 		this.orderFields.add(new OrderField(orderField, asc));
+		return this;
 	}
 
-	public void addOrder(String orderField) {
+	public Criteria addOrder(String orderField) {
 		this.orderFields.add(new OrderField(orderField));
+		return this;
 	}
 }
