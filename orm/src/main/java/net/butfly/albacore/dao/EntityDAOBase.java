@@ -5,6 +5,7 @@ import java.lang.reflect.Array;
 import java.util.List;
 
 import net.butfly.albacore.dbo.criteria.Criteria;
+import net.butfly.albacore.dbo.criteria.OrderedRowBounds;
 import net.butfly.albacore.dbo.criteria.Page;
 import net.butfly.albacore.entity.AbstractEntity;
 import net.butfly.albacore.entity.Entity;
@@ -130,9 +131,9 @@ public abstract class EntityDAOBase extends DAOBase implements EntityDAO {
 		// dirty page
 		if (page.getTotal() < 0) page.setTotal(this.count(entityClass, criteria));
 
+		OrderedRowBounds rb = new OrderedRowBounds(page.getStart(), page.getSize(), criteria.getOrderFields());
 		List<K> list = this.batchTemplate.selectList(
-				this.getSqlId(DAOContext.SELECT_STATMENT_ID + entityClass.getSimpleName() + "ByCriteria"), criteria,
-				page.toRowBounds(criteria.getOrderFields()));
+				this.getSqlId(DAOContext.SELECT_STATMENT_ID + entityClass.getSimpleName() + "ByCriteria"), criteria, rb);
 
 		return list.toArray(Entity.getKeyBuffer(entityClass, list.size()));
 	}

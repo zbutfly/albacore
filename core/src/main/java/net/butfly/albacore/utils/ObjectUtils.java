@@ -19,8 +19,7 @@ import net.butfly.albacore.utils.imports.meta.factory.DefaultObjectFactory;
 import net.butfly.albacore.utils.imports.meta.factory.ObjectFactory;
 import net.butfly.albacore.utils.imports.meta.wrapper.DefaultObjectWrapperFactory;
 import net.butfly.albacore.utils.imports.meta.wrapper.ObjectWrapperFactory;
-
-import org.apache.commons.lang3.NotImplementedException;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import com.google.common.base.Defaults;
 
@@ -136,6 +135,18 @@ public class ObjectUtils extends UtilsBase {
 		PrimaryCategory dstCat = TypeChecker.getPrimaryCategory(dstClass);
 
 		switch (srcCat) {
+		case BOOL: {
+			switch (dstCat) {
+			case BOOL:
+				return value;
+			case NUMBER:
+				return value != Defaults.defaultValue(dstClass);
+			case STRING:
+				return Boolean.parseBoolean((String) value);
+			default:
+				return Defaults.defaultValue(dstClass);
+			}
+		}
 		case ENUM:
 			switch (dstCat) {
 			case ENUM:
@@ -145,7 +156,7 @@ public class ObjectUtils extends UtilsBase {
 			case STRING:
 				return ((Enum) value).name();
 			default:
-				return null;
+				return Defaults.defaultValue(dstClass);
 			}
 		case NUMBER:
 			NumberCategory srcNumCat = NumberCategory.whichNumber(srcClass);
@@ -158,7 +169,7 @@ public class ObjectUtils extends UtilsBase {
 			case STRING:
 				return srcNumCat.numberClass.cast(value).toString();
 			default:
-				return null;
+				return Defaults.defaultValue(dstClass);
 			}
 		case STRING:
 			switch (dstCat) {
@@ -168,21 +179,21 @@ public class ObjectUtils extends UtilsBase {
 				try {
 					vof = dstNumCat.numberClass.getMethod("valueOf", String.class);
 				} catch (Exception e) {
-					return null;
+					return Defaults.defaultValue(dstClass);
 				}
 				if (null == vof || !Modifier.isStatic(vof.getModifiers()))
 					throw new IllegalArgumentException("Could not parse Number class: " + dstNumCat.numberClass.getName());
 				try {
 					return vof.invoke(null, value);
 				} catch (Exception e) {
-					return null;
+					return Defaults.defaultValue(dstClass);
 				}
 			case ENUM:
 				return Enum.valueOf((Class<Enum>) dstClass, (String) value);
 			case STRING:
 				return (String) value;
 			default:
-				return null;
+				return Defaults.defaultValue(dstClass);
 			}
 		case OBJECT_MAP:
 			switch (dstCat) {
@@ -191,7 +202,7 @@ public class ObjectUtils extends UtilsBase {
 			case OBJECT_MAP:
 				return clone((Beans) value, (Class<? extends Beans>) dstClass);
 			default:
-				return null;
+				return Defaults.defaultValue(dstClass);
 			}
 		case ORIGINAL_OBJ:
 			switch (dstCat) {
@@ -200,7 +211,7 @@ public class ObjectUtils extends UtilsBase {
 			case ORIGINAL_OBJ:
 				return value;
 			default:
-				return null;
+				return Defaults.defaultValue(dstClass);
 			}
 		case ARRAY_COLLECTION:
 			switch (dstCat) {
@@ -218,12 +229,12 @@ public class ObjectUtils extends UtilsBase {
 						try {
 							dst = (Collection) dstClass.newInstance();
 						} catch (Exception e) {
-							return null;
+							return Defaults.defaultValue(dstClass);
 						}
 						for (int i = 0; i < len; i++)
 							dst.add(castValue(Array.get(value, i), dstComponentType));
 						return dst;
-					} else return null;
+					} else return Defaults.defaultValue(dstClass);
 				} else {
 					if (Collection.class.isAssignableFrom(srcClass)) { // source is a Collection
 						Collection co = (Collection) value;
@@ -239,13 +250,13 @@ public class ObjectUtils extends UtilsBase {
 							try {
 								dst = (Collection) dstClass.newInstance();
 							} catch (Exception e) {
-								return null;
+								return Defaults.defaultValue(dstClass);
 							}
 							Class<?> dstComponentType = TypeChecker.getIterableClass(dstClass);
 							for (int i = 0; i < size; i++)
 								dst.add(castValue(it.next(), dstComponentType));
 							return dst;
-						} else return null;
+						} else return Defaults.defaultValue(dstClass);
 					} else { // source is an Iterable
 						Iterable itt = (Iterable) value;
 						Iterator it = itt.iterator();
@@ -261,12 +272,12 @@ public class ObjectUtils extends UtilsBase {
 							try {
 								dst = (Collection) dstClass.newInstance();
 							} catch (Exception e) {
-								return null;
+								return Defaults.defaultValue(dstClass);
 							}
 							while (it.hasNext())
 								dst.add(castValue(it.next(), dstComponentType));
 							return dst;
-						} else return null;
+						} else return Defaults.defaultValue(dstClass);
 					}
 				}
 			default:
@@ -282,8 +293,7 @@ public class ObjectUtils extends UtilsBase {
 		if (null == o1) return -1;
 		if (null == o2) return 1;
 
-		if (o1.getClass().isPrimitive())
-			throw new NotImplementedException("Comparation between primitive objects is not implemented.");
+		if (o1.getClass().isPrimitive()) throw new NotImplementedException();
 		if (Number.class.isAssignableFrom(o1.getClass()) && Number.class.isAssignableFrom(o2.getClass()))
 			return TypeComparators.numberComparator.compare((Number) o1, (Number) o2);
 		if (o1.getClass().isArray() && o2.getClass().isArray())
@@ -316,7 +326,7 @@ public class ObjectUtils extends UtilsBase {
 		static final Comparator<Number> numberComparator = new Comparator<Number>() {
 			@Override
 			public int compare(Number o1, Number o2) {
-				throw new NotImplementedException("Comparation between Numbers is not implemented.");
+				throw new NotImplementedException();
 			}
 		};
 		static final Comparator<Iterable<?>> iterableComparator = new Comparator<Iterable<?>>() {
@@ -362,7 +372,7 @@ public class ObjectUtils extends UtilsBase {
 	}
 
 	private enum PrimaryCategory {
-		STRING, NUMBER, ARRAY_COLLECTION, OBJECT_MAP, ORIGINAL_OBJ, ENUM
+		STRING, NUMBER, ARRAY_COLLECTION, OBJECT_MAP, ORIGINAL_OBJ, ENUM, BOOL
 	}
 
 	private static final Set<Class<?>> ALL_NUMBER_CLASSES = new HashSet<Class<?>>();
@@ -409,6 +419,7 @@ public class ObjectUtils extends UtilsBase {
 	private static class TypeChecker {
 		static PrimaryCategory getPrimaryCategory(Class<?> clazz) {
 			if (Enum.class.isAssignableFrom(clazz)) return PrimaryCategory.ENUM;
+			if (boolean.class.equals(clazz) || Boolean.class.equals(clazz)) return PrimaryCategory.BOOL;
 			if (NumberCategory.isNumber(clazz)) return PrimaryCategory.NUMBER;
 			if (String.class.equals(clazz) || char.class.equals(clazz) || Character.class.equals(clazz))
 				return PrimaryCategory.STRING;

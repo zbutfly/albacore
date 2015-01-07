@@ -1,14 +1,7 @@
 package net.butfly.albacore.utils;
 
-import java.util.ArrayList;
-import java.util.List;
 
-public class ByteUtils {
-
-	private ByteUtils() {
-
-	}
-
+public final class ByteUtils extends UtilsBase {
 	public static String byte2hex(byte[] data) {
 		if (null == data) return null;
 		StringBuffer sb = new StringBuffer();
@@ -31,25 +24,5 @@ public class ByteUtils {
 			i += 2;
 		}
 		return bts;
-	}
-
-	public static List<byte[]> valueOf(List<Byte[]> list) {
-		List<byte[]> lists = new ArrayList<byte[]>();
-		for (Byte[] k : list) {
-			byte[] buf = new byte[k.length];
-			for (int l = 0; l < k.length; l++) {
-				buf[l] = k[l].byteValue();
-			}
-			lists.add(buf);
-		}
-		return lists;
-	}
-
-	public static byte[] str2byte(String src) {
-		return src.getBytes();
-	}
-
-	public static String byte2str(byte[] data) {
-		return new String(data);
 	}
 }

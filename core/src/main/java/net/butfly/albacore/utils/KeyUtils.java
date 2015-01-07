@@ -11,12 +11,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class KeyUtils extends UtilsBase {
-	public static String generateUUID() {
+	public static String uuid() {
 		return UUID.randomUUID().toString();
 	}
 
-	public static String generateObjectId() {
+	public static String objectId() {
 		return ObjectIdGenerator.generateKey();
+	}
+
+	public static String join(String[] list) {
+		return join(list, ",");
+	}
+
+	public static String join(String[] list, String split) {
+		StringBuilder sb = new StringBuilder();
+		for (String tt : list)
+			sb.append(tt).append(split);
+		return sb.substring(0, sb.length() - 1);
 	}
 
 	/**
@@ -46,7 +57,6 @@ public class KeyUtils extends UtilsBase {
 		}
 
 		private static int generateMachine() {
-
 			try {
 				// build a 2-byte machine piece based on NICs info
 				int machinePiece;

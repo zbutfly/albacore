@@ -4,12 +4,13 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.commons.beanutils.BeanMap;
-import org.springframework.core.task.AsyncTaskExecutor;
-
 import net.butfly.albacore.exception.SystemException;
 import net.butfly.albacore.helper.AsyncHelper;
 import net.butfly.albacore.helper.HelperBase;
+import net.butfly.albacore.utils.ObjectUtils;
+import net.butfly.albacore.utils.imports.meta.MetaObject;
+
+import org.springframework.core.task.AsyncTaskExecutor;
 
 public class AsyncHelperImpl extends HelperBase implements AsyncHelper {
 	private static final long serialVersionUID = 6262380628765238950L;
@@ -51,8 +52,10 @@ public class AsyncHelperImpl extends HelperBase implements AsyncHelper {
 			throw new SystemException("ALC_000", "Unable to create instance of task executor of class: "
 					+ executorClass.getName(), ex);
 		}
-		BeanMap bm = new BeanMap(executor);
-		bm.putAll(params);
+		MetaObject bm = ObjectUtils.createMeta(executor);
+		for (String name : params.keySet())
+			if (bm.hasSetter(name)) bm.setValue(name, params.get(name));
+
 		// for ExecutorConfigurationSupport
 		Method initMethod;
 		try {
