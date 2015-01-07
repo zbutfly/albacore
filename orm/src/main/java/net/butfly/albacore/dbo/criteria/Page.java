@@ -137,7 +137,7 @@ public final class Page extends Bean<Page> {
 		return size > 0;
 	}
 
-	public RowBounds toRowBounds() {
-		return new RowBounds(this.start, this.size);
+	public RowBounds toRowBounds(OrderField[] orderFields) {
+		return new OrderedRowBounds(this.start, this.size, orderFields);
 	}
 }

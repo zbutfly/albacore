@@ -3,8 +3,7 @@ package net.butfly.albacore.dbo.interceptor;
 import java.sql.Connection;
 import java.util.Properties;
 
-import net.butfly.albacore.dbo.criteria.CriteriaMap;
-import net.butfly.albacore.dbo.criteria.CriteriaMap.QueryType;
+import net.butfly.albacore.dbo.criteria.OrderedRowBounds;
 import net.butfly.albacore.dbo.dialect.Dialect;
 import net.butfly.albacore.utils.ObjectUtils;
 import net.butfly.albacore.utils.imports.meta.MetaObject;
@@ -35,13 +34,9 @@ public class StatementInterceptor extends BaseInterceptor {
 
 			if (null != rowBounds) {
 				// append order
-				Object paramsObject = meta.getValue("delegate.boundSql.parameterObject");
-				if (paramsObject instanceof CriteriaMap) {
-					CriteriaMap params = (CriteriaMap) paramsObject;
-					if (null != params && params.getType() == QueryType.LIST) {
-						sql = this.dialect.orderByWrap(sql, params.getOrderFields());
-						logger.trace("OrderBy is appendded on SQL: " + sql.replaceAll("[\\n]", "").replaceAll("[ \t]+", " "));
-					}
+				if (rowBounds instanceof OrderedRowBounds) {
+					sql = this.dialect.orderByWrap(sql, ((OrderedRowBounds) rowBounds).getOrderFields());
+					logger.trace("OrderBy is appendded on SQL: " + sql.replaceAll("[\\n]", "").replaceAll("[ \t]+", " "));
 				}
 				// wrap pagination
 				if (rowBounds.getLimit() != RowBounds.NO_ROW_LIMIT) {
