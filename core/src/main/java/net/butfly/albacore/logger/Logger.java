@@ -2,6 +2,7 @@ package net.butfly.albacore.logger;
 
 import org.slf4j.helpers.MessageFormatter;
 
+@Deprecated
 public class Logger {
 	private org.slf4j.Logger logger;
 	private org.apache.commons.logging.Log fatalLogger;

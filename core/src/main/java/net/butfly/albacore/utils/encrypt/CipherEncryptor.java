@@ -26,7 +26,7 @@ public class CipherEncryptor extends Encryptor {
 			this.decryptCipher = Cipher.getInstance(algorithm.name());
 			this.decryptCipher.init(Cipher.DECRYPT_MODE, k);
 		} catch (GeneralSecurityException e) {
-			throw new EncryptException(e);
+			throw new EncryptException("",e);
 		}
 	}
 
@@ -35,7 +35,7 @@ public class CipherEncryptor extends Encryptor {
 		try {
 			return this.encryptCipher.doFinal(plain);
 		} catch (Exception e) {
-			throw new EncryptException(e);
+			throw new EncryptException("",e);
 		}
 	}
 
@@ -44,7 +44,7 @@ public class CipherEncryptor extends Encryptor {
 		try {
 			return this.decryptCipher.doFinal(cipher);
 		} catch (Exception e) {
-			throw new EncryptException(e);
+			throw new EncryptException("", e);
 		}
 	}
 }

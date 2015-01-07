@@ -11,12 +11,11 @@ public class ValidateException extends BusinessException {
 	}
 
 	public ValidateException(ConstraintViolation<?>[] violations) {
-		super("", generateMessage(violations));
+		super(Exceptions.VALID_CODE, generateMessage(violations));
 		this.violations = violations;
 	}
 
 	private static String generateMessage(ConstraintViolation<?>[] violations) {
-		// TODO
 		return null;
 	}
 }

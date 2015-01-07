@@ -10,8 +10,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import net.butfly.albacore.exception.SystemException;
-import net.butfly.albacore.exception.SystemExceptions;
+import net.butfly.albacore.exception.AsyncException;
 import net.butfly.albacore.utils.UtilsBase;
 
 import com.google.common.util.concurrent.MoreExecutors;
@@ -35,8 +34,7 @@ public final class AsyncUtils extends UtilsBase {
 			try {
 				return callback(fetch(executor.submit(wrap(task.task)), task.options.timeout), task.callback);
 			} catch (RejectedExecutionException e) {
-				throw new SystemException(SystemExceptions.ASYNC_SATURATED,
-						"async task executing rejected for pool saturated.", e);
+				throw new AsyncException("async task executing rejected for pool saturated.", e);
 			}
 		case CONSUMER:
 			final OUT result = task.task.call();
@@ -50,8 +48,7 @@ public final class AsyncUtils extends UtilsBase {
 						}
 					}));
 				} catch (RejectedExecutionException e) {
-					throw new SystemException(SystemExceptions.ASYNC_SATURATED,
-							"async task executing rejected for pool saturated.", e);
+					throw new AsyncException("async task executing rejected for pool saturated.", e);
 				}
 				if (task.options.unblock) return null;
 				try {
@@ -63,8 +60,7 @@ public final class AsyncUtils extends UtilsBase {
 			try {
 				producer = executor.submit(wrap(task.task));
 			} catch (RejectedExecutionException e) {
-				throw new SystemException(SystemExceptions.ASYNC_SATURATED,
-						"async task executing rejected for pool saturated.", e);
+				throw new AsyncException("async task executing rejected for pool saturated.", e);
 			}
 			Future<OUT> consumer = executor.submit(wrap(new Callable<OUT>() {
 				@Override

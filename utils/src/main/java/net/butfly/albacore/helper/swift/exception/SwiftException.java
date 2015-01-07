@@ -4,7 +4,7 @@ import net.butfly.albacore.exception.BusinessException;
 
 public class SwiftException extends BusinessException {
 	private static final long serialVersionUID = 7587500560631008370L;
-	public static final String SWIFT_ERROR_CODE = "SWIFT_000";
+	public static final String SWIFT_ERROR_CODE = "BUS_200";
 
 	public SwiftException() {
 		super(SWIFT_ERROR_CODE);

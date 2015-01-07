@@ -3,6 +3,7 @@ package net.butfly.albacore.logger;
 import java.util.Map;
 import java.util.WeakHashMap;
 
+@Deprecated
 public class LoggerFactory {
 	private static final Map<Class<?>, Logger> loggerCache = new WeakHashMap<Class<?>, Logger>();
 

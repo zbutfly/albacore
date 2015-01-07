@@ -1,7 +1,7 @@
 package net.butfly.albacore.base;
 
-import net.butfly.albacore.logger.Logger;
-import net.butfly.albacore.logger.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class BizUnitBase extends UnitBase implements BizUnit {
 	private static final long serialVersionUID = 1L;
