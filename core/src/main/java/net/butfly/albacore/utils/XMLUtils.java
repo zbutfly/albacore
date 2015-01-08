@@ -3,7 +3,6 @@ package net.butfly.albacore.utils;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
-import java.io.Writer;
 import java.util.Iterator;
 import java.util.List;
 
@@ -13,10 +12,14 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import net.butfly.albacore.utils.imports.meta.MetaObject;
 
-import org.apache.xml.serialize.OutputFormat;
-import org.apache.xml.serialize.XMLSerializer;
 import org.dom4j.Attribute;
 import org.dom4j.Element;
+import org.w3c.dom.DOMConfiguration;
+import org.w3c.dom.DOMImplementation;
+import org.w3c.dom.Document;
+import org.w3c.dom.ls.DOMImplementationLS;
+import org.w3c.dom.ls.LSOutput;
+import org.w3c.dom.ls.LSSerializer;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
@@ -24,7 +27,7 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 public class XMLUtils extends UtilsBase {
 	@SuppressWarnings("unchecked")
-	public static void setByAttrs(Object target, Element element, String... ignores) {
+	public static void setPropsByAttr(Object target, Element element, String... ignores) {
 		MetaObject meta = ObjectUtils.createMeta(target);
 		Iterator<Attribute> it = element.attributeIterator();
 		while (it.hasNext()) {
@@ -37,7 +40,7 @@ public class XMLUtils extends UtilsBase {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static void setByNodes(Object target, Element element, String... ignores) {
+	public static void setPropsByNode(Object target, Element element, String... ignores) {
 		MetaObject meta = ObjectUtils.createMeta(target);
 		for (Element node : (List<Element>) element.selectNodes("*")) {
 			String name = node.getName();
@@ -55,24 +58,31 @@ public class XMLUtils extends UtilsBase {
 	}
 
 	public static String format(String unformattedXml) {
-		try {
-			final org.w3c.dom.Document document = parseXmlFile(unformattedXml);
-
-			OutputFormat format = new OutputFormat(document);
-			format.setLineWidth(65);
-			format.setIndenting(true);
-			format.setIndent(4);
-			Writer out = new StringWriter();
-			XMLSerializer serializer = new XMLSerializer(out, format);
-			serializer.serialize(document);
-
-			return out.toString();
-		} catch (IOException e) {
-			throw new RuntimeException(e);
+		// Pretty-prints a DOM document to XML using DOM Load and Save's LSSerializer.
+		// Note that the "format-pretty-print" DOM configuration parameter can only be set in JDK 1.6+.
+		final Document document = parseXmlFile(unformattedXml);
+		DOMImplementation domImplementation = document.getImplementation();
+		if (domImplementation.hasFeature("LS", "3.0") && domImplementation.hasFeature("Core", "2.0")) {
+			DOMImplementationLS domImplementationLS = (DOMImplementationLS) domImplementation.getFeature("LS", "3.0");
+			LSSerializer lsSerializer = domImplementationLS.createLSSerializer();
+			DOMConfiguration domConfiguration = lsSerializer.getDomConfig();
+			if (domConfiguration.canSetParameter("format-pretty-print", Boolean.TRUE)) {
+				lsSerializer.getDomConfig().setParameter("format-pretty-print", Boolean.TRUE);
+				LSOutput lsOutput = domImplementationLS.createLSOutput();
+				lsOutput.setEncoding("UTF-8");
+				StringWriter stringWriter = new StringWriter();
+				lsOutput.setCharacterStream(stringWriter);
+				lsSerializer.write(document, lsOutput);
+				return stringWriter.toString();
+			} else {
+				throw new RuntimeException("DOMConfiguration 'format-pretty-print' parameter isn't settable.");
+			}
+		} else {
+			throw new RuntimeException("DOM 3.0 LS and/or DOM 2.0 Core not supported.");
 		}
 	}
 
-	private static org.w3c.dom.Document parseXmlFile(String in) {
+	private static Document parseXmlFile(String in) {
 		try {
 			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 			DocumentBuilder db = dbf.newDocumentBuilder();
