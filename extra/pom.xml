@@ -17,17 +17,13 @@
 			<artifactId>albacore-frame</artifactId>
 			<version>2.0.1-SNAPSHOT</version>
 		</dependency>
+		<!-- async (spring executor) -->
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-beans</artifactId>
 			<version>${deps.version.spring}</version>
 		</dependency>
-
-		<dependency>
-			<groupId>org.apache.commons</groupId>
-			<artifactId>commons-lang3</artifactId>
-			<version>3.3.2</version>
-		</dependency>
+		<!-- swift -->
 		<dependency>
 			<groupId>com.google.code.gson</groupId>
 			<artifactId>gson</artifactId>

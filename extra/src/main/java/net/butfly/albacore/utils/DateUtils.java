@@ -1,15 +1,13 @@
 package net.butfly.albacore.utils;
 
+import java.text.DateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 
 import net.butfly.albacore.exception.SystemException;
 
-import org.apache.commons.lang3.time.FastDateFormat;
-
-public final class DateUtils extends org.apache.commons.lang3.time.DateUtils {
-
+public final class DateUtils extends UtilsBase {
 	private DateUtils() {}
 
 	// prefix convenient for calculating
@@ -17,11 +15,11 @@ public final class DateUtils extends org.apache.commons.lang3.time.DateUtils {
 
 	protected static final long DIFF_OF_CST_GMT = 8 * 60 * 60 * 1000;
 	protected static final long MILLISECONDS_OF_DAY = 24 * 60 * 60 * 1000;
-	protected static FastDateFormat defaultDateFromat = FastDateFormat.getInstance("yyyy-MM-dd");
-	protected static FastDateFormat detaultTimeFromat = FastDateFormat.getInstance("HH:mm:ss");
-	protected static FastDateFormat shortTimeFromat = FastDateFormat.getInstance("HH:mm");
-	protected static FastDateFormat databaseTimeFromat = FastDateFormat.getInstance("HHmm");
-	private static FastDateFormat db2TimeFromat = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSSSSS");
+	protected static DateFormat defaultDateFromat = FormatUtils.dateFormat("yyyy-MM-dd");
+	protected static DateFormat detaultTimeFromat = FormatUtils.dateFormat("HH:mm:ss");
+	protected static DateFormat shortTimeFromat = FormatUtils.dateFormat("HH:mm");
+	protected static DateFormat databaseTimeFromat = FormatUtils.dateFormat("HHmm");
+	private static DateFormat db2TimeFromat = FormatUtils.dateFormat("yyyy-MM-dd HH:mm:ss.SSSSSS");
 
 	public static String formatForDB2(Date date) {
 		return db2TimeFromat.format(null == date ? new Date() : date);

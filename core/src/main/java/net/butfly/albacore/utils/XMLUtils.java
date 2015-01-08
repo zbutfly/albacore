@@ -14,7 +14,8 @@ import net.butfly.albacore.utils.imports.meta.MetaObject;
 
 import org.dom4j.Attribute;
 import org.dom4j.Element;
-import org.w3c.dom.DOMConfiguration;
+import org.dom4j.io.OutputFormat;
+import org.dom4j.io.XMLWriter;
 import org.w3c.dom.DOMImplementation;
 import org.w3c.dom.Document;
 import org.w3c.dom.ls.DOMImplementationLS;
@@ -57,23 +58,31 @@ public class XMLUtils extends UtilsBase {
 		}
 	}
 
+	private static OutputFormat format = OutputFormat.createPrettyPrint();
+
+	public static String format(Element element) {
+		StringWriter w = new StringWriter();
+		XMLWriter x = new XMLWriter(w, format);
+		try {
+			x.write(element);
+		} catch (IOException e) {}
+		return w.toString();
+	}
+
 	public static String format(String unformattedXml) {
-		// Pretty-prints a DOM document to XML using DOM Load and Save's LSSerializer.
-		// Note that the "format-pretty-print" DOM configuration parameter can only be set in JDK 1.6+.
-		final Document document = parseXmlFile(unformattedXml);
-		DOMImplementation domImplementation = document.getImplementation();
-		if (domImplementation.hasFeature("LS", "3.0") && domImplementation.hasFeature("Core", "2.0")) {
-			DOMImplementationLS domImplementationLS = (DOMImplementationLS) domImplementation.getFeature("LS", "3.0");
-			LSSerializer lsSerializer = domImplementationLS.createLSSerializer();
-			DOMConfiguration domConfiguration = lsSerializer.getDomConfig();
-			if (domConfiguration.canSetParameter("format-pretty-print", Boolean.TRUE)) {
-				lsSerializer.getDomConfig().setParameter("format-pretty-print", Boolean.TRUE);
-				LSOutput lsOutput = domImplementationLS.createLSOutput();
-				lsOutput.setEncoding("UTF-8");
-				StringWriter stringWriter = new StringWriter();
-				lsOutput.setCharacterStream(stringWriter);
-				lsSerializer.write(document, lsOutput);
-				return stringWriter.toString();
+		final Document doc = parseXmlFile(unformattedXml);
+		DOMImplementation impl = doc.getImplementation();
+		if (impl.hasFeature("LS", "3.0") && impl.hasFeature("Core", "2.0")) {
+			DOMImplementationLS ls = (DOMImplementationLS) impl.getFeature("LS", "3.0");
+			LSSerializer lss = ls.createLSSerializer();
+			if (lss.getDomConfig().canSetParameter("format-pretty-print", Boolean.TRUE)) {
+				lss.getDomConfig().setParameter("format-pretty-print", Boolean.TRUE);
+				LSOutput output = ls.createLSOutput();
+				output.setEncoding("UTF-8");
+				StringWriter writer = new StringWriter();
+				output.setCharacterStream(writer);
+				lss.write(doc, output);
+				return writer.toString();
 			} else {
 				throw new RuntimeException("DOMConfiguration 'format-pretty-print' parameter isn't settable.");
 			}
