@@ -6,7 +6,7 @@ public class OrderField {
 	private String ascv;
 
 	public OrderField(String field) {
-		this(field, true);
+		this(field, false);
 	}
 
 	public OrderField(String field, boolean desc) {
