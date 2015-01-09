@@ -18,7 +18,7 @@ package net.butfly.albacore.utils.imports.meta.wrapper;
 
 import java.util.List;
 
-import net.butfly.albacore.utils.imports.meta.ExceptionUtil;
+import net.butfly.albacore.utils.ExceptionUtils;
 import net.butfly.albacore.utils.imports.meta.MetaClass;
 import net.butfly.albacore.utils.imports.meta.MetaObject;
 import net.butfly.albacore.utils.imports.meta.ReflectionException;
@@ -155,7 +155,7 @@ public class BeanWrapper extends BaseWrapper {
 			try {
 				return method.invoke(object, NO_ARGUMENTS);
 			} catch (Throwable t) {
-				throw ExceptionUtil.unwrapThrowable(t);
+				throw ExceptionUtils.unwrapThrowable(t);
 			}
 		} catch (RuntimeException e) {
 			throw e;
@@ -172,7 +172,7 @@ public class BeanWrapper extends BaseWrapper {
 			try {
 				method.invoke(object, params);
 			} catch (Throwable t) {
-				throw ExceptionUtil.unwrapThrowable(t);
+				throw ExceptionUtils.unwrapThrowable(t);
 			}
 		} catch (Throwable t) {
 			throw new ReflectionException("Could not set property '" + prop.getName() + "' of '" + object.getClass()

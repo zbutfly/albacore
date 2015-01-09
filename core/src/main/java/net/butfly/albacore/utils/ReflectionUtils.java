@@ -106,7 +106,7 @@ public final class ReflectionUtils extends UtilsBase {
 		if (null == owner) throw new NullPointerException();
 		MetaObject meta = ObjectUtils.createMeta(owner);
 		if (meta.hasGetter(name)) return (T) meta.getValue(name);
-		else throw new RuntimeException();
+		else throw new RuntimeException("No getter method for target.");
 	}
 
 	/**
@@ -137,7 +137,7 @@ public final class ReflectionUtils extends UtilsBase {
 
 		MetaObject meta = ObjectUtils.createMeta(owner);
 		if (meta.hasSetter(name)) meta.setValue(name, value);
-		else throw new RuntimeException();
+		else throw new RuntimeException("No setter method for target.");
 	}
 
 	public static <T> Set<Class<? extends T>> getSubClasses(Class<T> parentClass, String packagePrefix) {

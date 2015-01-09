@@ -5,7 +5,7 @@ public final class AsyncTaskExceptionHandler extends ThreadGroup {
 	private AsyncTaskBase task;
 
 	public AsyncTaskExceptionHandler(AsyncTaskBase task) {
-		super("Asynchronous task thread group");
+		super("Asynchronous callable thread group");
 		this.task = task;
 	}
 
