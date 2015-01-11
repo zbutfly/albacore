@@ -2,8 +2,6 @@ package net.butfly.albacore.dbo.criteria;
 
 import net.butfly.albacore.support.Bean;
 
-import org.apache.ibatis.session.RowBounds;
-
 public final class Page extends Bean<Page> {
 	private static final long serialVersionUID = 7953408535935745025L;
 	// the first page index of the current query.
@@ -135,9 +133,5 @@ public final class Page extends Bean<Page> {
 
 	public boolean empty() {
 		return size > 0;
-	}
-
-	public RowBounds toRowBounds() {
-		return new RowBounds(this.start + 1, this.size);
 	}
 }

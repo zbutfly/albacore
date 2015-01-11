@@ -8,10 +8,8 @@ import javax.validation.ValidatorFactory;
 
 import net.butfly.albacore.exception.ValidateException;
 
-public final class Validator {
+public final class Validator extends UtilsBase {
 	private static final ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
-
-	private Validator() {}
 
 	public static void validate(Object dto) throws ValidateException {
 		Set<ConstraintViolation<Object>> cvs = factory.getValidator().validate(dto);

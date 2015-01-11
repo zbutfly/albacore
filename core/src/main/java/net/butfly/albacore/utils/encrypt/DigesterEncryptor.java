@@ -14,7 +14,7 @@ public class DigesterEncryptor extends Encryptor {
 		try {
 			this.digester = MessageDigest.getInstance(algorithm.code());
 		} catch (NoSuchAlgorithmException e) {
-			throw new EncryptException(e);
+			throw new EncryptException("", e);
 		}
 	}
 

@@ -8,22 +8,19 @@ import org.apache.log4j.spi.LoggingEvent;
  *
  * ANSIColorLayout is a Log4J Layout that formats messages using ANSI colors.
  *
- * Each level (DEBUG,INFO,WARN) has its own color that you can customize. To use
- * this file, in your log4j.properties or log4j.xml specify ANSIColorLayout
- * instead of a PatternLayout.
+ * Each level (DEBUG,INFO,WARN) has its own color that you can customize. To use this file, in your
+ * log4j.properties or log4j.xml specify ANSIColorLayout instead of a PatternLayout.
  *
  *
  * <b>log4j.properties</b>
  *
  * log4j.appender.A1.layout=org.osuosl.logging.ANSIColorLayout
- * log4j.appender.A1.layout.ConversionPattern=%-5p [%d{MM-dd-yyyy HH:mm:ss}] %c
- * - %m%n
+ * log4j.appender.A1.layout.ConversionPattern=%-5p [%d{MM-dd-yyyy HH:mm:ss}] %c - %m%n
  *
  * log4j.appender.A1.all=\u001B[1;37m log4j.appender.A1.fatal=\u001B[1;31m
  * log4j.appender.A1.error=\u001B[0;31m log4j.appender.A1.warn=\u001B[1;33m
  * log4j.appender.A1.info=\u001B[0;37m log4j.appender.A1.debug=\u001B[0;36m
- * log4j.appender.A1.reset=\u001B[1;37m
- * log4j.appender.A1.stacktrace=\u001B[0;31m
+ * log4j.appender.A1.reset=\u001B[1;37m log4j.appender.A1.stacktrace=\u001B[0;31m
  * log4j.appender.A1.defaultcolor=\u001B[1;37m
  * 
  *
@@ -155,8 +152,8 @@ public class ANSIColorPatternLayout extends PatternLayout {
 	}
 
 	/**
-	 * defaultcolor - default terminal color. this is the color that the
-	 * terminal will be reset to after each line. default is white
+	 * defaultcolor - default terminal color. this is the color that the terminal will be reset to after
+	 * each line. default is white
 	 */
 	private String defaultcolor;
 

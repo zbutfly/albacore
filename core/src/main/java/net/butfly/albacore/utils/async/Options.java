@@ -15,7 +15,7 @@ public class Options {
 	boolean unblock = ForkMode.NONE.async;
 
 	/**
-	 * Forking producer (Callable task) or consumer (Callback routine), another
+	 * Forking producer (Callable callable) or consumer (Callback routine), another
 	 * will continue in current thread.
 	 * 
 	 * @param producer

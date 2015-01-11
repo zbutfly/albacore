@@ -17,6 +17,10 @@ class Log4jFactory {
 	private static final String[] internal_configs = new String[] { "/net/butfly/albacore/core/logger/log4j.xml" };
 	private static boolean initialized = false;
 
+	static {
+		initializeLog4j();
+	}
+
 	static void initializeLog4j() {
 		if (initialized) return;
 		try {

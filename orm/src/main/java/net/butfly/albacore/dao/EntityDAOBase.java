@@ -5,6 +5,7 @@ import java.lang.reflect.Array;
 import java.util.List;
 
 import net.butfly.albacore.dbo.criteria.Criteria;
+import net.butfly.albacore.dbo.criteria.OrderedRowBounds;
 import net.butfly.albacore.dbo.criteria.Page;
 import net.butfly.albacore.entity.AbstractEntity;
 import net.butfly.albacore.entity.Entity;
@@ -124,16 +125,15 @@ public abstract class EntityDAOBase extends DAOBase implements EntityDAO {
 	}
 
 	@Override
-	public <K extends Serializable, E extends AbstractEntity<K>> K[] selectKeys(Class<E> entityClass, Criteria criteria, Page page) {
+	public <K extends Serializable, E extends AbstractEntity<K>> K[] selectKeys(Class<E> entityClass, Criteria criteria,
+			Page page) {
 		if (null == page) throw new SystemException("Query must be limited by page.");
-		if (page.getTotal() < 0) { // dirty page
-			Object total = this.batchTemplate.selectOne(
-					this.getSqlId(DAOContext.COUNT_STATMENT_ID + entityClass.getSimpleName() + "ByCriteria"), criteria);
-			page.setTotal(null != total ? ((Number) total).intValue() : 0);
-		}
+		// dirty page
+		if (page.getTotal() < 0) page.setTotal(this.count(entityClass, criteria));
+
+		OrderedRowBounds rb = new OrderedRowBounds(page.getStart(), page.getSize(), criteria.getOrderFields());
 		List<K> list = this.batchTemplate.selectList(
-				this.getSqlId(DAOContext.SELECT_STATMENT_ID + entityClass.getSimpleName() + "ByCriteria"), criteria,
-				page.toRowBounds());
+				this.getSqlId(DAOContext.SELECT_STATMENT_ID + entityClass.getSimpleName() + "ByCriteria"), criteria, rb);
 
 		return list.toArray(Entity.getKeyBuffer(entityClass, list.size()));
 	}

@@ -11,35 +11,14 @@ import net.butfly.albacore.utils.ObjectUtils;
 
 public class Criteria extends Bean<Criteria> {
 	private static final long serialVersionUID = 4775216639071589206L;
-	public static final String ORDER_FIELDS_PARAM_NAME = "orderFields";
+
+	private List<OrderField> orderFields;
 	protected Map<String, Object> params;
-	protected List<OrderField> orderFields;
-
-	public List<OrderField> getOrderFields() {
-		return orderFields;
-	}
-
-	public String getOrderBy() {
-		if (orderFields.size() == 0) return null;
-		StringBuilder sb = new StringBuilder(" ORDER BY");
-		for (OrderField of : this.orderFields)
-			sb.append(" ").append(of.field).append(" ").append(of.ascv);
-		return sb.toString();
-	}
 
 	public Criteria() {
 		this.params = new HashMap<String, Object>();
-		this.orderFields = new ArrayList<Criteria.OrderField>();
+		this.orderFields = new ArrayList<OrderField>();
 	};
-
-	public Criteria addOrder(String orderField) {
-		return this.addOrder(orderField, true);
-	}
-
-	public Criteria addOrder(String orderField, boolean asc) {
-		this.orderFields.add(new OrderField(orderField, asc));
-		return this;
-	}
 
 	public Criteria setParameters(Map<String, ?> params) {
 		this.params.putAll(params);
@@ -60,27 +39,17 @@ public class Criteria extends Bean<Criteria> {
 		return this.params;
 	}
 
-	public static final class OrderField {
-		private String field;
-		private boolean asc;
-		private String ascv;
+	public OrderField[] getOrderFields() {
+		return orderFields.toArray(new OrderField[this.orderFields.size()]);
+	}
 
-		private OrderField(String field, boolean asc) {
-			this.field = field;
-			this.asc = asc;
-			this.ascv = asc ? "ASC" : "DESC";
-		}
+	public Criteria addOrder(String orderField, boolean asc) {
+		this.orderFields.add(new OrderField(orderField, asc));
+		return this;
+	}
 
-		public String getField() {
-			return field;
-		}
-
-		public String getAsc() {
-			return ascv;
-		}
-
-		public boolean desc() {
-			return !asc;
-		}
+	public Criteria addOrder(String orderField) {
+		this.orderFields.add(new OrderField(orderField));
+		return this;
 	}
 }

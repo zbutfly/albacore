@@ -7,7 +7,7 @@ import java.util.Map.Entry;
 
 import net.butfly.albacore.dbo.MongoEntity;
 import net.butfly.albacore.dbo.criteria.Criteria;
-import net.butfly.albacore.dbo.criteria.Criteria.OrderField;
+import net.butfly.albacore.dbo.criteria.OrderField;
 import net.butfly.albacore.dbo.criteria.Page;
 import net.butfly.albacore.utils.GenericUtils;
 
@@ -120,7 +120,7 @@ public abstract class MongoDaoBase<E extends MongoEntity> extends DAOBase implem
 		for (Entry<String, Object> e : criteria.getParameters().entrySet())
 			q.field(this.context.getMongoField(entityClass, e.getKey())).equal(e.getValue());
 		for (OrderField f : criteria.getOrderFields()) {
-			String o = f.getField();
+			String o = f.field();
 			if (f.desc()) o = "-" + o;
 			q.order(o);
 		}

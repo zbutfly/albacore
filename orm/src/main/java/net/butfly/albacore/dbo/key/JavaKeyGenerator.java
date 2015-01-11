@@ -4,11 +4,11 @@ import java.io.Serializable;
 import java.sql.Statement;
 
 import net.butfly.albacore.utils.ObjectUtils;
+import net.butfly.albacore.utils.imports.meta.MetaObject;
 
 import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.executor.keygen.KeyGenerator;
 import org.apache.ibatis.mapping.MappedStatement;
-import org.apache.ibatis.reflection.MetaObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
