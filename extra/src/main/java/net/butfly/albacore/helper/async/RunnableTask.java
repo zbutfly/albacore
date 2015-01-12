@@ -1,7 +1,7 @@
 package net.butfly.albacore.helper.async;
 
 public class RunnableTask extends Thread {
-	private static final String THREAD_NAME_PREFIX = "albacore-callable-thread-";
+	private static final String THREAD_NAME_PREFIX = "albacore-call-thread-";
 
 	private AsyncTaskBase task;
 
