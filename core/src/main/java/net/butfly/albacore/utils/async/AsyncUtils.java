@@ -25,7 +25,7 @@ public final class AsyncUtils extends UtilsBase {
 		return null;
 	}
 
-	static <OUT> OUT fetch(Future<OUT> future, long timeout) throws Exception {
+	static <OUT> OUT fetch(Future<OUT> future, long timeout) {
 		try {
 			return timeout > 0 ? future.get(timeout, TimeUnit.MILLISECONDS) : future.get();
 		} catch (Exception e) {

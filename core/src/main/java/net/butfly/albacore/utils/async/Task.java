@@ -10,6 +10,7 @@ import net.butfly.albacore.exception.AsyncException;
 public class Task<T> {
 	protected Callable<T> callable;
 	protected Callback<T> callback;
+	protected Callback<Exception> exception = null;
 	protected Options options;
 
 	public interface Callback<R> {
@@ -52,11 +53,21 @@ public class Task<T> {
 		return options;
 	}
 
+	public Callback<Exception> exception() {
+		return exception;
+	}
+
+	public Task<T> exception(Callback<Exception> exception) {
+		this.exception = exception;
+		return this;
+	}
+
 	public T execute() throws Exception {
 		return execute(AsyncUtils.EXECUTOR);
 	}
 
 	public T execute(ExecutorService executor) throws Exception {
+		if (this.exception != null) return this.wrapExceptionHandler().execute();
 		if (executor == null) executor = AsyncUtils.EXECUTOR;
 		if (options == null) options = new Options();
 
@@ -108,7 +119,30 @@ public class Task<T> {
 		throw new IllegalArgumentException();
 	}
 
-	interface Runnable {
-		void run() throws Exception;
+	private Task<T> wrapExceptionHandler() {
+		Task<T> wrapped = new Task<T>();
+		wrapped.options = options;
+		wrapped.callable = new Callable<T>() {
+			@Override
+			public T call() throws Exception {
+				try {
+					return callable.call();
+				} catch (Exception ex) {
+					exception.callback(ex);
+					return null;
+				}
+			}
+		};
+		wrapped.callback = new Callback<T>() {
+			@Override
+			public void callback(T result) throws Exception {
+				try {
+					callback.callback(result);
+				} catch (Exception ex) {
+					exception.callback(ex);
+				}
+			}
+		};
+		return wrapped;
 	}
 }

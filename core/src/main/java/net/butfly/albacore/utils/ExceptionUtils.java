@@ -58,6 +58,8 @@ public class ExceptionUtils extends UtilsBase {
 			wrapperClasses.put(ExecutionException.class, ExecutionException.class.getMethod("getCause"));
 			wrapperClasses
 					.put(InvocationTargetException.class, InvocationTargetException.class.getMethod("getTargetException"));
+			wrapperClasses.put(UndeclaredThrowableException.class,
+					UndeclaredThrowableException.class.getMethod("getUndeclaredThrowable"));
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
