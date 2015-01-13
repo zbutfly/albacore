@@ -1,6 +1,5 @@
 package net.butfly.albacore.utils.async;
 
-import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -27,9 +26,16 @@ final class Tasks extends UtilsBase {
 	}
 
 	static <T> Task<T> wrapHandler(Task<T> task, ExceptionHandler<T> handler, Task.HandlerTarget... targets) {
-		boolean undefined = targets == null || targets.length == 0;
-		if (undefined || Arrays.binarySearch(targets, Task.HandlerTarget.CALLABLE) >= 0) task.call.handler = handler;
-		if (!undefined && Arrays.binarySearch(targets, Task.HandlerTarget.CALLABLE) >= 0) task.back.handler = handler;
+		if (targets == null || targets.length == 0) task.call.handler = handler;
+		else for (Task.HandlerTarget t : targets)
+			switch (t) {
+			case CALLABLE:
+				task.call.handler = handler;
+				break;
+			case CALLBACK:
+				task.back.handler = handler;
+				break;
+			}
 		return task;
 	}
 
