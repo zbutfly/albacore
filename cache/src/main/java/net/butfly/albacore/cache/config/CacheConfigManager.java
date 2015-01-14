@@ -13,13 +13,13 @@ import net.butfly.albacore.cache.utils.methodintrude.BaseMethodIntrudeBase;
 import net.butfly.albacore.cache.utils.strategy.ICacheStrategy;
 import net.butfly.albacore.cache.utils.strategy.keygenerate.IKeyGenerator;
 import net.butfly.albacore.exception.SystemException;
-import net.butfly.albacore.logger.Logger;
-import net.butfly.albacore.logger.LoggerFactory;
 
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 

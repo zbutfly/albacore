@@ -1,8 +1,8 @@
 package net.butfly.albacore.cache.config;
 
-import net.butfly.albacore.support.CloneSupport;
+import net.butfly.albacore.support.Bean;
 
-public class CacheConfig extends CloneSupport<CacheConfig> {
+public class CacheConfig extends Bean<CacheConfig> {
 	private static final long serialVersionUID = -7394826293937092320L;
 
 	public String getServiceContent() {

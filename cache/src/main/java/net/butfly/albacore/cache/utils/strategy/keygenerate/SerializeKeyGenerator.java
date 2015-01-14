@@ -5,12 +5,15 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 
 import net.butfly.albacore.cache.utils.Key;
-import net.butfly.albacore.cache.utils.tool.MD5Encrypt;
 import net.butfly.albacore.exception.SystemException;
-import net.butfly.albacore.logger.Logger;
-import net.butfly.albacore.logger.LoggerFactory;
+import net.butfly.albacore.utils.encrypt.Algorithm.DigesterAlgorithm;
+import net.butfly.albacore.utils.encrypt.DigesterEncryptor;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SerializeKeyGenerator implements IKeyGenerator {
+	private static final DigesterEncryptor encrypt = new DigesterEncryptor(DigesterAlgorithm.MD5);
 	protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	public String getKey(Key o) {
@@ -22,7 +25,7 @@ public class SerializeKeyGenerator implements IKeyGenerator {
 				ByteArrayOutputStream bos = new ByteArrayOutputStream();
 				ObjectOutputStream oos = new ObjectOutputStream(bos);
 				oos.writeObject(o.getObj());
-				key = MD5Encrypt.getEncrypt().encode(bos.toByteArray());
+				key = encrypt.encrypt(key);
 			}
 			logger.debug("  value key：[" + key + "] successed generatored by SerializeKeyGenerator!!! ");
 		} catch (IOException e) {

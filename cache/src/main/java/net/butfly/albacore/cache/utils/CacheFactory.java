@@ -6,8 +6,9 @@ import java.util.WeakHashMap;
 import net.butfly.albacore.cache.config.CacheConfigManager;
 import net.butfly.albacore.cache.utils.impl.BaseCacheImpl;
 import net.butfly.albacore.exception.SystemException;
-import net.butfly.albacore.logger.Logger;
-import net.butfly.albacore.logger.LoggerFactory;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CacheFactory {
 	private final static Logger logger = LoggerFactory.getLogger(CacheFactory.class);

@@ -5,11 +5,13 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.lang.reflect.Method;
 
-import net.butfly.albacore.cache.utils.tool.MD5Encrypt;
 import net.butfly.albacore.exception.SystemException;
 import net.butfly.albacore.utils.ByteUtils;
+import net.butfly.albacore.utils.encrypt.Algorithm.DigesterAlgorithm;
+import net.butfly.albacore.utils.encrypt.DigesterEncryptor;
 
 public class Key {
+	private static final DigesterEncryptor encrypt = new DigesterEncryptor(DigesterAlgorithm.MD5);
 	private Object obj;
 
 	public <T extends Serializable> Key(T obj) {
@@ -25,7 +27,7 @@ public class Key {
 				oos.writeObject(ob);
 				key = ByteUtils.byte2hex(bos.toByteArray()) + key;
 			}
-			key = MD5Encrypt.getEncrypt().encode(key.getBytes());
+			key = encrypt.encrypt(key);
 			this.obj = key;
 		} catch (Exception e) {
 			e.printStackTrace();
