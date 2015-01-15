@@ -145,7 +145,7 @@ public final class ReflectionUtils extends UtilsBase {
 		}
 		Constructor<T> constructor;
 		try {
-			constructor = clazz.getConstructor(parameterClasses(paramInfo));
+			constructor = clazz.getDeclaredConstructor(parameterClasses(paramInfo));
 		} catch (Exception ex) {
 			ex = ExceptionUtils.unwrap(ex);
 			throw new RuntimeException(ex);
