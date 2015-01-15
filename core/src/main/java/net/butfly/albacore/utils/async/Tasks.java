@@ -12,9 +12,9 @@ import net.butfly.albacore.utils.async.Task.ExceptionHandler;
 import com.google.common.util.concurrent.MoreExecutors;
 
 final class Tasks extends UtilsBase {
+	// static ExecutorService MORE_EX = Executors.newWorkStealingPool();
 	static ExecutorService EXECUTOR = MoreExecutors.getExitingExecutorService((ThreadPoolExecutor) Executors
 			.newCachedThreadPool());
-	static ExecutorService MORE_EX = Executors.newWorkStealingPool();
 
 	static abstract class Handleable<T> extends ExceptionHandler<T> {
 		protected ExceptionHandler<T> handler = new ExceptionHandler<T>();
