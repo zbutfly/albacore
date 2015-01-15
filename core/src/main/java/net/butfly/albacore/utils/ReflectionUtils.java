@@ -16,6 +16,7 @@ import java.util.Set;
 
 import net.butfly.albacore.exception.BusinessException;
 import net.butfly.albacore.exception.SystemException;
+import net.butfly.albacore.support.Bean;
 import net.butfly.albacore.utils.imports.meta.MetaObject;
 
 import org.reflections.Configuration;
@@ -75,21 +76,87 @@ public final class ReflectionUtils extends UtilsBase {
 		}
 	}
 
-	public static <T> T safeConstruct(Constructor<T> constructor, Object... args) throws BusinessException {
+	public static class MethodInfo extends Bean<MethodInfo> {
+		private static final long serialVersionUID = 7736704702258827973L;
+		private Class<?>[] parametersClasses;
+		private Class<?> returnClass;
+
+		public MethodInfo(Class<?>[] parametersClasses, Class<?> returnClass) {
+			super();
+			this.parametersClasses = parametersClasses;
+			this.returnClass = returnClass;
+		}
+
+		public Class<?>[] parametersClasses() {
+			return parametersClasses;
+		}
+
+		public Class<?> returnClass() {
+			return returnClass;
+		}
+	}
+
+	public static final class ParameterInfo extends Bean<ParameterInfo> {
+		private static final long serialVersionUID = -8834764434029866955L;
+		private Class<?> parameterClass;
+		private Object parameterValue;
+
+		private ParameterInfo(Class<?> parameterClass, Object parameterValue) {
+			super();
+			this.parameterClass = parameterClass;
+			this.parameterValue = parameterValue;
+		}
+
+		public Class<?> parameterClass() {
+			return parameterClass;
+		}
+
+		public Object parameterValue() {
+			return parameterValue;
+		}
+	}
+
+	public static ParameterInfo parameters(Class<?> parameterClass, Object parameterValue) {
+		return new ParameterInfo(parameterClass, parameterValue);
+	}
+
+	public static Class<?>[] parameterClasses(ParameterInfo... paramInfo) {
+		if (null == paramInfo || paramInfo.length == 0) return new Class<?>[0];
+		Class<?>[] r = new Class<?>[paramInfo.length];
+		for (int i = 0; i < paramInfo.length; i++)
+			r[i] = paramInfo[i].parameterClass;
+		return r;
+	}
+
+	public static Object[] parameterValues(ParameterInfo... paramInfo) {
+		if (null == paramInfo || paramInfo.length == 0) return new Object[0];
+		Object[] r = new Object[paramInfo.length];
+		for (int i = 0; i < paramInfo.length; i++)
+			r[i] = paramInfo[i].parameterValue;
+		return r;
+	}
+
+	public static <T> T safeConstruct(Class<T> clazz, ParameterInfo... paramInfo) {
+		if (null == paramInfo || paramInfo.length == 0) try {
+			return clazz.newInstance();
+		} catch (Exception ex) {
+			ex = ExceptionUtils.unwrap(ex);
+			throw new RuntimeException(ex);
+		}
+		Constructor<T> constructor;
+		try {
+			constructor = clazz.getConstructor(parameterClasses(paramInfo));
+		} catch (Exception ex) {
+			ex = ExceptionUtils.unwrap(ex);
+			throw new RuntimeException(ex);
+		}
 		boolean accessible = constructor.isAccessible();
 		try {
 			constructor.setAccessible(true);
-			return constructor.newInstance(args);
-		} catch (IllegalAccessException e) {
-			throw new SystemException("", e);
-		} catch (IllegalArgumentException e) {
-			throw new SystemException("", e);
-		} catch (InvocationTargetException e) {
-			Class<? extends Throwable> causeClass = e.getCause().getClass();
-			if (BusinessException.class.isAssignableFrom(causeClass)) throw BusinessException.class.cast(causeClass);
-			else throw new SystemException("", e.getCause());
-		} catch (InstantiationException e) {
-			throw new SystemException("", e);
+			return constructor.newInstance(parameterValues(paramInfo));
+		} catch (Exception ex) {
+			ex = ExceptionUtils.unwrap(ex);
+			throw new RuntimeException(ex);
 		} finally {
 			constructor.setAccessible(accessible);
 		}
