@@ -3,7 +3,6 @@ package net.butfly.albacore.utils;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.URL;
@@ -15,7 +14,6 @@ import java.util.Map;
 import java.util.Set;
 
 import net.butfly.albacore.exception.BusinessException;
-import net.butfly.albacore.exception.SystemException;
 import net.butfly.albacore.support.Bean;
 import net.butfly.albacore.utils.imports.meta.MetaObject;
 
@@ -61,16 +59,10 @@ public final class ReflectionUtils extends UtilsBase {
 			method.setAccessible(true);
 			return Proxy.isProxyClass(object.getClass()) ? (T) Proxy.getInvocationHandler(object).invoke(object, method, args)
 					: (T) method.invoke(object, args);
-		} catch (IllegalAccessException e) {
-			throw new SystemException("", e);
-		} catch (IllegalArgumentException e) {
-			throw new SystemException("", e);
-		} catch (InvocationTargetException e) {
-			Class<? extends Throwable> causeClass = e.getCause().getClass();
-			if (BusinessException.class.isAssignableFrom(causeClass)) throw BusinessException.class.cast(causeClass);
-			else throw new SystemException("", e.getCause());
 		} catch (Throwable e) {
-			throw new SystemException("", e);
+			e = Exceptions.unwrap(e);
+			if (e instanceof BusinessException) throw (BusinessException) e;
+			else throw new RuntimeException(e);
 		} finally {
 			method.setAccessible(accessible);
 		}
@@ -140,14 +132,14 @@ public final class ReflectionUtils extends UtilsBase {
 		if (null == paramInfo || paramInfo.length == 0) try {
 			return clazz.newInstance();
 		} catch (Exception ex) {
-			ex = ExceptionUtils.unwrap(ex);
+			ex = Exceptions.unwrap(ex);
 			throw new RuntimeException(ex);
 		}
 		Constructor<T> constructor;
 		try {
 			constructor = clazz.getDeclaredConstructor(parameterClasses(paramInfo));
 		} catch (Exception ex) {
-			ex = ExceptionUtils.unwrap(ex);
+			ex = Exceptions.unwrap(ex);
 			throw new RuntimeException(ex);
 		}
 		boolean accessible = constructor.isAccessible();
@@ -155,7 +147,7 @@ public final class ReflectionUtils extends UtilsBase {
 			constructor.setAccessible(true);
 			return constructor.newInstance(parameterValues(paramInfo));
 		} catch (Exception ex) {
-			ex = ExceptionUtils.unwrap(ex);
+			ex = Exceptions.unwrap(ex);
 			throw new RuntimeException(ex);
 		} finally {
 			constructor.setAccessible(accessible);
@@ -184,10 +176,8 @@ public final class ReflectionUtils extends UtilsBase {
 		try {
 			field.setAccessible(true);
 			field.set(owner, value);
-		} catch (IllegalAccessException e) {
-			throw new SystemException("", e);
-		} catch (IllegalArgumentException e) {
-			throw new SystemException("", e);
+		} catch (Throwable e) {
+			throw Exceptions.wrap(e);
 		} finally {
 			field.setAccessible(accessible);
 		}

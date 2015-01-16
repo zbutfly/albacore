@@ -11,7 +11,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
-public class ExceptionUtils extends UtilsBase {
+import net.butfly.albacore.exception.BusinessException;
+
+public class Exceptions extends UtilsBase {
 	public static String getStackTrace(Throwable e) {
 		// to avoid JDK BUG, u can not invoke e.printStackTrace directly.
 		StringWriter s = new StringWriter();

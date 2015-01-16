@@ -3,7 +3,7 @@ package net.butfly.albacore.utils.async;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 
-import net.butfly.albacore.utils.ExceptionUtils;
+import net.butfly.albacore.utils.Exceptions;
 
 public class Task<T> {
 	protected Callable<T> call;
@@ -12,7 +12,7 @@ public class Task<T> {
 
 	public static class ExceptionHandler<R> {
 		public R handle(final Exception exception) throws Exception {
-			throw ExceptionUtils.unwrap(exception);
+			throw Exceptions.unwrap(exception);
 		}
 	}
 

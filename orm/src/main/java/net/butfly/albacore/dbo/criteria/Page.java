@@ -8,8 +8,14 @@ public final class Page extends Bean<Page> {
 	private final static int FIRST_PAGE = 1;
 	public static final int DEFAULT_PAGE_SIZE = 15;
 	private static final int TOTAL_NOT_SET = -1;
-	public static final Page ALL_RECORD = new Page(TOTAL_NOT_SET, Integer.MAX_VALUE, FIRST_PAGE);
-	public static final Page ONE_RECORD = new Page(TOTAL_NOT_SET, 1, FIRST_PAGE);
+
+	public static final Page ALL_RECORD() {
+		return new Page(TOTAL_NOT_SET, Integer.MAX_VALUE, FIRST_PAGE);
+	}
+
+	public static final Page ONE_RECORD() {
+		return new Page(TOTAL_NOT_SET, 1, FIRST_PAGE);
+	}
 
 	/** page information of the query, all page index should be started from 1. */
 	// the current page index of the current query.

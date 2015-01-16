@@ -120,7 +120,7 @@ public abstract class EntityDAOBase extends DAOBase implements EntityDAO {
 	public <K extends Serializable, E extends AbstractEntity<K>> int update(E entity, Criteria criteria) {
 		int c = 0;
 		Class<E> entityClass = (Class<E>) entity.getClass();
-		for (K k : this.selectKeys(entityClass, criteria, Page.ALL_RECORD)) {
+		for (K k : this.selectKeys(entityClass, criteria, Page.ALL_RECORD())) {
 			entity.setId(k);
 			if (null != this.update(entity)) c++;
 		}

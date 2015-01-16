@@ -10,4 +10,8 @@ public class EncryptException extends SystemException {
 	public EncryptException(String message) {
 		super(Exceptions.ENCRYPT_CODE, message);
 	}
+
+	public EncryptException(Throwable cause) {
+		super(Exceptions.ENCRYPT_CODE, cause);
+	}
 }
