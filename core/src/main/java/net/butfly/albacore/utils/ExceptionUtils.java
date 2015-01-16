@@ -41,11 +41,10 @@ public class ExceptionUtils extends UtilsBase {
 		return list.toArray(new Throwable[list.size()]);
 	}
 
-//	public static RuntimeException wrap(Throwable ex) {
-//		ex = unwrap(ex);
-//		if (ex instanceof RuntimeException) return (RuntimeException) ex;
-//		return new RuntimeException(ex);
-//	}
+	public static RuntimeException wrap(Throwable ex) {
+		ex = unwrap(ex);
+		return (ex instanceof RuntimeException) ? (RuntimeException) ex : new RuntimeException(ex);
+	}
 
 	public static Exception unwrap(Throwable ex) {
 		return unwrap(ex, null);
