@@ -1,4 +1,4 @@
-package net.butfly.demo.albacore.dao;
+package net.butfly.albacore.demo.dao;
 
 import net.butfly.albacore.dao.EntityDAOBase;
 

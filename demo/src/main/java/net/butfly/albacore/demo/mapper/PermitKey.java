@@ -1,4 +1,4 @@
-package net.butfly.demo.albacore.mapper;
+package net.butfly.albacore.demo.mapper;
 
 import net.butfly.albacore.entity.Key;
 
