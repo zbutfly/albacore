@@ -26,10 +26,8 @@ public abstract class Entity<K extends Serializable> extends Bean<AbstractEntity
 
 	@SuppressWarnings("rawtypes")
 	@Override
-	public int compareTo(AbstractEntity key) {
-		if (null == key) throw new NullPointerException();
-		if (!key.getClass().isAssignableFrom(this.getClass()) && !this.getClass().isAssignableFrom(key.getClass())) return -1;
-		return ObjectUtils.compare((DualKey) key, this);
+	public int compareTo(AbstractEntity other) {
+		return ObjectUtils.compare(this.id, other.getId());
 	}
 
 	private static final Map<Class<? extends AbstractEntity<?>>, Class<? extends Serializable>> KEY_TYPE_POOL = new ConcurrentHashMap<Class<? extends AbstractEntity<?>>, Class<? extends Serializable>>();
@@ -56,7 +54,7 @@ public abstract class Entity<K extends Serializable> extends Bean<AbstractEntity
 		return (K[]) Array.newInstance(getKeyClass(entityClass), length);
 	}
 
-	public static <K extends Serializable> K[] getKeyBuffer(Class<? extends BasicEntity<K>> entityClass) {
+	public static <K extends Serializable> K[] getKeyBuffer(Class<? extends AbstractEntity<K>> entityClass) {
 		return getKeyBuffer(entityClass, 0);
 	}
 }

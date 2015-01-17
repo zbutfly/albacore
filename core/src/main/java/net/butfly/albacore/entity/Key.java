@@ -19,9 +19,7 @@ public abstract class Key<K extends Key<K>> extends Bean<AbstractEntity<K>> impl
 
 	@SuppressWarnings("rawtypes")
 	@Override
-	public int compareTo(AbstractEntity key) {
-		if (null == key) throw new NullPointerException();
-		if (!key.getClass().isAssignableFrom(this.getClass()) && !this.getClass().isAssignableFrom(key.getClass())) return -1;
-		return ObjectUtils.compare((DualKey) key, this);
+	public int compareTo(AbstractEntity other) {
+		return ObjectUtils.compare(this, other.getId());
 	}
 }
