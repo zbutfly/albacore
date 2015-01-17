@@ -17,6 +17,9 @@
 		<tag>MASTER</tag>
 		<url>https://github.com/zbutfly/albacore</url>
 	</scm>
+	<properties>
+		<deps.version.albacore>2.0.1-SNAPSHOT</deps.version.albacore>
+	</properties>
 	<modules>
 		<module>core</module>
 		<module>frame</module>
