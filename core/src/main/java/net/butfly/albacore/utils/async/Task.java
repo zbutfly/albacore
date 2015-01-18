@@ -61,7 +61,7 @@ public class Task<T> {
 	}
 
 	public Task<T> exception(Task.ExceptionHandler<T> handler, HandlerTarget... targets) {
-		return Tasks.wrapHandler(this, handler, targets);
+		return wrapHandler(this, handler, targets);
 	}
 
 	public T execute() throws Exception {
@@ -74,5 +74,9 @@ public class Task<T> {
 
 	public static Executor getDefaultExecutor() {
 		return Tasks.EXECUTOR;
+	}
+
+	protected Task<T> wrapHandler(Task<T> task, ExceptionHandler<T> handler, HandlerTarget[] targets) {
+		return Tasks.wrapHandler(task, handler, targets);
 	}
 }
