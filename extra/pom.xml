@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>net.butfly.albacore</groupId>
 		<artifactId>albacore</artifactId>
-		<version>2.0.1-SNAPSHOT</version>
+		<version>2.0.1</version>
 	</parent>
 	<artifactId>albacore-extra</artifactId>
 	<name>albacore-extra</name>
@@ -15,7 +15,7 @@
 		<dependency>
 			<groupId>net.butfly.albacore</groupId>
 			<artifactId>albacore-frame</artifactId>
-			<version>2.0.1-SNAPSHOT</version>
+			<version>${deps.version.albacore}</version>
 		</dependency>
 		<!-- async (spring executor) -->
 		<dependency>
