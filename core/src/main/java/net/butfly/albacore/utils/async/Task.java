@@ -3,25 +3,22 @@ package net.butfly.albacore.utils.async;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 
-import net.butfly.albacore.utils.Exceptions;
-
 public class Task<T> {
 	protected Callable<T> call;
 	protected Callback<T> back;
 	protected Options options;
+	protected ExceptionHandler<T> handler = null;
 
-	public static class ExceptionHandler<R> {
-		public R handle(final Exception exception) throws Exception {
-			throw Exceptions.unwrap(exception);
-		}
+	public interface ExceptionHandler<R> {
+		R handle(final Exception exception) throws Exception;
 	}
 
-	public abstract static class Callback<R> extends Tasks.Handleable<R> {
-		public abstract void callback(final R result) throws Exception;
+	public interface Callback<R> {
+		public void callback(final R result);
 	}
 
-	public abstract static class Callable<R> extends Tasks.Handleable<R> implements java.util.concurrent.Callable<R> {
-		public abstract R call() throws Exception;
+	public interface Callable<R> extends java.util.concurrent.Callable<R> {
+		public R call() throws Exception;
 	}
 
 	protected Task() {}
@@ -56,12 +53,13 @@ public class Task<T> {
 		return options;
 	}
 
-	public enum HandlerTarget {
-		CALLABLE, CALLBACK
+	public Task<T> handler(Task.ExceptionHandler<T> handler) {
+		this.handler = handler;
+		return this;
 	}
 
-	public Task<T> exception(Task.ExceptionHandler<T> handler, HandlerTarget... targets) {
-		return wrapHandler(this, handler, targets);
+	public ExceptionHandler<T> handler() {
+		return this.handler;
 	}
 
 	public T execute() throws Exception {
@@ -74,9 +72,5 @@ public class Task<T> {
 
 	public static Executor getDefaultExecutor() {
 		return Tasks.EXECUTOR;
-	}
-
-	protected Task<T> wrapHandler(Task<T> task, ExceptionHandler<T> handler, HandlerTarget[] targets) {
-		return Tasks.wrapHandler(task, handler, targets);
 	}
 }
