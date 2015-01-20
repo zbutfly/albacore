@@ -11,6 +11,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class KeyUtils extends UtilsBase {
+	public static String defaults() {
+		return objectId();
+	}
+
 	public static String uuid() {
 		return UUID.randomUUID().toString();
 	}

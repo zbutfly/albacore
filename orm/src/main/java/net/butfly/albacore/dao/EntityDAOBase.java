@@ -9,10 +9,13 @@ import net.butfly.albacore.dbo.criteria.OrderedRowBounds;
 import net.butfly.albacore.dbo.criteria.Page;
 import net.butfly.albacore.entity.AbstractEntity;
 import net.butfly.albacore.entity.Entity;
+import net.butfly.albacore.entity.Key;
+import net.butfly.albacore.exception.DataAccessException;
 import net.butfly.albacore.exception.SystemException;
 
 import org.mybatis.spring.SqlSessionTemplate;
 
+@SuppressWarnings("unchecked")
 public abstract class EntityDAOBase extends DAOBase implements EntityDAO {
 	private static final long serialVersionUID = -1599466753909389837L;
 	protected SqlSessionTemplate template, batchTemplate;
@@ -48,6 +51,7 @@ public abstract class EntityDAOBase extends DAOBase implements EntityDAO {
 	@Override
 	public <K extends Serializable, E extends AbstractEntity<K>> K insert(E entity) {
 		if (null == entity) return null;
+		this.checkKey(entity);
 		this.batchTemplate.insert(this.getSqlId(DAOContext.INSERT_STATMENT_ID + entity.getClass().getSimpleName()), entity);
 		return entity.getId();
 	}
@@ -55,6 +59,8 @@ public abstract class EntityDAOBase extends DAOBase implements EntityDAO {
 	@Override
 	public <K extends Serializable, E extends AbstractEntity<K>> int insert(E[] entities) {
 		if (null == entities || entities.length == 0) return 0;
+		for (E e : entities)
+			this.checkKey(e);
 		return this.batchTemplate.insert(
 				this.getSqlId(DAOContext.INSERT_STATMENT_ID + entities.getClass().getComponentType().getSimpleName() + "List"),
 				entities);
@@ -81,7 +87,6 @@ public abstract class EntityDAOBase extends DAOBase implements EntityDAO {
 		// keys);
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public <K extends Serializable, E extends AbstractEntity<K>> E update(E entity) {
 		E existed = (E) this.select(entity.getClass(), entity.getId());
@@ -95,7 +100,6 @@ public abstract class EntityDAOBase extends DAOBase implements EntityDAO {
 		return this.batchTemplate.selectOne(this.getSqlId(DAOContext.SELECT_STATMENT_ID + entityClass.getSimpleName()), key);
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public <K extends Serializable, E extends AbstractEntity<K>> E[] select(Class<E> entityClass, K[] keys) {
 		E[] entities = (E[]) Array.newInstance(entityClass, keys.length);
@@ -112,12 +116,11 @@ public abstract class EntityDAOBase extends DAOBase implements EntityDAO {
 				this.getSqlId(DAOContext.DELETE_STATMENT_ID + entityClass.getSimpleName() + "ByCriteria"), criteria);
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public <K extends Serializable, E extends AbstractEntity<K>> int update(E entity, Criteria criteria) {
 		int c = 0;
 		Class<E> entityClass = (Class<E>) entity.getClass();
-		for (K k : this.selectKeys(entityClass, criteria, Page.ALL_RECORD)) {
+		for (K k : this.selectKeys(entityClass, criteria, Page.ALL_RECORD())) {
 			entity.setId(k);
 			if (null != this.update(entity)) c++;
 		}
@@ -156,5 +159,12 @@ public abstract class EntityDAOBase extends DAOBase implements EntityDAO {
 
 	public void setBatchTemplate(SqlSessionTemplate batchTemplate) {
 		this.batchTemplate = batchTemplate;
+	}
+
+	private <K extends Serializable, E extends AbstractEntity<K>> void checkKey(E... entity) {
+		if (null != entity && entity.length > 0)
+			for (E e : entity)
+				if (e.getId() != null && e.getId() instanceof Key && this.select(e.getClass(), e.getId()) != null)
+					throw new DataAccessException("Key existed.");
 	}
 }

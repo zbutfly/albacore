@@ -16,6 +16,13 @@ public class ValidateException extends BusinessException {
 	}
 
 	private static String generateMessage(ConstraintViolation<?>[] violations) {
-		return null;
+		if (null == violations || violations.length == 0) return null;
+		StringBuilder sb = new StringBuilder();
+		for (ConstraintViolation<?> cv : violations) {
+			sb.append("[参数对象:" + cv.getRootBeanClass() + ",");
+			sb.append("属性:" + cv.getPropertyPath() + ",");
+			sb.append("错误信息:" + cv.getMessage() + "]\n");
+		}
+		return sb.toString();
 	}
 }

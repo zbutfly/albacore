@@ -40,10 +40,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 
-/**
- * @author ho274543
- * 
- */
+@Deprecated
 public class SwiftContext {
 	private final static String STORAGE_USER_HEADER_NAME = "X-Storage-User";
 	private final static String STORAGE_PASS_HEADER_NAME = "X-Storage-Pass";
@@ -276,8 +273,7 @@ public class SwiftContext {
 	}
 
 	/**
-	 * Retrieve object (GET /account/container/object) REMEMBER: Close the
-	 * result InputStream after using...
+	 * Retrieve object (GET /account/container/object) REMEMBER: Close the result InputStream after using...
 	 * 
 	 * @throws OperationFailureException
 	 * @throws UnknownResponseException
@@ -419,8 +415,7 @@ public class SwiftContext {
 	}
 
 	/**
-	 * TODO: update the metadata of new object to be copied, maybe copy to self
-	 * to change the Content-Type
+	 * TODO: update the metadata of new object to be copied, maybe copy to self to change the Content-Type
 	 * 
 	 * @param fromContainer
 	 * @param fromObject
@@ -510,8 +505,7 @@ public class SwiftContext {
 	/**
 	 * @param response
 	 * @param ignoreCodes
-	 *            http result codes handler by invoker, they should be ordered
-	 *            for binary search.
+	 *            http result codes handler by invoker, they should be ordered for binary search.
 	 * @return
 	 * @throws UnknownResponseException
 	 * @throws OperationFailureException

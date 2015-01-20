@@ -19,7 +19,7 @@ import net.butfly.albacore.utils.imports.meta.factory.DefaultObjectFactory;
 import net.butfly.albacore.utils.imports.meta.factory.ObjectFactory;
 import net.butfly.albacore.utils.imports.meta.wrapper.DefaultObjectWrapperFactory;
 import net.butfly.albacore.utils.imports.meta.wrapper.ObjectWrapperFactory;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+import net.butfly.albacore.exception.NotImplementedException;
 
 import com.google.common.base.Defaults;
 

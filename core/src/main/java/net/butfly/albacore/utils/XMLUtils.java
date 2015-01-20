@@ -24,7 +24,7 @@ import org.w3c.dom.ls.LSSerializer;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+import net.butfly.albacore.exception.NotImplementedException;
 
 public class XMLUtils extends UtilsBase {
 	@SuppressWarnings("unchecked")

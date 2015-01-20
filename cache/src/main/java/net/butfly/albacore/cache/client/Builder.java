@@ -1,10 +1,10 @@
 package net.butfly.albacore.cache.client;
 
 import net.butfly.albacore.cache.config.CacheConfig;
-import net.butfly.albacore.support.CloneSupport;
+import net.butfly.albacore.support.Bean;
 import net.rubyeye.xmemcached.MemcachedClientBuilder;
 
-public class Builder extends CloneSupport<CacheConfig> {
+public class Builder extends Bean<CacheConfig> {
 	private static final long serialVersionUID = -3326780549732421226L;
 	private MemcachedClientBuilder builder;
 	private MemCacheClient client;

@@ -16,6 +16,7 @@ import org.apache.http.params.HttpParams;
 import org.apache.http.params.HttpProtocolParams;
 import org.apache.http.protocol.HTTP;
 
+@Deprecated
 public final class HttpClientFactory {
 	private static final ClientConnectionManager sharedConnectionManager = createSharedConnectionManager();
 	private static final HttpClient sharedClient = new DefaultHttpClient(sharedConnectionManager, createDefaultHttpParameters());

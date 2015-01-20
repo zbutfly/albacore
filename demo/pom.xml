@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>net.butfly.albacore</groupId>
 		<artifactId>albacore</artifactId>
-		<version>2.0.1-SNAPSHOT</version>
+		<version>2.0.2-SNAPSHOT</version>
 	</parent>
 	<artifactId>albacore-demo</artifactId>
 	<name>albacore-demo</name>
@@ -15,7 +15,7 @@
 		<dependency>
 			<groupId>net.butfly.albacore</groupId>
 			<artifactId>albacore-orm</artifactId>
-			<version>2.0.1-SNAPSHOT</version>
+			<version>${deps.version.albacore}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.oracle.db</groupId>
@@ -34,6 +34,11 @@
 			<artifactId>mybatis-ehcache</artifactId>
 			<version>1.0.3</version>
 			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<version>1.4.184</version>
 		</dependency>
 	</dependencies>
 </project>

@@ -7,14 +7,15 @@ import java.util.List;
 import net.butfly.albacore.cache.config.CacheConfig;
 import net.butfly.albacore.cache.utils.control.CacheContant;
 import net.butfly.albacore.exception.SystemException;
-import net.butfly.albacore.logger.Logger;
-import net.butfly.albacore.logger.LoggerFactory;
 import net.rubyeye.xmemcached.MemcachedClientBuilder;
 import net.rubyeye.xmemcached.XMemcachedClientBuilder;
 import net.rubyeye.xmemcached.command.TextCommandFactory;
 import net.rubyeye.xmemcached.impl.KetamaMemcachedSessionLocator;
 import net.rubyeye.xmemcached.transcoders.SerializingTranscoder;
 import net.rubyeye.xmemcached.utils.AddrUtil;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.code.yanf4j.core.impl.StandardSocketOption;
 

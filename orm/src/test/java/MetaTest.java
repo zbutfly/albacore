@@ -27,8 +27,8 @@ public class MetaTest {
 		}
 
 		double d = 12345678.345;
-		Double dd = Double.class.cast(d);
-		byte by = (byte) d;
+		assert (Double.class.cast(d) > 0);
+		assert ((byte) d > 0);
 		printMetaInfo(true);
 		printMetaInfo("sdfsfsdfdsf");
 		printMetaInfo(new Byte((byte) 12));
