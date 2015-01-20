@@ -96,7 +96,13 @@ final class Tasks extends UtilsBase {
 			TimeoutException {
 		try {
 			return timeout > 0 ? future.get(timeout, TimeUnit.MILLISECONDS) : future.get();
-		} catch (Exception e) {
+		} catch (InterruptedException e) {
+			future.cancel(true);
+			throw e;
+		} catch (ExecutionException e) {
+			future.cancel(true);
+			throw e;
+		} catch (TimeoutException e) {
 			future.cancel(true);
 			throw e;
 		}
