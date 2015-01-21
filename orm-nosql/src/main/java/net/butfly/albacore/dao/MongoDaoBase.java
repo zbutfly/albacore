@@ -25,9 +25,8 @@ public abstract class MongoDaoBase<E extends MongoEntity> extends DAOBase implem
 	protected MongoContext context;
 	private Class<E> entityClass;
 
-	@SuppressWarnings("unchecked")
 	public MongoDaoBase() {
-		this.entityClass = (Class<E>) GenericUtils.getGenericParamClass(this.getClass(), MongoDaoBase.class, "E");
+		this.entityClass = GenericUtils.getGenericParamClass(this.getClass(), MongoDaoBase.class, "E");
 	}
 
 	@Override

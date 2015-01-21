@@ -23,15 +23,24 @@ public class KeyUtils extends UtilsBase {
 		return ObjectIdGenerator.generateKey();
 	}
 
-	public static String join(String[] list) {
-		return join(list, ",");
+	/**
+	 * Join strings without any spliter
+	 * 
+	 * @param list
+	 * @return
+	 */
+	public static String join(String... list) {
+		StringBuilder sb = new StringBuilder();
+		for (String tt : list)
+			sb.append(tt);
+		return sb.substring(0, sb.length() - 1).toString();
 	}
 
-	public static String join(String[] list, String split) {
+	public static String join(char split, String... list) {
 		StringBuilder sb = new StringBuilder();
 		for (String tt : list)
 			sb.append(tt).append(split);
-		return sb.substring(0, sb.length() - split.length());
+		return sb.substring(0, sb.length() - 1).toString();
 	}
 
 	/**

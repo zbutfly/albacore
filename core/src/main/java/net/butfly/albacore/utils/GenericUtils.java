@@ -30,10 +30,10 @@ public final class GenericUtils extends UtilsBase {
 		return getSuperClassGenricType((Class<?>) genType, index);
 	}
 
-	public static Class<?> getGenericParamClass(Class<?> childClass, Class<?> parentClass, String paramName) {
+	public static <E> Class<E> getGenericParamClass(Class<?> childClass, Class<?> parentClass, String paramName) {
 		Map<TypeVariable<Class<?>>, Type> map = getTypeVariableMap(childClass);
 		for (TypeVariable<?> v : map.keySet())
-			if (parentClass.equals(v.getGenericDeclaration()) && paramName.equals(v.getName())) return (Class<?>) map.get(v);
+			if (parentClass.equals(v.getGenericDeclaration()) && paramName.equals(v.getName())) return (Class<E>) map.get(v);
 		throw new RuntimeException("Cannot find generic parameter of the given class.");
 	}
 

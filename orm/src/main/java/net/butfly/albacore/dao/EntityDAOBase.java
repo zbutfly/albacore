@@ -1,170 +1,107 @@
 package net.butfly.albacore.dao;
 
 import java.io.Serializable;
-import java.lang.reflect.Array;
-import java.util.List;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import net.butfly.albacore.dbo.criteria.Criteria;
-import net.butfly.albacore.dbo.criteria.OrderedRowBounds;
 import net.butfly.albacore.dbo.criteria.Page;
 import net.butfly.albacore.entity.AbstractEntity;
-import net.butfly.albacore.entity.Entity;
-import net.butfly.albacore.entity.Key;
-import net.butfly.albacore.exception.DataAccessException;
-import net.butfly.albacore.exception.SystemException;
+import net.butfly.albacore.utils.KeyUtils;
 
-import org.mybatis.spring.SqlSessionTemplate;
-
-@SuppressWarnings("unchecked")
-public abstract class EntityDAOBase extends DAOBase implements EntityDAO {
+public class EntityDAOBase extends EntityBasicDAOBase implements EntityDAO {
 	private static final long serialVersionUID = -1599466753909389837L;
-	protected SqlSessionTemplate template, batchTemplate;
+	protected static final String BY_CRITERIA = "ByCriteria";
 	protected String namespace;
+	protected static Map<Class<? extends EntityDAO>, String> NAMESPACES_POOL = new ConcurrentHashMap<Class<? extends EntityDAO>, String>();
 
 	public EntityDAOBase() {
 		this.namespace = this.getClass().getName().replaceAll("(?i)dao", "").replaceAll("(?i)impl", ".") + ".";
 		this.namespace = this.namespace.replaceAll("\\.+", ".");
+		NAMESPACES_POOL.put(scanDAO(this.getClass()), this.namespace);
 	}
 
-	protected <E> E entityInstance(Class<E> entityClass) {
-		try {
-			return entityClass.newInstance();
-		} catch (InstantiationException e) {
-			throw new SystemException("", e);
-		} catch (IllegalAccessException e) {
-			throw new SystemException("", e);
-		}
-	}
-
-	/**
-	 * Namespace mapping
-	 * 
-	 * @param sqlId
-	 * @return
-	 */
-	protected String getSqlId(String sqlId) {
-		return this.namespace + sqlId;
-	}
-
-	/*********************************************************************************************/
-
+	@SuppressWarnings("unchecked")
 	@Override
-	public <K extends Serializable, E extends AbstractEntity<K>> K insert(E entity) {
-		if (null == entity) return null;
-		this.checkKey(entity);
-		this.batchTemplate.insert(this.getSqlId(DAOContext.INSERT_STATMENT_ID + entity.getClass().getSimpleName()), entity);
-		return entity.getId();
+	public <K extends Serializable, E extends AbstractEntity<K>> K[] insert(final E... entity) {
+		return (K[]) super.insert(getSqlId(Verb.insert, entity.getClass().getComponentType().getSimpleName()),
+				Arrays.asList(entity)).toArray();
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
-	public <K extends Serializable, E extends AbstractEntity<K>> int insert(E[] entities) {
-		if (null == entities || entities.length == 0) return 0;
-		for (E e : entities)
-			this.checkKey(e);
-		return this.batchTemplate.insert(
-				this.getSqlId(DAOContext.INSERT_STATMENT_ID + entities.getClass().getComponentType().getSimpleName() + "List"),
-				entities);
+	public <K extends Serializable, E extends AbstractEntity<K>> E[] delete(final Class<E> entityClass, final K... keys) {
+		String target = entityClass.getSimpleName();
+		return (E[]) super.delete(getSqlId(Verb.select, target), getSqlId(Verb.delete, target), entityClass,
+				Arrays.asList(keys)).toArray();
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
-	public <K extends Serializable, E extends AbstractEntity<K>> E delete(Class<E> entityClass, K key) {
-		E e = this.select(entityClass, key);
-		if (null == e) return null;
-		this.batchTemplate.delete(this.getSqlId(DAOContext.DELETE_STATMENT_ID + entityClass.getSimpleName()), key);
-		return e;
+	public <K extends Serializable, E extends AbstractEntity<K>> E[] update(E... entity) {
+		String target = entity.getClass().getComponentType().getSimpleName();
+		return (E[]) super.update(getSqlId(Verb.select, target), getSqlId(Verb.delete, target), Arrays.asList(entity))
+				.toArray();
 	}
 
-	// TODO: batch
+	@SuppressWarnings("unchecked")
 	@Override
-	public <K extends Serializable, E extends AbstractEntity<K>> int delete(Class<E> entityClass, K[] keys) {
-		int c = 0;
-		for (K key : keys)
-			c += this.batchTemplate.delete(this.getSqlId(DAOContext.DELETE_STATMENT_ID + entityClass.getSimpleName()), key);
-		return c;
-		// return
-		// this.batchTemplate.delete(this.getSqlId(DAOContext.DELETE_STATMENT_ID
-		// + entityClass.getSimpleName()) + "List",
-		// keys);
+	public <K extends Serializable, E extends AbstractEntity<K>> E[] select(Class<E> entityClass, K... key) {
+		return (E[]) super.select(getSqlId(Verb.select, entityClass.getSimpleName()), entityClass, Arrays.asList(key))
+				.toArray();
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
-	public <K extends Serializable, E extends AbstractEntity<K>> E update(E entity) {
-		E existed = (E) this.select(entity.getClass(), entity.getId());
-		if (null != existed)
-			this.batchTemplate.update(this.getSqlId(DAOContext.UPDATE_STATMENT_ID + entity.getClass().getSimpleName()), entity);
-		return existed;
+	public <K extends Serializable, E extends AbstractEntity<K>> E[] delete(Class<E> entityClass, Criteria criteria) {
+		return (E[]) super.delete(getSqlId(Verb.select, entityClass.getSimpleName(), BY_CRITERIA),
+				getSqlId(Verb.select, entityClass.getSimpleName()),
+				getSqlId(Verb.delete, entityClass.getSimpleName(), BY_CRITERIA), entityClass, criteria).toArray();
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
-	public <K extends Serializable, E extends AbstractEntity<K>> E select(Class<E> entityClass, K key) {
-		return this.batchTemplate.selectOne(this.getSqlId(DAOContext.SELECT_STATMENT_ID + entityClass.getSimpleName()), key);
-	}
-
-	@Override
-	public <K extends Serializable, E extends AbstractEntity<K>> E[] select(Class<E> entityClass, K[] keys) {
-		E[] entities = (E[]) Array.newInstance(entityClass, keys.length);
-		for (int i = 0; i < keys.length; i++)
-			entities[i] = this.select(entityClass, keys[i]);
-		return entities;
-	}
-
-	/*********************************************************************************************/
-
-	@Override
-	public <K extends Serializable, E extends AbstractEntity<K>> int delete(Class<E> entityClass, Criteria criteria) {
-		return this.batchTemplate.delete(
-				this.getSqlId(DAOContext.DELETE_STATMENT_ID + entityClass.getSimpleName() + "ByCriteria"), criteria);
-	}
-
-	@Override
-	public <K extends Serializable, E extends AbstractEntity<K>> int update(E entity, Criteria criteria) {
-		int c = 0;
-		Class<E> entityClass = (Class<E>) entity.getClass();
-		for (K k : this.selectKeys(entityClass, criteria, Page.ALL_RECORD())) {
-			entity.setId(k);
-			if (null != this.update(entity)) c++;
-		}
-		return c;
-	}
-
-	@Override
-	public <K extends Serializable, E extends AbstractEntity<K>> K[] selectKeys(Class<E> entityClass, Criteria criteria,
-			Page page) {
-		if (null == page) throw new SystemException("Query must be limited by page.");
-		// dirty page
-		if (page.getTotal() < 0) page.setTotal(this.count(entityClass, criteria));
-
-		OrderedRowBounds rb = new OrderedRowBounds(page.getStart(), page.getSize(), criteria.getOrderFields());
-		List<K> list = this.batchTemplate.selectList(
-				this.getSqlId(DAOContext.SELECT_STATMENT_ID + entityClass.getSimpleName() + "ByCriteria"), criteria, rb);
-
-		return list.toArray(Entity.getKeyBuffer(entityClass, list.size()));
-	}
-
-	@Override
-	public <K extends Serializable, E extends AbstractEntity<K>> E[] select(Class<E> entityClass, Criteria criteria, Page page) {
-		return this.select(entityClass, this.selectKeys(entityClass, criteria, page));
+	public <K extends Serializable, E extends AbstractEntity<K>> E[] update(E entity, Criteria criteria) {
+		return (E[]) super.update(getSqlId(Verb.select, entity.getClass().getSimpleName(), BY_CRITERIA),
+				getSqlId(Verb.select, entity.getClass().getSimpleName()),
+				getSqlId(Verb.update, entity.getClass().getSimpleName()), entity, criteria).toArray();
 	}
 
 	@Override
 	public <K extends Serializable, E extends AbstractEntity<K>> int count(Class<E> entityClass, Criteria criteria) {
-		Object r = this.batchTemplate.selectOne(
-				this.getSqlId(DAOContext.COUNT_STATMENT_ID + entityClass.getSimpleName() + "ByCriteria"), criteria);
-		return null == r ? 0 : ((Number) r).intValue();
+		return super.count(getSqlId(Verb.count, entityClass.getSimpleName(), BY_CRITERIA), entityClass, criteria);
 	}
 
-	public void setTemplate(SqlSessionTemplate template) {
-		this.template = template;
+	@SuppressWarnings("unchecked")
+	@Override
+	public <K extends Serializable, E extends AbstractEntity<K>> K[] selectKeys(Class<E> entityClass, Criteria criteria,
+			Page page) {
+		return (K[]) super.selectKeys(getSqlId(Verb.select, entityClass.getSimpleName(), BY_CRITERIA), entityClass, criteria,
+				page).toArray();
 	}
 
-	public void setBatchTemplate(SqlSessionTemplate batchTemplate) {
-		this.batchTemplate = batchTemplate;
+	@SuppressWarnings("unchecked")
+	@Override
+	public <K extends Serializable, E extends AbstractEntity<K>> E[] select(Class<E> entityClass, Criteria criteria, Page page) {
+		return (E[]) super.select(getSqlId(Verb.select, entityClass.getSimpleName()),
+				getSqlId(Verb.select, entityClass.getSimpleName(), BY_CRITERIA), entityClass, criteria, page).toArray();
 	}
 
-	private <K extends Serializable, E extends AbstractEntity<K>> void checkKey(E... entity) {
-		if (null != entity && entity.length > 0)
-			for (E e : entity)
-				if (e.getId() != null && e.getId() instanceof Key && this.select(e.getClass(), e.getId()) != null)
-					throw new DataAccessException("Key existed.");
+	@SuppressWarnings("unchecked")
+	private static Class<? extends EntityDAO> scanDAO(Class<?> clazz) {
+		if (clazz == null) throw new IllegalAccessError();
+		Class<?>[] intfs = clazz.getInterfaces();
+		for (Class<?> intf : intfs)
+			if (EntityDAO.class.isAssignableFrom(intf)) return (Class<? extends EntityDAO>) intf;
+		for (Class<?> intf : intfs) {
+			Class<? extends EntityDAO> i = scanDAO(intf);
+			if (null != i) return i;
+		}
+		throw new IllegalAccessError();
+	}
+
+	protected String getSqlId(Verb verb, String... segments) {
+		return this.namespace + verb + KeyUtils.join(segments);
 	}
 }
