@@ -6,12 +6,20 @@ import net.butfly.albacore.dbo.criteria.Criteria;
 import net.butfly.albacore.dbo.criteria.Page;
 import net.butfly.albacore.entity.AbstractEntity;
 
-public interface EntityDAO extends DAO {
+public interface EntityDAO extends EntityBasicDAO {
+	<K extends Serializable, E extends AbstractEntity<K>> K insert(final E entity);
+
 	<K extends Serializable, E extends AbstractEntity<K>> K[] insert(final E... entity);
+
+	<K extends Serializable, E extends AbstractEntity<K>> E delete(final Class<E> entityClass, final K key);
 
 	<K extends Serializable, E extends AbstractEntity<K>> E[] delete(final Class<E> entityClass, final K... key);
 
+	<K extends Serializable, E extends AbstractEntity<K>> E update(final E entity);
+
 	<K extends Serializable, E extends AbstractEntity<K>> E[] update(final E... entity);
+
+	<K extends Serializable, E extends AbstractEntity<K>> E select(final Class<E> entityClass, final K key);
 
 	<K extends Serializable, E extends AbstractEntity<K>> E[] select(final Class<E> entityClass, final K... key);
 

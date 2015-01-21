@@ -33,7 +33,7 @@ public class KeyUtils extends UtilsBase {
 		StringBuilder sb = new StringBuilder();
 		for (String tt : list)
 			sb.append(tt);
-		return sb.substring(0, sb.length() - 1).toString();
+		return sb.substring(0, sb.length()).toString();
 	}
 
 	public static String join(char split, String... list) {
