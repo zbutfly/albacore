@@ -11,6 +11,7 @@ import net.butfly.albacore.utils.storage.swift.SwiftContext;
 
 import org.springframework.beans.factory.InitializingBean;
 
+@Deprecated
 public class SwiftHelperImpl extends HelperBase implements SwiftHelper, InitializingBean {
 	private static final long serialVersionUID = -2409046854069215490L;
 	private String authUrl;

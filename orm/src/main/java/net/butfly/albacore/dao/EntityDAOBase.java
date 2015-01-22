@@ -1,160 +1,84 @@
 package net.butfly.albacore.dao;
 
 import java.io.Serializable;
-import java.lang.reflect.Array;
-import java.util.List;
 
 import net.butfly.albacore.dbo.criteria.Criteria;
-import net.butfly.albacore.dbo.criteria.OrderedRowBounds;
 import net.butfly.albacore.dbo.criteria.Page;
 import net.butfly.albacore.entity.AbstractEntity;
-import net.butfly.albacore.entity.Entity;
-import net.butfly.albacore.exception.SystemException;
+import net.butfly.albacore.utils.GenericUtils;
 
-import org.mybatis.spring.SqlSessionTemplate;
-
-public abstract class EntityDAOBase extends DAOBase implements EntityDAO {
+public class EntityDAOBase extends EntityBasicDAOBase implements EntityDAO {
 	private static final long serialVersionUID = -1599466753909389837L;
-	protected SqlSessionTemplate template, batchTemplate;
-	protected String namespace;
+	private String namespace;
 
 	public EntityDAOBase() {
 		this.namespace = this.getClass().getName().replaceAll("(?i)dao", "").replaceAll("(?i)impl", ".") + ".";
-		this.namespace = this.namespace.replaceAll("\\.+", ".");
-	}
-
-	protected <E> E entityInstance(Class<E> entityClass) {
-		try {
-			return entityClass.newInstance();
-		} catch (InstantiationException e) {
-			throw new SystemException("", e);
-		} catch (IllegalAccessException e) {
-			throw new SystemException("", e);
-		}
-	}
-
-	/**
-	 * Namespace mapping
-	 * 
-	 * @param sqlId
-	 * @return
-	 */
-	protected String getSqlId(String sqlId) {
-		return this.namespace + sqlId;
-	}
-
-	/*********************************************************************************************/
-
-	@Override
-	public <K extends Serializable, E extends AbstractEntity<K>> K insert(E entity) {
-		if (null == entity) return null;
-		this.batchTemplate.insert(this.getSqlId(DAOContext.INSERT_STATMENT_ID + entity.getClass().getSimpleName()), entity);
-		return entity.getId();
+		namespace = namespace.replaceAll("\\.+", ".");
 	}
 
 	@Override
-	public <K extends Serializable, E extends AbstractEntity<K>> int insert(E[] entities) {
-		if (null == entities || entities.length == 0) return 0;
-		return this.batchTemplate.insert(
-				this.getSqlId(DAOContext.INSERT_STATMENT_ID + entities.getClass().getComponentType().getSimpleName() + "List"),
-				entities);
+	public <K extends Serializable, E extends AbstractEntity<K>> K insert(final E entity) {
+		return super.insert(new SQLBuild<E>(this.namespace, GenericUtils.entityClass(entity)), entity);
 	}
 
 	@Override
-	public <K extends Serializable, E extends AbstractEntity<K>> E delete(Class<E> entityClass, K key) {
-		E e = this.select(entityClass, key);
-		if (null == e) return null;
-		this.batchTemplate.delete(this.getSqlId(DAOContext.DELETE_STATMENT_ID + entityClass.getSimpleName()), key);
-		return e;
+	public <K extends Serializable, E extends AbstractEntity<K>> K[] insert(final E... entity) {
+		return super.insert(new SQLBuild<E>(this.namespace, GenericUtils.entityClass(entity)), entity);
 	}
 
-	// TODO: batch
 	@Override
-	public <K extends Serializable, E extends AbstractEntity<K>> int delete(Class<E> entityClass, K[] keys) {
-		int c = 0;
-		for (K key : keys)
-			c += this.batchTemplate.delete(this.getSqlId(DAOContext.DELETE_STATMENT_ID + entityClass.getSimpleName()), key);
-		return c;
-		// return
-		// this.batchTemplate.delete(this.getSqlId(DAOContext.DELETE_STATMENT_ID
-		// + entityClass.getSimpleName()) + "List",
-		// keys);
+	public <K extends Serializable, E extends AbstractEntity<K>> E delete(final Class<E> entityClass, final K key) {
+		return super.delete(new SQLBuild<E>(this.namespace, entityClass), key);
 	}
 
-	@SuppressWarnings("unchecked")
+	@Override
+	public <K extends Serializable, E extends AbstractEntity<K>> E[] delete(final Class<E> entityClass, final K... key) {
+		return super.delete(new SQLBuild<E>(this.namespace, entityClass), key);
+	}
+
 	@Override
 	public <K extends Serializable, E extends AbstractEntity<K>> E update(E entity) {
-		E existed = (E) this.select(entity.getClass(), entity.getId());
-		if (null != existed)
-			this.batchTemplate.update(this.getSqlId(DAOContext.UPDATE_STATMENT_ID + entity.getClass().getSimpleName()), entity);
-		return existed;
+		return super.update(new SQLBuild<E>(this.namespace, GenericUtils.entityClass(entity)), entity);
+	}
+
+	@Override
+	public <K extends Serializable, E extends AbstractEntity<K>> E[] update(E... entity) {
+		return super.update(new SQLBuild<E>(this.namespace, GenericUtils.entityClass(entity)), entity);
 	}
 
 	@Override
 	public <K extends Serializable, E extends AbstractEntity<K>> E select(Class<E> entityClass, K key) {
-		return this.batchTemplate.selectOne(this.getSqlId(DAOContext.SELECT_STATMENT_ID + entityClass.getSimpleName()), key);
+		return super.select(new SQLBuild<E>(this.namespace, entityClass), key);
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
-	public <K extends Serializable, E extends AbstractEntity<K>> E[] select(Class<E> entityClass, K[] keys) {
-		E[] entities = (E[]) Array.newInstance(entityClass, keys.length);
-		for (int i = 0; i < keys.length; i++)
-			entities[i] = this.select(entityClass, keys[i]);
-		return entities;
+	public <K extends Serializable, E extends AbstractEntity<K>> E[] select(Class<E> entityClass, K... key) {
+		return super.select(new SQLBuild<E>(this.namespace, entityClass), key);
 	}
 
-	/*********************************************************************************************/
-
 	@Override
-	public <K extends Serializable, E extends AbstractEntity<K>> int delete(Class<E> entityClass, Criteria criteria) {
-		return this.batchTemplate.delete(
-				this.getSqlId(DAOContext.DELETE_STATMENT_ID + entityClass.getSimpleName() + "ByCriteria"), criteria);
+	public <K extends Serializable, E extends AbstractEntity<K>> E[] delete(Class<E> entityClass, Criteria criteria) {
+		return super.delete(new SQLBuild<E>(this.namespace, entityClass), criteria);
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
-	public <K extends Serializable, E extends AbstractEntity<K>> int update(E entity, Criteria criteria) {
-		int c = 0;
-		Class<E> entityClass = (Class<E>) entity.getClass();
-		for (K k : this.selectKeys(entityClass, criteria, Page.ALL_RECORD)) {
-			entity.setId(k);
-			if (null != this.update(entity)) c++;
-		}
-		return c;
+	public <K extends Serializable, E extends AbstractEntity<K>> E[] update(E entity, Criteria criteria) {
+		return super.update(new SQLBuild<E>(this.namespace, GenericUtils.entityClass(entity)), entity, criteria);
+	}
+
+	@Override
+	public <K extends Serializable, E extends AbstractEntity<K>> int count(Class<E> entityClass, Criteria criteria) {
+		return super.count(new SQLBuild<E>(this.namespace, entityClass), criteria);
 	}
 
 	@Override
 	public <K extends Serializable, E extends AbstractEntity<K>> K[] selectKeys(Class<E> entityClass, Criteria criteria,
 			Page page) {
-		if (null == page) throw new SystemException("Query must be limited by page.");
-		// dirty page
-		if (page.getTotal() < 0) page.setTotal(this.count(entityClass, criteria));
-
-		OrderedRowBounds rb = new OrderedRowBounds(page.getStart(), page.getSize(), criteria.getOrderFields());
-		List<K> list = this.batchTemplate.selectList(
-				this.getSqlId(DAOContext.SELECT_STATMENT_ID + entityClass.getSimpleName() + "ByCriteria"), criteria, rb);
-
-		return list.toArray(Entity.getKeyBuffer(entityClass, list.size()));
+		return super.selectKeys(new SQLBuild<E>(this.namespace, entityClass), criteria, page);
 	}
 
 	@Override
 	public <K extends Serializable, E extends AbstractEntity<K>> E[] select(Class<E> entityClass, Criteria criteria, Page page) {
-		return this.select(entityClass, this.selectKeys(entityClass, criteria, page));
-	}
-
-	@Override
-	public <K extends Serializable, E extends AbstractEntity<K>> int count(Class<E> entityClass, Criteria criteria) {
-		Object r = this.batchTemplate.selectOne(
-				this.getSqlId(DAOContext.COUNT_STATMENT_ID + entityClass.getSimpleName() + "ByCriteria"), criteria);
-		return null == r ? 0 : ((Number) r).intValue();
-	}
-
-	public void setTemplate(SqlSessionTemplate template) {
-		this.template = template;
-	}
-
-	public void setBatchTemplate(SqlSessionTemplate batchTemplate) {
-		this.batchTemplate = batchTemplate;
+		return super.select(new SQLBuild<E>(this.namespace, entityClass), criteria, page);
 	}
 }

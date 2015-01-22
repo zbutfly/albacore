@@ -50,8 +50,11 @@ public class ExecutorInterceptor extends BaseInterceptor {
 			MetaObject meta = ObjectUtils.createMeta(invocation.getArgs()[1]);
 			for (String p : this.timeProps)
 				if (meta.hasGetter(p) && meta.getValue(p) == null && meta.hasSetter(p)) {
-					meta.setValue(p, new Date().getTime());
-					logger.trace("Timestamp field [" + p + "] is filled.");
+					Class<?> cl = meta.getSetterType(p);
+					if (Number.class.isAssignableFrom(cl)) meta.setValue(p, new Date().getTime());
+					else if (Date.class.isAssignableFrom(cl)) meta.setValue(p, cl.newInstance());
+					else logger.warn("Timestamp field [" + p + "] with type [" + cl.getName() + "] could not be processed.");
+					logger.trace("Timestamp field [" + p + "] processed.");
 				}
 		}
 		if (null != invocation.getArgs()[1] && (invocation.getArgs()[1] instanceof Criteria))

@@ -2,8 +2,9 @@ package net.butfly.albacore.cache.utils.strategy.keygenerate;
 
 import net.butfly.albacore.cache.utils.Key;
 import net.butfly.albacore.exception.SystemException;
-import net.butfly.albacore.logger.Logger;
-import net.butfly.albacore.logger.LoggerFactory;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class StringKeyGenerator implements IKeyGenerator {
 	protected final Logger logger = LoggerFactory.getLogger(this.getClass());

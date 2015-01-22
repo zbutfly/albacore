@@ -12,25 +12,16 @@ import net.butfly.albacore.cache.utils.control.CacheContant;
 import net.butfly.albacore.cache.utils.control.CacheControl;
 import net.butfly.albacore.exception.BusinessException;
 import net.butfly.albacore.exception.SystemException;
-import net.butfly.albacore.helper.AsyncHelper;
-import net.butfly.albacore.logger.Logger;
-import net.butfly.albacore.logger.LoggerFactory;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
 public class CacheInit {
 	private CacheConfigService cacheConfigService;
-	private AsyncHelper asyncHelper;
 	public static boolean cacheTaskWait = false;
 
-	public AsyncHelper getAsyncHelper() {
-		return asyncHelper;
-	}
-
-	public void setAsyncHelper(AsyncHelper asyncHelper) {
-		this.asyncHelper = asyncHelper;
-	}
 
 	public void setCacheConfigService(CacheConfigService cacheConfigService) {
 		this.cacheConfigService = cacheConfigService;

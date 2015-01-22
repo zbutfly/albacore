@@ -1,5 +1,6 @@
 package net.butfly.albacore.utils;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.Method;
@@ -10,6 +11,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
@@ -30,10 +32,10 @@ public final class GenericUtils extends UtilsBase {
 		return getSuperClassGenricType((Class<?>) genType, index);
 	}
 
-	public static Class<?> getGenericParamClass(Class<?> childClass, Class<?> parentClass, String paramName) {
+	public static <E> Class<E> getGenericParamClass(Class<?> childClass, Class<?> parentClass, String paramName) {
 		Map<TypeVariable<Class<?>>, Type> map = getTypeVariableMap(childClass);
 		for (TypeVariable<?> v : map.keySet())
-			if (parentClass.equals(v.getGenericDeclaration()) && paramName.equals(v.getName())) return (Class<?>) map.get(v);
+			if (parentClass.equals(v.getGenericDeclaration()) && paramName.equals(v.getName())) return (Class<E>) map.get(v);
 		throw new RuntimeException("Cannot find generic parameter of the given class.");
 	}
 
@@ -180,19 +182,17 @@ public final class GenericUtils extends UtilsBase {
 		}
 		return set.toArray(new Field[set.size()]);
 	}
-//	private final static Map<Class<?>, Map<String, Field>> FIELDS_CACHE = new ConcurrentHashMap<Class<?>, Map<String, Field>>();
-//	public static Map<String, Field> getAllFields(Class<? extends Beans<?>> clazz) {
-//		Map<String, Field> map = FIELDS_CACHE.get(clazz);
-//		if (null != map) return map;
-//		map = new HashMap<String, Field>();
-//		for (Class<?> cl = clazz; !Object.class.equals(cl); cl = cl.getSuperclass())
-//			for (Field f : clazz.getDeclaredFields()) {
-//				int modifies = f.getModifiers();
-//				String name = f.getName();
-//				if (!"serialVersionUID".equals(name) && !Modifier.isStatic(modifies) && !Modifier.isFinal(modifies))
-//					map.put(name, f);
-//			}
-//		FIELDS_CACHE.put(clazz, map);
-//		return map;
-//	}
+
+	public static <E> Class<E> entityClass(E entity) {
+		return (Class<E>) entity.getClass();
+	}
+
+	public static <E> Class<E> entityClass(E... entity) {
+		return (Class<E>) entity.getClass().getComponentType();
+	}
+
+	public static <E> E[] toArray(List<E> list, Class<E> clazz) {
+		if (null == list) return (E[]) Array.newInstance(clazz, 0);
+		return list.toArray((E[]) Array.newInstance(clazz, list.size()));
+	}
 }
