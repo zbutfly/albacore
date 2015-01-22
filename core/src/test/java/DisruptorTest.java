@@ -10,6 +10,7 @@ import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
 
 //https://github.com/jasonk000/examples/tree/master/executors/src/main/java
+//http://fasterjava.blogspot.com/2014/09/writing-non-blocking-executor.html
 public class DisruptorTest {
 
 	public static class PiJob {
