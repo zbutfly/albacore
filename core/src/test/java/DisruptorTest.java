@@ -10,10 +10,7 @@ import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
 
 //https://github.com/jasonk000/examples/tree/master/executors/src/main/java
-<<<<<<< Updated upstream
-=======
 //http://fasterjava.blogspot.com/2014/09/writing-non-blocking-executor.html
->>>>>>> Stashed changes
 public class DisruptorTest {
 
 	public static class PiJob {
@@ -115,8 +112,4 @@ public class DisruptorTest {
 			System.out.println(re);
 		}
 	}
-<<<<<<< Updated upstream
 }
-=======
-}
->>>>>>> Stashed changes
