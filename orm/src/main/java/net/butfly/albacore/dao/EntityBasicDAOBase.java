@@ -122,10 +122,11 @@ public class EntityBasicDAOBase extends DAOBase implements EntityBasicDAO {
 		if (null == page) throw new SystemException("Query must be limited by page.");
 		// dirty page
 		if (page.getTotal() < 0) page.setTotal(this.count(sql, criteria));
+		Class<K> keyClass = GenericUtils.getGenericParamClass(sql.entityClass(), AbstractEntity.class, "K");
+		if (page.getTotal() == 0) return GenericUtils.toArray(new ArrayList<K>(), keyClass);
 		OrderedRowBounds rb = new OrderedRowBounds(page.getStart(), page.getSize(), criteria.getOrderFields());
 		List<K> list = batchTemplate.selectList(sql.verb(Verb.select).toCriteriaString(), criteria, rb);
 		// XXX: optimize
-		Class<K> keyClass = GenericUtils.getGenericParamClass(sql.entityClass(), AbstractEntity.class, "K");
 		return GenericUtils.toArray(list, keyClass);
 	}
 
