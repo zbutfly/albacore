@@ -8,7 +8,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import net.butfly.albacore.utils.Exceptions;
 import net.butfly.albacore.utils.UtilsBase;
 
 import com.google.common.util.concurrent.MoreExecutors;
@@ -51,11 +50,7 @@ final class Tasks extends UtilsBase {
 				}
 			});
 			if (task.options.unblock) return null;
-			try {
 				return consumer.get(task.options.timeout, TimeUnit.MILLISECONDS);
-			} catch (Exception ex) { // should not have internal exception on callback
-				throw Exceptions.unwrap(ex);
-			}
 		case LISTEN:
 			final Future<T> producer = executor.submit(task.call);
 			consumer = executor.submit(new java.util.concurrent.Callable<T>() {
@@ -82,7 +77,7 @@ final class Tasks extends UtilsBase {
 	}
 
 	private static <OUT> OUT handle(Task<OUT> task, Exception ex) throws Exception {
-		if (null == task.handler) throw Exceptions.unwrap(ex);
+		if (null == task.handler) throw ex;
 		return task.handler.handle(ex);
 	}
 
