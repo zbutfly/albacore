@@ -1,8 +1,19 @@
 package net.butfly.albacore.utils;
 
 import java.net.URL;
+import java.util.Iterator;
 import java.util.List;
 
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.naming.Name;
+import javax.naming.NameNotFoundException;
+import javax.naming.NamingException;
+import javax.naming.Reference;
+import javax.naming.StringRefAddr;
+import javax.naming.spi.ObjectFactory;
+
+import org.dom4j.Attribute;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
@@ -14,30 +25,69 @@ public final class JNDIUtils extends UtilsBase {
 	protected final static Logger logger = LoggerFactory.getLogger(JNDIUtils.class);
 
 	@SuppressWarnings("unchecked")
-	public static void addJNDI(String contextXML, String jndiResClassName) {
+	public static void bindContext(String parent, String contextXML) throws NamingException {
 		URL url = Thread.currentThread().getContextClassLoader().getResource(contextXML);
 		if (null == contextXML) return;
 		Document doc;
 		try {
 			doc = new SAXReader().read(url);
 		} catch (DocumentException e) {
-			throw new RuntimeException(e);
+			logger.error("Context XML parsing failure", e);
+			return;
 		}
-		for (Element resource : (List<Element>) doc.getRootElement().selectNodes("Resource")) {
-			Object res;
-			try {
-				res = Class.forName(resource.attributeValue("type")).newInstance();
+
+		Context env = JNDIUtils.confirmName(new InitialContext(), parent);
+
+		for (Element res : (List<Element>) doc.getRootElement().selectNodes("Resource")) {
+			String name = res.attributeValue("name");
+			if (name == null) logger.error("Resource name not defined");
+			else try {
+				JNDIUtils.confirmName(env, name);
+				env.bind(name, JNDIUtils.parseResource(env, res));
 			} catch (Exception e) {
-				throw new RuntimeException(e);
-			}
-			if (logger.isTraceEnabled()) logger.trace("JNDI Resource added: " + XMLUtils.format(resource));
-			XMLUtils.setPropsByAttr(res, resource, "name", "type");
-			try {
-				Class.forName(jndiResClassName).getConstructor(String.class, Object.class)
-						.newInstance("java:comp/env/" + resource.attributeValue("name"), res);
-			} catch (Exception e) {
-				throw new RuntimeException(e);
+				logger.error("Resource parsing failure", e);
 			}
 		}
+	}
+
+	private static Object parseResource(Context ctx, Element resource) throws Exception {
+		if (logger.isTraceEnabled()) logger.trace("JNDI Resource parsing: " + XMLUtils.format(resource));
+
+		String fact = resource.attributeValue("factory");
+		String type = resource.attributeValue("type");
+		if (fact == null) {
+			Object ds = Class.forName(type).newInstance();
+			XMLUtils.setPropsByAttr(ds, resource, "name", "type");
+			return ds;
+		} else {
+			ObjectFactory factory = (ObjectFactory) Class.forName(fact).newInstance();
+			Object ds = factory.getObjectInstance(parseReference(resource),
+					ctx.getNameParser(ctx.getNameInNamespace()).parse(ctx.getNameInNamespace()), ctx, ctx.getEnvironment());
+			return ds;
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private static Object parseReference(Element resource) {
+		Reference ref = new Reference(resource.attributeValue("type"));
+		Iterator<Attribute> it = resource.attributeIterator();
+		while (it.hasNext()) {
+			Attribute attr = it.next();
+			ref.add(new StringRefAddr(attr.getName(), attr.getValue()));
+		}
+		return ref;
+	}
+
+	private static Context confirmName(Context ctx, String name) throws NamingException {
+		Name nm = ctx.getNameParser(ctx.getNameInNamespace()).parse(name);
+		for (int i = 0; i < nm.size() - 1; i++) {
+			try {
+				ctx = (Context) ctx.lookup(nm.get(i));
+			} catch (NameNotFoundException ex) {
+				ctx = ctx.createSubcontext(nm.get(i));
+				logger.trace("JNDI [" + ctx.getNameInNamespace() + "] created.");
+			}
+		}
+		return ctx;
 	}
 }
