@@ -63,8 +63,8 @@ public final class Options implements Serializable {
 
 	private static final int RETRIES_MAX = 100;
 	// default no continuous, < 0 for infinity
-	int repeat = 0;
-	// default no retry, finish on any failure, < 0 for MAX RETRIES
+	int repeat = 1;
+	// default no retry, finish on any failure, < 0 for forever retry (RETRIES_MAX times limited)
 	int retry = 0;
 	// default start in same thread
 	int concurrence = 0;
@@ -81,8 +81,13 @@ public final class Options implements Serializable {
 		return this;
 	}
 
+	public Options discontinuous() {
+		this.repeat = 0;
+		return this;
+	}
+
 	public Options retries(int retries) {
-		this.retry = retries <= 0 || retries > RETRIES_MAX ? RETRIES_MAX : retries;
+		this.retry = retries < 0 || retries > RETRIES_MAX ? RETRIES_MAX : retries;
 		return this;
 	}
 

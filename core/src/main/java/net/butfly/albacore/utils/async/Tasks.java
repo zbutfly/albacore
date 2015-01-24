@@ -20,18 +20,29 @@ final class Tasks extends UtilsBase {
 	static <T> T execute(final Task<T> task, ExecutorService executor) throws Exception {
 		if (executor == null) executor = EXECUTOR;
 		if (task.options == null) task.options = new Options();
-		final T result;
-		Future<T> consumer;
+		int repeated = 0, retried = 0;
+		T result = null;
+		while ((task.options.repeat < 0 || repeated < task.options.repeat) && retried <= task.options.retry) {
+			try {
+				result = single(task, executor);
+				repeated++;
+			} catch (Exception ex) {
+				result = handle(task, ex);
+				retried++;
+			}
+			try {
+				Thread.sleep(task.options.interval);
+			} catch (InterruptedException e) {}
+		}
+		return result;
+	}
+
+	private static <T> T single(final Task<T> task, ExecutorService executor) throws Exception {
 		switch (task.options.mode) {
 		case NONE:
-			try {
-				result = task.call.call();
-			} catch (Exception ex) {
-				return handle(task, ex);
-			}
-			return callback(result, task.back);
+			return callback(task.call.call(), task.back);
 		case WHOLE:
-			consumer = executor.submit(new java.util.concurrent.Callable<T>() {
+			return fetch(task, executor.submit(new java.util.concurrent.Callable<T>() {
 				@Override
 				public T call() throws Exception {
 					try {
@@ -40,24 +51,18 @@ final class Tasks extends UtilsBase {
 						return handle(task, ex);
 					}
 				}
-			});
-			return fetch(task, consumer);
+			}));
 		case LATTER:
-			try {
-				result = task.call.call();
-			} catch (Exception ex) {
-				return handle(task, ex);
-			}
-			consumer = executor.submit(new java.util.concurrent.Callable<T>() {
+			final T result = task.call.call();
+			return fetch(task, executor.submit(new java.util.concurrent.Callable<T>() {
 				@Override
 				public T call() {
 					return callback(result, task.back);
 				}
-			});
-			return fetch(task, consumer);
+			}));
 		case EACH:
 			final Future<T> producer = executor.submit(task.call);
-			consumer = executor.submit(new java.util.concurrent.Callable<T>() {
+			final Future<T> consumer = executor.submit(new java.util.concurrent.Callable<T>() {
 				@Override
 				public T call() throws Exception {
 					T r;
