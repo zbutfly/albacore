@@ -8,37 +8,34 @@ public final class Options implements Serializable {
 	private static final long serialVersionUID = -7043260354737005676L;
 
 	enum ForkMode {
-		NONE(false), PRODUCER(false), CONSUMER(true), LISTEN(true);
-		boolean async;
-
-		private ForkMode(boolean async) {
-			this.async = async;
-		}
+		NONE, WHOLE, LATTER, EACH;
 	}
 
 	public Options() {}
 
 	ForkMode mode = ForkMode.NONE;
 	long timeout = -1;
-	boolean unblock = ForkMode.NONE.async;
+	boolean unblock = false;
 
 	/**
 	 * Forking producer (Callable call) or consumer (Callback routine), another will continue in current
 	 * thread.
 	 * 
-	 * @param producer
-	 *            True to fork producer thread, False to fork consumer thread.
+	 * @param both
+	 *            </br> True to fork two thread, consumer thread will listen producer thread for
+	 *            result,</br> False to fork consumer thread only, it will listen main thread for result
+	 *            producing.
 	 * @return
 	 */
-	public Options fork(boolean producer) {
-		return this.mode(producer ? ForkMode.PRODUCER : ForkMode.CONSUMER);
+	public Options fork(boolean both) {
+		return this.mode(both ? ForkMode.EACH : ForkMode.LATTER);
 	}
 
 	/**
-	 * Forking both producer and consumer to a new thread, and current thread is continuing immediately.
+	 * Forking both producer and consumer to a new thread.
 	 */
 	public Options fork() {
-		return this.mode(ForkMode.LISTEN);
+		return this.mode(ForkMode.WHOLE);
 	}
 
 	public Options timeout(long timeout) {
@@ -56,13 +53,9 @@ public final class Options implements Serializable {
 		return this;
 	}
 
-	public boolean needCallback() {
-		return this.mode.async;
-	}
-
 	private Options mode(ForkMode mode) {
 		this.mode = mode;
-		this.unblock = mode.async;
+		this.unblock = this.mode != ForkMode.NONE;
 		return this;
 	}
 

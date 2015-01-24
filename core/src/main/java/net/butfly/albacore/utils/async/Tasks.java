@@ -18,7 +18,7 @@ final class Tasks extends UtilsBase {
 			.newCachedThreadPool());
 
 	static <T> T execute(final Task<T> task, ExecutorService executor) throws Exception {
-		if (executor == null) executor = Tasks.EXECUTOR;
+		if (executor == null) executor = EXECUTOR;
 		if (task.options == null) task.options = new Options();
 		final T result;
 		Future<T> consumer;
@@ -29,15 +29,20 @@ final class Tasks extends UtilsBase {
 			} catch (Exception ex) {
 				return handle(task, ex);
 			}
-			return Tasks.callback(result, task.back);
-		case PRODUCER:
-			try {
-				result = Tasks.fetch(executor.submit(task.call), task.options.timeout);
-			} catch (Exception ex) {
-				return handle(task, ex);
-			}
-			return Tasks.callback(result, task.back);
-		case CONSUMER:
+			return callback(result, task.back);
+		case WHOLE:
+			consumer = executor.submit(new java.util.concurrent.Callable<T>() {
+				@Override
+				public T call() throws Exception {
+					try {
+						return callback(task.call.call(), task.back);
+					} catch (Exception ex) {
+						return handle(task, ex);
+					}
+				}
+			});
+			return fetch(task, consumer);
+		case LATTER:
 			try {
 				result = task.call.call();
 			} catch (Exception ex) {
@@ -46,31 +51,25 @@ final class Tasks extends UtilsBase {
 			consumer = executor.submit(new java.util.concurrent.Callable<T>() {
 				@Override
 				public T call() {
-					return Tasks.callback(result, task.back);
+					return callback(result, task.back);
 				}
 			});
-			if (task.options.unblock) return null;
-				return consumer.get(task.options.timeout, TimeUnit.MILLISECONDS);
-		case LISTEN:
+			return fetch(task, consumer);
+		case EACH:
 			final Future<T> producer = executor.submit(task.call);
 			consumer = executor.submit(new java.util.concurrent.Callable<T>() {
 				@Override
 				public T call() throws Exception {
 					T r;
 					try {
-						r = Tasks.fetch(producer, task.options.timeout);
+						r = fetch(producer, task.options.timeout);
 					} catch (Exception ex) {
 						return handle(task, ex);
 					}
-					return Tasks.callback(r, task.back);
+					return callback(r, task.back);
 				}
 			});
-			if (!task.options.unblock) try {
-				return Tasks.fetch(consumer, task.options.timeout);
-			} catch (Exception ex) {
-				return handle(task, ex);
-			}
-			else return null;
+			return fetch(task, consumer);
 		default:
 			throw new IllegalArgumentException();
 		}
@@ -85,6 +84,15 @@ final class Tasks extends UtilsBase {
 		if (null == callback) return result;
 		callback.callback(result);
 		return null;
+	}
+
+	private static <OUT> OUT fetch(final Task<OUT> task, Future<OUT> future) throws Exception {
+		if (task.options.unblock) return null;
+		else try {
+			return fetch(future, task.options.timeout);
+		} catch (Exception ex) {
+			return handle(task, ex);
+		}
 	}
 
 	private static <OUT> OUT fetch(Future<OUT> future, long timeout) throws InterruptedException, ExecutionException,
