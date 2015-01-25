@@ -107,8 +107,13 @@ public final class Reflections extends UtilsBase {
 		}
 	}
 
-	public static ParameterInfo parameters(Class<?> parameterClass, Object parameterValue) {
+	public static ParameterInfo parameter(Object parameterValue, Class<?> parameterClass) {
 		return new ParameterInfo(parameterClass, parameterValue);
+	}
+
+	public static ParameterInfo parameter(Object parameterValue) {
+		if (null == parameterValue) throw new NullPointerException();
+		return new ParameterInfo(parameterValue.getClass(), parameterValue);
 	}
 
 	public static Class<?>[] parameterClasses(ParameterInfo... paramInfo) {

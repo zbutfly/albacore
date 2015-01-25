@@ -14,8 +14,8 @@ public final class DualCache implements Cache {
 	public DualCache(final String id) {
 		if (id == null) throw new IllegalArgumentException("Cache instances require an ID");
 		this.id = id;
-		this.firstCache = Reflections.construct(this.firstClass, Reflections.parameters(String.class, id));
-		this.secondCache = Reflections.construct(this.secondClass, Reflections.parameters(String.class, id));
+		this.firstCache = Reflections.construct(this.firstClass, Reflections.parameter(id));
+		this.secondCache = Reflections.construct(this.secondClass, Reflections.parameter(id));
 	}
 
 	@Override
