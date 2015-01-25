@@ -8,9 +8,7 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.test.skip.exec>true</maven.test.skip.exec>
-		<deps.version.httpclient>4.3.5</deps.version.httpclient>
-		<deps.version.spring>4.1.0.RELEASE</deps.version.spring>
-		<maven.test.skip.exec>true</maven.test.skip.exec>
+		<deps.version.spring>4.1.4.RELEASE</deps.version.spring>
 	</properties>
 	<build>
 		<pluginManagement>

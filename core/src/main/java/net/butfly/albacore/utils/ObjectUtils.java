@@ -25,6 +25,9 @@ import com.google.common.base.Defaults;
 
 @SuppressWarnings("rawtypes")
 public class ObjectUtils extends UtilsBase {
+	public static final int HASH_SEED = 17;
+	public static final int HASH_OFFSET = 37;
+
 	public static Beans clone(Beans src, Class<? extends Beans> dstClass) {
 		return clone(src, dstClass, true);
 	}
@@ -435,5 +438,17 @@ public class ObjectUtils extends UtilsBase {
 				return null == cl ? Object.class : cl;
 			} else return null;
 		}
+	}
+
+	public static int hashCode(final int seed, final int hashcode) {
+		return seed * HASH_OFFSET + hashcode;
+	}
+
+	public static int hashCode(final int seed, final boolean b) {
+		return hashCode(seed, b ? 1 : 0);
+	}
+
+	public static int hashCode(final int seed, final Object obj) {
+		return hashCode(seed, obj != null ? obj.hashCode() : 0);
 	}
 }
