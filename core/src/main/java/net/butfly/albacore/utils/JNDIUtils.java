@@ -44,6 +44,7 @@ public final class JNDIUtils extends UtilsBase {
 			else try {
 				JNDIUtils.confirmName(env, name);
 				env.bind(name, JNDIUtils.parseResource(env, res));
+				logger.trace("JNDI [" + name + "] in [" + env.getNameInNamespace() + "] binded.");
 			} catch (Exception e) {
 				logger.error("Resource parsing failure", e);
 			}
