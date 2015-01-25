@@ -3,18 +3,18 @@ package net.butfly.albacore.entity;
 import java.io.Serializable;
 import java.util.Date;
 
-import net.butfly.albacore.support.entity.SteerableSupport;
+import net.butfly.albacore.support.entity.Steerable;
 
-public abstract class SteerableEntity<K extends Serializable> extends BasicEntity<K> implements SteerableSupport<K> {
+public abstract class SteerableEntity<K extends Serializable> extends StetEntity<K> implements Steerable<K> {
 	private static final long serialVersionUID = 1L;
-	protected EntityStub<K> createStub;
-	protected EntityStub<K> deleteStub;
-	protected EntityStub<K> updateStub;
+	protected Stub<K> createStub;
+	protected Stub<K> deleteStub;
+	protected Stub<K> updateStub;
 
 	public SteerableEntity() {
-		this.createStub = new EntityStub<K>();
-		this.createStub = new EntityStub<K>();
-		this.createStub = new EntityStub<K>();
+		this.createStub = new Stub<K>();
+		this.createStub = new Stub<K>();
+		this.createStub = new Stub<K>();
 	}
 
 	@Override
