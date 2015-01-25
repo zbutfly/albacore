@@ -2,8 +2,6 @@ package net.butfly.albacore.utils.async;
 
 import java.io.Serializable;
 
-import net.butfly.albacore.utils.KeyUtils;
-
 public final class Options implements Serializable {
 	private static final long serialVersionUID = -7043260354737005676L;
 
@@ -53,7 +51,7 @@ public final class Options implements Serializable {
 		return this;
 	}
 
-	private Options mode(ForkMode mode) {
+	Options mode(ForkMode mode) {
 		this.mode = mode;
 		this.unblock = this.mode != ForkMode.NONE;
 		return this;
@@ -101,26 +99,10 @@ public final class Options implements Serializable {
 		return this;
 	}
 
-	public String toString() {
-		String[] fields = new String[7];
-		fields[0] = Integer.toString(this.mode.ordinal());
-		fields[1] = Long.toString(this.timeout);
-		fields[2] = Boolean.toString(this.unblock);
-		fields[3] = Integer.toString(this.repeat);
-		fields[4] = Integer.toString(this.retry);
-		fields[5] = Integer.toString(this.concurrence);
-		fields[6] = Long.toString(this.interval);
-		return KeyUtils.join(':', fields);
-	}
-
-	public Options(String format) {
-		String[] fields = format.split(":");
-		this.mode = ForkMode.values()[Integer.parseInt(fields[0])];
-		this.timeout = Long.parseLong(fields[1]);
-		this.unblock = Boolean.parseBoolean(fields[2]);
-		this.repeat = Integer.parseInt(fields[3]);
-		this.retry = Integer.parseInt(fields[4]);
-		this.concurrence = Integer.parseInt(fields[5]);
-		this.interval = Long.parseLong(fields[6]);
+	public boolean equals(Object obj) {
+		if (null == obj || !Options.class.isAssignableFrom(obj.getClass())) return false;
+		Options ops = (Options) obj;
+		return mode == ops.mode && timeout == ops.timeout && unblock == ops.unblock && repeat == ops.repeat
+				&& retry == ops.retry && concurrence == ops.concurrence && interval == ops.interval;
 	}
 }

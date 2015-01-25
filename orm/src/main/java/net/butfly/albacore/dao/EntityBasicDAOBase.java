@@ -11,7 +11,7 @@ import net.butfly.albacore.dbo.criteria.Page;
 import net.butfly.albacore.entity.AbstractEntity;
 import net.butfly.albacore.entity.Key;
 import net.butfly.albacore.exception.SystemException;
-import net.butfly.albacore.utils.GenericUtils;
+import net.butfly.albacore.utils.Generics;
 
 import org.mybatis.spring.SqlSessionTemplate;
 
@@ -43,8 +43,8 @@ public class EntityBasicDAOBase extends DAOBase implements EntityBasicDAO {
 			if (null != k) keys.add(k);
 		}
 		// XXX: optimize
-		Class<K> keyClass = GenericUtils.getGenericParamClass(sql.entityClass(), AbstractEntity.class, "K");
-		return GenericUtils.toArray(keys, keyClass);
+		Class<K> keyClass = Generics.getGenericParamClass(sql.entityClass(), AbstractEntity.class, "K");
+		return Generics.toArray(keys, keyClass);
 	}
 
 	public <K extends Serializable, E extends AbstractEntity<K>> E delete(SQLBuild<E> sql, K key) {
@@ -62,7 +62,7 @@ public class EntityBasicDAOBase extends DAOBase implements EntityBasicDAO {
 			E d = this.delete(sql, key);
 			if (null != d) deleted.add(d);
 		}
-		return GenericUtils.toArray(deleted, sql.entityClass());
+		return Generics.toArray(deleted, sql.entityClass());
 	}
 
 	public <K extends Serializable, E extends AbstractEntity<K>> E update(SQLBuild<E> sql, E entity) {
@@ -80,7 +80,7 @@ public class EntityBasicDAOBase extends DAOBase implements EntityBasicDAO {
 			E u = this.update(sql, e);
 			if (null != u) updated.add(u);
 		}
-		return GenericUtils.toArray(updated, sql.entityClass());
+		return Generics.toArray(updated, sql.entityClass());
 	}
 
 	public <K extends Serializable, E extends AbstractEntity<K>> E select(SQLBuild<E> sql, K key) {
@@ -94,7 +94,7 @@ public class EntityBasicDAOBase extends DAOBase implements EntityBasicDAO {
 			E e = this.select(sql, key);
 			if (null != e) list.add(e);
 		}
-		return GenericUtils.toArray(list, sql.entityClass());
+		return Generics.toArray(list, sql.entityClass());
 	}
 
 	public <K extends Serializable, E extends AbstractEntity<K>> E[] delete(SQLBuild<E> sql, Criteria criteria) {
@@ -122,12 +122,12 @@ public class EntityBasicDAOBase extends DAOBase implements EntityBasicDAO {
 		if (null == page) throw new SystemException("Query must be limited by page.");
 		// dirty page
 		if (page.getTotal() < 0) page.setTotal(this.count(sql, criteria));
-		Class<K> keyClass = GenericUtils.getGenericParamClass(sql.entityClass(), AbstractEntity.class, "K");
-		if (page.getTotal() == 0) return GenericUtils.toArray(new ArrayList<K>(), keyClass);
+		Class<K> keyClass = Generics.getGenericParamClass(sql.entityClass(), AbstractEntity.class, "K");
+		if (page.getTotal() == 0) return Generics.toArray(new ArrayList<K>(), keyClass);
 		OrderedRowBounds rb = new OrderedRowBounds(page.getStart(), page.getSize(), criteria.getOrderFields());
 		List<K> list = batchTemplate.selectList(sql.verb(Verb.select).toCriteriaString(), criteria, rb);
 		// XXX: optimize
-		return GenericUtils.toArray(list, keyClass);
+		return Generics.toArray(list, keyClass);
 	}
 
 	public <K extends Serializable, E extends AbstractEntity<K>> E[] select(SQLBuild<E> sql, Criteria criteria, Page page) {

@@ -1,4 +1,4 @@
-package net.butfly.albacore.utils;
+package net.butfly.albacore.utils.more;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -10,6 +10,8 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import net.butfly.albacore.utils.Objects;
+import net.butfly.albacore.utils.UtilsBase;
 import net.butfly.albacore.utils.imports.meta.MetaObject;
 
 import org.dom4j.Attribute;
@@ -29,20 +31,20 @@ import net.butfly.albacore.exception.NotImplementedException;
 public class XMLUtils extends UtilsBase {
 	@SuppressWarnings("unchecked")
 	public static void setPropsByAttr(Object target, Element element, String... ignores) {
-		MetaObject meta = ObjectUtils.createMeta(target);
+		MetaObject meta = Objects.createMeta(target);
 		Iterator<Attribute> it = element.attributeIterator();
 		while (it.hasNext()) {
 			Attribute attr = it.next();
 			String name = attr.getName();
 			if (ignores != null) for (String ig : ignores)
 				if (name.equals(ig)) continue;
-			if (meta.hasSetter(name)) meta.setValue(name, ObjectUtils.castValue(attr.getValue(), meta.getSetterType(name)));
+			if (meta.hasSetter(name)) meta.setValue(name, Objects.castValue(attr.getValue(), meta.getSetterType(name)));
 		}
 	}
 
 	@SuppressWarnings("unchecked")
 	public static void setPropsByNode(Object target, Element element, String... ignores) {
-		MetaObject meta = ObjectUtils.createMeta(target);
+		MetaObject meta = Objects.createMeta(target);
 		for (Element node : (List<Element>) element.selectNodes("*")) {
 			String name = node.getName();
 			if (ignores != null) for (String ig : ignores)
@@ -50,7 +52,7 @@ public class XMLUtils extends UtilsBase {
 			if (meta.hasSetter(name)) {
 				if (!meta.getSetterType(name).isArray()) {
 					String value = node.getTextTrim();
-					meta.setValue(name, ObjectUtils.castValue(value, meta.getSetterType(name)));
+					meta.setValue(name, Objects.castValue(value, meta.getSetterType(name)));
 				} else {
 					throw new NotImplementedException();
 				}

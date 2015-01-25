@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class KeyUtils extends UtilsBase {
+public class Keys extends UtilsBase {
 	public static String defaults() {
 		return objectId();
 	}
@@ -21,26 +21,6 @@ public class KeyUtils extends UtilsBase {
 
 	public static String objectId() {
 		return ObjectIdGenerator.generateKey();
-	}
-
-	/**
-	 * Join strings without any spliter
-	 * 
-	 * @param list
-	 * @return
-	 */
-	public static String join(String... list) {
-		StringBuilder sb = new StringBuilder();
-		for (String tt : list)
-			sb.append(tt);
-		return sb.substring(0, sb.length()).toString();
-	}
-
-	public static String join(char split, String... list) {
-		StringBuilder sb = new StringBuilder();
-		for (String tt : list)
-			sb.append(tt).append(split);
-		return sb.substring(0, sb.length() - 1).toString();
 	}
 
 	/**
@@ -66,7 +46,7 @@ public class KeyUtils extends UtilsBase {
 			buf.putInt(_genmachine);
 			buf.putInt(_inc);
 
-			return ByteUtils.byte2hex(bytes);
+			return Texts.byte2hex(bytes);
 		}
 
 		private static int generateMachine() {

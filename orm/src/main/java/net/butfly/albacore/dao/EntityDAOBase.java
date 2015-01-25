@@ -5,7 +5,7 @@ import java.io.Serializable;
 import net.butfly.albacore.dbo.criteria.Criteria;
 import net.butfly.albacore.dbo.criteria.Page;
 import net.butfly.albacore.entity.AbstractEntity;
-import net.butfly.albacore.utils.GenericUtils;
+import net.butfly.albacore.utils.Generics;
 
 public class EntityDAOBase extends EntityBasicDAOBase implements EntityDAO {
 	private static final long serialVersionUID = -1599466753909389837L;
@@ -18,12 +18,12 @@ public class EntityDAOBase extends EntityBasicDAOBase implements EntityDAO {
 
 	@Override
 	public <K extends Serializable, E extends AbstractEntity<K>> K insert(final E entity) {
-		return super.insert(new SQLBuild<E>(this.namespace, GenericUtils.entityClass(entity)), entity);
+		return super.insert(new SQLBuild<E>(this.namespace, Generics.entityClass(entity)), entity);
 	}
 
 	@Override
 	public <K extends Serializable, E extends AbstractEntity<K>> K[] insert(final E... entity) {
-		return super.insert(new SQLBuild<E>(this.namespace, GenericUtils.entityClass(entity)), entity);
+		return super.insert(new SQLBuild<E>(this.namespace, Generics.entityClass(entity)), entity);
 	}
 
 	@Override
@@ -38,12 +38,12 @@ public class EntityDAOBase extends EntityBasicDAOBase implements EntityDAO {
 
 	@Override
 	public <K extends Serializable, E extends AbstractEntity<K>> E update(E entity) {
-		return super.update(new SQLBuild<E>(this.namespace, GenericUtils.entityClass(entity)), entity);
+		return super.update(new SQLBuild<E>(this.namespace, Generics.entityClass(entity)), entity);
 	}
 
 	@Override
 	public <K extends Serializable, E extends AbstractEntity<K>> E[] update(E... entity) {
-		return super.update(new SQLBuild<E>(this.namespace, GenericUtils.entityClass(entity)), entity);
+		return super.update(new SQLBuild<E>(this.namespace, Generics.entityClass(entity)), entity);
 	}
 
 	@Override
@@ -63,7 +63,7 @@ public class EntityDAOBase extends EntityBasicDAOBase implements EntityDAO {
 
 	@Override
 	public <K extends Serializable, E extends AbstractEntity<K>> E[] update(E entity, Criteria criteria) {
-		return super.update(new SQLBuild<E>(this.namespace, GenericUtils.entityClass(entity)), entity, criteria);
+		return super.update(new SQLBuild<E>(this.namespace, Generics.entityClass(entity)), entity, criteria);
 	}
 
 	@Override

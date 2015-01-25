@@ -2,7 +2,7 @@ package net.butfly.albacore.utils;
 
 import java.lang.reflect.Method;
 
-public class EnumUtils extends UtilsBase {
+public class Enums extends UtilsBase {
 	public static final String ENUM_VALUE_METHOD_NAME = "value";
 
 	@SuppressWarnings("unchecked")
@@ -15,10 +15,6 @@ public class EnumUtils extends UtilsBase {
 		} catch (Exception e) {
 			throw new RuntimeException("Failure on parsing as enum.", e);
 		}
-	}
-
-	enum temp {
-		a, b, c
 	}
 
 	public static <E extends Enum<E>> E parse(Class<E> type, byte enumValue) {

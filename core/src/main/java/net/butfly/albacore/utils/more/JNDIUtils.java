@@ -1,4 +1,4 @@
-package net.butfly.albacore.utils;
+package net.butfly.albacore.utils.more;
 
 import java.net.URL;
 import java.util.Iterator;
@@ -12,6 +12,8 @@ import javax.naming.NamingException;
 import javax.naming.Reference;
 import javax.naming.StringRefAddr;
 import javax.naming.spi.ObjectFactory;
+
+import net.butfly.albacore.utils.UtilsBase;
 
 import org.dom4j.Attribute;
 import org.dom4j.Document;

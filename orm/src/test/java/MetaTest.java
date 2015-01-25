@@ -2,7 +2,7 @@ import java.util.Arrays;
 import java.util.Map;
 
 import net.butfly.albacore.dbo.criteria.Page;
-import net.butfly.albacore.utils.ObjectUtils;
+import net.butfly.albacore.utils.Objects;
 import net.butfly.albacore.utils.imports.meta.MetaObject;
 
 public class MetaTest {
@@ -21,7 +21,7 @@ public class MetaTest {
 
 	public static void main(String[] args) {
 		Page page = new Page(15, 1);
-		Map<String, Object> map = ObjectUtils.toMap(page);
+		Map<String, Object> map = Objects.toMap(page);
 		for (String k : map.keySet()) {
 			System.out.println(k + ":" + map.get(k).getClass().getName());
 		}
@@ -46,14 +46,14 @@ public class MetaTest {
 		printMetaInfo(bb);
 		BB[] bbs = new BB[] { bb };
 		printMetaInfo(Arrays.asList(bbs));
-		MetaObject meta = ObjectUtils.createMeta(bbs);
+		MetaObject meta = Objects.createMeta(bbs);
 		System.out.println(meta.getValue("a.a"));
 		System.out.println(meta.findProperty("a.a", true));
 	}
 
 	private static void printMetaInfo(Object target) {
 		System.out.println(target.getClass().getName());
-		MetaObject meta = ObjectUtils.createMeta(target);
+		MetaObject meta = Objects.createMeta(target);
 		for (String name : meta.getGetterNames())
 			System.out.println("<==" + "get [" + name + "]: " + meta.getValue(name) + "[" + meta.getGetterType(name).getName()
 					+ "]");

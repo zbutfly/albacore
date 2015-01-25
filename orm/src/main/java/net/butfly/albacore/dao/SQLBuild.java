@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import net.butfly.albacore.entity.AbstractEntity;
-import net.butfly.albacore.utils.KeyUtils;
+import net.butfly.albacore.utils.Texts;
 
 public final class SQLBuild<E extends AbstractEntity<?>> {
 	enum Verb {
@@ -43,7 +43,7 @@ public final class SQLBuild<E extends AbstractEntity<?>> {
 	}
 
 	public String toString() {
-		return namespace + verb + KeyUtils.join(suffix.toArray(new String[suffix.size()]));
+		return namespace + verb + Texts.join(suffix.toArray(new String[suffix.size()]));
 	}
 
 	public String toCriteriaString() {
