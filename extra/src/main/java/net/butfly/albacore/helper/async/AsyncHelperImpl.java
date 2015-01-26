@@ -7,7 +7,7 @@ import java.util.Map;
 import net.butfly.albacore.exception.SystemException;
 import net.butfly.albacore.helper.AsyncHelper;
 import net.butfly.albacore.helper.HelperBase;
-import net.butfly.albacore.utils.ObjectUtils;
+import net.butfly.albacore.utils.Objects;
 import net.butfly.albacore.utils.imports.meta.MetaObject;
 
 import org.springframework.core.task.AsyncTaskExecutor;
@@ -52,7 +52,7 @@ public class AsyncHelperImpl extends HelperBase implements AsyncHelper {
 			throw new SystemException("ALC_000", "Unable to create instance of call executor of class: "
 					+ executorClass.getName(), ex);
 		}
-		MetaObject bm = ObjectUtils.createMeta(executor);
+		MetaObject bm = Objects.createMeta(executor);
 		for (String name : params.keySet())
 			if (bm.hasSetter(name)) bm.setValue(name, params.get(name));
 

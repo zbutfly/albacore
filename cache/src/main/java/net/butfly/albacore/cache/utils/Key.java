@@ -6,7 +6,7 @@ import java.io.Serializable;
 import java.lang.reflect.Method;
 
 import net.butfly.albacore.exception.SystemException;
-import net.butfly.albacore.utils.ByteUtils;
+import net.butfly.albacore.utils.Texts;
 import net.butfly.albacore.utils.encrypt.Algorithm.DigesterAlgorithm;
 import net.butfly.albacore.utils.encrypt.DigesterEncryptor;
 
@@ -25,7 +25,7 @@ public class Key {
 				ByteArrayOutputStream bos = new ByteArrayOutputStream();
 				ObjectOutputStream oos = new ObjectOutputStream(bos);
 				oos.writeObject(ob);
-				key = ByteUtils.byte2hex(bos.toByteArray()) + key;
+				key = Texts.byte2hex(bos.toByteArray()) + key;
 			}
 			key = encrypt.encrypt(key);
 			this.obj = key;
