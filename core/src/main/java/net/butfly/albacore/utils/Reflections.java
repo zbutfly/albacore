@@ -28,8 +28,11 @@ import org.reflections.util.FilterBuilder;
 public final class Reflections extends UtilsBase {
 	private static String DEFAULT_PACKAGE_PREFIX = "";
 	private static Map<String, org.reflections.Reflections> reflections = new HashMap<String, org.reflections.Reflections>();
-	static {
-		reflections(DEFAULT_PACKAGE_PREFIX);
+
+	private static org.reflections.Reflections reflections(String... packagePrefix) {
+		if (null == packagePrefix || packagePrefix.length == 0) return reflections(DEFAULT_PACKAGE_PREFIX);
+		// TODO
+		else return reflections(packagePrefix[0]);
 	}
 
 	private static org.reflections.Reflections reflections(String packagePrefix) {
@@ -47,8 +50,8 @@ public final class Reflections extends UtilsBase {
 		return r;
 	}
 
-	public static Class<?>[] getAnnotatedTypes(String packagePrefix, Class<? extends Annotation> annotationClass) {
-		return reflections(packagePrefix).getTypesAnnotatedWith(annotationClass).toArray(new Class[0]);
+	public static Class<?>[] getAnnotatedTypes(Class<? extends Annotation> annotationClass) {
+		return reflections().getTypesAnnotatedWith(annotationClass).toArray(new Class[0]);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -201,7 +204,7 @@ public final class Reflections extends UtilsBase {
 		else throw new RuntimeException("No setter method for target.");
 	}
 
-	public static <T> Set<Class<? extends T>> getSubClasses(Class<T> parentClass, String packagePrefix) {
+	public static <T> Set<Class<? extends T>> getSubClasses(Class<T> parentClass, String... packagePrefix) {
 		return reflections(packagePrefix).getSubTypesOf(parentClass);
 	}
 
@@ -222,12 +225,12 @@ public final class Reflections extends UtilsBase {
 		return s.toArray(new Field[s.size()]);
 	}
 
-	public static Field[] getFieldsAnnotatedWith(String packagePrefix, Class<? extends Annotation> annotation) {
+	public static Field[] getFieldsAnnotatedWith(Class<? extends Annotation> annotation, String... packagePrefix) {
 		Set<Field> s = reflections(packagePrefix).getFieldsAnnotatedWith(annotation);
 		return s.toArray(new Field[s.size()]);
 	}
 
-	public static Method[] getMethodsAnnotatedWith(String packagePrefix, Class<? extends Annotation> annotation) {
+	public static Method[] getMethodsAnnotatedWith(Class<? extends Annotation> annotation, String... packagePrefix) {
 		Set<Method> s = reflections(packagePrefix).getMethodsAnnotatedWith(annotation);
 		return s.toArray(new Method[s.size()]);
 	}
