@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-import net.butfly.albacore.dao.SQLBuild.Verb;
+import net.butfly.albacore.dao.DAO.SQL.Verb;
 import net.butfly.albacore.dbo.criteria.Criteria;
 import net.butfly.albacore.dbo.criteria.OrderedRowBounds;
 import net.butfly.albacore.dbo.criteria.Page;
@@ -28,7 +28,7 @@ public class EntityBasicDAOBase extends DAOBase implements EntityBasicDAO {
 		this.batchTemplate = batchTemplate;
 	}
 
-	public <K extends Serializable, E extends AbstractEntity<K>> K insert(SQLBuild<E> sql, E entity) {
+	public <K extends Serializable, E extends AbstractEntity<K>> K insert(SQL<E> sql, E entity) {
 		if (null == entity) return null;
 		if (entity.getId() == null || !(entity.getId() instanceof Key) || this.select(sql, entity.getId()) == null) {
 			batchTemplate.insert(sql.verb(Verb.insert).toString(), entity);
@@ -36,7 +36,7 @@ public class EntityBasicDAOBase extends DAOBase implements EntityBasicDAO {
 		} else return null;
 	}
 
-	public <K extends Serializable, E extends AbstractEntity<K>> K[] insert(SQLBuild<E> sql, E... entities) {
+	public <K extends Serializable, E extends AbstractEntity<K>> K[] insert(SQL<E> sql, E... entities) {
 		List<K> keys = new ArrayList<K>();
 		if (null != entities) for (E e : entities) {
 			K k = this.insert(sql, e);
@@ -47,7 +47,7 @@ public class EntityBasicDAOBase extends DAOBase implements EntityBasicDAO {
 		return Generics.toArray(keys, keyClass);
 	}
 
-	public <K extends Serializable, E extends AbstractEntity<K>> E delete(SQLBuild<E> sql, K key) {
+	public <K extends Serializable, E extends AbstractEntity<K>> E delete(SQL<E> sql, K key) {
 		if (null == key) return null;
 		E e = this.select(sql, key);
 		if (null != e) {
@@ -56,7 +56,7 @@ public class EntityBasicDAOBase extends DAOBase implements EntityBasicDAO {
 		} else return null;
 	}
 
-	public <K extends Serializable, E extends AbstractEntity<K>> E[] delete(SQLBuild<E> sql, K... keys) {
+	public <K extends Serializable, E extends AbstractEntity<K>> E[] delete(SQL<E> sql, K... keys) {
 		List<E> deleted = new ArrayList<E>();
 		for (K key : keys) {
 			E d = this.delete(sql, key);
@@ -65,7 +65,7 @@ public class EntityBasicDAOBase extends DAOBase implements EntityBasicDAO {
 		return Generics.toArray(deleted, sql.entityClass());
 	}
 
-	public <K extends Serializable, E extends AbstractEntity<K>> E update(SQLBuild<E> sql, E entity) {
+	public <K extends Serializable, E extends AbstractEntity<K>> E update(SQL<E> sql, E entity) {
 		if (null == entity) return null;
 		E existed = this.select(sql, entity.getId());
 		if (null != existed) {
@@ -74,7 +74,7 @@ public class EntityBasicDAOBase extends DAOBase implements EntityBasicDAO {
 		} else return null;
 	}
 
-	public <K extends Serializable, E extends AbstractEntity<K>> E[] update(SQLBuild<E> sql, E... entity) {
+	public <K extends Serializable, E extends AbstractEntity<K>> E[] update(SQL<E> sql, E... entity) {
 		List<E> updated = new ArrayList<E>();
 		for (E e : entity) {
 			E u = this.update(sql, e);
@@ -83,12 +83,12 @@ public class EntityBasicDAOBase extends DAOBase implements EntityBasicDAO {
 		return Generics.toArray(updated, sql.entityClass());
 	}
 
-	public <K extends Serializable, E extends AbstractEntity<K>> E select(SQLBuild<E> sql, K key) {
+	public <K extends Serializable, E extends AbstractEntity<K>> E select(SQL<E> sql, K key) {
 		if (null == key) return null;
 		return batchTemplate.selectOne(sql.verb(Verb.select).toString(), key);
 	}
 
-	public <K extends Serializable, E extends AbstractEntity<K>> E[] select(SQLBuild<E> sql, K... keys) {
+	public <K extends Serializable, E extends AbstractEntity<K>> E[] select(SQL<E> sql, K... keys) {
 		List<E> list = new ArrayList<E>();
 		for (K key : keys) {
 			E e = this.select(sql, key);
@@ -97,14 +97,14 @@ public class EntityBasicDAOBase extends DAOBase implements EntityBasicDAO {
 		return Generics.toArray(list, sql.entityClass());
 	}
 
-	public <K extends Serializable, E extends AbstractEntity<K>> E[] delete(SQLBuild<E> sql, Criteria criteria) {
+	public <K extends Serializable, E extends AbstractEntity<K>> E[] delete(SQL<E> sql, Criteria criteria) {
 		E[] list = this.select(sql, criteria, Page.ALL_RECORD());
 		for (E e : list)
 			batchTemplate.delete(sql.verb(Verb.delete).toString(), e.getId());
 		return list;
 	}
 
-	public <K extends Serializable, E extends AbstractEntity<K>> E[] update(SQLBuild<E> sql, E entity, Criteria criteria) {
+	public <K extends Serializable, E extends AbstractEntity<K>> E[] update(SQL<E> sql, E entity, Criteria criteria) {
 		E[] list = this.select(sql, criteria, Page.ALL_RECORD());
 		for (E e : list) {
 			entity.setId(e.getId());
@@ -113,12 +113,12 @@ public class EntityBasicDAOBase extends DAOBase implements EntityBasicDAO {
 		return list;
 	}
 
-	public <K extends Serializable, E extends AbstractEntity<K>> int count(SQLBuild<E> sql, Criteria criteria) {
+	public <K extends Serializable, E extends AbstractEntity<K>> int count(SQL<E> sql, Criteria criteria) {
 		Object r = batchTemplate.selectOne(sql.verb(Verb.count).toCriteriaString(), criteria);
 		return null == r ? 0 : ((Number) r).intValue();
 	}
 
-	public <K extends Serializable, E extends AbstractEntity<K>> K[] selectKeys(SQLBuild<E> sql, Criteria criteria, Page page) {
+	public <K extends Serializable, E extends AbstractEntity<K>> K[] selectKeys(SQL<E> sql, Criteria criteria, Page page) {
 		if (null == page) throw new SystemException("Query must be limited by page.");
 		// dirty page
 		if (page.getTotal() < 0) page.setTotal(this.count(sql, criteria));
@@ -130,7 +130,7 @@ public class EntityBasicDAOBase extends DAOBase implements EntityBasicDAO {
 		return Generics.toArray(list, keyClass);
 	}
 
-	public <K extends Serializable, E extends AbstractEntity<K>> E[] select(SQLBuild<E> sql, Criteria criteria, Page page) {
+	public <K extends Serializable, E extends AbstractEntity<K>> E[] select(SQL<E> sql, Criteria criteria, Page page) {
 		return this.select(sql, this.selectKeys(sql, criteria, page));
 	}
 }
