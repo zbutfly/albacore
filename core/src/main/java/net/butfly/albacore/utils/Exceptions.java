@@ -60,7 +60,7 @@ public class Exceptions extends UtilsBase {
 	public static <T extends Exception> T wrap(Throwable ex, Class<T> expect) {
 		ex = unwrap(ex);
 		if (expect.isAssignableFrom(ex.getClass())) return (T) ex;
-		return Reflections.construct(expect, Reflections.parameter(ex));
+		return Reflections.construct(expect, Reflections.parameter(ex, Throwable.class));
 	}
 
 	@SuppressWarnings("unchecked")
