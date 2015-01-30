@@ -7,7 +7,7 @@ import java.util.Map;
 
 import net.butfly.albacore.entity.AbstractEntity;
 import net.butfly.albacore.support.Bean;
-import net.butfly.albacore.utils.ObjectUtils;
+import net.butfly.albacore.utils.Objects;
 
 public class Criteria extends Bean<Criteria> {
 	private static final long serialVersionUID = 4775216639071589206L;
@@ -26,7 +26,7 @@ public class Criteria extends Bean<Criteria> {
 	}
 
 	public Criteria setEntity(AbstractEntity<?> entity) {
-		this.params.putAll(ObjectUtils.toMap(entity));
+		this.params.putAll(Objects.toMap(entity));
 		return this;
 	}
 

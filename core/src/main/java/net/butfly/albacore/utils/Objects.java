@@ -24,7 +24,10 @@ import net.butfly.albacore.exception.NotImplementedException;
 import com.google.common.base.Defaults;
 
 @SuppressWarnings("rawtypes")
-public class ObjectUtils extends UtilsBase {
+public class Objects extends UtilsBase {
+	public static final int HASH_SEED = 17;
+	public static final int HASH_OFFSET = 37;
+
 	public static Beans clone(Beans src, Class<? extends Beans> dstClass) {
 		return clone(src, dstClass, true);
 	}
@@ -150,9 +153,9 @@ public class ObjectUtils extends UtilsBase {
 		case ENUM:
 			switch (dstCat) {
 			case ENUM:
-				return EnumUtils.parse((Class<Enum>) dstClass, EnumUtils.value((Enum) value));
+				return Enums.parse((Class<Enum>) dstClass, Enums.value((Enum) value));
 			case NUMBER:
-				return EnumUtils.value((Enum) value);
+				return Enums.value((Enum) value);
 			case STRING:
 				return ((Enum) value).name();
 			default:
@@ -165,7 +168,7 @@ public class ObjectUtils extends UtilsBase {
 				// TODO: different number type casting!
 				return value;
 			case ENUM:
-				return EnumUtils.parse((Class<Enum>) dstClass, byte.class.cast(srcNumCat.primitiveClass.cast(value)));
+				return Enums.parse((Class<Enum>) dstClass, byte.class.cast(srcNumCat.primitiveClass.cast(value)));
 			case STRING:
 				return srcNumCat.numberClass.cast(value).toString();
 			default:
@@ -192,6 +195,8 @@ public class ObjectUtils extends UtilsBase {
 				return Enum.valueOf((Class<Enum>) dstClass, (String) value);
 			case STRING:
 				return (String) value;
+			case BOOL:
+				return Boolean.parseBoolean((String) value);
 			default:
 				return Defaults.defaultValue(dstClass);
 			}
@@ -217,7 +222,7 @@ public class ObjectUtils extends UtilsBase {
 			switch (dstCat) {
 			case ARRAY_COLLECTION:
 				if (srcClass.isArray()) {
-					int len = ReflectionUtils.safeFieldGet(value, "length");
+					int len = Reflections.get(value, "length");
 					if (dstClass.isArray()) { // source is an Array
 						Object dst = Array.newInstance(dstClass.getComponentType(), len);
 						for (int i = 0; i < len; i++)
@@ -337,7 +342,7 @@ public class ObjectUtils extends UtilsBase {
 				if (null == o2) return 1;
 				Iterator<?> it1 = o1.iterator(), it2 = o2.iterator();
 				while (it1.hasNext() && it2.hasNext()) {
-					int r = ObjectUtils.compare(it1.next(), it2.next());
+					int r = Objects.compare(it1.next(), it2.next());
 					if (r != 0) return r;
 				}
 				if (it1.hasNext()) return 1;
@@ -352,7 +357,7 @@ public class ObjectUtils extends UtilsBase {
 				if (null == o1) return -1;
 				if (null == o2) return 1;
 				for (int i = 0; i < Math.min(o1.length, o2.length); i++) {
-					int r = ObjectUtils.compare(o1[i], o2[i]);
+					int r = Objects.compare(o1[i], o2[i]);
 					if (r != 0) return r;
 				}
 				if (o1.length > o2.length) return 1;
@@ -431,7 +436,7 @@ public class ObjectUtils extends UtilsBase {
 		static Class<?> getIterableClass(Class<?> clazz) {
 			if (clazz.isArray()) return clazz.getComponentType();
 			if (Iterable.class.isAssignableFrom(clazz)) {
-				Class<?> cl = GenericUtils.getGenericParamClass(clazz, Iterable.class, "T");
+				Class<?> cl = Generics.getGenericParamClass(clazz, Iterable.class, "T");
 				return null == cl ? Object.class : cl;
 			} else return null;
 		}

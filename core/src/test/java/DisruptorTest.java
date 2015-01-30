@@ -54,6 +54,7 @@ public class DisruptorTest {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	public long run(int numTH, int numSlice, int numIter) throws InterruptedException {
 		PiEventFac fac = new PiEventFac();
 		ExecutorService executor = Executors.newCachedThreadPool();

@@ -6,8 +6,8 @@ import java.util.Properties;
 import java.util.Set;
 
 import net.butfly.albacore.dbo.criteria.Criteria;
-import net.butfly.albacore.utils.ObjectUtils;
-import net.butfly.albacore.utils.ReflectionUtils;
+import net.butfly.albacore.utils.Objects;
+import net.butfly.albacore.utils.Reflections;
 import net.butfly.albacore.utils.imports.meta.MetaObject;
 
 import org.apache.ibatis.cache.CacheKey;
@@ -43,11 +43,11 @@ public class ExecutorInterceptor extends BaseInterceptor {
 			String sid = stat.getId();
 			if (!HACKED_STAT_ID_POOL.contains(sid)) {
 				HACKED_STAT_ID_POOL.add(sid);
-				ReflectionUtils.safeFieldSet(stat, "keyGenerator", keyGenerator);
+				Reflections.set(stat, "keyGenerator", keyGenerator);
 				logger.trace("KeyGenerator is hacked as [" + keyGenerator.getClass().getName() + "] for statement [" + sid
 						+ "]");
 			}
-			MetaObject meta = ObjectUtils.createMeta(invocation.getArgs()[1]);
+			MetaObject meta = Objects.createMeta(invocation.getArgs()[1]);
 			for (String p : this.timeProps)
 				if (meta.hasGetter(p) && meta.getValue(p) == null && meta.hasSetter(p)) {
 					Class<?> cl = meta.getSetterType(p);

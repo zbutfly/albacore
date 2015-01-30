@@ -3,7 +3,7 @@ package net.butfly.albacore.support.entity;
 import java.io.Serializable;
 import java.util.Date;
 
-public interface DeleteSupport<K extends Serializable> extends Serializable {
+public interface Deletable<K extends Serializable> extends Serializable {
 	K getDeletor();
 
 	void setDeletor(K userID);

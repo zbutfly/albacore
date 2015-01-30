@@ -17,7 +17,7 @@ import java.util.Set;
 import java.util.WeakHashMap;
 
 @SuppressWarnings("unchecked")
-public final class GenericUtils extends UtilsBase {
+public final class Generics extends UtilsBase {
 	public static Class<?> getSuperClassGenricType(Class<?> clazz, int index) {
 		Type genType = clazz.getGenericSuperclass();// 得到泛型父类
 		if (null == genType) { throw new RuntimeException("Counld not found the generic parameter in super classes!"); }

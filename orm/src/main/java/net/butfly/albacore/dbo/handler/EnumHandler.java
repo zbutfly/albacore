@@ -1,6 +1,6 @@
 package net.butfly.albacore.dbo.handler;
 
-import net.butfly.albacore.utils.EnumUtils;
+import net.butfly.albacore.utils.Enums;
 
 import org.apache.ibatis.type.JdbcType;
 
@@ -13,13 +13,13 @@ public class EnumHandler<E extends Enum<E>> extends JdbcTypeHandler<E, Byte> {
 
 	@Override
 	protected Byte serialize(E object) throws Exception {
-		return EnumUtils.value(object);
+		return Enums.value(object);
 	}
 
 	@Override
 	protected E deserialize(Byte value) throws Exception {
 		if (value == null) return null;
-		return EnumUtils.parse(type, value);
+		return Enums.parse(type, value);
 	}
 
 	@Override

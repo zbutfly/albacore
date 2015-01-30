@@ -2,7 +2,7 @@ package net.butfly.albacore.dbo.cache;
 
 import java.util.concurrent.locks.ReadWriteLock;
 
-import net.butfly.albacore.utils.ReflectionUtils;
+import net.butfly.albacore.utils.Reflections;
 import net.butfly.albacore.utils.async.Task;
 
 import org.apache.ibatis.cache.Cache;
@@ -13,7 +13,7 @@ public class AsyncCache implements Cache {
 
 	public AsyncCache(final String id) {
 		try {
-			this.delegate = ReflectionUtils.safeConstruct(this.delegateClass, ReflectionUtils.parameters(String.class, id));
+			this.delegate = Reflections.construct(this.delegateClass, Reflections.parameter(id));
 		} catch (Exception ex) {
 			this.delegate = new NonCache(id);
 		}

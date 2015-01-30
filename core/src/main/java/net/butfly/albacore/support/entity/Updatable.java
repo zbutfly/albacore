@@ -3,7 +3,7 @@ package net.butfly.albacore.support.entity;
 import java.io.Serializable;
 import java.util.Date;
 
-public interface UpdateSupport<K extends Serializable> extends Serializable {
+public interface Updatable<K extends Serializable> extends Serializable {
 	K getUpdator();
 
 	void setUpdator(K userID);

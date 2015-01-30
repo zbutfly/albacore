@@ -18,7 +18,6 @@ import net.butfly.albacore.support.Bean;
 import net.butfly.albacore.utils.imports.meta.MetaObject;
 
 import org.reflections.Configuration;
-import org.reflections.Reflections;
 import org.reflections.scanners.MethodAnnotationsScanner;
 import org.reflections.scanners.Scanner;
 import org.reflections.scanners.SubTypesScanner;
@@ -26,16 +25,19 @@ import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.reflections.util.FilterBuilder;
 
-public final class ReflectionUtils extends UtilsBase {
+public final class Reflections extends UtilsBase {
 	private static String DEFAULT_PACKAGE_PREFIX = "";
-	private static Map<String, Reflections> reflections = new HashMap<String, Reflections>();
-	static {
-		reflections(DEFAULT_PACKAGE_PREFIX);
+	private static Map<String, org.reflections.Reflections> reflections = new HashMap<String, org.reflections.Reflections>();
+
+	private static org.reflections.Reflections reflections(String... packagePrefix) {
+		if (null == packagePrefix || packagePrefix.length == 0) return reflections(DEFAULT_PACKAGE_PREFIX);
+		// TODO
+		else return reflections(packagePrefix[0]);
 	}
 
-	private static Reflections reflections(String packagePrefix) {
+	private static org.reflections.Reflections reflections(String packagePrefix) {
 		if (null == packagePrefix) packagePrefix = DEFAULT_PACKAGE_PREFIX;
-		Reflections r = reflections.get(packagePrefix);
+		org.reflections.Reflections r = reflections.get(packagePrefix);
 		if (null != r) return r;
 		FilterBuilder filterBuilder = new FilterBuilder().includePackage(packagePrefix);
 		Collection<URL> urls = ClasspathHelper.forClassLoader();
@@ -43,17 +45,17 @@ public final class ReflectionUtils extends UtilsBase {
 		Scanner subTypesScanner = new SubTypesScanner(false);
 		Configuration configuration = new ConfigurationBuilder().filterInputsBy(filterBuilder).setUrls(urls)
 				.addScanners(methodScanner, subTypesScanner);
-		r = new Reflections(configuration);
+		r = new org.reflections.Reflections(configuration);
 		reflections.put(packagePrefix, r);
 		return r;
 	}
 
-	public static Class<?>[] getAnnotatedTypes(String packagePrefix, Class<? extends Annotation> annotationClass) {
-		return reflections(packagePrefix).getTypesAnnotatedWith(annotationClass).toArray(new Class[0]);
+	public static Class<?>[] getAnnotatedTypes(Class<? extends Annotation> annotationClass) {
+		return reflections().getTypesAnnotatedWith(annotationClass).toArray(new Class[0]);
 	}
 
 	@SuppressWarnings("unchecked")
-	public static <T> T safeMethodInvoke(Method method, Object object, Object... args) throws BusinessException {
+	public static <T> T invoke(Method method, Object object, Object... args) throws BusinessException {
 		boolean accessible = method.isAccessible();
 		try {
 			method.setAccessible(true);
@@ -108,8 +110,13 @@ public final class ReflectionUtils extends UtilsBase {
 		}
 	}
 
-	public static ParameterInfo parameters(Class<?> parameterClass, Object parameterValue) {
+	public static ParameterInfo parameter(Object parameterValue, Class<?> parameterClass) {
 		return new ParameterInfo(parameterClass, parameterValue);
+	}
+
+	public static ParameterInfo parameter(Object parameterValue) {
+		if (null == parameterValue) throw new NullPointerException();
+		return new ParameterInfo(parameterValue.getClass(), parameterValue);
 	}
 
 	public static Class<?>[] parameterClasses(ParameterInfo... paramInfo) {
@@ -128,7 +135,7 @@ public final class ReflectionUtils extends UtilsBase {
 		return r;
 	}
 
-	public static <T> T safeConstruct(Class<T> clazz, ParameterInfo... paramInfo) {
+	public static <T> T construct(Class<T> clazz, ParameterInfo... paramInfo) {
 		if (null == paramInfo || paramInfo.length == 0) try {
 			return clazz.newInstance();
 		} catch (Exception ex) {
@@ -161,9 +168,9 @@ public final class ReflectionUtils extends UtilsBase {
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> T safeFieldGet(Object owner, String name) {
+	public static <T> T get(Object owner, String name) {
 		if (null == owner) throw new NullPointerException();
-		MetaObject meta = ObjectUtils.createMeta(owner);
+		MetaObject meta = Objects.createMeta(owner);
 		if (meta.hasGetter(name)) return (T) meta.getValue(name);
 		else throw new RuntimeException("No getter method for target.");
 	}
@@ -171,7 +178,7 @@ public final class ReflectionUtils extends UtilsBase {
 	/**
 	 * set field by field instance directly.
 	 */
-	public static void safeFieldSet(Field field, Object owner, Object value) {
+	public static void set(Object owner, Field field, Object value) {
 		boolean accessible = field.isAccessible();
 		try {
 			field.setAccessible(true);
@@ -189,15 +196,15 @@ public final class ReflectionUtils extends UtilsBase {
 	 * @param owner
 	 *            instance for non-static field and class for static field.
 	 */
-	public static void safeFieldSet(Object owner, String name, Object value) {
+	public static void set(Object owner, String name, Object value) {
 		if (null == owner) throw new NullPointerException();
 
-		MetaObject meta = ObjectUtils.createMeta(owner);
+		MetaObject meta = Objects.createMeta(owner);
 		if (meta.hasSetter(name)) meta.setValue(name, value);
 		else throw new RuntimeException("No setter method for target.");
 	}
 
-	public static <T> Set<Class<? extends T>> getSubClasses(Class<T> parentClass, String packagePrefix) {
+	public static <T> Set<Class<? extends T>> getSubClasses(Class<T> parentClass, String... packagePrefix) {
 		return reflections(packagePrefix).getSubTypesOf(parentClass);
 	}
 
@@ -218,12 +225,12 @@ public final class ReflectionUtils extends UtilsBase {
 		return s.toArray(new Field[s.size()]);
 	}
 
-	public static Field[] getFieldsAnnotatedWith(String packagePrefix, Class<? extends Annotation> annotation) {
+	public static Field[] getFieldsAnnotatedWith(Class<? extends Annotation> annotation, String... packagePrefix) {
 		Set<Field> s = reflections(packagePrefix).getFieldsAnnotatedWith(annotation);
 		return s.toArray(new Field[s.size()]);
 	}
 
-	public static Method[] getMethodsAnnotatedWith(String packagePrefix, Class<? extends Annotation> annotation) {
+	public static Method[] getMethodsAnnotatedWith(Class<? extends Annotation> annotation, String... packagePrefix) {
 		Set<Method> s = reflections(packagePrefix).getMethodsAnnotatedWith(annotation);
 		return s.toArray(new Method[s.size()]);
 	}
@@ -239,6 +246,6 @@ public final class ReflectionUtils extends UtilsBase {
 	public <T> T unwrapProxy(T object) {
 		if (null == object) return null;
 		if (!Proxy.isProxyClass(object.getClass())) return object;
-		return safeFieldGet(object, "h");
+		return get(object, "h");
 	}
 }

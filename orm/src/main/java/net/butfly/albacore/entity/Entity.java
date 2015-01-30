@@ -3,7 +3,7 @@ package net.butfly.albacore.entity;
 import java.io.Serializable;
 
 import net.butfly.albacore.support.Bean;
-import net.butfly.albacore.utils.ObjectUtils;
+import net.butfly.albacore.utils.Objects;
 
 public abstract class Entity<K extends Serializable> extends Bean<AbstractEntity<K>> implements AbstractEntity<K> {
 	private static final long serialVersionUID = -1L;
@@ -22,7 +22,7 @@ public abstract class Entity<K extends Serializable> extends Bean<AbstractEntity
 	@SuppressWarnings("rawtypes")
 	@Override
 	public int compareTo(AbstractEntity other) {
-		return ObjectUtils.compare(this.id, other.getId());
+		return Objects.compare(this.id, other.getId());
 	}
 
 //	private static final Map<Class<? extends AbstractEntity<?>>, Class<? extends Serializable>> KEY_TYPE_POOL = new ConcurrentHashMap<Class<? extends AbstractEntity<?>>, Class<? extends Serializable>>();
@@ -32,7 +32,7 @@ public abstract class Entity<K extends Serializable> extends Bean<AbstractEntity
 //		try {
 //			Class<? extends Serializable> keyType = KEY_TYPE_POOL.get(entityClass);
 //			if (null == keyType) {
-//				keyType = (Class<? extends Serializable>) GenericUtils.getGenericParamClass(entityClass, AbstractEntity.class,
+//				keyType = (Class<? extends Serializable>) Generics.getGenericParamClass(entityClass, AbstractEntity.class,
 //						"K");
 //				KEY_TYPE_POOL.put(entityClass, keyType);
 //			}

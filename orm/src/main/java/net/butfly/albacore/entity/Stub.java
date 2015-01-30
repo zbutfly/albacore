@@ -3,15 +3,15 @@ package net.butfly.albacore.entity;
 import java.io.Serializable;
 import java.util.Date;
 
-public final class EntityStub<K extends Serializable> extends Entity<K> {
+public final class Stub<K extends Serializable> extends Entity<K> {
 	private static final long serialVersionUID = -5066977312870476308L;
 	private K userID;
 	private String ip;
 	private Date time;
 
-	public EntityStub() {}
+	public Stub() {}
 
-	public EntityStub(K id, Date time, String ip) {
+	public Stub(K id, Date time, String ip) {
 		super();
 		this.id = id;
 		this.time = time;

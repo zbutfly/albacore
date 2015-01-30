@@ -1,10 +1,10 @@
 package net.butfly.albacore.dbo.key;
 
-import net.butfly.albacore.utils.KeyUtils;
+import net.butfly.albacore.utils.Keys;
 
 public class ObjectIdKeyGenerator extends JavaKeyGenerator<String> {
 	@Override
 	protected String generateKey() {
-		return KeyUtils.objectId();
+		return Keys.objectId();
 	}
 }

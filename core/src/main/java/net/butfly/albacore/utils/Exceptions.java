@@ -12,6 +12,17 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 public class Exceptions extends UtilsBase {
+	public interface Code {
+		// code for system exceptions.
+		String ENCRYPT_CODE = "SYS_500";
+		String REFLEC_CODE = "SYS_400";
+		String DATA_CODE = "SYS_300";
+
+		// code for business exceptions.
+		String AUTH_CODE = "BIZ_100";
+		String VALID_CODE = "BIZ_200";
+	}
+
 	public static String getStackTrace(Throwable e) {
 		// to avoid JDK BUG, u can not invoke e.printStackTrace directly.
 		StringWriter s = new StringWriter();
@@ -42,8 +53,22 @@ public class Exceptions extends UtilsBase {
 	}
 
 	public static RuntimeException wrap(Throwable ex) {
+		return wrap(ex, RuntimeException.class);
+	}
+
+	@SuppressWarnings("unchecked")
+	public static <T extends Exception> T wrap(Throwable ex, Class<T> expect) {
 		ex = unwrap(ex);
-		return (ex instanceof RuntimeException) ? (RuntimeException) ex : new RuntimeException(ex);
+		if (expect.isAssignableFrom(ex.getClass())) return (T) ex;
+		return Reflections.construct(expect, Reflections.parameter(ex, Throwable.class));
+	}
+
+	@SuppressWarnings("unchecked")
+	public static <T extends Exception> T wrap(Throwable ex, Class<T> expect, String message) {
+		if (null == message) return wrap(ex, expect);
+		ex = unwrap(ex);
+		if (expect.isAssignableFrom(ex.getClass())) return (T) ex;
+		return Reflections.construct(expect, Reflections.parameter(message), Reflections.parameter(ex));
 	}
 
 	public static Exception unwrap(Throwable ex) {
@@ -53,6 +78,7 @@ public class Exceptions extends UtilsBase {
 	public static Exception unwrap(Throwable ex, Map<Class<? extends Throwable>, Method> wrapperClasses) {
 		if (wrapperClasses == null) wrapperClasses = new HashMap<Class<? extends Throwable>, Method>();
 		try {
+			wrapperClasses.put(Exception.class, RuntimeException.class.getMethod("getCause"));
 			wrapperClasses.put(RuntimeException.class, RuntimeException.class.getMethod("getCause"));
 			wrapperClasses.put(ExecutionException.class, ExecutionException.class.getMethod("getCause"));
 			wrapperClasses
@@ -74,8 +100,8 @@ public class Exceptions extends UtilsBase {
 	private static Throwable unwrapOneTime(Throwable ex, Map<Class<? extends Throwable>, Method> wrapperClasses) {
 		for (Map.Entry<Class<? extends Throwable>, Method> m : wrapperClasses.entrySet())
 			if (m.getKey().equals(ex.getClass())) try {
-				Throwable th = (Throwable) m.getValue().invoke(ex);
-				if (th != null) return th;
+				Throwable cause = (Throwable) m.getValue().invoke(ex);
+				if (cause != null) return cause;
 			} catch (Exception e) {}
 		return ex;
 	}

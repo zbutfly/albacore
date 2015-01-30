@@ -8,7 +8,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import net.butfly.albacore.utils.Exceptions;
 import net.butfly.albacore.utils.UtilsBase;
 
 import com.google.common.util.concurrent.MoreExecutors;
@@ -19,70 +18,70 @@ final class Tasks extends UtilsBase {
 			.newCachedThreadPool());
 
 	static <T> T execute(final Task<T> task, ExecutorService executor) throws Exception {
-		if (executor == null) executor = Tasks.EXECUTOR;
+		if (executor == null) executor = EXECUTOR;
 		if (task.options == null) task.options = new Options();
-		final T result;
-		Future<T> consumer;
+		int repeated = 0, retried = 0;
+		T result = null;
+		while ((task.options.repeat < 0 || repeated < task.options.repeat) && retried <= task.options.retry) {
+			try {
+				result = single(task, executor);
+				repeated++;
+			} catch (Exception ex) {
+				result = handle(task, ex);
+				retried++;
+			}
+			try {
+				Thread.sleep(task.options.interval);
+			} catch (InterruptedException e) {}
+		}
+		return result;
+	}
+
+	private static <T> T single(final Task<T> task, ExecutorService executor) throws Exception {
 		switch (task.options.mode) {
 		case NONE:
-			try {
-				result = task.call.call();
-			} catch (Exception ex) {
-				return handle(task, ex);
-			}
-			return Tasks.callback(result, task.back);
-		case PRODUCER:
-			try {
-				result = Tasks.fetch(executor.submit(task.call), task.options.timeout);
-			} catch (Exception ex) {
-				return handle(task, ex);
-			}
-			return Tasks.callback(result, task.back);
-		case CONSUMER:
-			try {
-				result = task.call.call();
-			} catch (Exception ex) {
-				return handle(task, ex);
-			}
-			consumer = executor.submit(new java.util.concurrent.Callable<T>() {
+			return callback(task.call.call(), task.back);
+		case WHOLE:
+			return fetch(task, executor.submit(new java.util.concurrent.Callable<T>() {
+				@Override
+				public T call() throws Exception {
+					try {
+						return callback(task.call.call(), task.back);
+					} catch (Exception ex) {
+						return handle(task, ex);
+					}
+				}
+			}));
+		case LATTER:
+			final T result = task.call.call();
+			return fetch(task, executor.submit(new java.util.concurrent.Callable<T>() {
 				@Override
 				public T call() {
-					return Tasks.callback(result, task.back);
+					return callback(result, task.back);
 				}
-			});
-			if (task.options.unblock) return null;
-			try {
-				return consumer.get(task.options.timeout, TimeUnit.MILLISECONDS);
-			} catch (Exception ex) { // should not have internal exception on callback
-				throw Exceptions.unwrap(ex);
-			}
-		case LISTEN:
+			}));
+		case EACH:
 			final Future<T> producer = executor.submit(task.call);
-			consumer = executor.submit(new java.util.concurrent.Callable<T>() {
+			final Future<T> consumer = executor.submit(new java.util.concurrent.Callable<T>() {
 				@Override
 				public T call() throws Exception {
 					T r;
 					try {
-						r = Tasks.fetch(producer, task.options.timeout);
+						r = fetch(producer, task.options.timeout);
 					} catch (Exception ex) {
 						return handle(task, ex);
 					}
-					return Tasks.callback(r, task.back);
+					return callback(r, task.back);
 				}
 			});
-			if (!task.options.unblock) try {
-				return Tasks.fetch(consumer, task.options.timeout);
-			} catch (Exception ex) {
-				return handle(task, ex);
-			}
-			else return null;
+			return fetch(task, consumer);
 		default:
 			throw new IllegalArgumentException();
 		}
 	}
 
 	private static <OUT> OUT handle(Task<OUT> task, Exception ex) throws Exception {
-		if (null == task.handler) throw Exceptions.unwrap(ex);
+		if (null == task.handler) throw ex;
 		return task.handler.handle(ex);
 	}
 
@@ -90,6 +89,15 @@ final class Tasks extends UtilsBase {
 		if (null == callback) return result;
 		callback.callback(result);
 		return null;
+	}
+
+	private static <OUT> OUT fetch(final Task<OUT> task, Future<OUT> future) throws Exception {
+		if (task.options.unblock) return null;
+		else try {
+			return fetch(future, task.options.timeout);
+		} catch (Exception ex) {
+			return handle(task, ex);
+		}
 	}
 
 	private static <OUT> OUT fetch(Future<OUT> future, long timeout) throws InterruptedException, ExecutionException,

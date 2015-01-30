@@ -13,7 +13,7 @@ import java.util.Map;
 import net.butfly.albacore.helper.swift.exception.AuthenticationFailureException;
 import net.butfly.albacore.helper.swift.exception.OperationFailureException;
 import net.butfly.albacore.helper.swift.exception.UnknownResponseException;
-import net.butfly.albacore.utils.KeyUtils;
+import net.butfly.albacore.utils.Texts;
 import net.butfly.albacore.utils.http.HttpClientFactory;
 import net.butfly.albacore.utils.storage.swift.meta.ContainerMeta;
 import net.butfly.albacore.utils.storage.swift.meta.ObjectMeta;
@@ -676,9 +676,9 @@ public class SwiftContext {
 				}
 
 			if (this.match != null && this.match.length > 0)
-				r.add(new BasicHeader(IF_MATCH_HEADER_NAME, "\"" + KeyUtils.join(',', this.match) + "\""));
+				r.add(new BasicHeader(IF_MATCH_HEADER_NAME, "\"" + Texts.join(',', this.match) + "\""));
 			if (this.noneMatch != null && this.noneMatch.length > 0)
-				r.add(new BasicHeader(IF_NONE_MATCH_HEADER_NAME, "\"" + KeyUtils.join(',',this.noneMatch) + "\""));
+				r.add(new BasicHeader(IF_NONE_MATCH_HEADER_NAME, "\"" + Texts.join(',', this.noneMatch) + "\""));
 			if (this.modifiedSince != null)
 				r.add(new BasicHeader(IF_MODIFIED_SINCE_HEADER_NAME, DateUtils.formatDate(this.modifiedSince)));
 			if (this.unmodifiedSince != null)

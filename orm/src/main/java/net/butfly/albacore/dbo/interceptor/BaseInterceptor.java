@@ -1,6 +1,6 @@
 package net.butfly.albacore.dbo.interceptor;
 
-import net.butfly.albacore.utils.ObjectUtils;
+import net.butfly.albacore.utils.Objects;
 import net.butfly.albacore.utils.imports.meta.MetaObject;
 
 import org.apache.ibatis.plugin.Interceptor;
@@ -55,7 +55,7 @@ public abstract class BaseInterceptor implements Interceptor {
 	protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	protected final MetaObject createMeta(Invocation invocation) {
-		return ObjectUtils.createMeta(invocation.getTarget());
+		return Objects.createMeta(invocation.getTarget());
 	}
 
 	@Override
