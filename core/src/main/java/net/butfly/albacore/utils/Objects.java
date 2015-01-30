@@ -195,6 +195,8 @@ public class Objects extends UtilsBase {
 				return Enum.valueOf((Class<Enum>) dstClass, (String) value);
 			case STRING:
 				return (String) value;
+			case BOOL:
+				return Boolean.parseBoolean((String) value);
 			default:
 				return Defaults.defaultValue(dstClass);
 			}
