@@ -65,6 +65,14 @@ public class MetaObject {
 		}
 	}
 
+	public boolean isMetaNull() {
+		return equals(SystemMetaObject.NULL_META_OBJECT);
+	}
+
+	public Class<?> getOriginalClass() {
+		return isMetaNull() ? null : originalObject.getClass();
+	}
+
 	public ObjectFactory getObjectFactory() {
 		return objectFactory;
 	}

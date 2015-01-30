@@ -67,7 +67,7 @@ public class ExecutorInterceptor extends BaseInterceptor {
 		String prop = properties.getProperty("timestampProps");
 		this.timeProps = null == prop ? new String[0] : prop.split(",");
 		try {
-			this.keyGenerator = (KeyGenerator) Class.forName(properties.getProperty("keyGenerator")).newInstance();
+			this.keyGenerator = Reflections.construct(properties.getProperty("keyGenerator"));
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
