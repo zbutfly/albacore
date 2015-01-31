@@ -53,6 +53,8 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.core.NestedIOException;
 import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.jdbc.datasource.TransactionAwareDataSourceProxy;
 
 /**
@@ -64,9 +66,7 @@ import org.springframework.jdbc.datasource.TransactionAwareDataSourceProxy;
  * demarcation in combination with a {@code SqlSessionFactory}. JTA should be used for transactions which
  * span multiple databases or when container managed transactions (CMT) are being used.
  *
- * @author Putthibong Boonbong
- * @author Hunter Presnall
- * @author Eduardo Macarron
+ * @author Sean Zhang (butfly)
  * 
  * @see #setConfigLocation
  * @see #setDataSource
@@ -75,6 +75,9 @@ import org.springframework.jdbc.datasource.TransactionAwareDataSourceProxy;
 public class SqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>, InitializingBean,
 		ApplicationListener<ApplicationEvent> {
 	private static final Logger logger = LoggerFactory.getLogger(SqlSessionFactoryBean.class);
+	private static final String DEFAULT_MYBATIS_CACHE_CONF_FILENAME = "mybatis-cache.xml";
+	private static final String DEFALUT_MYBATIS_CONF_FILENAME = "mybatis-config.xml";
+
 	private Resource configLocation;
 	private Resource[] mapperLocations;
 	private DataSource dataSource;
@@ -82,8 +85,8 @@ public class SqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>, In
 	private Properties configurationProperties;
 	private SqlSessionFactoryBuilder sqlSessionFactoryBuilder = new SqlSessionFactoryBuilder();
 	private SqlSessionFactory sqlSessionFactory;
-	private String environment = SqlSessionFactoryBean.class.getSimpleName(); // EnvironmentAware requires
-																				// spring 3.1
+	// EnvironmentAware requires spring 3.1
+	private String environment = SqlSessionFactoryBean.class.getSimpleName();
 	private boolean failFast;
 	private Interceptor[] plugins;
 	private TypeHandler<?>[] typeHandlers;
@@ -273,15 +276,14 @@ public class SqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>, In
 	 *
 	 */
 	public void setDataSource(DataSource dataSource) {
-		if (dataSource instanceof TransactionAwareDataSourceProxy) {
-			// If we got a TransactionAwareDataSourceProxy, we need to perform
-			// transactions for its underlying target DataSource, else data
-			// access code won't see properly exposed transactions (i.e.
-			// transactions for the target DataSource).
-			this.dataSource = ((TransactionAwareDataSourceProxy) dataSource).getTargetDataSource();
-		} else {
-			this.dataSource = dataSource;
-		}
+		// If we got a TransactionAwareDataSourceProxy, we need to perform
+		// transactions for its underlying target DataSource, else data
+		// access code won't see properly exposed transactions (i.e.
+		// transactions for the target DataSource).
+		if (dataSource instanceof TransactionAwareDataSourceProxy) this.dataSource = ((TransactionAwareDataSourceProxy) dataSource)
+				.getTargetDataSource();
+		else this.dataSource = dataSource;
+
 	}
 
 	/**
@@ -348,122 +350,90 @@ public class SqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>, In
 	protected SqlSessionFactory buildSqlSessionFactory() throws IOException {
 		Configuration configuration;
 		XMLConfigBuilder xmlConfigBuilder = null;
+		if (this.configLocation == null) this.configLocation = this.searchResource(DEFALUT_MYBATIS_CONF_FILENAME);
 		if (this.configLocation != null) {
 			xmlConfigBuilder = new XMLConfigBuilder(this.configLocation.getInputStream(), null, this.configurationProperties);
 			configuration = xmlConfigBuilder.getConfiguration();
 		} else {
-			if (logger.isDebugEnabled()) {
-				logger.debug("Property 'configLocation' not specified, using default MyBatis Configuration");
-			}
+			logger.warn("Albacore Impl for Mybatis SqlSessionFactoryBean - Property 'configLocation' not specified, using default MyBatis Configuration");
 			configuration = new Configuration();
+			configuration.setVariables(this.configurationProperties);
 		}
-		if (configuration.getVariables() == null) configuration.setVariables(this.configurationProperties);
-		else configuration.getVariables().putAll(this.configurationProperties);
-		MetaObject meta = Objects.createMeta(configuration);
-		Enumeration<?> en = configuration.getVariables().propertyNames();
-		while (en.hasMoreElements()) {
-			String name = (String) en.nextElement();
-			if (meta.hasSetter(name))
-				meta.setValue(name, Objects.castValue(configuration.getVariables().getProperty(name), meta.getSetterType(name)));
-		}
-		if (this.objectFactory != null) {
-			configuration.setObjectFactory(this.objectFactory);
-		}
-		if (this.objectWrapperFactory != null) {
-			configuration.setObjectWrapperFactory(this.objectWrapperFactory);
-		}
+		this.fillMybatisProperties(configuration);
+		if (this.objectFactory != null) configuration.setObjectFactory(this.objectFactory);
+		if (this.objectWrapperFactory != null) configuration.setObjectWrapperFactory(this.objectWrapperFactory);
 		if (hasLength(this.typeAliasesPackage)) {
 			String[] typeAliasPackageArray = tokenizeToStringArray(this.typeAliasesPackage,
 					ConfigurableApplicationContext.CONFIG_LOCATION_DELIMITERS);
 			for (String packageToScan : typeAliasPackageArray) {
 				configuration.getTypeAliasRegistry().registerAliases(packageToScan,
 						typeAliasesSuperType == null ? Object.class : typeAliasesSuperType);
-				if (logger.isDebugEnabled()) {
-					logger.debug("Scanned package: '" + packageToScan + "' for aliases");
-				}
+				if (logger.isTraceEnabled())
+					logger.trace("Albacore Impl for Mybatis SqlSessionFactoryBean - Scanned package: '" + packageToScan
+							+ "' for aliases");
 			}
 		}
-		if (!isEmpty(this.typeAliases)) {
+		if (!isEmpty(this.typeAliases))
 			for (Class<?> typeAlias : this.typeAliases) {
 				configuration.getTypeAliasRegistry().registerAlias(typeAlias);
-				if (logger.isDebugEnabled()) {
-					logger.debug("Registered type alias: '" + typeAlias + "'");
-				}
+				if (logger.isTraceEnabled())
+					logger.trace("Albacore Impl for Mybatis SqlSessionFactoryBean - Registered type alias: '" + typeAlias + "'");
 			}
-		}
-		if (!isEmpty(this.plugins)) {
+		if (!isEmpty(this.plugins))
 			for (Interceptor plugin : this.plugins) {
 				configuration.addInterceptor(plugin);
-				if (logger.isDebugEnabled()) {
-					logger.debug("Registered plugin: '" + plugin + "'");
-				}
+				if (logger.isTraceEnabled())
+					logger.trace("Albacore Impl for Mybatis SqlSessionFactoryBean - Registered plugin: '" + plugin + "'");
 			}
-		}
+
 		if (hasLength(this.typeHandlersPackage)) {
 			String[] typeHandlersPackageArray = tokenizeToStringArray(this.typeHandlersPackage,
 					ConfigurableApplicationContext.CONFIG_LOCATION_DELIMITERS);
 			for (String packageToScan : typeHandlersPackageArray) {
 				configuration.getTypeHandlerRegistry().register(packageToScan);
-				if (logger.isDebugEnabled()) {
-					logger.debug("Scanned package: '" + packageToScan + "' for type handlers");
+				if (logger.isTraceEnabled()) {
+					logger.trace("Albacore Impl for Mybatis SqlSessionFactoryBean - Scanned package: '" + packageToScan
+							+ "' for type handlers");
 				}
 			}
 		}
 		if (!isEmpty(this.typeHandlers)) {
 			for (TypeHandler<?> typeHandler : this.typeHandlers) {
 				configuration.getTypeHandlerRegistry().register(typeHandler);
-				if (logger.isDebugEnabled()) {
-					logger.debug("Registered type handler: '" + typeHandler + "'");
+				if (logger.isTraceEnabled()) {
+					logger.trace("Albacore Impl for Mybatis SqlSessionFactoryBean - Registered type handler: '" + typeHandler
+							+ "'");
 				}
 			}
 		}
-		if (xmlConfigBuilder != null) {
+		if (xmlConfigBuilder != null)
 			try {
 				xmlConfigBuilder.parse();
-				if (logger.isDebugEnabled()) {
-					logger.debug("Parsed configuration file: '" + this.configLocation + "'");
+				if (logger.isTraceEnabled()) {
+					logger.trace("Albacore Impl for Mybatis SqlSessionFactoryBean - Parsed configuration file: '"
+							+ this.configLocation + "'");
 				}
 			} catch (Exception ex) {
 				throw new NestedIOException("Failed to parse config resource: " + this.configLocation, ex);
 			} finally {
 				ErrorContext.instance().reset();
 			}
-		}
-		if (this.transactionFactory == null) {
-			this.transactionFactory = new SpringManagedTransactionFactory();
-		}
+		if (this.transactionFactory == null) this.transactionFactory = new SpringManagedTransactionFactory();
 		Environment environment = new Environment(this.environment, this.transactionFactory, this.dataSource);
 		configuration.setEnvironment(environment);
-		if (this.databaseIdProvider != null) {
-			try {
-				configuration.setDatabaseId(this.databaseIdProvider.getDatabaseId(this.dataSource));
-			} catch (SQLException e) {
-				throw new NestedIOException("Failed getting a databaseId", e);
-			}
+		if (this.databaseIdProvider != null) try {
+			configuration.setDatabaseId(this.databaseIdProvider.getDatabaseId(this.dataSource));
+		} catch (SQLException e) {
+			throw new NestedIOException("Failed getting a databaseId", e);
 		}
+
 		if (!isEmpty(this.mapperLocations)) {
-			for (Resource mapperLocation : this.mapperLocations) {
-				if (mapperLocation == null) {
-					continue;
-				}
-				try {
-					XMLMapperBuilder xmlMapperBuilder = new XMLMapperBuilder(mapperLocation.getInputStream(), configuration,
-							mapperLocation.toString(), configuration.getSqlFragments());
-					xmlMapperBuilder.parse();
-				} catch (Exception e) {
-					throw new NestedIOException("Failed to parse mapping resource: '" + mapperLocation + "'", e);
-				} finally {
-					ErrorContext.instance().reset();
-				}
-				if (logger.isDebugEnabled()) {
-					logger.debug("Parsed mapper file: '" + mapperLocation + "'");
-				}
-			}
-		} else {
-			if (logger.isDebugEnabled()) {
-				logger.debug("Property 'mapperLocations' was not specified or no matching resources found");
-			}
-		}
+			for (Resource mapperLocation : this.mapperLocations)
+				if (mapperLocation != null) this.registerMapper(configuration, mapperLocation);
+		} else if (logger.isTraceEnabled())
+			logger.trace("Albacore Impl for Mybatis SqlSessionFactoryBean - Property 'mapperLocations' was not specified or no matching resources found");
+		Resource mapperCache = this.searchResource(DEFAULT_MYBATIS_CACHE_CONF_FILENAME);
+		if (mapperCache != null) this.registerMapper(configuration, mapperCache);
 		return this.sqlSessionFactoryBuilder.build(configuration);
 	}
 
@@ -471,9 +441,7 @@ public class SqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>, In
 	 * {@inheritDoc}
 	 */
 	public SqlSessionFactory getObject() throws Exception {
-		if (this.sqlSessionFactory == null) {
-			afterPropertiesSet();
-		}
+		if (this.sqlSessionFactory == null) afterPropertiesSet();
 		return this.sqlSessionFactory;
 	}
 
@@ -499,5 +467,51 @@ public class SqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>, In
 			// fail-fast -> check all statements are completed
 			this.sqlSessionFactory.getConfiguration().getMappedStatementNames();
 		}
+	}
+
+	private Properties mybatisProperties;
+
+	public void setMybatisProperties(Properties mybatisProperties) {
+		this.mybatisProperties = mybatisProperties;
+	}
+
+	private void fillMybatisProperties(Configuration configuration) {
+		// set props in spring define to mybatis configuration
+		MetaObject meta = Objects.createMeta(configuration);
+		Enumeration<?> en = this.mybatisProperties.propertyNames();
+		while (en.hasMoreElements()) {
+			String name = (String) en.nextElement();
+			if (meta.hasSetter(name))
+				meta.setValue(name, Objects.castValue(this.mybatisProperties.getProperty(name), meta.getSetterType(name)));
+		}
+	}
+
+	private Resource searchResource(String filename) throws IOException {
+		ResourcePatternResolver patternResolver = new PathMatchingResourcePatternResolver();
+		Resource[] reses = patternResolver.getResources("classpath*:**/" + filename);
+		if (null == reses || reses.length == 0) {
+			logger.warn("Albacore Impl for Mybatis SqlSessionFactoryBean - No " + filename
+					+ " found in classpath, automatically mybatis configuration of albacore is not support");
+			return null;
+		}
+		if (reses.length > 1)
+			logger.warn("Albacore Impl for Mybatis SqlSessionFactoryBean - More than one " + filename
+					+ " found in classpath, the first one \"" + reses[0].toString()
+					+ "\" is loaded as automatical mybatis configuration of albacore.");
+		return reses[0];
+	}
+
+	private void registerMapper(Configuration configuration, Resource mapperLocation) throws IOException {
+		try {
+			XMLMapperBuilder xmlMapperBuilder = new XMLMapperBuilder(mapperLocation.getInputStream(), configuration,
+					mapperLocation.toString(), configuration.getSqlFragments());
+			xmlMapperBuilder.parse();
+		} catch (Exception e) {
+			throw new NestedIOException("Failed to parse mapping resource: '" + mapperLocation + "'", e);
+		} finally {
+			ErrorContext.instance().reset();
+		}
+		if (logger.isTraceEnabled())
+			logger.trace("Albacore Impl for Mybatis SqlSessionFactoryBean - Parsed mapper file: '" + mapperLocation + "'");
 	}
 }
