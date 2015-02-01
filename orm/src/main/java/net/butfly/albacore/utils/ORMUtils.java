@@ -5,7 +5,7 @@ import java.sql.Driver;
 import org.springframework.jdbc.datasource.AbstractDataSource;
 import org.springframework.jdbc.datasource.SimpleDriverDataSource;
 
-public final class ORMUtils extends UtilsBase {
+public final class ORMUtils extends Utils {
 	private ORMUtils() {}
 
 	static public AbstractDataSource createDatasource(String driverClass, String url, String username, String password) {

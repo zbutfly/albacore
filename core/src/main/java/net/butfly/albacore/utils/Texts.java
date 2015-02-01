@@ -5,7 +5,7 @@ import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.Map;
 
-public final class Texts extends UtilsBase {
+public final class Texts extends Utils {
 	public static String byte2hex(byte[] data) {
 		if (null == data) return null;
 		StringBuffer sb = new StringBuffer();

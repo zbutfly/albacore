@@ -8,7 +8,7 @@ import javax.validation.ValidatorFactory;
 
 import net.butfly.albacore.exception.ValidateException;
 
-public final class Validator extends UtilsBase {
+public final class Validators extends Utils {
 	private static final ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
 
 	public static void validate(Object dto) throws ValidateException {

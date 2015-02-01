@@ -1,6 +1,6 @@
 package net.butfly.albacore.utils.security;
 
-import net.butfly.albacore.utils.UtilsBase;
+import net.butfly.albacore.utils.Utils;
 
 import java.security.Key;
 import java.security.KeyFactory;
@@ -26,7 +26,7 @@ import javax.crypto.Cipher;
  * @version 1.0
  * @since 1.0
  */
-public abstract class RSAUtils extends UtilsBase {
+public abstract class RSAUtils extends Utils {
 	public static final String KEY_ALGORITHM = "RSA";
 	public static final String SIGNATURE_ALGORITHM = "MD5withRSA";
 

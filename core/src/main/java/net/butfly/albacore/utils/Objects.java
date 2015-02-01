@@ -25,7 +25,7 @@ import net.butfly.albacore.exception.NotImplementedException;
 import com.google.common.base.Defaults;
 
 @SuppressWarnings("rawtypes")
-public class Objects extends UtilsBase {
+public class Objects extends Utils {
 	public static final int HASH_SEED = 17;
 	public static final int HASH_OFFSET = 37;
 

@@ -28,6 +28,7 @@ import java.util.Properties;
 import javax.sql.DataSource;
 
 import net.butfly.albacore.utils.Objects;
+import net.butfly.albacore.utils.Springs;
 import net.butfly.albacore.utils.imports.meta.MetaObject;
 
 import org.apache.ibatis.builder.xml.XMLConfigBuilder;
@@ -54,8 +55,6 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.core.NestedIOException;
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
-import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.jdbc.datasource.TransactionAwareDataSourceProxy;
 
 /**
@@ -352,8 +351,9 @@ public class AutoSqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>
 		Configuration configuration;
 		XMLConfigBuilder xmlConfigBuilder = null;
 		if (this.configLocation == null)
-			this.configLocation = this.searchResource(null == this.mybatisConfigLocationPattern ? DEFALUT_MYBATIS_CONF_PATTERN
-					: this.mybatisConfigLocationPattern);
+			this.configLocation = Springs
+					.searchResource(null == this.mybatisConfigLocationPattern ? DEFALUT_MYBATIS_CONF_PATTERN
+							: this.mybatisConfigLocationPattern);
 		if (this.configLocation != null) {
 			xmlConfigBuilder = new XMLConfigBuilder(this.configLocation.getInputStream(), null, this.configurationProperties);
 			configuration = xmlConfigBuilder.getConfiguration();
@@ -439,7 +439,7 @@ public class AutoSqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>
 				if (mapperLocation != null) this.registerMapper(configuration, mapperLocation);
 		} else if (logger.isTraceEnabled())
 			logger.trace("Albacore Impl for Mybatis AutoSqlSessionFactoryBean - Property 'mapperLocations' was not specified or no matching resources found");
-		Resource mapperCache = this
+		Resource mapperCache = Springs
 				.searchResource(null == this.mybatisCacheConfigLocationPattern ? DEFAULT_MYBATIS_CACHE_CONF_PATTERN
 						: this.mybatisCacheConfigLocationPattern);
 		if (mapperCache != null) this.registerMapper(configuration, mapperCache);
@@ -502,21 +502,6 @@ public class AutoSqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>
 			if (meta.hasSetter(name))
 				meta.setValue(name, Objects.castValue(this.mybatisProperties.getProperty(name), meta.getSetterType(name)));
 		}
-	}
-
-	private Resource searchResource(String pattern) throws IOException {
-		ResourcePatternResolver patternResolver = new PathMatchingResourcePatternResolver();
-		Resource[] reses = patternResolver.getResources(pattern);
-		if (null == reses || reses.length == 0) {
-			logger.warn("Albacore Impl for Mybatis AutoSqlSessionFactoryBean - No " + pattern
-					+ " found in classpath, automatically mybatis configuration of albacore is not support");
-			return null;
-		}
-		if (reses.length > 1)
-			logger.warn("Albacore Impl for Mybatis AutoSqlSessionFactoryBean - More than one " + pattern
-					+ " found in classpath, the first one \"" + reses[0].toString()
-					+ "\" is loaded as automatical mybatis configuration of albacore.");
-		return reses[0];
 	}
 
 	private void registerMapper(Configuration configuration, Resource mapperLocation) throws IOException {

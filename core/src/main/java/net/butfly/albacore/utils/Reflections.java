@@ -27,7 +27,7 @@ import org.reflections.util.FilterBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class Reflections extends UtilsBase {
+public final class Reflections extends Utils {
 	private static final Logger logger = LoggerFactory.getLogger(Reflections.class);
 	private static String DEFAULT_PACKAGE_PREFIX = "";
 	private static Map<String, org.reflections.Reflections> reflections = new HashMap<String, org.reflections.Reflections>();

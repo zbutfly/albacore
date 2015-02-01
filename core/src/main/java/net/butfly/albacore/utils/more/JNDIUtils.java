@@ -15,7 +15,7 @@ import javax.naming.spi.ObjectFactory;
 
 import net.butfly.albacore.utils.Objects;
 import net.butfly.albacore.utils.Reflections;
-import net.butfly.albacore.utils.UtilsBase;
+import net.butfly.albacore.utils.Utils;
 
 import org.dom4j.Attribute;
 import org.dom4j.Document;
@@ -25,7 +25,7 @@ import org.dom4j.io.SAXReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class JNDIUtils extends UtilsBase {
+public final class JNDIUtils extends Utils {
 	protected final static Logger logger = LoggerFactory.getLogger(JNDIUtils.class);
 
 	@SuppressWarnings("unchecked")

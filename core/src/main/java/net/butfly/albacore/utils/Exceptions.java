@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
-public class Exceptions extends UtilsBase {
+public class Exceptions extends Utils {
 	public interface Code {
 		// code for system exceptions.
 		String ENCRYPT_CODE = "SYS_500";

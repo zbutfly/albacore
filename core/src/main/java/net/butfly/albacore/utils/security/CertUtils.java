@@ -12,7 +12,7 @@ import java.util.Date;
 
 import javax.crypto.Cipher;
 
-import net.butfly.albacore.utils.UtilsBase;
+import net.butfly.albacore.utils.Utils;
 
 /**
  * 证书组件
@@ -21,7 +21,7 @@ import net.butfly.albacore.utils.UtilsBase;
  * @version 1.0
  * @since 1.0
  */
-public class CertUtils extends UtilsBase {
+public class CertUtils extends Utils {
 	/**
 	 * Java密钥库(Java Key Store，JKS)KEY_STORE
 	 */
