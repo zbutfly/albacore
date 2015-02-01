@@ -3,6 +3,7 @@ package net.butfly.albacore.utils;
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -24,7 +25,7 @@ import net.butfly.albacore.exception.NotImplementedException;
 import com.google.common.base.Defaults;
 
 @SuppressWarnings("rawtypes")
-public class Objects extends UtilsBase {
+public class Objects extends Utils {
 	public static final int HASH_SEED = 17;
 	public static final int HASH_OFFSET = 37;
 
@@ -77,16 +78,12 @@ public class Objects extends UtilsBase {
 
 	public static final MetaObject createMeta(Object target) {
 		MetaObject meta = MetaObject.forObject(target, DEFAULT_OBJECT_FACTORY, DEFAULT_OBJECT_WRAPPER_FACTORY);
-		while (meta.hasGetter("target") || meta.hasGetter("h")) {
-			while (meta.hasGetter("h")) {
-				Object object = meta.getValue("h");
-				meta = MetaObject.forObject(object, DEFAULT_OBJECT_FACTORY, DEFAULT_OBJECT_WRAPPER_FACTORY);
-			}
-			while (meta.hasGetter("target")) {
-				Object object = meta.getValue("target");
-				meta = MetaObject.forObject(object, DEFAULT_OBJECT_FACTORY, DEFAULT_OBJECT_WRAPPER_FACTORY);
-			}
-		}
+		if (null == target) return meta;
+		while (!meta.isMetaNull() && Proxy.isProxyClass(meta.getOriginalClass()))
+			if (meta.hasGetter("h")) meta = MetaObject.forObject(meta.getValue("h"), DEFAULT_OBJECT_FACTORY,
+					DEFAULT_OBJECT_WRAPPER_FACTORY);
+			else if (meta.hasGetter("target"))
+				meta = MetaObject.forObject(meta.getValue("target"), DEFAULT_OBJECT_FACTORY, DEFAULT_OBJECT_WRAPPER_FACTORY);
 		return meta;
 	}
 
@@ -222,7 +219,7 @@ public class Objects extends UtilsBase {
 			switch (dstCat) {
 			case ARRAY_COLLECTION:
 				if (srcClass.isArray()) {
-					int len = Reflections.get(value, "length");
+					int len = Array.getLength(value);
 					if (dstClass.isArray()) { // source is an Array
 						Object dst = Array.newInstance(dstClass.getComponentType(), len);
 						for (int i = 0; i < len; i++)
@@ -440,5 +437,24 @@ public class Objects extends UtilsBase {
 				return null == cl ? Object.class : cl;
 			} else return null;
 		}
+	}
+
+	public static void notNull(Object target) {
+		if (null == target) throw new NullPointerException();
+	}
+
+	public static boolean isEmpty(Object target) {
+		if (target == null) return true;
+		Class<?> targetClass = target.getClass();
+		if (String.class.equals(targetClass)) return target.toString().trim().length() == 0;
+		if (targetClass.isArray()) return Array.getLength(target) == 0;
+		if (Collection.class.isAssignableFrom(targetClass)) try {
+			return ((Integer) Reflections.invoke("size", target)) == 0;
+		} catch (Exception e) {}
+		return false;
+	}
+
+	public static void notEmpty(Object target) {
+		if (isEmpty(target)) throw new IllegalArgumentException("Target should not be empty.");
 	}
 }

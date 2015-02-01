@@ -9,7 +9,7 @@ import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.DESKeySpec;
 
-import net.butfly.albacore.utils.UtilsBase;
+import net.butfly.albacore.utils.Utils;
 
 /**
  * DES安全编码组件
@@ -29,7 +29,7 @@ import net.butfly.albacore.utils.UtilsBase;
  * @version 1.0
  * @since 1.0
  */
-public class DESCoder extends UtilsBase {
+public class DESCoder extends Utils {
 	/**
 	 * ALGORITHM 算法 <br>
 	 * 可替换为以下任意一种算法，同时key值的size相应改变。

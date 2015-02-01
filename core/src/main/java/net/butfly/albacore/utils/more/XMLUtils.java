@@ -12,7 +12,7 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import net.butfly.albacore.exception.NotImplementedException;
 import net.butfly.albacore.utils.Objects;
-import net.butfly.albacore.utils.UtilsBase;
+import net.butfly.albacore.utils.Utils;
 import net.butfly.albacore.utils.imports.meta.MetaObject;
 
 import org.dom4j.Attribute;
@@ -25,7 +25,7 @@ import org.w3c.dom.ls.LSSerializer;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-public class XMLUtils extends UtilsBase {
+public class XMLUtils extends Utils {
 	@SuppressWarnings("unchecked")
 	public static void setPropsByAttr(Object target, Element element, String... ignores) {
 		MetaObject meta = Objects.createMeta(target);

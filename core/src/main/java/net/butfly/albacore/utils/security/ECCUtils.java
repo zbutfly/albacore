@@ -20,7 +20,7 @@
 //import javax.crypto.NullCipher;
 //
 //import net.butfly.albacore.utils.Reflections;
-//import net.butfly.albacore.utils.UtilsBase;
+//import net.butfly.albacore.utils.Utils;
 //import sun.security.ec.ECKeyFactory;
 //import sun.security.ec.ECPrivateKeyImpl;
 //import sun.security.ec.ECPublicKeyImpl;
@@ -32,7 +32,7 @@
 // * @version 1.0
 // * @since 1.0
 // */
-//public abstract class ECCUtils extends UtilsBase {
+//public abstract class ECCUtils extends Utils {
 //
 //	public static final String ALGORITHM = "EC";
 //	private static final String PUBLIC_KEY = "ECCPublicKey";

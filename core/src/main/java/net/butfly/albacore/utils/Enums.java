@@ -2,7 +2,7 @@ package net.butfly.albacore.utils;
 
 import java.lang.reflect.Method;
 
-public class Enums extends UtilsBase {
+public class Enums extends Utils {
 	public static final String ENUM_VALUE_METHOD_NAME = "value";
 
 	@SuppressWarnings("unchecked")

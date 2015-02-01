@@ -4,6 +4,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.net.URL;
 import java.util.Arrays;
@@ -13,7 +14,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import net.butfly.albacore.exception.BusinessException;
 import net.butfly.albacore.support.Bean;
 import net.butfly.albacore.utils.imports.meta.MetaObject;
 
@@ -24,8 +24,11 @@ import org.reflections.scanners.SubTypesScanner;
 import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.reflections.util.FilterBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public final class Reflections extends UtilsBase {
+public final class Reflections extends Utils {
+	private static final Logger logger = LoggerFactory.getLogger(Reflections.class);
 	private static String DEFAULT_PACKAGE_PREFIX = "";
 	private static Map<String, org.reflections.Reflections> reflections = new HashMap<String, org.reflections.Reflections>();
 
@@ -50,24 +53,68 @@ public final class Reflections extends UtilsBase {
 		return r;
 	}
 
-	public static Class<?>[] getAnnotatedTypes(Class<? extends Annotation> annotationClass) {
-		return reflections().getTypesAnnotatedWith(annotationClass).toArray(new Class[0]);
-	}
-
 	@SuppressWarnings("unchecked")
-	public static <T> T invoke(Method method, Object object, Object... args) throws BusinessException {
+	public static <T> T invoke(Method method, Object... targetAndParams) throws Exception {
 		boolean accessible = method.isAccessible();
 		try {
 			method.setAccessible(true);
-			return Proxy.isProxyClass(object.getClass()) ? (T) Proxy.getInvocationHandler(object).invoke(object, method, args)
-					: (T) method.invoke(object, args);
+			if (Modifier.isStatic(method.getModifiers())) {
+				if (targetAndParams == null || targetAndParams.length == 0) return (T) method.invoke(null);
+				else return (T) method.invoke(null, targetAndParams);
+			} else {
+				Objects.notNull(targetAndParams);
+				if (targetAndParams.length != method.getParameterCount() + 1) throw new NullPointerException(
+						"Non-static mathod invoking need 1 target object, and " + method.getParameterCount() + " arguments");
+				else {
+					if (Proxy.isProxyClass(targetAndParams[0].getClass())) return (T) Proxy.getInvocationHandler(
+							targetAndParams[0])
+							.invoke(targetAndParams[0],
+									method,
+									targetAndParams.length == 1 ? null : Arrays.copyOfRange(targetAndParams, 1,
+											targetAndParams.length));
+					else {
+						if (targetAndParams.length == 1) return (T) method.invoke(targetAndParams[0]);
+						else return (T) method.invoke(targetAndParams[0],
+								Arrays.copyOfRange(targetAndParams, 1, targetAndParams.length));
+					}
+				}
+			}
 		} catch (Throwable e) {
-			e = Exceptions.unwrap(e);
-			if (e instanceof BusinessException) throw (BusinessException) e;
-			else throw new RuntimeException(e);
+			throw Exceptions.unwrap(e);
 		} finally {
 			method.setAccessible(accessible);
 		}
+	}
+
+	public static <T> T invoke(String methodName, Object targetOrClass, ParameterInfo... params) throws Exception {
+		Objects.notEmpty(targetOrClass);
+		Class<?>[] paramClasses = parameterClasses(params);
+		Object[] paramValues = parameterValues(params);
+		Method method;
+		if (Class.class.equals(targetOrClass.getClass())) {// invoke static method
+			method = findMethod(((Class<?>) targetOrClass), methodName, paramClasses);
+			if (!Modifier.isStatic(method.getModifiers()))
+				throw new IllegalArgumentException("Non-static mathod invoking need Object target , not Class target.");
+		} else method = findMethod(targetOrClass.getClass(), methodName, paramClasses);
+		method.setAccessible(true);
+		boolean accessible = method.isAccessible();
+		try {
+			return invoke(method, paramValues);
+		} catch (Throwable e) {
+			throw Exceptions.unwrap(e);
+		} finally {
+			method.setAccessible(accessible);
+		}
+	}
+
+	public static Method findMethod(Class<?> targetClass, String methodName, Class<?>... parameterTypes) {
+		while (targetClass != null) {
+			try {
+				return targetClass.getDeclaredMethod(methodName, parameterTypes);
+			} catch (NoSuchMethodException e) {} catch (SecurityException e) {}
+			targetClass = targetClass.getSuperclass();
+		}
+		return null;
 	}
 
 	public static class MethodInfo extends Bean<MethodInfo> {
@@ -139,26 +186,40 @@ public final class Reflections extends UtilsBase {
 		if (null == paramInfo || paramInfo.length == 0) try {
 			return clazz.newInstance();
 		} catch (Exception ex) {
-			ex = Exceptions.unwrap(ex);
-			throw new RuntimeException(ex);
+			logger.error("Construction failure: default constructor error", Exceptions.unwrap(ex));
+			return null;
 		}
 		Constructor<T> constructor;
 		try {
 			constructor = clazz.getDeclaredConstructor(parameterClasses(paramInfo));
 		} catch (Exception ex) {
-			ex = Exceptions.unwrap(ex);
-			throw new RuntimeException(ex);
+			logger.error("Construction failure: constructor not defined", Exceptions.unwrap(ex));
+			return null;
 		}
 		boolean accessible = constructor.isAccessible();
 		try {
 			constructor.setAccessible(true);
 			return constructor.newInstance(parameterValues(paramInfo));
 		} catch (Exception ex) {
-			ex = Exceptions.unwrap(ex);
-			throw new RuntimeException(ex);
+			logger.error("Construction failure: error on constructing", Exceptions.unwrap(ex));
+			return null;
 		} finally {
 			constructor.setAccessible(accessible);
 		}
+	}
+
+	@SuppressWarnings("unchecked")
+	public static <T> Class<T> forClassName(String className) {
+		try {
+			return (Class<T>) Class.forName(className);
+		} catch (Throwable e) {
+			return null;
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	public static <T> T construct(String className, ParameterInfo... paramInfo) {
+		return (T) construct(forClassName(className), paramInfo);
 	}
 
 	/**
@@ -223,6 +284,10 @@ public final class Reflections extends UtilsBase {
 		for (Field f : getDeclaredFields(clazz))
 			if (f.isAnnotationPresent(annotation)) s.add(f);
 		return s.toArray(new Field[s.size()]);
+	}
+
+	public static Class<?>[] getClassesAnnotatedWith(Class<? extends Annotation> annotation, String... packagePrefix) {
+		return reflections(packagePrefix).getTypesAnnotatedWith(annotation).toArray(new Class[0]);
 	}
 
 	public static Field[] getFieldsAnnotatedWith(Class<? extends Annotation> annotation, String... packagePrefix) {

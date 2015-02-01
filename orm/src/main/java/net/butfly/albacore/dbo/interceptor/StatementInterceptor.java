@@ -6,6 +6,7 @@ import java.util.Properties;
 import net.butfly.albacore.dbo.criteria.OrderedRowBounds;
 import net.butfly.albacore.dbo.dialect.Dialect;
 import net.butfly.albacore.utils.Objects;
+import net.butfly.albacore.utils.Reflections;
 import net.butfly.albacore.utils.imports.meta.MetaObject;
 
 import org.apache.ibatis.executor.statement.StatementHandler;
@@ -55,7 +56,7 @@ public class StatementInterceptor extends BaseInterceptor {
 	@Override
 	public void setProperties(Properties properties) {
 		try {
-			this.dialect = (Dialect) Class.forName(properties.getProperty("dialect")).newInstance();
+			this.dialect = Reflections.construct(properties.getProperty("dialect"));
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}

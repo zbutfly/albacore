@@ -13,7 +13,9 @@ import javax.naming.Reference;
 import javax.naming.StringRefAddr;
 import javax.naming.spi.ObjectFactory;
 
-import net.butfly.albacore.utils.UtilsBase;
+import net.butfly.albacore.utils.Objects;
+import net.butfly.albacore.utils.Reflections;
+import net.butfly.albacore.utils.Utils;
 
 import org.dom4j.Attribute;
 import org.dom4j.Document;
@@ -23,7 +25,7 @@ import org.dom4j.io.SAXReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class JNDIUtils extends UtilsBase {
+public final class JNDIUtils extends Utils {
 	protected final static Logger logger = LoggerFactory.getLogger(JNDIUtils.class);
 
 	@SuppressWarnings("unchecked")
@@ -58,12 +60,13 @@ public final class JNDIUtils extends UtilsBase {
 
 		String fact = resource.attributeValue("factory");
 		String type = resource.attributeValue("type");
-		if (fact == null) {
-			Object ds = Class.forName(type).newInstance();
+		if (Objects.isEmpty(fact)) {
+			Object ds = Reflections.construct(type);
+			Objects.notNull(ds);
 			XMLUtils.setPropsByAttr(ds, resource, "name", "type");
 			return ds;
 		} else {
-			ObjectFactory factory = (ObjectFactory) Class.forName(fact).newInstance();
+			ObjectFactory factory = Reflections.construct(fact);
 			Object ds = factory.getObjectInstance(parseReference(resource),
 					ctx.getNameParser(ctx.getNameInNamespace()).parse(ctx.getNameInNamespace()), ctx, ctx.getEnvironment());
 			return ds;

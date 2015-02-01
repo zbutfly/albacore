@@ -17,7 +17,7 @@ import javax.crypto.interfaces.DHPrivateKey;
 import javax.crypto.interfaces.DHPublicKey;
 import javax.crypto.spec.DHParameterSpec;
 
-import net.butfly.albacore.utils.UtilsBase;
+import net.butfly.albacore.utils.Utils;
 
 /**
  * DH安全编码组件
@@ -26,7 +26,7 @@ import net.butfly.albacore.utils.UtilsBase;
  * @version 1.0
  * @since 1.0
  */
-public abstract class DHUtils extends UtilsBase {
+public abstract class DHUtils extends Utils {
 	public static final String ALGORITHM = "DH";
 
 	/**

@@ -5,7 +5,7 @@ import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.Map;
 
-public final class Texts extends UtilsBase {
+public final class Texts extends Utils {
 	public static String byte2hex(byte[] data) {
 		if (null == data) return null;
 		StringBuffer sb = new StringBuffer();
@@ -71,4 +71,10 @@ public final class Texts extends UtilsBase {
 		return sb.substring(0, sb.length() - 1).toString();
 	}
 
+	public static String join(String split, String... list) {
+		StringBuilder sb = new StringBuilder();
+		for (String tt : list)
+			sb.append(tt).append(split);
+		return sb.substring(0, sb.length() - split.length()).toString();
+	}
 }
