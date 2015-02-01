@@ -219,7 +219,7 @@ public class Objects extends UtilsBase {
 			switch (dstCat) {
 			case ARRAY_COLLECTION:
 				if (srcClass.isArray()) {
-					int len = Reflections.get(value, "length");
+					int len = Array.getLength(value);
 					if (dstClass.isArray()) { // source is an Array
 						Object dst = Array.newInstance(dstClass.getComponentType(), len);
 						for (int i = 0; i < len; i++)
@@ -447,7 +447,7 @@ public class Objects extends UtilsBase {
 		if (target == null) return true;
 		Class<?> targetClass = target.getClass();
 		if (String.class.equals(targetClass)) return target.toString().trim().length() == 0;
-		if (targetClass.isArray()) return ((Integer) Reflections.get(target, "length")) == 0;
+		if (targetClass.isArray()) return Array.getLength(target) == 0;
 		if (Collection.class.isAssignableFrom(targetClass)) try {
 			return ((Integer) Reflections.invoke("size", target)) == 0;
 		} catch (Exception e) {}
