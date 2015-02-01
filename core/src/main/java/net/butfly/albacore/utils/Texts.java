@@ -71,4 +71,10 @@ public final class Texts extends UtilsBase {
 		return sb.substring(0, sb.length() - 1).toString();
 	}
 
+	public static String join(String split, String... list) {
+		StringBuilder sb = new StringBuilder();
+		for (String tt : list)
+			sb.append(tt).append(split);
+		return sb.substring(0, sb.length() - split.length()).toString();
+	}
 }

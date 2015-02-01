@@ -13,7 +13,7 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-package net.butfly.albacore.utils;
+package net.butfly.albacore.spring;
 
 import static org.springframework.util.Assert.notNull;
 import static org.springframework.util.ObjectUtils.isEmpty;
@@ -27,6 +27,7 @@ import java.util.Properties;
 
 import javax.sql.DataSource;
 
+import net.butfly.albacore.utils.Objects;
 import net.butfly.albacore.utils.imports.meta.MetaObject;
 
 import org.apache.ibatis.builder.xml.XMLConfigBuilder;
@@ -72,11 +73,11 @@ import org.springframework.jdbc.datasource.TransactionAwareDataSourceProxy;
  * @see #setDataSource
  * @version $Id$
  */
-public class SqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>, InitializingBean,
+public class AutoSqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>, InitializingBean,
 		ApplicationListener<ApplicationEvent> {
-	private static final Logger logger = LoggerFactory.getLogger(SqlSessionFactoryBean.class);
-	private static final String DEFAULT_MYBATIS_CACHE_CONF_FILENAME = "mybatis-cache.xml";
-	private static final String DEFALUT_MYBATIS_CONF_FILENAME = "mybatis-config.xml";
+	private static final Logger logger = LoggerFactory.getLogger(AutoSqlSessionFactoryBean.class);
+	private static final String DEFAULT_MYBATIS_CACHE_CONF_PATTERN = "classpath*:**/mybatis-cache.xml";
+	private static final String DEFALUT_MYBATIS_CONF_PATTERN = "classpath*:**/mybatis-config.xml";
 
 	private Resource configLocation;
 	private Resource[] mapperLocations;
@@ -86,7 +87,7 @@ public class SqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>, In
 	private SqlSessionFactoryBuilder sqlSessionFactoryBuilder = new SqlSessionFactoryBuilder();
 	private SqlSessionFactory sqlSessionFactory;
 	// EnvironmentAware requires spring 3.1
-	private String environment = SqlSessionFactoryBean.class.getSimpleName();
+	private String environment = AutoSqlSessionFactoryBean.class.getSimpleName();
 	private boolean failFast;
 	private Interceptor[] plugins;
 	private TypeHandler<?>[] typeHandlers;
@@ -319,7 +320,7 @@ public class SqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>, In
 	/**
 	 * <b>NOTE:</b> This class <em>overrides</em> any {@code Environment} you have set in the MyBatis config
 	 * file. This is used only as a placeholder name. The default value is
-	 * {@code SqlSessionFactoryBean.class.getSimpleName()}.
+	 * {@code AutoSqlSessionFactoryBean.class.getSimpleName()}.
 	 *
 	 * @param environment
 	 *            the environment name
@@ -350,12 +351,17 @@ public class SqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>, In
 	protected SqlSessionFactory buildSqlSessionFactory() throws IOException {
 		Configuration configuration;
 		XMLConfigBuilder xmlConfigBuilder = null;
-		if (this.configLocation == null) this.configLocation = this.searchResource(DEFALUT_MYBATIS_CONF_FILENAME);
+		if (this.configLocation == null)
+			this.configLocation = this.searchResource(null == this.mybatisConfigLocationPattern ? DEFALUT_MYBATIS_CONF_PATTERN
+					: this.mybatisConfigLocationPattern);
 		if (this.configLocation != null) {
 			xmlConfigBuilder = new XMLConfigBuilder(this.configLocation.getInputStream(), null, this.configurationProperties);
 			configuration = xmlConfigBuilder.getConfiguration();
+			if (logger.isTraceEnabled())
+				logger.trace("Albacore Impl for Mybatis AutoSqlSessionFactoryBean - Mybatis configuration loaded: "
+						+ this.configLocation);
 		} else {
-			logger.warn("Albacore Impl for Mybatis SqlSessionFactoryBean - Property 'configLocation' not specified, using default MyBatis Configuration");
+			logger.warn("Albacore Impl for Mybatis AutoSqlSessionFactoryBean - Property 'configLocation' not specified, using default MyBatis Configuration");
 			configuration = new Configuration();
 			configuration.setVariables(this.configurationProperties);
 		}
@@ -369,7 +375,7 @@ public class SqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>, In
 				configuration.getTypeAliasRegistry().registerAliases(packageToScan,
 						typeAliasesSuperType == null ? Object.class : typeAliasesSuperType);
 				if (logger.isTraceEnabled())
-					logger.trace("Albacore Impl for Mybatis SqlSessionFactoryBean - Scanned package: '" + packageToScan
+					logger.trace("Albacore Impl for Mybatis AutoSqlSessionFactoryBean - Scanned package: '" + packageToScan
 							+ "' for aliases");
 			}
 		}
@@ -377,13 +383,14 @@ public class SqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>, In
 			for (Class<?> typeAlias : this.typeAliases) {
 				configuration.getTypeAliasRegistry().registerAlias(typeAlias);
 				if (logger.isTraceEnabled())
-					logger.trace("Albacore Impl for Mybatis SqlSessionFactoryBean - Registered type alias: '" + typeAlias + "'");
+					logger.trace("Albacore Impl for Mybatis AutoSqlSessionFactoryBean - Registered type alias: '" + typeAlias
+							+ "'");
 			}
 		if (!isEmpty(this.plugins))
 			for (Interceptor plugin : this.plugins) {
 				configuration.addInterceptor(plugin);
 				if (logger.isTraceEnabled())
-					logger.trace("Albacore Impl for Mybatis SqlSessionFactoryBean - Registered plugin: '" + plugin + "'");
+					logger.trace("Albacore Impl for Mybatis AutoSqlSessionFactoryBean - Registered plugin: '" + plugin + "'");
 			}
 
 		if (hasLength(this.typeHandlersPackage)) {
@@ -392,7 +399,7 @@ public class SqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>, In
 			for (String packageToScan : typeHandlersPackageArray) {
 				configuration.getTypeHandlerRegistry().register(packageToScan);
 				if (logger.isTraceEnabled()) {
-					logger.trace("Albacore Impl for Mybatis SqlSessionFactoryBean - Scanned package: '" + packageToScan
+					logger.trace("Albacore Impl for Mybatis AutoSqlSessionFactoryBean - Scanned package: '" + packageToScan
 							+ "' for type handlers");
 				}
 			}
@@ -401,8 +408,8 @@ public class SqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>, In
 			for (TypeHandler<?> typeHandler : this.typeHandlers) {
 				configuration.getTypeHandlerRegistry().register(typeHandler);
 				if (logger.isTraceEnabled()) {
-					logger.trace("Albacore Impl for Mybatis SqlSessionFactoryBean - Registered type handler: '" + typeHandler
-							+ "'");
+					logger.trace("Albacore Impl for Mybatis AutoSqlSessionFactoryBean - Registered type handler: '"
+							+ typeHandler + "'");
 				}
 			}
 		}
@@ -410,7 +417,7 @@ public class SqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>, In
 			try {
 				xmlConfigBuilder.parse();
 				if (logger.isTraceEnabled()) {
-					logger.trace("Albacore Impl for Mybatis SqlSessionFactoryBean - Parsed configuration file: '"
+					logger.trace("Albacore Impl for Mybatis AutoSqlSessionFactoryBean - Parsed configuration file: '"
 							+ this.configLocation + "'");
 				}
 			} catch (Exception ex) {
@@ -431,8 +438,10 @@ public class SqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>, In
 			for (Resource mapperLocation : this.mapperLocations)
 				if (mapperLocation != null) this.registerMapper(configuration, mapperLocation);
 		} else if (logger.isTraceEnabled())
-			logger.trace("Albacore Impl for Mybatis SqlSessionFactoryBean - Property 'mapperLocations' was not specified or no matching resources found");
-		Resource mapperCache = this.searchResource(DEFAULT_MYBATIS_CACHE_CONF_FILENAME);
+			logger.trace("Albacore Impl for Mybatis AutoSqlSessionFactoryBean - Property 'mapperLocations' was not specified or no matching resources found");
+		Resource mapperCache = this
+				.searchResource(null == this.mybatisCacheConfigLocationPattern ? DEFAULT_MYBATIS_CACHE_CONF_PATTERN
+						: this.mybatisCacheConfigLocationPattern);
 		if (mapperCache != null) this.registerMapper(configuration, mapperCache);
 		return this.sqlSessionFactoryBuilder.build(configuration);
 	}
@@ -470,9 +479,18 @@ public class SqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>, In
 	}
 
 	private Properties mybatisProperties;
+	private String mybatisConfigLocationPattern, mybatisCacheConfigLocationPattern;
 
 	public void setMybatisProperties(Properties mybatisProperties) {
 		this.mybatisProperties = mybatisProperties;
+	}
+
+	public void setMybatisConfigLocationPattern(String mybatisConfigLocationPattern) {
+		this.mybatisConfigLocationPattern = mybatisConfigLocationPattern;
+	}
+
+	public void setMybatisCacheConfigLocationPattern(String mybatisCacheConfigLocationPattern) {
+		this.mybatisCacheConfigLocationPattern = mybatisCacheConfigLocationPattern;
 	}
 
 	private void fillMybatisProperties(Configuration configuration) {
@@ -486,16 +504,16 @@ public class SqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>, In
 		}
 	}
 
-	private Resource searchResource(String filename) throws IOException {
+	private Resource searchResource(String pattern) throws IOException {
 		ResourcePatternResolver patternResolver = new PathMatchingResourcePatternResolver();
-		Resource[] reses = patternResolver.getResources("classpath*:**/" + filename);
+		Resource[] reses = patternResolver.getResources(pattern);
 		if (null == reses || reses.length == 0) {
-			logger.warn("Albacore Impl for Mybatis SqlSessionFactoryBean - No " + filename
+			logger.warn("Albacore Impl for Mybatis AutoSqlSessionFactoryBean - No " + pattern
 					+ " found in classpath, automatically mybatis configuration of albacore is not support");
 			return null;
 		}
 		if (reses.length > 1)
-			logger.warn("Albacore Impl for Mybatis SqlSessionFactoryBean - More than one " + filename
+			logger.warn("Albacore Impl for Mybatis AutoSqlSessionFactoryBean - More than one " + pattern
 					+ " found in classpath, the first one \"" + reses[0].toString()
 					+ "\" is loaded as automatical mybatis configuration of albacore.");
 		return reses[0];
@@ -512,6 +530,6 @@ public class SqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>, In
 			ErrorContext.instance().reset();
 		}
 		if (logger.isTraceEnabled())
-			logger.trace("Albacore Impl for Mybatis SqlSessionFactoryBean - Parsed mapper file: '" + mapperLocation + "'");
+			logger.trace("Albacore Impl for Mybatis AutoSqlSessionFactoryBean - Parsed mapper file: '" + mapperLocation + "'");
 	}
 }

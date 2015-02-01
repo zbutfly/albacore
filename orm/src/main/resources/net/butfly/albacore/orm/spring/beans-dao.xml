@@ -4,24 +4,25 @@
 	<bean id="dataSource" class="org.springframework.jndi.JndiObjectFactoryBean">
 		<property name="jndiName" value="java:comp/env/${albacore.orm.ds.jndi.name}" />
 	</bean>
-	<bean id="sqlSessionFactory" class="net.butfly.albacore.utils.SqlSessionFactoryBean">
+	<bean id="sqlSessionFactory" class="net.butfly.albacore.spring.AutoSqlSessionFactoryBean">
 		<property name="dataSource" ref="dataSource" />
-		<!-- <property name="configLocation" value="classpath:/${albacore.orm.mybatis.config}" /> -->
+		<property name="mybatisConfigLocationPattern" value="${ibatis.config.location.pattern}" />
+		<property name="mybatisCacheConfigLocationPattern" value="${ibatis.cache.config.location.pattern}" />
 		<property name="mybatisProperties">
 			<props>
-				<prop key="mapUnderscoreToCamelCase">true</prop>
-				<prop key="logImpl">SLF4J</prop>
 				<prop key="cacheEnabled">${ibatis.cacheEnabled}</prop>
 				<prop key="lazyLoadingEnabled">${ibatis.lazyLoadingEnabled}</prop>
 				<prop key="defaultExecutorType">${ibatis.defaultExecutorType}</prop>
 				<prop key="aggressiveLazyLoading">${ibatis.aggressiveLazyLoading}</prop>
 				<prop key="defaultStatementTimeout">${ibatis.defaultStatementTimeout}</prop>
 				<!-- should not change -->
-				<prop key="multipleResultSetsEnabled">${ibatis.multipleResultSetsEnabled}</prop>
-				<prop key="useColumnLabel">${ibatis.useColumnLabel}</prop>
-				<prop key="useGeneratedKeys">${ibatis.useGeneratedKeys}</prop>
-				<prop key="autoMappingBehavior">${ibatis.autoMappingBehavior}</prop>
-				<prop key="safeRowBoundsEnabled">${ibatis.safeRowBoundsEnabled}</prop>
+				<prop key="mapUnderscoreToCamelCase">true</prop>
+				<prop key="logImpl">SLF4J</prop>
+				<prop key="multipleResultSetsEnabled">true</prop>
+				<prop key="useColumnLabel">true</prop>
+				<prop key="useGeneratedKeys">false</prop>
+				<prop key="autoMappingBehavior">PARTIAL</prop>
+				<prop key="safeRowBoundsEnabled">false</prop>
 			</props>
 		</property>
 	</bean>
