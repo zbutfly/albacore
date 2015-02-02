@@ -7,7 +7,7 @@ import java.util.GregorianCalendar;
 
 import net.butfly.albacore.exception.SystemException;
 
-public final class DateUtils extends UtilsBase {
+public final class DateUtils extends Utils {
 	private DateUtils() {}
 
 	// prefix convenient for calculating

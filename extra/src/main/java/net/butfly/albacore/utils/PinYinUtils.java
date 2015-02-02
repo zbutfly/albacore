@@ -6,8 +6,7 @@ import net.sourceforge.pinyin4j.format.HanyuPinyinOutputFormat;
 import net.sourceforge.pinyin4j.format.HanyuPinyinToneType;
 import net.sourceforge.pinyin4j.format.exception.BadHanyuPinyinOutputFormatCombination;
 
-public final class PinYinUtils extends UtilsBase {
-
+public final class PinYinUtils extends Utils {
 	public static String converterToFirstSpell(String chines) {
 		String pinyinName = "";
 		char[] nameChar = chines.toCharArray();
