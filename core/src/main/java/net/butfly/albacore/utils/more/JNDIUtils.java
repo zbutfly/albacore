@@ -28,6 +28,14 @@ import org.slf4j.LoggerFactory;
 public final class JNDIUtils extends Utils {
 	protected final static Logger logger = LoggerFactory.getLogger(JNDIUtils.class);
 
+	public static void attachContext(String contextFileLocation) {
+		try {
+			JNDIUtils.bindContext("java:comp/env/", contextFileLocation);
+		} catch (NamingException e) {
+			throw new RuntimeException("Failure in JNDI process", e);
+		}
+	}
+
 	@SuppressWarnings("unchecked")
 	public static void bindContext(String parent, String contextXML) throws NamingException {
 		URL url = Thread.currentThread().getContextClassLoader().getResource(contextXML);
