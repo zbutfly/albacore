@@ -8,13 +8,11 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.WeakHashMap;
 
 @SuppressWarnings("unchecked")
 public final class Generics extends Utils {
@@ -32,11 +30,18 @@ public final class Generics extends Utils {
 		return getSuperClassGenricType((Class<?>) genType, index);
 	}
 
-	public static <E> Class<E> getGenericParamClass(Class<?> childClass, Class<?> parentClass, String paramName) {
-		Map<TypeVariable<Class<?>>, Type> map = getTypeVariableMap(childClass);
-		for (TypeVariable<?> v : map.keySet())
-			if (parentClass.equals(v.getGenericDeclaration()) && paramName.equals(v.getName())) return (Class<E>) map.get(v);
-		throw new RuntimeException("Cannot find generic parameter of the given class.");
+	public static <E> Class<E> getGenericParamClass(final Class<?> childClass, final Class<?> parentClass,
+			final String paramName) {
+		return Instances.fetch(new Instances.Instantiator<Class<E>>() {
+			@Override
+			public Class<E> create() {
+				Map<TypeVariable<Class<?>>, Type> map = getTypeVariableMap(childClass);
+				for (TypeVariable<?> v : map.keySet())
+					if (parentClass.equals(v.getGenericDeclaration()) && paramName.equals(v.getName()))
+						return (Class<E>) map.get(v);
+				return null;
+			}
+		}, parentClass, childClass, paramName);
 	}
 
 	public static Class<?> resolveReturnType(Method method, Class<?> clazz) {
@@ -132,36 +137,32 @@ public final class Generics extends Utils {
 		}
 	}
 
-	private static final Map<Class<?>, Map<TypeVariable<Class<?>>, Type>> typeVariableCache = Collections
-			.synchronizedMap(new WeakHashMap<Class<?>, Map<TypeVariable<Class<?>>, Type>>());
-
-	private static Map<TypeVariable<Class<?>>, Type> getTypeVariableMap(Class<?> clazz) {
-		Map<TypeVariable<Class<?>>, Type> typeVariableMap = typeVariableCache.get(clazz);
-		if (typeVariableMap == null) {
-			typeVariableMap = new HashMap<TypeVariable<Class<?>>, Type>();
-			extractTypeVariablesFromGenericInterfaces(clazz.getGenericInterfaces(), typeVariableMap);
-			Type genericType = clazz.getGenericSuperclass();
-			for (Class<?> type = clazz.getSuperclass(); type != null && !(java.lang.Object.class).equals(type); type = type
-					.getSuperclass()) {
-				if (genericType instanceof ParameterizedType) {
-					ParameterizedType pt = (ParameterizedType) genericType;
-					populateTypeMapFromParameterizedType(pt, typeVariableMap);
+	private static Map<TypeVariable<Class<?>>, Type> getTypeVariableMap(final Class<?> clazz) {
+		return Instances.fetch(new Instances.Instantiator<Map<TypeVariable<Class<?>>, Type>>() {
+			@Override
+			public Map<TypeVariable<Class<?>>, Type> create() {
+				Map<TypeVariable<Class<?>>, Type> typeVariableMap = new HashMap<TypeVariable<Class<?>>, Type>();
+				extractTypeVariablesFromGenericInterfaces(clazz.getGenericInterfaces(), typeVariableMap);
+				Type genericType = clazz.getGenericSuperclass();
+				for (Class<?> type = clazz.getSuperclass(); type != null && !(java.lang.Object.class).equals(type); type = type
+						.getSuperclass()) {
+					if (genericType instanceof ParameterizedType) {
+						ParameterizedType pt = (ParameterizedType) genericType;
+						populateTypeMapFromParameterizedType(pt, typeVariableMap);
+					}
+					extractTypeVariablesFromGenericInterfaces(type.getGenericInterfaces(), typeVariableMap);
+					genericType = type.getGenericSuperclass();
 				}
-				extractTypeVariablesFromGenericInterfaces(type.getGenericInterfaces(), typeVariableMap);
-				genericType = type.getGenericSuperclass();
-			}
-
-			for (Class<?> type = clazz; type.isMemberClass(); type = type.getEnclosingClass()) {
-				genericType = type.getGenericSuperclass();
-				if (genericType instanceof ParameterizedType) {
-					ParameterizedType pt = (ParameterizedType) genericType;
-					populateTypeMapFromParameterizedType(pt, typeVariableMap);
+				for (Class<?> type = clazz; type.isMemberClass(); type = type.getEnclosingClass()) {
+					genericType = type.getGenericSuperclass();
+					if (genericType instanceof ParameterizedType) {
+						ParameterizedType pt = (ParameterizedType) genericType;
+						populateTypeMapFromParameterizedType(pt, typeVariableMap);
+					}
 				}
+				return typeVariableMap;
 			}
-
-			typeVariableCache.put(clazz, typeVariableMap);
-		}
-		return typeVariableMap;
+		}, clazz);
 	}
 
 	public static Field getDeclaredField(Class<?> clazz, String name) {

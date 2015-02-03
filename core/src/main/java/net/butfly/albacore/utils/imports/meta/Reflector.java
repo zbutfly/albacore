@@ -27,8 +27,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
+import net.butfly.albacore.utils.Instances;
 import net.butfly.albacore.utils.imports.meta.invoker.GetFieldInvoker;
 import net.butfly.albacore.utils.imports.meta.invoker.Invoker;
 import net.butfly.albacore.utils.imports.meta.invoker.MethodInvoker;
@@ -43,10 +43,8 @@ import net.butfly.albacore.utils.imports.meta.property.PropertyNamer;
  * @author Clinton Begin
  */
 public class Reflector {
-
 	private static boolean classCacheEnabled = true;
 	private static final String[] EMPTY_STRING_ARRAY = new String[0];
-	private static final Map<Class<?>, Reflector> REFLECTOR_MAP = new ConcurrentHashMap<Class<?>, Reflector>();
 
 	private Class<?> type;
 	private String[] readablePropertyNames = EMPTY_STRING_ARRAY;
@@ -453,18 +451,14 @@ public class Reflector {
 	 * 
 	 * @return The method cache for the class
 	 */
-	public static Reflector forClass(Class<?> clazz) {
-		if (classCacheEnabled) {
-			// synchronized (clazz) removed see issue #461
-			Reflector cached = REFLECTOR_MAP.get(clazz);
-			if (cached == null) {
-				cached = new Reflector(clazz);
-				REFLECTOR_MAP.put(clazz, cached);
+
+	public static Reflector forClass(final Class<?> clazz) {
+		return Instances.fetch(new Instances.Instantiator<Reflector>() {
+			@Override
+			public Reflector create() {
+				return new Reflector(clazz);
 			}
-			return cached;
-		} else {
-			return new Reflector(clazz);
-		}
+		}, clazz);
 	}
 
 	public static void setClassCacheEnabled(boolean classCacheEnabled) {
