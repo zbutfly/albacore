@@ -2,6 +2,8 @@ package net.butfly.albacore.exception;
 
 import javax.validation.ConstraintViolation;
 
+import net.butfly.albacore.utils.Exceptions;
+
 public class ValidateException extends BusinessException {
 	private static final long serialVersionUID = -4154151928102997805L;
 	private ConstraintViolation<?>[] violations;
@@ -11,7 +13,7 @@ public class ValidateException extends BusinessException {
 	}
 
 	public ValidateException(ConstraintViolation<?>[] violations) {
-		super(Exceptions.VALID_CODE, generateMessage(violations));
+		super(Exceptions.Code.VALID_CODE, generateMessage(violations));
 		this.violations = violations;
 	}
 

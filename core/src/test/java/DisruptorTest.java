@@ -10,6 +10,7 @@ import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
 
 //https://github.com/jasonk000/examples/tree/master/executors/src/main/java
+//http://fasterjava.blogspot.com/2014/09/writing-non-blocking-executor.html
 public class DisruptorTest {
 
 	public static class PiJob {
@@ -53,6 +54,7 @@ public class DisruptorTest {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	public long run(int numTH, int numSlice, int numIter) throws InterruptedException {
 		PiEventFac fac = new PiEventFac();
 		ExecutorService executor = Executors.newCachedThreadPool();

@@ -2,7 +2,7 @@ package net.butfly.albacore.dbo.cache;
 
 import java.util.concurrent.locks.ReadWriteLock;
 
-import net.butfly.albacore.utils.ReflectionUtils;
+import net.butfly.albacore.utils.Reflections;
 
 import org.apache.ibatis.cache.Cache;
 
@@ -14,8 +14,8 @@ public final class DualCache implements Cache {
 	public DualCache(final String id) {
 		if (id == null) throw new IllegalArgumentException("Cache instances require an ID");
 		this.id = id;
-		this.firstCache = ReflectionUtils.safeConstruct(this.firstClass, ReflectionUtils.parameters(String.class, id));
-		this.secondCache = ReflectionUtils.safeConstruct(this.secondClass, ReflectionUtils.parameters(String.class, id));
+		this.firstCache = Reflections.construct(this.firstClass, Reflections.parameter(id));
+		this.secondCache = Reflections.construct(this.secondClass, Reflections.parameter(id));
 	}
 
 	@Override

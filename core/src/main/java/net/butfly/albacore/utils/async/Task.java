@@ -63,7 +63,7 @@ public class Task<T> {
 	}
 
 	public T execute() throws Exception {
-		return this.execute(null);
+		return this.execute(Tasks.EXECUTOR);
 	}
 
 	public T execute(ExecutorService executor) throws Exception {

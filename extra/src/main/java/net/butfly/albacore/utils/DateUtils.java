@@ -7,7 +7,7 @@ import java.util.GregorianCalendar;
 
 import net.butfly.albacore.exception.SystemException;
 
-public final class DateUtils extends UtilsBase {
+public final class DateUtils extends Utils {
 	private DateUtils() {}
 
 	// prefix convenient for calculating
@@ -15,11 +15,14 @@ public final class DateUtils extends UtilsBase {
 
 	protected static final long DIFF_OF_CST_GMT = 8 * 60 * 60 * 1000;
 	protected static final long MILLISECONDS_OF_DAY = 24 * 60 * 60 * 1000;
-	protected static DateFormat defaultDateFromat = FormatUtils.dateFormat("yyyy-MM-dd");
-	protected static DateFormat detaultTimeFromat = FormatUtils.dateFormat("HH:mm:ss");
-	protected static DateFormat shortTimeFromat = FormatUtils.dateFormat("HH:mm");
-	protected static DateFormat databaseTimeFromat = FormatUtils.dateFormat("HHmm");
-	private static DateFormat db2TimeFromat = FormatUtils.dateFormat("yyyy-MM-dd HH:mm:ss.SSSSSS");
+
+	public static DateFormat httpFormat = Texts.dateFormat("EEE, dd MMM yyyy HH:mm:ss z");
+
+	public static DateFormat defaultDateFromat = Texts.dateFormat("yyyy-MM-dd");
+	public static DateFormat detaultTimeFromat = Texts.dateFormat("HH:mm:ss");
+	public static DateFormat shortTimeFromat = Texts.dateFormat("HH:mm");
+	public static DateFormat databaseTimeFromat = Texts.dateFormat("HHmm");
+	public static DateFormat db2TimeFromat = Texts.dateFormat("yyyy-MM-dd HH:mm:ss.SSSSSS");
 
 	public static String formatForDB2(Date date) {
 		return db2TimeFromat.format(null == date ? new Date() : date);

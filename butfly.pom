@@ -3,14 +3,12 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>net.butfly.parent</groupId>
 	<artifactId>parent</artifactId>
-	<version>2.0.2-SNAPSHOT</version>
+	<version>2.0.2</version>
 	<packaging>pom</packaging>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.test.skip.exec>true</maven.test.skip.exec>
-		<deps.version.httpclient>4.3.5</deps.version.httpclient>
-		<deps.version.spring>4.1.0.RELEASE</deps.version.spring>
-		<maven.test.skip.exec>true</maven.test.skip.exec>
+		<deps.version.spring>4.1.4.RELEASE</deps.version.spring>
 	</properties>
 	<build>
 		<pluginManagement>

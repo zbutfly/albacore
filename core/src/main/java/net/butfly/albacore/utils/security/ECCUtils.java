@@ -19,8 +19,8 @@
 //import javax.crypto.Cipher;
 //import javax.crypto.NullCipher;
 //
-//import net.butfly.albacore.utils.ReflectionUtils;
-//import net.butfly.albacore.utils.UtilsBase;
+//import net.butfly.albacore.utils.Reflections;
+//import net.butfly.albacore.utils.Utils;
 //import sun.security.ec.ECKeyFactory;
 //import sun.security.ec.ECPrivateKeyImpl;
 //import sun.security.ec.ECPublicKeyImpl;
@@ -32,7 +32,7 @@
 // * @version 1.0
 // * @since 1.0
 // */
-//public abstract class ECCUtils extends UtilsBase {
+//public abstract class ECCUtils extends Utils {
 //
 //	public static final String ALGORITHM = "EC";
 //	private static final String PUBLIC_KEY = "ECCPublicKey";
@@ -53,7 +53,7 @@
 //
 //		// 取得私钥
 //		PKCS8EncodedKeySpec pkcs8KeySpec = new PKCS8EncodedKeySpec(keyBytes);
-//		KeyFactory keyFactory = ReflectionUtils.safeFieldGet(ECKeyFactory.class.getField("instance"), null);
+//		KeyFactory keyFactory = Reflections.safeFieldGet(ECKeyFactory.class.getField("instance"), null);
 //
 //		ECPrivateKey priKey = (ECPrivateKey) keyFactory.generatePrivate(pkcs8KeySpec);
 //
@@ -83,7 +83,7 @@
 //
 //		// 取得公钥
 //		X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec(keyBytes);
-//		KeyFactory keyFactory = ReflectionUtils.safeFieldGet(ECKeyFactory.class.getField("instance"), null);
+//		KeyFactory keyFactory = Reflections.safeFieldGet(ECKeyFactory.class.getField("instance"), null);
 //
 //		ECPublicKey pubKey = (ECPublicKey) keyFactory.generatePublic(x509KeySpec);
 //
@@ -151,12 +151,12 @@
 //
 //		ECParameterSpec ecParameterSpec = new ECParameterSpec(ellipticCurve, g, n, h);
 //		// 公钥
-//		ECPublicKey publicKey = ReflectionUtils.safeConstruct(
+//		ECPublicKey publicKey = Reflections.safeConstruct(
 //				ECPublicKeyImpl.class.getConstructor(ECPoint.class, ECParameterSpec.class), g, ecParameterSpec);
 //
 //		BigInteger s = new BigInteger("1234006549323611672814741753598448348329118574063", 10);
 //		// 私钥
-//		ECPrivateKey privateKey = ReflectionUtils.safeConstruct(
+//		ECPrivateKey privateKey = Reflections.safeConstruct(
 //				ECPrivateKeyImpl.class.getConstructor(BigInteger.class, ECParameterSpec.class), s, ecParameterSpec);
 //
 //		Map<String, Object> keyMap = new HashMap<String, Object>(2);

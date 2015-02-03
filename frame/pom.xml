@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>net.butfly.albacore</groupId>
 		<artifactId>albacore</artifactId>
-		<version>2.0.2-SNAPSHOT</version>
+		<version>2.0.2</version>
 	</parent>
 	<artifactId>albacore-frame</artifactId>
 	<name>albacore-frame</name>
@@ -16,6 +16,11 @@
 			<groupId>net.butfly.albacore</groupId>
 			<artifactId>albacore-core</artifactId>
 			<version>${deps.version.albacore}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-beans</artifactId>
+			<version>${deps.version.spring}</version>
 		</dependency>
 		<dependency>
 			<groupId>aopalliance</groupId>
