@@ -11,6 +11,7 @@ import net.butfly.albacore.dbo.criteria.Page;
 import net.butfly.albacore.entity.AbstractEntity;
 import net.butfly.albacore.entity.Key;
 import net.butfly.albacore.exception.SystemException;
+import net.butfly.albacore.utils.Entities;
 import net.butfly.albacore.utils.Generics;
 
 import org.mybatis.spring.SqlSessionTemplate;
@@ -38,7 +39,7 @@ public class EntityBasicDAOBase extends DAOBase implements EntityBasicDAO {
 			if (null != k) keys.add(k);
 		}
 		// XXX: optimize
-		Class<K> keyClass = Generics.getGenericParamClass(sql.entityClass(), AbstractEntity.class, "K");
+		Class<K> keyClass = Entities.getKeyClass(sql.entityClass());
 		return Generics.toArray(keys, keyClass);
 	}
 
@@ -117,7 +118,7 @@ public class EntityBasicDAOBase extends DAOBase implements EntityBasicDAO {
 		if (null == page) throw new SystemException("Query must be limited by page.");
 		// dirty page
 		if (page.getTotal() < 0) page.setTotal(this.count(sql, criteria));
-		Class<K> keyClass = Generics.getGenericParamClass(sql.entityClass(), AbstractEntity.class, "K");
+		Class<K> keyClass = Entities.getKeyClass(sql.entityClass());
 		if (page.getTotal() == 0) return Generics.toArray(new ArrayList<K>(), keyClass);
 		OrderedRowBounds rb = new OrderedRowBounds(page.getStart(), page.getSize(), criteria.getOrderFields());
 		List<K> list = this.template.selectList(sql.verb(Verb.select).toCriteriaString(), criteria, rb);
