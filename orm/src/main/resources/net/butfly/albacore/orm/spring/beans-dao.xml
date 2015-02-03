@@ -6,14 +6,12 @@
 	</bean>
 	<bean id="sqlSessionFactory" class="net.butfly.albacore.spring.AutoSqlSessionFactoryBean">
 		<property name="dataSource" ref="dataSource" />
-		<property name="mybatisConfigLocationPattern" value="${ibatis.config.location.pattern}" />
-		<property name="mybatisCacheConfigLocationPattern" value="${ibatis.cache.config.location.pattern}" />
+		<property name="mybatisConfigLocationPattern" value="${albacore.mybatis.config.location.pattern}" />
+		<property name="mybatisCacheConfigLocationPattern" value="${albacore.mybatis.cache.config.location.pattern}" />
 		<property name="mybatisProperties">
 			<props>
 				<prop key="cacheEnabled">${ibatis.cacheEnabled}</prop>
-				<prop key="lazyLoadingEnabled">${ibatis.lazyLoadingEnabled}</prop>
 				<prop key="defaultExecutorType">${ibatis.defaultExecutorType}</prop>
-				<prop key="aggressiveLazyLoading">${ibatis.aggressiveLazyLoading}</prop>
 				<prop key="defaultStatementTimeout">${ibatis.defaultStatementTimeout}</prop>
 				<!-- should not change -->
 				<prop key="mapUnderscoreToCamelCase">true</prop>
@@ -23,22 +21,19 @@
 				<prop key="useGeneratedKeys">false</prop>
 				<prop key="autoMappingBehavior">PARTIAL</prop>
 				<prop key="safeRowBoundsEnabled">false</prop>
+				<prop key="lazyLoadingEnabled">false</prop>
+				<prop key="aggressiveLazyLoading">false</prop>
 			</props>
 		</property>
 	</bean>
 
 	<bean id="template" class="org.mybatis.spring.SqlSessionTemplate">
 		<constructor-arg index="0" ref="sqlSessionFactory" />
-		<constructor-arg index="1" value="${ibatis.template}" /><!-- internal default BATCH -->
-	</bean>
-	<bean id="batchTemplate" class="org.mybatis.spring.SqlSessionTemplate">
-		<constructor-arg index="0" ref="sqlSessionFactory" />
-		<constructor-arg index="1" value="${ibatis.template.batch}" /><!-- internal default BATCH -->
+		<constructor-arg index="1" value="${albacore.mybatis.template.type}" /><!-- internal default BATCH -->
 	</bean>
 
 	<bean id="dao" class="net.butfly.albacore.dao.DAOBase" abstract="true" parent="bizUnit" />
 	<bean id="entityDAO" class="net.butfly.albacore.dao.EntityDAOBase" abstract="true" parent="dao">
 		<property name="template" ref="template" />
-		<property name="batchTemplate" ref="batchTemplate" />
 	</bean>
 </beans>

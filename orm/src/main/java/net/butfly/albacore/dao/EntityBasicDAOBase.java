@@ -17,21 +17,16 @@ import org.mybatis.spring.SqlSessionTemplate;
 
 public class EntityBasicDAOBase extends DAOBase implements EntityBasicDAO {
 	private static final long serialVersionUID = -2472419986526183766L;
-	@SuppressWarnings("unused")
-	private SqlSessionTemplate template, batchTemplate;
+	private SqlSessionTemplate template;
 
 	public void setTemplate(SqlSessionTemplate template) {
 		this.template = template;
 	}
 
-	public void setBatchTemplate(SqlSessionTemplate batchTemplate) {
-		this.batchTemplate = batchTemplate;
-	}
-
 	public <K extends Serializable, E extends AbstractEntity<K>> K insert(SQL<E> sql, E entity) {
 		if (null == entity) return null;
 		if (entity.getId() == null || !(entity.getId() instanceof Key) || this.select(sql, entity.getId()) == null) {
-			batchTemplate.insert(sql.verb(Verb.insert).toString(), entity);
+			this.template.insert(sql.verb(Verb.insert).toString(), entity);
 			return entity.getId();
 		} else return null;
 	}
@@ -51,7 +46,7 @@ public class EntityBasicDAOBase extends DAOBase implements EntityBasicDAO {
 		if (null == key) return null;
 		E e = this.select(sql, key);
 		if (null != e) {
-			batchTemplate.delete(sql.verb(Verb.delete).toString(), e.getId());
+			this.template.delete(sql.verb(Verb.delete).toString(), e.getId());
 			return e;
 		} else return null;
 	}
@@ -69,7 +64,7 @@ public class EntityBasicDAOBase extends DAOBase implements EntityBasicDAO {
 		if (null == entity) return null;
 		E existed = this.select(sql, entity.getId());
 		if (null != existed) {
-			batchTemplate.update(sql.verb(Verb.update).toString(), entity);
+			this.template.update(sql.verb(Verb.update).toString(), entity);
 			return existed;
 		} else return null;
 	}
@@ -85,7 +80,7 @@ public class EntityBasicDAOBase extends DAOBase implements EntityBasicDAO {
 
 	public <K extends Serializable, E extends AbstractEntity<K>> E select(SQL<E> sql, K key) {
 		if (null == key) return null;
-		return batchTemplate.selectOne(sql.verb(Verb.select).toString(), key);
+		return this.template.selectOne(sql.verb(Verb.select).toString(), key);
 	}
 
 	public <K extends Serializable, E extends AbstractEntity<K>> E[] select(SQL<E> sql, K... keys) {
@@ -100,7 +95,7 @@ public class EntityBasicDAOBase extends DAOBase implements EntityBasicDAO {
 	public <K extends Serializable, E extends AbstractEntity<K>> E[] delete(SQL<E> sql, Criteria criteria) {
 		E[] list = this.select(sql, criteria, Page.ALL_RECORD());
 		for (E e : list)
-			batchTemplate.delete(sql.verb(Verb.delete).toString(), e.getId());
+			this.template.delete(sql.verb(Verb.delete).toString(), e.getId());
 		return list;
 	}
 
@@ -108,13 +103,13 @@ public class EntityBasicDAOBase extends DAOBase implements EntityBasicDAO {
 		E[] list = this.select(sql, criteria, Page.ALL_RECORD());
 		for (E e : list) {
 			entity.setId(e.getId());
-			batchTemplate.update(sql.verb(Verb.update).toString(), e);
+			this.template.update(sql.verb(Verb.update).toString(), e);
 		}
 		return list;
 	}
 
 	public <K extends Serializable, E extends AbstractEntity<K>> int count(SQL<E> sql, Criteria criteria) {
-		Object r = batchTemplate.selectOne(sql.verb(Verb.count).toCriteriaString(), criteria);
+		Object r = this.template.selectOne(sql.verb(Verb.count).toCriteriaString(), criteria);
 		return null == r ? 0 : ((Number) r).intValue();
 	}
 
@@ -125,7 +120,7 @@ public class EntityBasicDAOBase extends DAOBase implements EntityBasicDAO {
 		Class<K> keyClass = Generics.getGenericParamClass(sql.entityClass(), AbstractEntity.class, "K");
 		if (page.getTotal() == 0) return Generics.toArray(new ArrayList<K>(), keyClass);
 		OrderedRowBounds rb = new OrderedRowBounds(page.getStart(), page.getSize(), criteria.getOrderFields());
-		List<K> list = batchTemplate.selectList(sql.verb(Verb.select).toCriteriaString(), criteria, rb);
+		List<K> list = this.template.selectList(sql.verb(Verb.select).toCriteriaString(), criteria, rb);
 		// XXX: optimize
 		return Generics.toArray(list, keyClass);
 	}
