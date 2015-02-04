@@ -211,7 +211,6 @@ public class Loggers extends Utils {
 		}
 
 		public String format(LoggingEvent loggingEvent) {
-
 			StringBuffer oBuffer = new StringBuffer();
 			switch (loggingEvent.getLevel().toInt()) {
 			case Level.ALL_INT:
