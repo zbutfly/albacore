@@ -4,6 +4,12 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Replacement of "private static final ..."
+ * 
+ * @author butfly
+ *
+ */
 public class Instances extends Utils {
 	private static final Map<Object, Object> INSTANCE_POOL = new InstancePool();
 
