@@ -27,7 +27,6 @@ import net.butfly.albacore.utils.imports.meta.property.PropertyTokenizer;
  */
 @SuppressWarnings("rawtypes")
 public abstract class BaseWrapper implements ObjectWrapper {
-
 	protected static final Object[] NO_ARGUMENTS = new Object[0];
 	protected MetaObject metaObject;
 

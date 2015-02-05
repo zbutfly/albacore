@@ -4,7 +4,7 @@ import net.butfly.albacore.utils.Texts;
 import net.butfly.albacore.utils.async.Options.ForkMode;
 
 public class Opts {
-	private final static char MULTI_OPTS_SPLITTER = '|';
+	private static final char MULTI_OPTS_SPLITTER = '|';
 
 	public String format(Options options) {
 		String[] fields = new String[7];

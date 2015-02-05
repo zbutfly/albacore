@@ -53,7 +53,7 @@ public final class Texts extends Utils {
 		return l;
 	}
 
-	private final static ThreadLocal<Map<String, DateFormat>> DATE_CACHE = new ThreadLocal<Map<String, DateFormat>>() {
+	private static final ThreadLocal<Map<String, DateFormat>> DATE_CACHE = new ThreadLocal<Map<String, DateFormat>>() {
 		protected Map<String, DateFormat> initialValue() {
 			return new HashMap<String, DateFormat>();
 		}

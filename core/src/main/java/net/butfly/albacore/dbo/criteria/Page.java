@@ -5,7 +5,7 @@ import net.butfly.albacore.support.Bean;
 public final class Page extends Bean<Page> {
 	private static final long serialVersionUID = 7953408535935745025L;
 	// the first page index of the current query.
-	private final static int FIRST_PAGE = 1;
+	private static final int FIRST_PAGE = 1;
 	public static final int DEFAULT_PAGE_SIZE = 15;
 	private static final int TOTAL_NOT_SET = -1;
 

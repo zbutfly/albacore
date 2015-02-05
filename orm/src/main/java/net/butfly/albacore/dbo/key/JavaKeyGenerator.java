@@ -13,7 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class JavaKeyGenerator<K extends Serializable> implements KeyGenerator {
-	private final static String[] DEFAULT_KEY_PROPERTIES = new String[] { "id" };
+	private static final String[] DEFAULT_KEY_PROPERTIES = new String[] { "id" };
 	protected Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	protected abstract K generateKey();
