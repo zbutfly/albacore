@@ -5,9 +5,6 @@ import net.butfly.albacore.dbo.MongoEntity;
 
 public abstract class MongoBasicDaoBase<E extends MongoEntity> extends MongoDaoBase<E> implements MongoDao<E> {
 	private static final long serialVersionUID = -3173817485648589135L;
-//	private static Map<Class<? extends AbstractEntity>, BasicDAO<? extends AbstractEntity, ObjectId>> DAO_POOL = new HashMap<Class<? extends AbstractEntity>, BasicDAO<? extends AbstractEntity, ObjectId>>();
-
-//
 //	private <E extends AbstractEntity> BasicDAO<E, ObjectId> createDAO(Class<E> clazz) {
 //		return new BasicDAO<E, ObjectId>(clazz, this.store);
 //	}

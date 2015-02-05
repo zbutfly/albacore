@@ -9,9 +9,7 @@ import java.lang.reflect.Proxy;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 import net.butfly.albacore.support.Bean;
@@ -30,7 +28,6 @@ import org.slf4j.LoggerFactory;
 public final class Reflections extends Utils {
 	private static final Logger logger = LoggerFactory.getLogger(Reflections.class);
 	private static String DEFAULT_PACKAGE_PREFIX = "";
-	private static Map<String, org.reflections.Reflections> reflections = new HashMap<String, org.reflections.Reflections>();
 
 	private static org.reflections.Reflections reflections(String... packagePrefix) {
 		if (null == packagePrefix || packagePrefix.length == 0) return reflections(DEFAULT_PACKAGE_PREFIX);
@@ -38,19 +35,20 @@ public final class Reflections extends Utils {
 		else return reflections(packagePrefix[0]);
 	}
 
-	private static org.reflections.Reflections reflections(String packagePrefix) {
-		if (null == packagePrefix) packagePrefix = DEFAULT_PACKAGE_PREFIX;
-		org.reflections.Reflections r = reflections.get(packagePrefix);
-		if (null != r) return r;
-		FilterBuilder filterBuilder = new FilterBuilder().includePackage(packagePrefix);
-		Collection<URL> urls = ClasspathHelper.forClassLoader();
-		Scanner methodScanner = new MethodAnnotationsScanner().filterResultsBy(filterBuilder);
-		Scanner subTypesScanner = new SubTypesScanner(false);
-		Configuration configuration = new ConfigurationBuilder().filterInputsBy(filterBuilder).setUrls(urls)
-				.addScanners(methodScanner, subTypesScanner);
-		r = new org.reflections.Reflections(configuration);
-		reflections.put(packagePrefix, r);
-		return r;
+	private static org.reflections.Reflections reflections(final String packagePrefix) {
+		return Instances.fetch(new Instances.Instantiator<org.reflections.Reflections>() {
+			@Override
+			public org.reflections.Reflections create() {
+				FilterBuilder filterBuilder = new FilterBuilder().includePackage(null == packagePrefix ? DEFAULT_PACKAGE_PREFIX
+						: packagePrefix);
+				Collection<URL> urls = ClasspathHelper.forClassLoader();
+				Scanner methodScanner = new MethodAnnotationsScanner().filterResultsBy(filterBuilder);
+				Scanner subTypesScanner = new SubTypesScanner(false);
+				Configuration configuration = new ConfigurationBuilder().filterInputsBy(filterBuilder).setUrls(urls)
+						.addScanners(methodScanner, subTypesScanner);
+				return new org.reflections.Reflections(configuration);
+			}
+		}, packagePrefix);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -183,6 +181,7 @@ public final class Reflections extends Utils {
 	}
 
 	public static <T> T construct(Class<T> clazz, ParameterInfo... paramInfo) {
+		if (null == clazz) return null;
 		if (null == paramInfo || paramInfo.length == 0) try {
 			return clazz.newInstance();
 		} catch (Exception ex) {
