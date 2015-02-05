@@ -19,14 +19,14 @@ public final class Springs extends Utils {
 
 	public static void appendPlaceholderByProperties(ConfigurableBeanFactory beanFactory, int order,
 			String... propertyNameAndValue) {
-		beanFactory.registerSingleton(Keys.defaults(), buildPlaceholder(order, propertyNameAndValue));
+		beanFactory.registerSingleton(Keys.key(String.class), buildPlaceholder(order, propertyNameAndValue));
 	}
 
 	public static void appendPlaceholder(ConfigurableBeanFactory beanFactory, int order, Resource[] propertiesFiles,
 			String... propertyNameAndValue) {
 		PropertyPlaceholderConfigurer bean = buildPlaceholder(order, propertyNameAndValue);
 		if (!Objects.isEmpty(propertiesFiles)) bean.setLocations(propertiesFiles);
-		beanFactory.registerSingleton(Keys.defaults(), bean);
+		beanFactory.registerSingleton(Keys.key(String.class), bean);
 	}
 
 	private static PropertyPlaceholderConfigurer buildPlaceholder(int order, String... propertyNameAndValue) {

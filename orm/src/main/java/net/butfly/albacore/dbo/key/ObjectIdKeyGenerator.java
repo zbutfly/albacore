@@ -5,6 +5,6 @@ import net.butfly.albacore.utils.Keys;
 public class ObjectIdKeyGenerator extends JavaKeyGenerator<String> {
 	@Override
 	protected String generateKey() {
-		return Keys.objectId();
+		return Keys.key(String.class);
 	}
 }
