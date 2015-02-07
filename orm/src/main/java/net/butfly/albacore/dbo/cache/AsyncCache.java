@@ -13,7 +13,7 @@ public class AsyncCache implements Cache {
 
 	public AsyncCache(final String id) {
 		try {
-			this.delegate = Reflections.construct(this.delegateClass, Reflections.parameter(id));
+			this.delegate = Reflections.construct(this.delegateClass, id);
 		} catch (Exception ex) {
 			this.delegate = new NonCache(id);
 		}

@@ -13,6 +13,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import net.butfly.albacore.exception.NotImplementedException;
 import net.butfly.albacore.support.Bean;
 import net.butfly.albacore.support.Beans;
 import net.butfly.albacore.utils.imports.meta.MetaObject;
@@ -20,7 +21,6 @@ import net.butfly.albacore.utils.imports.meta.factory.DefaultObjectFactory;
 import net.butfly.albacore.utils.imports.meta.factory.ObjectFactory;
 import net.butfly.albacore.utils.imports.meta.wrapper.DefaultObjectWrapperFactory;
 import net.butfly.albacore.utils.imports.meta.wrapper.ObjectWrapperFactory;
-import net.butfly.albacore.exception.NotImplementedException;
 
 import com.google.common.base.Defaults;
 
@@ -448,9 +448,7 @@ public class Objects extends Utils {
 		Class<?> targetClass = target.getClass();
 		if (String.class.equals(targetClass)) return target.toString().trim().length() == 0;
 		if (targetClass.isArray()) return Array.getLength(target) == 0;
-		if (Collection.class.isAssignableFrom(targetClass)) try {
-			return ((Integer) Reflections.invoke("size", target)) == 0;
-		} catch (Exception e) {}
+		if (Collection.class.isAssignableFrom(targetClass)) return ((Collection) target).size() == 0;
 		return false;
 	}
 

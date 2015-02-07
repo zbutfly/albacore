@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import net.butfly.albacore.utils.async.Task;
+
 @SuppressWarnings("unchecked")
 public final class Generics extends Utils {
 	public static Class<?> getSuperClassGenricType(Class<?> clazz, int index) {
@@ -32,9 +34,9 @@ public final class Generics extends Utils {
 
 	public static <E> Class<E> getGenericParamClass(final Class<?> childClass, final Class<?> parentClass,
 			final String paramName) {
-		return Instances.fetch(new Instances.Instantiator<Class<E>>() {
+		return Instances.fetch(new Task.Callable<Class<E>>() {
 			@Override
-			public Class<E> create() {
+			public Class<E> call() {
 				Map<TypeVariable<Class<?>>, Type> map = getTypeVariableMap(childClass);
 				for (TypeVariable<?> v : map.keySet())
 					if (parentClass.equals(v.getGenericDeclaration()) && paramName.equals(v.getName()))
@@ -138,9 +140,9 @@ public final class Generics extends Utils {
 	}
 
 	private static Map<TypeVariable<Class<?>>, Type> getTypeVariableMap(final Class<?> clazz) {
-		return Instances.fetch(new Instances.Instantiator<Map<TypeVariable<Class<?>>, Type>>() {
+		return Instances.fetch(new Task.Callable<Map<TypeVariable<Class<?>>, Type>>() {
 			@Override
-			public Map<TypeVariable<Class<?>>, Type> create() {
+			public Map<TypeVariable<Class<?>>, Type> call() {
 				Map<TypeVariable<Class<?>>, Type> typeVariableMap = new HashMap<TypeVariable<Class<?>>, Type>();
 				extractTypeVariablesFromGenericInterfaces(clazz.getGenericInterfaces(), typeVariableMap);
 				Type genericType = clazz.getGenericSuperclass();

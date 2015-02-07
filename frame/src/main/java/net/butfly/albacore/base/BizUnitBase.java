@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory;
 
 public abstract class BizUnitBase extends UnitBase implements BizUnit {
 	private static final long serialVersionUID = 1L;
-//	protected final Logger logger = Instances.fetch(new Instances.Instantiator<Logger>() {
+//	protected final Logger logger = Instances.fetch(new Task.Callable<Logger>() {
 //		@Override
 //		public Logger create() {
 //			return LoggerFactory.getLogger(BizUnitBase.this.getClass());
