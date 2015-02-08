@@ -5,6 +5,7 @@ import java.util.Map;
 
 import net.butfly.albacore.utils.async.Task;
 import net.butfly.albacore.utils.key.IdGenerator;
+import net.butfly.albacore.utils.key.ObjectIdGenerator;
 
 public class Keys extends Utils {
 	@SuppressWarnings({ "unchecked", "rawtypes" })
@@ -21,5 +22,10 @@ public class Keys extends Utils {
 			}
 		}).get(keyClass));
 		return g.generate();
+	}
+
+	@Deprecated
+	public static String objectId() {
+		return Instances.fetch(ObjectIdGenerator.class).generate();
 	}
 }

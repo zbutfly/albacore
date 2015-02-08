@@ -56,7 +56,7 @@ public final class Reflections extends Utils {
 	public static <T> Class<T> forClassName(String className) {
 		try {
 			return (Class<T>) ClassUtils.getClass(className);
-		} catch (ClassNotFoundException e) {
+		} catch (Exception e) {
 			return null;
 		}
 	}
@@ -74,27 +74,28 @@ public final class Reflections extends Utils {
 		return construct(clazz, parameters);
 	}
 
-	public static <T> T construct(final Class<T> cls, Object... args) {
-		final Class<?> parameterTypes[] = ClassUtils.toClass(args);
-		return construct(cls, args, parameterTypes);
+	public static <T> T construct(final Class<T> cls, Object... parameters) {
+		final Class<?> parameterTypes[] = ClassUtils.toClass(parameters);
+		return construct(cls, parameters, parameterTypes);
 	}
 
 	public static <T> T construct(final Class<T> cls, Object[] args, Class<?>[] parameterTypes) {
-		final Constructor<T> ctor = getMatchingConstructor(cls, parameterTypes);
+		final Constructor<T> ctor = getMatchingConstructors(cls, parameterTypes);
 		if (ctor == null) {
 			logger.error("No such constructor on object: " + cls.getName());
 			return null;
 		}
+		if (!ctor.isAccessible()) ctor.setAccessible(true);
 		try {
 			return ctor.newInstance(args);
 		} catch (Exception e) {
-			logger.error("Construction failure" + Exceptions.unwrap(e));
+			logger.error("Construction failure", Exceptions.unwrap(e));
 			return null;
 		}
 	}
 
 	@SuppressWarnings("unchecked")
-	public static <T> Constructor<T> getMatchingConstructor(final Class<T> cls, final Class<?>... parameterTypes) {
+	public static <T> Constructor<T> getMatchingConstructors(final Class<T> cls, final Class<?>... parameterTypes) {
 		if (cls == null) return null;
 		try {
 			return cls.getDeclaredConstructor(parameterTypes);
@@ -202,10 +203,5 @@ public final class Reflections extends Utils {
 		if (null == object) return null;
 		if (!Proxy.isProxyClass(object.getClass())) return object;
 		return get(object, "h");
-	}
-
-	public static void main(String[] args) {
-		if (int.class.equals(Integer.TYPE))
-			return;
 	}
 }
