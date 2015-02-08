@@ -9,7 +9,7 @@ import net.butfly.albacore.utils.async.Task;
  * Replacement of "private static final ..."
  * 
  * @author butfly
- *
+ * @see net.butfly.albacore.utils.collection.LayerMap<V>
  */
 public class Instances extends Utils {
 	private static final Map<Object, Object> INSTANCE_POOL = new ConcurrentHashMap<Object, Object>();
