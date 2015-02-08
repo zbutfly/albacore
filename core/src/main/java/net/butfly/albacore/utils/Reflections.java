@@ -203,4 +203,9 @@ public final class Reflections extends Utils {
 		if (!Proxy.isProxyClass(object.getClass())) return object;
 		return get(object, "h");
 	}
+
+	public static void main(String[] args) {
+		if (int.class.equals(Integer.TYPE))
+			return;
+	}
 }

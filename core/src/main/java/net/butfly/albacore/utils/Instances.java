@@ -35,8 +35,8 @@ public class Instances extends Utils {
 	}
 
 	@SuppressWarnings("unchecked")
-	private static <T> T construct(Object instantiator, Object... paramsAndClasses) {
-		if (instantiator instanceof Class) return Reflections.construct((Class<T>) instantiator, paramsAndClasses);
+	private static <T> T construct(Object instantiator, Object... params) {
+		if (instantiator instanceof Class) return Reflections.construct((Class<T>) instantiator, params);
 		if (instantiator instanceof Task.Callable) try {
 			return ((Task.Callable<T>) instantiator).call();
 		} catch (Exception e) {
