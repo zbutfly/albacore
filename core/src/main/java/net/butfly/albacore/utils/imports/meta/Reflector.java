@@ -27,8 +27,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
+import net.butfly.albacore.utils.Instances;
 import net.butfly.albacore.utils.imports.meta.invoker.GetFieldInvoker;
 import net.butfly.albacore.utils.imports.meta.invoker.Invoker;
 import net.butfly.albacore.utils.imports.meta.invoker.MethodInvoker;
@@ -43,10 +43,8 @@ import net.butfly.albacore.utils.imports.meta.property.PropertyNamer;
  * @author Clinton Begin
  */
 public class Reflector {
-
 	private static boolean classCacheEnabled = true;
 	private static final String[] EMPTY_STRING_ARRAY = new String[0];
-	private static final Map<Class<?>, Reflector> REFLECTOR_MAP = new ConcurrentHashMap<Class<?>, Reflector>();
 
 	private Class<?> type;
 	private String[] readablePropertyNames = EMPTY_STRING_ARRAY;
@@ -231,7 +229,7 @@ public class Reflector {
 				boolean add = !(Modifier.isFinal(modifiers) && Modifier.isStatic(modifiers));
 				// issue #379 - removed the check for final because JDK 1.5 allows
 				// modification of final fields through reflection (JSR-133). (JGB)
-				// pr #16 - final static can only be set by the classloader
+				// pr #16 - static final can only be set by the classloader
 				if (!setMethods.containsKey(field.getName()) && add) addSetField(field);
 				// XXX: avoid loop in toString
 				if (!getMethods.containsKey(field.getName()) && add) addGetField(field);
@@ -453,18 +451,9 @@ public class Reflector {
 	 * 
 	 * @return The method cache for the class
 	 */
-	public static Reflector forClass(Class<?> clazz) {
-		if (classCacheEnabled) {
-			// synchronized (clazz) removed see issue #461
-			Reflector cached = REFLECTOR_MAP.get(clazz);
-			if (cached == null) {
-				cached = new Reflector(clazz);
-				REFLECTOR_MAP.put(clazz, cached);
-			}
-			return cached;
-		} else {
-			return new Reflector(clazz);
-		}
+
+	public static Reflector forClass(final Class<?> clazz) {
+		return Instances.fetch(Reflector.class, clazz);
 	}
 
 	public static void setClassCacheEnabled(boolean classCacheEnabled) {

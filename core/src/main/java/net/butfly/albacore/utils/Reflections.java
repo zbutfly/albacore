@@ -4,19 +4,18 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
-import net.butfly.albacore.support.Bean;
+import net.butfly.albacore.utils.async.Task;
 import net.butfly.albacore.utils.imports.meta.MetaObject;
 
+import org.apache.commons.lang3.ClassUtils;
+import org.apache.commons.lang3.reflect.MethodUtils;
 import org.reflections.Configuration;
 import org.reflections.scanners.MethodAnnotationsScanner;
 import org.reflections.scanners.Scanner;
@@ -30,7 +29,6 @@ import org.slf4j.LoggerFactory;
 public final class Reflections extends Utils {
 	private static final Logger logger = LoggerFactory.getLogger(Reflections.class);
 	private static String DEFAULT_PACKAGE_PREFIX = "";
-	private static Map<String, org.reflections.Reflections> reflections = new HashMap<String, org.reflections.Reflections>();
 
 	private static org.reflections.Reflections reflections(String... packagePrefix) {
 		if (null == packagePrefix || packagePrefix.length == 0) return reflections(DEFAULT_PACKAGE_PREFIX);
@@ -38,188 +36,81 @@ public final class Reflections extends Utils {
 		else return reflections(packagePrefix[0]);
 	}
 
-	private static org.reflections.Reflections reflections(String packagePrefix) {
-		if (null == packagePrefix) packagePrefix = DEFAULT_PACKAGE_PREFIX;
-		org.reflections.Reflections r = reflections.get(packagePrefix);
-		if (null != r) return r;
-		FilterBuilder filterBuilder = new FilterBuilder().includePackage(packagePrefix);
-		Collection<URL> urls = ClasspathHelper.forClassLoader();
-		Scanner methodScanner = new MethodAnnotationsScanner().filterResultsBy(filterBuilder);
-		Scanner subTypesScanner = new SubTypesScanner(false);
-		Configuration configuration = new ConfigurationBuilder().filterInputsBy(filterBuilder).setUrls(urls)
-				.addScanners(methodScanner, subTypesScanner);
-		r = new org.reflections.Reflections(configuration);
-		reflections.put(packagePrefix, r);
-		return r;
-	}
-
-	@SuppressWarnings("unchecked")
-	public static <T> T invoke(Method method, Object... targetAndParams) throws Exception {
-		boolean accessible = method.isAccessible();
-		try {
-			method.setAccessible(true);
-			if (Modifier.isStatic(method.getModifiers())) {
-				if (targetAndParams == null || targetAndParams.length == 0) return (T) method.invoke(null);
-				else return (T) method.invoke(null, targetAndParams);
-			} else {
-				Objects.notNull(targetAndParams);
-				if (targetAndParams.length != method.getParameterCount() + 1) throw new NullPointerException(
-						"Non-static mathod invoking need 1 target object, and " + method.getParameterCount() + " arguments");
-				else {
-					if (Proxy.isProxyClass(targetAndParams[0].getClass())) return (T) Proxy.getInvocationHandler(
-							targetAndParams[0])
-							.invoke(targetAndParams[0],
-									method,
-									targetAndParams.length == 1 ? null : Arrays.copyOfRange(targetAndParams, 1,
-											targetAndParams.length));
-					else {
-						if (targetAndParams.length == 1) return (T) method.invoke(targetAndParams[0]);
-						else return (T) method.invoke(targetAndParams[0],
-								Arrays.copyOfRange(targetAndParams, 1, targetAndParams.length));
-					}
-				}
+	private static org.reflections.Reflections reflections(final String packagePrefix) {
+		return Instances.fetch(new Task.Callable<org.reflections.Reflections>() {
+			@Override
+			public org.reflections.Reflections call() {
+				FilterBuilder filterBuilder = new FilterBuilder().includePackage(null == packagePrefix ? DEFAULT_PACKAGE_PREFIX
+						: packagePrefix);
+				Collection<URL> urls = ClasspathHelper.forClassLoader();
+				Scanner methodScanner = new MethodAnnotationsScanner().filterResultsBy(filterBuilder);
+				Scanner subTypesScanner = new SubTypesScanner(false);
+				Configuration configuration = new ConfigurationBuilder().filterInputsBy(filterBuilder).setUrls(urls)
+						.addScanners(methodScanner, subTypesScanner);
+				return new org.reflections.Reflections(configuration);
 			}
-		} catch (Throwable e) {
-			throw Exceptions.unwrap(e);
-		} finally {
-			method.setAccessible(accessible);
-		}
-	}
-
-	public static <T> T invoke(String methodName, Object targetOrClass, ParameterInfo... params) throws Exception {
-		Objects.notEmpty(targetOrClass);
-		Class<?>[] paramClasses = parameterClasses(params);
-		Object[] paramValues = parameterValues(params);
-		Method method;
-		if (Class.class.equals(targetOrClass.getClass())) {// invoke static method
-			method = findMethod(((Class<?>) targetOrClass), methodName, paramClasses);
-			if (!Modifier.isStatic(method.getModifiers()))
-				throw new IllegalArgumentException("Non-static mathod invoking need Object target , not Class target.");
-		} else method = findMethod(targetOrClass.getClass(), methodName, paramClasses);
-		method.setAccessible(true);
-		boolean accessible = method.isAccessible();
-		try {
-			return invoke(method, paramValues);
-		} catch (Throwable e) {
-			throw Exceptions.unwrap(e);
-		} finally {
-			method.setAccessible(accessible);
-		}
-	}
-
-	public static Method findMethod(Class<?> targetClass, String methodName, Class<?>... parameterTypes) {
-		while (targetClass != null) {
-			try {
-				return targetClass.getDeclaredMethod(methodName, parameterTypes);
-			} catch (NoSuchMethodException e) {} catch (SecurityException e) {}
-			targetClass = targetClass.getSuperclass();
-		}
-		return null;
-	}
-
-	public static class MethodInfo extends Bean<MethodInfo> {
-		private static final long serialVersionUID = 7736704702258827973L;
-		private Class<?>[] parametersClasses;
-		private Class<?> returnClass;
-
-		public MethodInfo(Class<?>[] parametersClasses, Class<?> returnClass) {
-			super();
-			this.parametersClasses = parametersClasses;
-			this.returnClass = returnClass;
-		}
-
-		public Class<?>[] parametersClasses() {
-			return parametersClasses;
-		}
-
-		public Class<?> returnClass() {
-			return returnClass;
-		}
-	}
-
-	public static final class ParameterInfo extends Bean<ParameterInfo> {
-		private static final long serialVersionUID = -8834764434029866955L;
-		private Class<?> parameterClass;
-		private Object parameterValue;
-
-		private ParameterInfo(Class<?> parameterClass, Object parameterValue) {
-			super();
-			this.parameterClass = parameterClass;
-			this.parameterValue = parameterValue;
-		}
-
-		public Class<?> parameterClass() {
-			return parameterClass;
-		}
-
-		public Object parameterValue() {
-			return parameterValue;
-		}
-	}
-
-	public static ParameterInfo parameter(Object parameterValue, Class<?> parameterClass) {
-		return new ParameterInfo(parameterClass, parameterValue);
-	}
-
-	public static ParameterInfo parameter(Object parameterValue) {
-		if (null == parameterValue) throw new NullPointerException();
-		return new ParameterInfo(parameterValue.getClass(), parameterValue);
-	}
-
-	public static Class<?>[] parameterClasses(ParameterInfo... paramInfo) {
-		if (null == paramInfo || paramInfo.length == 0) return new Class<?>[0];
-		Class<?>[] r = new Class<?>[paramInfo.length];
-		for (int i = 0; i < paramInfo.length; i++)
-			r[i] = paramInfo[i].parameterClass;
-		return r;
-	}
-
-	public static Object[] parameterValues(ParameterInfo... paramInfo) {
-		if (null == paramInfo || paramInfo.length == 0) return new Object[0];
-		Object[] r = new Object[paramInfo.length];
-		for (int i = 0; i < paramInfo.length; i++)
-			r[i] = paramInfo[i].parameterValue;
-		return r;
-	}
-
-	public static <T> T construct(Class<T> clazz, ParameterInfo... paramInfo) {
-		if (null == paramInfo || paramInfo.length == 0) try {
-			return clazz.newInstance();
-		} catch (Exception ex) {
-			logger.error("Construction failure: default constructor error", Exceptions.unwrap(ex));
-			return null;
-		}
-		Constructor<T> constructor;
-		try {
-			constructor = clazz.getDeclaredConstructor(parameterClasses(paramInfo));
-		} catch (Exception ex) {
-			logger.error("Construction failure: constructor not defined", Exceptions.unwrap(ex));
-			return null;
-		}
-		boolean accessible = constructor.isAccessible();
-		try {
-			constructor.setAccessible(true);
-			return constructor.newInstance(parameterValues(paramInfo));
-		} catch (Exception ex) {
-			logger.error("Construction failure: error on constructing", Exceptions.unwrap(ex));
-			return null;
-		} finally {
-			constructor.setAccessible(accessible);
-		}
+		}, packagePrefix);
 	}
 
 	@SuppressWarnings("unchecked")
 	public static <T> Class<T> forClassName(String className) {
 		try {
-			return (Class<T>) Class.forName(className);
-		} catch (Throwable e) {
+			return (Class<T>) ClassUtils.getClass(className);
+		} catch (Exception e) {
 			return null;
 		}
 	}
 
 	@SuppressWarnings("unchecked")
-	public static <T> T construct(String className, ParameterInfo... paramInfo) {
-		return (T) construct(forClassName(className), paramInfo);
+	public static <T> T invoke(Object targetOrClass, String methodName, Object... parameters) throws Exception {
+		Objects.notEmpty(targetOrClass);
+		T result = Class.class.equals(targetOrClass.getClass()) ? (T) MethodUtils.invokeStaticMethod((Class<?>) targetOrClass,
+				methodName, parameters) : (T) MethodUtils.invokeMethod(targetOrClass, methodName, parameters);
+		return result;
+	}
+
+	public static <T> T construct(String className, Object... parameters) {
+		Class<T> clazz = forClassName(className);
+		return construct(clazz, parameters);
+	}
+
+	public static <T> T construct(final Class<T> cls, Object... parameters) {
+		final Class<?> parameterTypes[] = ClassUtils.toClass(parameters);
+		return construct(cls, parameters, parameterTypes);
+	}
+
+	public static <T> T construct(final Class<T> cls, Object[] args, Class<?>[] parameterTypes) {
+		final Constructor<T> ctor = getMatchingConstructors(cls, parameterTypes);
+		if (ctor == null) {
+			logger.error("No such constructor on object: " + cls.getName());
+			return null;
+		}
+		if (!ctor.isAccessible()) ctor.setAccessible(true);
+		try {
+			return ctor.newInstance(args);
+		} catch (Exception e) {
+			logger.error("Construction failure", Exceptions.unwrap(e));
+			return null;
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	public static <T> Constructor<T> getMatchingConstructors(final Class<T> cls, final Class<?>... parameterTypes) {
+		if (cls == null) return null;
+		try {
+			return cls.getDeclaredConstructor(parameterTypes);
+		} catch (final NoSuchMethodException e) {}
+		Constructor<T> result = null;
+		for (Constructor<?> ctor : cls.getDeclaredConstructors())
+			if (ClassUtils.isAssignable(parameterTypes, ctor.getParameterTypes(), true) && ctor != null) {
+				MemberUtils.setAccessibleWorkaround(ctor);
+				if (result == null
+						|| MemberUtils.compareParameterTypes(ctor.getParameterTypes(), result.getParameterTypes(),
+								parameterTypes) < 0) {
+					result = (Constructor<T>) ctor;
+				}
+			}
+		return result;
 	}
 
 	/**

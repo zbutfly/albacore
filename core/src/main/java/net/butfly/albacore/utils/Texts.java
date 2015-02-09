@@ -2,6 +2,7 @@ package net.butfly.albacore.utils;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,7 +31,29 @@ public final class Texts extends Utils {
 		return bts;
 	}
 
-	private final static ThreadLocal<Map<String, DateFormat>> DATE_CACHE = new ThreadLocal<Map<String, DateFormat>>() {
+	public static byte[] long2bytes(long... longValue) {
+		if (null == longValue) return null;
+		byte[] b = new byte[longValue.length * 8];
+		for (int i = 0; i < longValue.length; i++) {
+			long l = longValue[i];
+			for (int j = 0; j < 8; j++) {
+				b[i * 8 + j] = (byte) l;
+				l = l >> 8;
+			}
+		}
+		return b;
+	}
+
+	public static long bytes2long(byte[] bytes) {
+		Objects.notNull(bytes);
+		if (bytes.length < 8) bytes = Arrays.copyOf(bytes, 8);
+		long l = 0L;
+		for (int i = 0; i < 8; i++)
+			l += bytes[i] << (i * 8);
+		return l;
+	}
+
+	private static final ThreadLocal<Map<String, DateFormat>> DATE_CACHE = new ThreadLocal<Map<String, DateFormat>>() {
 		protected Map<String, DateFormat> initialValue() {
 			return new HashMap<String, DateFormat>();
 		}

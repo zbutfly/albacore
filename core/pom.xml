@@ -77,6 +77,7 @@
 			<scope>runtime</scope>
 		</dependency>
 		<!-- logging -->
+		<!-- maybe need log4j2 upgrading -->
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
@@ -94,22 +95,17 @@
 			<version>1.7.7</version>
 			<scope>runtime</scope>
 		</dependency>
-		<!-- <dependency> -->
-		<!-- <groupId>org.apache.logging.log4j</groupId> -->
-		<!-- <artifactId>log4j-slf4j-impl</artifactId> -->
-		<!-- <version>2.0.3-SNAPSHOT</version> -->
-		<!-- </dependency> -->
-		<!-- <dependency> -->
-		<!-- <groupId>org.apache.logging.log4j</groupId> -->
-		<!-- <artifactId>log4j-core</artifactId> -->
-		<!-- <version>2.1</version> -->
-		<!-- </dependency> -->
 		<!-- concurrent -->
 		<dependency>
 			<groupId>com.lmax</groupId>
 			<artifactId>disruptor</artifactId>
 			<version>3.3.0</version>
 			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>3.3.2</version>
 		</dependency>
 	</dependencies>
 </project>

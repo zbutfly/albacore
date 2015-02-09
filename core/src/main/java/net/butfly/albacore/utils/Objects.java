@@ -13,6 +13,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import net.butfly.albacore.exception.NotImplementedException;
 import net.butfly.albacore.support.Bean;
 import net.butfly.albacore.support.Beans;
 import net.butfly.albacore.utils.imports.meta.MetaObject;
@@ -20,7 +21,6 @@ import net.butfly.albacore.utils.imports.meta.factory.DefaultObjectFactory;
 import net.butfly.albacore.utils.imports.meta.factory.ObjectFactory;
 import net.butfly.albacore.utils.imports.meta.wrapper.DefaultObjectWrapperFactory;
 import net.butfly.albacore.utils.imports.meta.wrapper.ObjectWrapperFactory;
-import net.butfly.albacore.exception.NotImplementedException;
 
 import com.google.common.base.Defaults;
 
@@ -159,7 +159,7 @@ public class Objects extends Utils {
 				return Defaults.defaultValue(dstClass);
 			}
 		case NUMBER:
-			NumberCategory srcNumCat = NumberCategory.whichNumber(srcClass);
+			NumberCategory srcNumCat = NumberCategory.classify(srcClass);
 			switch (dstCat) {
 			case NUMBER:
 				// TODO: different number type casting!
@@ -167,22 +167,22 @@ public class Objects extends Utils {
 			case ENUM:
 				return Enums.parse((Class<Enum>) dstClass, byte.class.cast(srcNumCat.primitiveClass.cast(value)));
 			case STRING:
-				return srcNumCat.numberClass.cast(value).toString();
+				return srcNumCat.boxedClass.cast(value).toString();
 			default:
 				return Defaults.defaultValue(dstClass);
 			}
 		case STRING:
 			switch (dstCat) {
 			case NUMBER:
-				NumberCategory dstNumCat = NumberCategory.whichNumber(dstClass);
+				NumberCategory dstNumCat = NumberCategory.classify(dstClass);
 				Method vof;
 				try {
-					vof = dstNumCat.numberClass.getMethod("valueOf", String.class);
+					vof = dstNumCat.boxedClass.getMethod("valueOf", String.class);
 				} catch (Exception e) {
 					return Defaults.defaultValue(dstClass);
 				}
 				if (null == vof || !Modifier.isStatic(vof.getModifiers()))
-					throw new IllegalArgumentException("Could not parse Number class: " + dstNumCat.numberClass.getName());
+					throw new IllegalArgumentException("Could not parse Number class: " + dstNumCat.boxedClass.getName());
 				try {
 					return vof.invoke(null, value);
 				} catch (Exception e) {
@@ -197,27 +197,27 @@ public class Objects extends Utils {
 			default:
 				return Defaults.defaultValue(dstClass);
 			}
-		case OBJECT_MAP:
+		case MAP:
 			switch (dstCat) {
 			case STRING:
 				return value.toString();
-			case OBJECT_MAP:
+			case MAP:
 				return clone((Beans) value, (Class<? extends Beans>) dstClass);
 			default:
 				return Defaults.defaultValue(dstClass);
 			}
-		case ORIGINAL_OBJ:
+		case RAW_OBJ:
 			switch (dstCat) {
 			case STRING:
 				return value.toString();
-			case ORIGINAL_OBJ:
+			case RAW_OBJ:
 				return value;
 			default:
 				return Defaults.defaultValue(dstClass);
 			}
-		case ARRAY_COLLECTION:
+		case LIST:
 			switch (dstCat) {
-			case ARRAY_COLLECTION:
+			case LIST:
 				if (srcClass.isArray()) {
 					int len = Array.getLength(value);
 					if (dstClass.isArray()) { // source is an Array
@@ -374,7 +374,7 @@ public class Objects extends Utils {
 	}
 
 	private enum PrimaryCategory {
-		STRING, NUMBER, ARRAY_COLLECTION, OBJECT_MAP, ORIGINAL_OBJ, ENUM, BOOL
+		RAW_OBJ, STRING, NUMBER, BOOL, LIST, MAP, ENUM
 	}
 
 	private static final Set<Class<?>> ALL_NUMBER_CLASSES = new HashSet<Class<?>>();
@@ -383,37 +383,22 @@ public class Objects extends Utils {
 		INT(int.class, Integer.class), LONG(long.class, Long.class), BYTE(byte.class, Byte.class), SHORT(short.class,
 				Short.class), FLOAT(float.class, Float.class), DOUBLE(double.class, Double.class), NUMBER(null, null);
 		private Class<?> primitiveClass;
-		private Class<? extends Number> numberClass;
+		private Class<? extends Number> boxedClass;
 
-		// private Method valueMethod;
-
-		NumberCategory(Class<?> primitiveClass, Class<? extends Number> numberClass) {
+		NumberCategory(Class<?> primitiveClass, Class<? extends Number> boxedClass) {
 			this.primitiveClass = primitiveClass;
-			this.numberClass = numberClass;
-			// if (this.numberClass != null && this.primitiveClass != null)
-			// for (Method m : numberClass.getDeclaredMethods())
-			// if (m.getName().endsWith("Value") && m.getParameterTypes().length == 0
-			// && m.getReturnType().equals(this.primitiveClass)) {
-			// this.valueMethod = m;
-			// break;
-			// }
-
-			if (primitiveClass != null) add(primitiveClass);
-			if (numberClass != null) add(numberClass);
-		}
-
-		private void add(Class<?> cl) {
-			if (null != cl) ALL_NUMBER_CLASSES.add(cl);
+			this.boxedClass = boxedClass;
+			if (primitiveClass != null) ALL_NUMBER_CLASSES.add(primitiveClass);
+			if (boxedClass != null) ALL_NUMBER_CLASSES.add(boxedClass);
 		}
 
 		static boolean isNumber(Class<?> clazz) {
 			return ALL_NUMBER_CLASSES.contains(clazz);
 		}
 
-		static NumberCategory whichNumber(Class<?> clazz) {
-			for (NumberCategory cat : NumberCategory.values()) {
-				if (cat.primitiveClass.equals(clazz) || cat.numberClass.isAssignableFrom(clazz)) return cat;
-			}
+		static NumberCategory classify(Class<?> clazz) {
+			for (NumberCategory cat : NumberCategory.values())
+				if (cat.primitiveClass.equals(clazz) || cat.boxedClass.isAssignableFrom(clazz)) return cat;
 			return null;
 		}
 	}
@@ -425,9 +410,9 @@ public class Objects extends Utils {
 			if (NumberCategory.isNumber(clazz)) return PrimaryCategory.NUMBER;
 			if (String.class.equals(clazz) || char.class.equals(clazz) || Character.class.equals(clazz))
 				return PrimaryCategory.STRING;
-			if (clazz.isArray() || Iterable.class.isAssignableFrom(clazz)) return PrimaryCategory.ARRAY_COLLECTION;
-			if (Map.class.isAssignableFrom(clazz) || Beans.class.isAssignableFrom(clazz)) return PrimaryCategory.OBJECT_MAP;
-			return PrimaryCategory.ORIGINAL_OBJ;
+			if (clazz.isArray() || Iterable.class.isAssignableFrom(clazz)) return PrimaryCategory.LIST;
+			if (Map.class.isAssignableFrom(clazz) || Beans.class.isAssignableFrom(clazz)) return PrimaryCategory.MAP;
+			return PrimaryCategory.RAW_OBJ;
 		}
 
 		static Class<?> getIterableClass(Class<?> clazz) {
@@ -435,7 +420,8 @@ public class Objects extends Utils {
 			if (Iterable.class.isAssignableFrom(clazz)) {
 				Class<?> cl = Generics.getGenericParamClass(clazz, Iterable.class, "T");
 				return null == cl ? Object.class : cl;
-			} else return null;
+			}
+			return null;
 		}
 	}
 
@@ -448,9 +434,7 @@ public class Objects extends Utils {
 		Class<?> targetClass = target.getClass();
 		if (String.class.equals(targetClass)) return target.toString().trim().length() == 0;
 		if (targetClass.isArray()) return Array.getLength(target) == 0;
-		if (Collection.class.isAssignableFrom(targetClass)) try {
-			return ((Integer) Reflections.invoke("size", target)) == 0;
-		} catch (Exception e) {}
+		if (Collection.class.isAssignableFrom(targetClass)) return ((Collection) target).size() == 0;
 		return false;
 	}
 

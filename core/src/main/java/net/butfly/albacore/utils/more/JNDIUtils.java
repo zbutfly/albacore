@@ -26,7 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class JNDIUtils extends Utils {
-	protected final static Logger logger = LoggerFactory.getLogger(JNDIUtils.class);
+	protected static final Logger logger = LoggerFactory.getLogger(JNDIUtils.class);
 
 	public static void attachContext(String contextFileLocation) {
 		try {
