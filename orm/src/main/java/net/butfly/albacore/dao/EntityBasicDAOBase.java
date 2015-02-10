@@ -120,7 +120,7 @@ public class EntityBasicDAOBase extends DAOBase implements EntityBasicDAO {
 		if (page.getTotal() < 0) page.setTotal(this.count(sql, criteria));
 		Class<K> keyClass = Entities.getKeyClass(sql.entityClass());
 		if (page.getTotal() == 0) return Generics.toArray(new ArrayList<K>(), keyClass);
-		OrderedRowBounds rb = new OrderedRowBounds(page.getStart(), page.getSize(), criteria.getOrderFields());
+		OrderedRowBounds rb = new OrderedRowBounds(page.getOffset(), page.getLimit(), criteria.getOrderFields());
 		List<K> list = this.template.selectList(sql.verb(Verb.select).toCriteriaString(), criteria, rb);
 		// XXX: optimize
 		return Generics.toArray(list, keyClass);

@@ -94,7 +94,7 @@ public abstract class MongoDaoBase<E extends MongoEntity> extends DAOBase implem
 	@Override
 	public E[] select(Query<E> query, Page page) {
 		page.setTotal((int) query.countAll());
-		return query.offset(page.getStart()).limit(page.getSize()).asList()
+		return query.offset(page.getOffset()).limit(page.getLimit()).asList()
 				.toArray((E[]) Array.newInstance(query.getEntityClass(), 0));
 	}
 
