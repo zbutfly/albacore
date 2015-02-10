@@ -109,8 +109,13 @@ public abstract class MongoDaoBase<E extends MongoEntity> extends DAOBase implem
 
 	protected UpdateOperations<E> createUpdateOptsFromEntity(E entity) {
 		UpdateOperations<E> opts = (UpdateOperations<E>) this.context.store.createUpdateOperations(entityClass);
-		for (MappedField f : this.context.getAllFields(entity.getClass()))
-			opts.add(f.getNameToStore(), f.getFieldValue(entity), false);
+		for (MappedField f : this.context.getAllFields(entity.getClass())) {
+			String name = f.getNameToStore();
+			if (Mapper.ID_KEY.equals(name)) continue;
+			Object value = f.getFieldValue(entity);
+			if (null == value || (String.class.equals(value.getClass()) && "".equals(value))) continue;
+			opts.set(name, value);
+		}
 		return opts;
 	}
 
