@@ -125,10 +125,12 @@ public final class Page extends Bean<Page> {
 		return last;
 	}
 
+	@Deprecated
 	public int getStart() {
 		return start;
 	}
 
+	@Deprecated
 	public int getSize() {
 		return size;
 	}
@@ -139,5 +141,13 @@ public final class Page extends Bean<Page> {
 
 	public boolean empty() {
 		return size > 0;
+	}
+
+	public int getOffset() {
+		return start;
+	}
+
+	public int getLimit() {
+		return size;
 	}
 }
