@@ -1,6 +1,6 @@
-#albacore
+# Description
 ------
-A general framework for business logic development. It concerns about phase in whole lifecycle of an implementation of complex business logic, and is composed by components include:
+Albacore is a general framework for business logic development. It concerns about phase in whole lifecycle of an implementation of complex business logic, and is composed by components include:
 ##core
 Basic framework, base classes and utils for albacore depended by other components. Including:
 - exceptions
