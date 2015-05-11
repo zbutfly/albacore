@@ -74,9 +74,7 @@
 					<execution>
 						<id>attach-sources</id>
 						<phase>package</phase>
-						<goals>
-							<goal>jar-no-fork</goal>
-						</goals>
+						<goals><goal>jar-no-fork</goal></goals>
 					</execution>
 				</executions>
 			</plugin>
@@ -95,12 +93,12 @@
 				</configuration>
 			</plugin>
 			<plugin>
-				<artifactId>maven-compiler-plugin</artifactId>
+				<artifactId>maven-resources-plugin</artifactId>
 				<executions>
 					<execution>
-						<id>default-testCompile</id>
+						<id>default-testResources</id>
 						<goals>
-							<goal>testCompile</goal>
+							<goal>testResources</goal>
 						</goals>
 						<phase>compile</phase>
 					</execution>
