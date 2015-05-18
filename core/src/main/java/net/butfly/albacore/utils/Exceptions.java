@@ -60,7 +60,7 @@ public class Exceptions extends Utils {
 	public static <T extends Exception> T wrap(Throwable ex, Class<T> expect) {
 		ex = unwrap(ex);
 		if (expect.isAssignableFrom(ex.getClass())) return (T) ex;
-		return Reflections.construct(expect, ex, Throwable.class);
+		return Reflections.construct(expect, ex);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -68,7 +68,7 @@ public class Exceptions extends Utils {
 		if (null == message) return wrap(ex, expect);
 		ex = unwrap(ex);
 		if (expect.isAssignableFrom(ex.getClass())) return (T) ex;
-		return Reflections.construct(expect, message, String.class, ex, Throwable.class);
+		return Reflections.construct(expect, message, ex);
 	}
 
 	public static Exception unwrap(Throwable ex) {
@@ -81,8 +81,8 @@ public class Exceptions extends Utils {
 			wrapperClasses.put(Exception.class, RuntimeException.class.getMethod("getCause"));
 			wrapperClasses.put(RuntimeException.class, RuntimeException.class.getMethod("getCause"));
 			wrapperClasses.put(ExecutionException.class, ExecutionException.class.getMethod("getCause"));
-			wrapperClasses
-					.put(InvocationTargetException.class, InvocationTargetException.class.getMethod("getTargetException"));
+			wrapperClasses.put(InvocationTargetException.class,
+					InvocationTargetException.class.getMethod("getTargetException"));
 			wrapperClasses.put(UndeclaredThrowableException.class,
 					UndeclaredThrowableException.class.getMethod("getUndeclaredThrowable"));
 		} catch (Exception e) {
