@@ -41,7 +41,7 @@ public class ExecutorInterceptor extends BaseInterceptor {
 		MappedStatement stat = (MappedStatement) invocation.getArgs()[0];
 		if (stat.getSqlCommandType() == SqlCommandType.INSERT) {
 			String sid = stat.getId();
-			if (!HACKED_STAT_ID_POOL.contains(sid)) {
+			if (!HACKED_STAT_ID_POOL.contains(sid) && null != keyGenerator) {
 				HACKED_STAT_ID_POOL.add(sid);
 				Reflections.set(stat, "keyGenerator", keyGenerator);
 				logger.trace("KeyGenerator is hacked as [" + keyGenerator.getClass().getName() + "] for statement [" + sid
@@ -66,8 +66,10 @@ public class ExecutorInterceptor extends BaseInterceptor {
 	public void setProperties(Properties properties) {
 		String prop = properties.getProperty("timestampProps");
 		this.timeProps = null == prop ? new String[0] : prop.split(",");
-		try {
-			this.keyGenerator = Reflections.construct(properties.getProperty("keyGenerator"));
+		String keyGeneratorClassName = properties.getProperty("keyGenerator");
+		if (null == keyGeneratorClassName) this.keyGenerator = null;
+		else try {
+			this.keyGenerator = Reflections.construct(keyGeneratorClassName);
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
