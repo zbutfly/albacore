@@ -18,7 +18,7 @@ import org.mybatis.spring.SqlSessionTemplate;
 
 public class EntityBasicDAOBase extends DAOBase implements EntityBasicDAO {
 	private static final long serialVersionUID = -2472419986526183766L;
-	private SqlSessionTemplate template;
+	protected SqlSessionTemplate template;
 
 	public void setTemplate(SqlSessionTemplate template) {
 		this.template = template;
