@@ -50,7 +50,7 @@ public class Objects extends Utils {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static <D extends Beans<D>> D[] copy(Beans[] src, Class<D> clazz) {
+	public static <D extends Beans<?>> D[] copy(Beans[] src, Class<D> clazz) {
 		if (null == src) return null;
 		D[] r = (D[]) Array.newInstance(clazz, src.length);
 		for (int i = 0; i < src.length; i++) {
