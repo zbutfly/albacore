@@ -89,13 +89,7 @@
 			<version>1.7.12</version>
 			<scope>runtime</scope>
 		</dependency>
-		<!-- concurrent -->
-		<dependency>
-			<groupId>com.lmax</groupId>
-			<artifactId>disruptor</artifactId>
-			<version>3.3.0</version>
-			<scope>test</scope>
-		</dependency>
+		<!-- commons -->
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>

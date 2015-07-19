@@ -2,9 +2,9 @@ package net.butfly.albacore.utils;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 import net.butfly.albacore.exception.SystemException;
-import net.butfly.albacore.utils.async.Task;
 import net.butfly.albacore.utils.key.IdGenerator;
 import net.butfly.albacore.utils.key.ObjectIdGenerator;
 
@@ -12,7 +12,7 @@ public class Keys extends Utils {
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <K> K key(final Class<K> keyClass) {
 		Class<? extends IdGenerator> genClass = Instances
-				.fetch(new Task.Callable<Map<Class<?>, Class<? extends IdGenerator>>>() {
+				.fetch(new Callable<Map<Class<?>, Class<? extends IdGenerator>>>() {
 					@Override
 					public Map<Class<?>, Class<? extends IdGenerator>> call() {
 						Map<Class<?>, Class<? extends IdGenerator>> map = new HashMap<Class<?>, Class<? extends IdGenerator>>();

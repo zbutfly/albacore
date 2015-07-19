@@ -22,6 +22,7 @@
 	</properties>
 	<modules>
 		<module>core</module>
+		<module>async</module>
 		<module>frame</module>
 		<module>orm</module>
 		<module>orm-nosql</module>
