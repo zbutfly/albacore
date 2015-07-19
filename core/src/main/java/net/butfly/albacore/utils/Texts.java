@@ -7,6 +7,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 public final class Texts extends Utils {
+	public static boolean isEmpty(String str) {
+		return null == str || str.trim().length() > 0;
+	}
+
 	public static String byte2hex(byte[] data) {
 		if (null == data) return null;
 		StringBuffer sb = new StringBuffer();
