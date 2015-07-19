@@ -13,8 +13,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import net.butfly.albacore.utils.async.Task;
+import java.util.concurrent.Callable;
 
 @SuppressWarnings("unchecked")
 public final class Generics extends Utils {
@@ -34,7 +33,7 @@ public final class Generics extends Utils {
 
 	public static <E> Class<E> getGenericParamClass(final Class<?> childClass, final Class<?> parentClass,
 			final String paramName) {
-		return Instances.fetch(new Task.Callable<Class<E>>() {
+		return Instances.fetch(new Callable<Class<E>>() {
 			@Override
 			public Class<E> call() {
 				Map<TypeVariable<Class<?>>, Type> map = getTypeVariableMap(childClass);
@@ -140,7 +139,7 @@ public final class Generics extends Utils {
 	}
 
 	private static Map<TypeVariable<Class<?>>, Type> getTypeVariableMap(final Class<?> clazz) {
-		return Instances.fetch(new Task.Callable<Map<TypeVariable<Class<?>>, Type>>() {
+		return Instances.fetch(new Callable<Map<TypeVariable<Class<?>>, Type>>() {
 			@Override
 			public Map<TypeVariable<Class<?>>, Type> call() {
 				Map<TypeVariable<Class<?>>, Type> typeVariableMap = new HashMap<TypeVariable<Class<?>>, Type>();
