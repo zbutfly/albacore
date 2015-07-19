@@ -1,22 +1,23 @@
+package com.lmax;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicLong;
 
-import com.lmax.disruptor.BlockingWaitStrategy;
 import com.lmax.disruptor.EventFactory;
+import com.lmax.disruptor.EventHandler;
 import com.lmax.disruptor.RingBuffer;
-import com.lmax.disruptor.WorkHandler;
+import com.lmax.disruptor.SleepingWaitStrategy;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
 
 //https://github.com/jasonk000/examples/tree/master/executors/src/main/java
-//http://fasterjava.blogspot.com/2014/09/writing-non-blocking-executor.html
-public class DisruptorTest {
+public class DisruptorTest2 {
 
 	public static class PiJob {
 		public double result;
 		public int sliceNr;
 		public int numIter;
+		public int partionId;
 
 		public void calculatePi() {
 			double acc = 0.0;
@@ -36,21 +37,41 @@ public class DisruptorTest {
 		}
 	}
 
-	public static class PiEventProcessor implements WorkHandler<PiJob> {
+	public static class PiEventProcessor implements EventHandler<PiJob> {
+
+		private int partionId;
+
+		public PiEventProcessor(int partionId) {
+			this.partionId = partionId;
+		}
+
 		@Override
-		public void onEvent(PiJob event) throws Exception {
-			event.calculatePi();
+		public void onEvent(PiJob event, long sequence, boolean isEndOfBatch) throws Exception {
+			if (partionId == event.partionId) {
+				event.calculatePi();
+			}
 		}
 	}
 
-	public static class PiResultReclaimer implements WorkHandler<PiJob> {
+	public static class PiResultReclaimer implements EventHandler<PiJob> {
 		double result;
-		public AtomicLong seq = new AtomicLong(0);
+		public long seq = 0;
+		private final int numSlice;
+		final CountDownLatch latch;
+
+		public PiResultReclaimer(int numSlice) {
+			this.numSlice = numSlice;
+			latch = new CountDownLatch(1);
+		}
 
 		@Override
-		public void onEvent(PiJob event) throws Exception {
+		public void onEvent(PiJob event, long sequence, boolean isEndOfBatch) throws Exception {
 			result += event.result;
-			seq.incrementAndGet();
+			++seq;
+
+			if (seq >= numSlice) {
+				latch.countDown();
+			}
 		}
 	}
 
@@ -58,32 +79,35 @@ public class DisruptorTest {
 	public long run(int numTH, int numSlice, int numIter) throws InterruptedException {
 		PiEventFac fac = new PiEventFac();
 		ExecutorService executor = Executors.newCachedThreadPool();
-		Disruptor<PiJob> disruptor = new Disruptor<PiJob>(fac, 16384, executor, ProducerType.SINGLE, new BlockingWaitStrategy());
+		Disruptor<PiJob> disruptor = new Disruptor<PiJob>(fac, 16384, executor, ProducerType.SINGLE, new SleepingWaitStrategy());
 		PiEventProcessor procs[] = new PiEventProcessor[numTH];
-		PiResultReclaimer res = new PiResultReclaimer();
+		PiResultReclaimer res = new PiResultReclaimer(numSlice);
 
 		for (int i = 0; i < procs.length; i++) {
-			procs[i] = new PiEventProcessor();
+			procs[i] = new PiEventProcessor(i);
 		}
 
-		disruptor.handleEventsWithWorkerPool(procs).thenHandleEventsWithWorkerPool(res);
+		disruptor.handleEventsWith(procs).then(res);
 
 		disruptor.start();
 
 		final RingBuffer<PiJob> ringBuffer = disruptor.getRingBuffer();
 		long tim = System.currentTimeMillis();
+		int partionId = 0;
 		for (int i = 0; i < numSlice; i++) {
 			final long seq = ringBuffer.next();
 			final PiJob piJob = ringBuffer.get(seq);
 			piJob.numIter = numIter;
 			piJob.sliceNr = i;
 			piJob.result = 0;
+			piJob.partionId = partionId;
 			ringBuffer.publish(seq);
+
+			partionId = (partionId == (numTH - 1)) ? 0 : partionId + 1;
 		}
-		while (res.seq.get() < numSlice) {
-			Thread.sleep(1);
-			// spin
-		}
+
+		res.latch.await();
+
 		long timTest = System.currentTimeMillis() - tim;
 		System.out.println(numTH + ": tim: " + timTest + " Pi: " + res.result);
 
@@ -93,7 +117,7 @@ public class DisruptorTest {
 	}
 
 	public static void main(String arg[]) throws InterruptedException {
-		final DisruptorTest disruptorTest = new DisruptorTest();
+		final DisruptorTest2 disruptorTest = new DisruptorTest2();
 		int numSlice = 1000000;
 		int numIter = 100;
 
@@ -113,4 +137,5 @@ public class DisruptorTest {
 			System.out.println(re);
 		}
 	}
+
 }

@@ -6,10 +6,10 @@
 		<artifactId>albacore</artifactId>
 		<version>3.0.0-SNAPSHOT</version>
 	</parent>
-	<artifactId>albacore-test</artifactId>
-	<name>albacore-test</name>
+	<artifactId>albacore-async</artifactId>
+	<name>albacore-async</name>
 	<build>
-		<finalName>albacore-test</finalName>
+		<finalName>albacore-async</finalName>
 	</build>
 	<dependencies>
 		<dependency>
@@ -17,25 +17,17 @@
 			<artifactId>albacore-core</artifactId>
 			<version>${deps.version.albacore}</version>
 		</dependency>
+		<!-- concurrent -->
 		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-context</artifactId>
-			<version>${deps.version.spring}</version>
+			<groupId>com.lmax</groupId>
+			<artifactId>disruptor</artifactId>
+			<version>3.3.0</version>
+			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-jdbc</artifactId>
-			<version>${deps.version.spring}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.aspectj</groupId>
-			<artifactId>aspectjweaver</artifactId>
-			<version>1.6.12</version>
-		</dependency>
-		<dependency>
-			<groupId>directory-naming</groupId>
-			<artifactId>naming-java</artifactId>
-			<version>0.8</version>
+			<groupId>kilim</groupId>
+			<artifactId>kilim</artifactId>
+			<version>1.0</version>
 		</dependency>
 	</dependencies>
 </project>
