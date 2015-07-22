@@ -40,7 +40,7 @@ public class Objects extends Utils {
 		} catch (Exception ex) {
 			throw new RuntimeException("Failure create an instance for class: " + dstClass.getName());
 		}
-		copy(dst, src, cloneNull);
+		copy(src, dst, cloneNull);
 		return dst;
 	}
 
@@ -80,8 +80,8 @@ public class Objects extends Utils {
 		MetaObject meta = MetaObject.forObject(target, DEFAULT_OBJECT_FACTORY, DEFAULT_OBJECT_WRAPPER_FACTORY);
 		if (null == target) return meta;
 		while (!meta.isMetaNull() && Proxy.isProxyClass(meta.getOriginalClass()))
-			if (meta.hasGetter("h")) meta = MetaObject.forObject(meta.getValue("h"), DEFAULT_OBJECT_FACTORY,
-					DEFAULT_OBJECT_WRAPPER_FACTORY);
+			if (meta.hasGetter("h"))
+				meta = MetaObject.forObject(meta.getValue("h"), DEFAULT_OBJECT_FACTORY, DEFAULT_OBJECT_WRAPPER_FACTORY);
 			else if (meta.hasGetter("target"))
 				meta = MetaObject.forObject(meta.getValue("target"), DEFAULT_OBJECT_FACTORY, DEFAULT_OBJECT_WRAPPER_FACTORY);
 		return meta;
@@ -238,7 +238,9 @@ public class Objects extends Utils {
 						return dst;
 					} else return Defaults.defaultValue(dstClass);
 				} else {
-					if (Collection.class.isAssignableFrom(srcClass)) { // source is a Collection
+					if (Collection.class.isAssignableFrom(srcClass)) { // source
+																		// is a
+																		// Collection
 						Collection co = (Collection) value;
 						Iterator it = co.iterator();
 						int size = co.size();
@@ -440,5 +442,10 @@ public class Objects extends Utils {
 
 	public static void notEmpty(Object target) {
 		if (isEmpty(target)) throw new IllegalArgumentException("Target should not be empty.");
+	}
+
+	@SuppressWarnings("unchecked")
+	public <T> T[] junction(T[]... arrays) {
+		return null;
 	}
 }
