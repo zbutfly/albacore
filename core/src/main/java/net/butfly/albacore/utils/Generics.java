@@ -13,7 +13,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Callable;
+
+import net.butfly.albacore.utils.async.Task;
 
 @SuppressWarnings("unchecked")
 public final class Generics extends Utils {
@@ -33,7 +34,7 @@ public final class Generics extends Utils {
 
 	public static <E> Class<E> getGenericParamClass(final Class<?> childClass, final Class<?> parentClass,
 			final String paramName) {
-		return Instances.fetch(new Callable<Class<E>>() {
+		return Instances.fetch(new Task.Callable<Class<E>>() {
 			@Override
 			public Class<E> call() {
 				Map<TypeVariable<Class<?>>, Type> map = getTypeVariableMap(childClass);
@@ -139,14 +140,14 @@ public final class Generics extends Utils {
 	}
 
 	private static Map<TypeVariable<Class<?>>, Type> getTypeVariableMap(final Class<?> clazz) {
-		return Instances.fetch(new Callable<Map<TypeVariable<Class<?>>, Type>>() {
+		return Instances.fetch(new Task.Callable<Map<TypeVariable<Class<?>>, Type>>() {
 			@Override
 			public Map<TypeVariable<Class<?>>, Type> call() {
 				Map<TypeVariable<Class<?>>, Type> typeVariableMap = new HashMap<TypeVariable<Class<?>>, Type>();
 				extractTypeVariablesFromGenericInterfaces(clazz.getGenericInterfaces(), typeVariableMap);
 				Type genericType = clazz.getGenericSuperclass();
-				for (Class<?> type = clazz.getSuperclass(); type != null && !(java.lang.Object.class).equals(type); type = type
-						.getSuperclass()) {
+				for (Class<?> type = clazz.getSuperclass(); type != null
+						&& !(java.lang.Object.class).equals(type); type = type.getSuperclass()) {
 					if (genericType instanceof ParameterizedType) {
 						ParameterizedType pt = (ParameterizedType) genericType;
 						populateTypeMapFromParameterizedType(pt, typeVariableMap);
@@ -194,7 +195,13 @@ public final class Generics extends Utils {
 	}
 
 	public static <E> E[] toArray(List<E> list, Class<E> clazz) {
-		if (null == list) return (E[]) Array.newInstance(clazz, 0);
+		if (null == list || list.isEmpty()) return (E[]) Array.newInstance(clazz, 0);
 		return list.toArray((E[]) Array.newInstance(clazz, list.size()));
+	}
+
+	public static <E> E[] toArray(List<E> list) {
+		if (null == list) throw new IllegalArgumentException("Could not determine class of element for null list argument.");
+		Class<E> clazz = Generics.getGenericParamClass(list.getClass(), List.class, "E");
+		return toArray(list, clazz);
 	}
 }

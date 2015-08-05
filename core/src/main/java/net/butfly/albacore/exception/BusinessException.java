@@ -1,5 +1,9 @@
 package net.butfly.albacore.exception;
 
+import java.io.PrintStream;
+
+import net.butfly.albacore.utils.Exceptions;
+
 public class BusinessException extends Exception {
 	private static final long serialVersionUID = -7617925338905953846L;
 	private String code;
@@ -26,5 +30,9 @@ public class BusinessException extends Exception {
 	public BusinessException(String code, Throwable cause) {
 		super(cause);
 		this.code = code;
+	}
+
+	public void printStackTrace(PrintStream s) {
+		Exceptions.printStackTrace(this, this.code, s);
 	}
 }

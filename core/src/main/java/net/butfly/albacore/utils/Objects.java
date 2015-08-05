@@ -238,9 +238,8 @@ public class Objects extends Utils {
 						return dst;
 					} else return Defaults.defaultValue(dstClass);
 				} else {
-					if (Collection.class.isAssignableFrom(srcClass)) { // source
-																		// is a
-																		// Collection
+					if (Collection.class.isAssignableFrom(srcClass)) {
+						// source is a Collection
 						Collection co = (Collection) value;
 						Iterator it = co.iterator();
 						int size = co.size();
@@ -446,6 +445,15 @@ public class Objects extends Utils {
 
 	@SuppressWarnings("unchecked")
 	public <T> T[] junction(T[]... arrays) {
-		return null;
+		int len = 0;
+		for (T[] a : arrays)
+			len += a.length;
+		T[] result = (T[]) Array.newInstance(arrays.getClass().getComponentType().getComponentType(), len);
+		int pos = 0;
+		for (T[] a : arrays) {
+			System.arraycopy(a, 0, result, pos, a.length);
+			pos += a.length;
+		}
+		return result;
 	}
 }

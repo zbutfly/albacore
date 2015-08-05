@@ -10,7 +10,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.Callable;
 
 import org.apache.commons.lang3.ClassUtils;
 import org.apache.commons.lang3.reflect.MethodUtils;
@@ -24,6 +23,7 @@ import org.reflections.util.FilterBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.butfly.albacore.utils.async.Task;
 import net.butfly.albacore.utils.imports.meta.MetaObject;
 
 public final class Reflections extends Utils {
@@ -37,7 +37,7 @@ public final class Reflections extends Utils {
 	}
 
 	private static org.reflections.Reflections reflections(final String packagePrefix) {
-		return Instances.fetch(new Callable<org.reflections.Reflections>() {
+		return Instances.fetch(new Task.Callable<org.reflections.Reflections>() {
 			@Override
 			public org.reflections.Reflections call() {
 				FilterBuilder filterBuilder = new FilterBuilder().includePackage(null == packagePrefix ? DEFAULT_PACKAGE_PREFIX

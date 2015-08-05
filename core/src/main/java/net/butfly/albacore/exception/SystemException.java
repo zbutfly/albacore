@@ -1,5 +1,9 @@
 package net.butfly.albacore.exception;
 
+import java.io.PrintStream;
+
+import net.butfly.albacore.utils.Exceptions;
+
 public class SystemException extends RuntimeException {
 	private static final long serialVersionUID = -7617925338905953846L;
 	protected String code;
@@ -26,5 +30,9 @@ public class SystemException extends RuntimeException {
 	public SystemException(String code, String message, Throwable cause) {
 		super(message, cause);
 		this.code = code;
+	}
+
+	public void printStackTrace(PrintStream s) {
+		Exceptions.printStackTrace(this, this.code, s);
 	}
 }

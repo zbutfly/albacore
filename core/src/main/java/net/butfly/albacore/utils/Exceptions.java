@@ -1,5 +1,6 @@
 package net.butfly.albacore.utils;
 
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.InvocationTargetException;
@@ -123,5 +124,10 @@ public class Exceptions extends Utils {
 				return unwrapped;
 			}
 		}
+	}
+
+	public static void printStackTrace(Throwable t, String code, PrintStream s) {
+		s.print(null == code || "".equals(code) ? "" : "[" + code + "] ");
+		t.printStackTrace(s);
 	}
 }
