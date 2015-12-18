@@ -156,12 +156,12 @@
 	</dependencies>
 	<distributionManagement>
 		<repository>
-			<id>cmb-releases</id>
+			<id>nexus</id>
 			<name>Releases</name>
 			<url>${nexus-url}/content/repositories/releases</url>
 		</repository>
 		<snapshotRepository>
-			<id>cmb-snapshots</id>
+			<id>nexus</id>
 			<name>Snapshots</name>
 			<url>${nexus-url}/content/repositories/snapshots</url>
 		</snapshotRepository>

@@ -104,7 +104,7 @@ public class EntityBasicDAOBase extends DAOBase implements EntityBasicDAO {
 		E[] list = this.select(sql, criteria, Page.ALL_RECORD());
 		for (E e : list) {
 			entity.setId(e.getId());
-			this.template.update(sql.verb(Verb.update).toString(), e);
+			this.template.update(sql.verb(Verb.update).toString(), entity);
 		}
 		return list;
 	}
