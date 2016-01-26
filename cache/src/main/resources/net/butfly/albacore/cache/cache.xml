@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<elements>
+	<strategys>
+		<keygenerators>
+			<keygenerator id="common"
+				class="net.butfly.albacore.cache.utils.strategy.keygenerate.SerializeKeyGenerator" />
+			<keygenerator id="string"
+				class="net.butfly.albacore.cache.utils.strategy.keygenerate.StringKeyGenerator" />
+		</keygenerators>
+		<strategy id="faxTemplates">
+			<keygenerator ref="string" />
+			<expiration value="3600" />
+		</strategy>
+	</strategys>
+	<element id="FaxCache" type="base" strategy="faxTemplates" />
+</elements>

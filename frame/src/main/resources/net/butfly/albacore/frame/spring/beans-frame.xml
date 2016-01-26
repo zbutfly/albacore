@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.1.xsd">
+	<bean abstract="true" id="unit" class="net.butfly.albacore.base.UnitBase" />
+	<bean abstract="true" id="bizUnit" class="net.butfly.albacore.base.BizUnitBase" parent="unit" />
+	<bean abstract="true" id="helper" class="net.butfly.albacore.helper.HelperBase" parent="bizUnit" />
+	<bean abstract="true" id="service" class="net.butfly.albacore.service.ServiceBase" parent="bizUnit" />
+	<bean abstract="true" id="facade" class="net.butfly.albacore.facade.FacadeBase" parent="bizUnit" />
+</beans>

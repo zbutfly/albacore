@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.butfly.albacore.entity">
+	<sql id="basic">id, deleted</sql>
+	<sql id="creator">,creator,create_from,created </sql>
+	<sql id="updator">,updator,update_from,updated </sql>
+	<sql id="deletor">,deletor,delete_from,deleted </sql>
+	<sql id="orderby">
+		<foreach collection="orderFields" item="of" open="order by">
+			${of.field} ${of.asc}
+		</foreach>
+	</sql>
+</mapper>
