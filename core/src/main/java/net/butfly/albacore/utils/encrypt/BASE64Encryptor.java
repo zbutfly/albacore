@@ -1,44 +1,38 @@
 package net.butfly.albacore.utils.encrypt;
 
-import java.io.IOException;
-
-import sun.misc.BASE64Decoder;
-import sun.misc.BASE64Encoder;
+import java.util.Base64;
+import java.util.Base64.Decoder;
+import java.util.Base64.Encoder;
 
 public class BASE64Encryptor extends Encryptor {
-	private BASE64Encoder encoder;
-	private BASE64Decoder decoder;
-
-	public BASE64Encryptor() {
-		this.encoder = new BASE64Encoder();
-		this.decoder = new BASE64Decoder();
-	}
+	private static Encoder encoder = Base64.getEncoder();
+	private static Decoder decoder = Base64.getDecoder();
 
 	@Override
 	public String encrypt(String plain) {
-		return this.encoder.encode(plain.getBytes());
+		return encoder.encodeToString(plain.getBytes());
 	}
 
 	@Override
 	public String decrypt(String cipher) {
-		try {
-			return new String(this.decoder.decodeBuffer(cipher));
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
+		return new String(decoder.decode(cipher));
 	}
 
 	@Override
 	public byte[] encrypt(byte[] plain) {
-		return this.encoder.encode(plain).getBytes();
+		return encoder.encode(plain);
 	}
 
 	@Override
 	public byte[] decrypt(byte[] cipher) {
-		try {
-			return this.decoder.decodeBuffer(new String(cipher));
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
+		return decoder.decode(cipher);
+	}
+
+	static public String encode(byte[] data) {
+		return encoder.encodeToString(data);
+	}
+
+	static public byte[] decode(String str) {
+		return decoder.decode(str);
 	}
 }

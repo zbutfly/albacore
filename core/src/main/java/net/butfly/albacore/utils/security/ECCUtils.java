@@ -49,7 +49,7 @@
 //	 */
 //	public static byte[] decrypt(byte[] data, String key) throws Exception {
 //		// 对密钥解密
-//		byte[] keyBytes = CryptUtils.decryptBASE64(key);
+//		byte[] keyBytes = BASE64Encryptor.decode(key);
 //
 //		// 取得私钥
 //		PKCS8EncodedKeySpec pkcs8KeySpec = new PKCS8EncodedKeySpec(keyBytes);
@@ -79,7 +79,7 @@
 //	 */
 //	public static byte[] encrypt(byte[] data, String privateKey) throws Exception {
 //		// 对公钥解密
-//		byte[] keyBytes = CryptUtils.decryptBASE64(privateKey);
+//		byte[] keyBytes = BASE64Encryptor.decode(privateKey);
 //
 //		// 取得公钥
 //		X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec(keyBytes);
@@ -108,7 +108,7 @@
 //	public static String getPrivateKey(Map<String, Object> keyMap) throws Exception {
 //		Key key = (Key) keyMap.get(PRIVATE_KEY);
 //
-//		return CryptUtils.encryptBASE64(key.getEncoded());
+//		return BASE64Encryptor.encode(key.getEncoded());
 //	}
 //
 //	/**
@@ -121,7 +121,7 @@
 //	public static String getPublicKey(Map<String, Object> keyMap) throws Exception {
 //		Key key = (Key) keyMap.get(PUBLIC_KEY);
 //
-//		return CryptUtils.encryptBASE64(key.getEncoded());
+//		return BASE64Encryptor.encode(key.getEncoded());
 //	}
 //
 //	/**

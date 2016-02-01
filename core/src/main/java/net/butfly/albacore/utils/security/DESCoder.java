@@ -10,6 +10,7 @@ import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.DESKeySpec;
 
 import net.butfly.albacore.utils.Utils;
+import net.butfly.albacore.utils.encrypt.BASE64Encryptor;
 
 /**
  * DES安全编码组件
@@ -80,7 +81,7 @@ public class DESCoder extends Utils {
 	 * @throws Exception
 	 */
 	public static byte[] decrypt(byte[] data, String key) throws Exception {
-		Key k = toKey(CryptUtils.decryptBASE64(key));
+		Key k = toKey(BASE64Encryptor.decode(key));
 
 		Cipher cipher = Cipher.getInstance(ALGORITHM);
 		cipher.init(Cipher.DECRYPT_MODE, k);
@@ -97,7 +98,7 @@ public class DESCoder extends Utils {
 	 * @throws Exception
 	 */
 	public static byte[] encrypt(byte[] data, String key) throws Exception {
-		Key k = toKey(CryptUtils.decryptBASE64(key));
+		Key k = toKey(BASE64Encryptor.decode(key));
 		Cipher cipher = Cipher.getInstance(ALGORITHM);
 		cipher.init(Cipher.ENCRYPT_MODE, k);
 
@@ -125,7 +126,7 @@ public class DESCoder extends Utils {
 		SecureRandom secureRandom = null;
 
 		if (seed != null) {
-			secureRandom = new SecureRandom(CryptUtils.decryptBASE64(seed));
+			secureRandom = new SecureRandom(BASE64Encryptor.decode(seed));
 		} else {
 			secureRandom = new SecureRandom();
 		}
@@ -135,6 +136,6 @@ public class DESCoder extends Utils {
 
 		SecretKey secretKey = kg.generateKey();
 
-		return CryptUtils.encryptBASE64(secretKey.getEncoded());
+		return BASE64Encryptor.encode(secretKey.getEncoded());
 	}
 }
