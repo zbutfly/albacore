@@ -1,0 +1,35 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>net.butfly.parent</groupId>
+		<artifactId>parent</artifactId>
+		<version>3.0.0</version>
+	</parent>
+	<groupId>net.butfly.albacore</groupId>
+	<artifactId>albacore</artifactId>
+	<version>3.0.0-SNAPSHOT</version>
+	<packaging>pom</packaging>
+	<name>albacore</name>
+	<scm>
+		<connection>git@github.com:zbutfly/albacore.git</connection>
+		<developerConnection>git@github.com:zbutfly/albacore.git</developerConnection>
+		<tag>MASTER</tag>
+		<url>https://github.com/zbutfly/albacore</url>
+	</scm>
+	<properties>
+	    <deps.version.albacore>3.0.0-SNAPSHOT</deps.version.albacore>
+	</properties>
+	<modules>
+		<module>core</module>
+		<module>async</module>
+		<module>frame</module>
+		<module>orm</module>
+		<module>orm-nosql</module>
+		<module>utils</module>
+		<module>extra</module>
+		<module>cache</module>
+		<module>test</module>
+		<module>demo</module>
+	</modules>
+</project>

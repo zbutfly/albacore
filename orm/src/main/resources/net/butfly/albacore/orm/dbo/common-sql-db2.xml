@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<sqlMap namespace="net.butfly.albacore.entity.StetEntity">
+	<sql id="basic">id, deleted</sql>
+	<sql id="creator">,creator,create_from,created </sql>
+	<sql id="updator">,updator,update_from,updated </sql>
+	<sql id="deletor">,deletor,delete_from,deleted </sql>
+	<sql id="PAGED_PREFIX">
+		<isNotNull property="_PAGE_MIN_ROW_NUM"><![CDATA[
+select TT.* from (select rownumber() over() as rn,
+		]]></isNotNull>
+		<isNull property="_PAGE_MIN_ROW_NUM"><![CDATA[
+select 
+		]]></isNull>
+	</sql>
+	<!-- aa, bb, cc from mytable t order by t.id desc -->
+	<sql id="PAGED_SUFFIX">
+		<isNotNull property="_PAGE_MIN_ROW_NUM"><![CDATA[
+) TT WHERE TT.rn between #{_PAGE_MIN_ROW_NUM} and #{_PAGE_MAX_ROW_NUM}
+		]]></isNotNull>
+	</sql>
+</sqlMap>
