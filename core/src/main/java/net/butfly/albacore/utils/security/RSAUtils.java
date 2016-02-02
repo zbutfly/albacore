@@ -17,6 +17,7 @@ import java.util.Map;
 import javax.crypto.Cipher;
 
 import net.butfly.albacore.utils.Utils;
+import net.butfly.albacore.utils.encrypt.BASE64Encryptor;
 
 /**
  * RSA安全编码组件
@@ -45,7 +46,7 @@ public abstract class RSAUtils extends Utils {
 	 */
 	public static String sign(byte[] data, String privateKey) throws Exception {
 		// 解密由base64编码的私钥
-		byte[] keyBytes = CryptUtils.decryptBASE64(privateKey);
+		byte[] keyBytes = BASE64Encryptor.decode(privateKey);
 
 		// 构造PKCS8EncodedKeySpec对象
 		PKCS8EncodedKeySpec pkcs8KeySpec = new PKCS8EncodedKeySpec(keyBytes);
@@ -61,7 +62,7 @@ public abstract class RSAUtils extends Utils {
 		signature.initSign(priKey);
 		signature.update(data);
 
-		return CryptUtils.encryptBASE64(signature.sign());
+		return BASE64Encryptor.encode(signature.sign());
 	}
 
 	/**
@@ -81,7 +82,7 @@ public abstract class RSAUtils extends Utils {
 	public static boolean verify(byte[] data, String publicKey, String sign) throws Exception {
 
 		// 解密由base64编码的公钥
-		byte[] keyBytes = CryptUtils.decryptBASE64(publicKey);
+		byte[] keyBytes = BASE64Encryptor.decode(publicKey);
 
 		// 构造X509EncodedKeySpec对象
 		X509EncodedKeySpec keySpec = new X509EncodedKeySpec(keyBytes);
@@ -97,7 +98,7 @@ public abstract class RSAUtils extends Utils {
 		signature.update(data);
 
 		// 验证签名是否正常
-		return signature.verify(CryptUtils.decryptBASE64(sign));
+		return signature.verify(BASE64Encryptor.decode(sign));
 	}
 
 	/**
@@ -111,7 +112,7 @@ public abstract class RSAUtils extends Utils {
 	 */
 	public static byte[] decryptByPrivateKey(byte[] data, String key) throws Exception {
 		// 对密钥解密
-		byte[] keyBytes = CryptUtils.decryptBASE64(key);
+		byte[] keyBytes = BASE64Encryptor.decode(key);
 
 		// 取得私钥
 		PKCS8EncodedKeySpec pkcs8KeySpec = new PKCS8EncodedKeySpec(keyBytes);
@@ -136,7 +137,7 @@ public abstract class RSAUtils extends Utils {
 	 */
 	public static byte[] decryptByPublicKey(byte[] data, String key) throws Exception {
 		// 对密钥解密
-		byte[] keyBytes = CryptUtils.decryptBASE64(key);
+		byte[] keyBytes = BASE64Encryptor.decode(key);
 
 		// 取得公钥
 		X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec(keyBytes);
@@ -161,7 +162,7 @@ public abstract class RSAUtils extends Utils {
 	 */
 	public static byte[] encryptByPublicKey(byte[] data, String key) throws Exception {
 		// 对公钥解密
-		byte[] keyBytes = CryptUtils.decryptBASE64(key);
+		byte[] keyBytes = BASE64Encryptor.decode(key);
 
 		// 取得公钥
 		X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec(keyBytes);
@@ -186,7 +187,7 @@ public abstract class RSAUtils extends Utils {
 	 */
 	public static byte[] encryptByPrivateKey(byte[] data, String key) throws Exception {
 		// 对密钥解密
-		byte[] keyBytes = CryptUtils.decryptBASE64(key);
+		byte[] keyBytes = BASE64Encryptor.decode(key);
 
 		// 取得私钥
 		PKCS8EncodedKeySpec pkcs8KeySpec = new PKCS8EncodedKeySpec(keyBytes);
@@ -210,7 +211,7 @@ public abstract class RSAUtils extends Utils {
 	public static String getPrivateKey(Map<String, Object> keyMap) throws Exception {
 		Key key = (Key) keyMap.get(PRIVATE_KEY);
 
-		return CryptUtils.encryptBASE64(key.getEncoded());
+		return BASE64Encryptor.encode(key.getEncoded());
 	}
 
 	/**
@@ -223,7 +224,7 @@ public abstract class RSAUtils extends Utils {
 	public static String getPublicKey(Map<String, Object> keyMap) throws Exception {
 		Key key = (Key) keyMap.get(PUBLIC_KEY);
 
-		return CryptUtils.encryptBASE64(key.getEncoded());
+		return BASE64Encryptor.encode(key.getEncoded());
 	}
 
 	/**

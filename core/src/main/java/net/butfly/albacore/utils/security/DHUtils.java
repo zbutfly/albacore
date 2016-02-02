@@ -18,6 +18,7 @@ import javax.crypto.interfaces.DHPublicKey;
 import javax.crypto.spec.DHParameterSpec;
 
 import net.butfly.albacore.utils.Utils;
+import net.butfly.albacore.utils.encrypt.BASE64Encryptor;
 
 /**
  * DH安全编码组件
@@ -82,7 +83,7 @@ public abstract class DHUtils extends Utils {
 	 */
 	public static Map<String, Object> initKey(String key) throws Exception {
 		// 解析甲方公钥
-		byte[] keyBytes = CryptUtils.decryptBASE64(key);
+		byte[] keyBytes = BASE64Encryptor.decode(key);
 		X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec(keyBytes);
 		KeyFactory keyFactory = KeyFactory.getInstance(ALGORITHM);
 		PublicKey pubKey = keyFactory.generatePublic(x509KeySpec);
@@ -168,14 +169,14 @@ public abstract class DHUtils extends Utils {
 	 */
 	private static SecretKey getSecretKey(String publicKey, String privateKey) throws Exception {
 		// 初始化公钥
-		byte[] pubKeyBytes = CryptUtils.decryptBASE64(publicKey);
+		byte[] pubKeyBytes = BASE64Encryptor.decode(publicKey);
 
 		KeyFactory keyFactory = KeyFactory.getInstance(ALGORITHM);
 		X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec(pubKeyBytes);
 		PublicKey pubKey = keyFactory.generatePublic(x509KeySpec);
 
 		// 初始化私钥
-		byte[] priKeyBytes = CryptUtils.decryptBASE64(privateKey);
+		byte[] priKeyBytes = BASE64Encryptor.decode(privateKey);
 
 		PKCS8EncodedKeySpec pkcs8KeySpec = new PKCS8EncodedKeySpec(priKeyBytes);
 		Key priKey = keyFactory.generatePrivate(pkcs8KeySpec);
@@ -199,7 +200,7 @@ public abstract class DHUtils extends Utils {
 	 */
 	public static String getPrivateKey(Map<String, Object> keyMap) throws Exception {
 		Key key = (Key) keyMap.get(PRIVATE_KEY);
-		return CryptUtils.encryptBASE64(key.getEncoded());
+		return BASE64Encryptor.encode(key.getEncoded());
 	}
 
 	/**
@@ -211,6 +212,6 @@ public abstract class DHUtils extends Utils {
 	 */
 	public static String getPublicKey(Map<String, Object> keyMap) throws Exception {
 		Key key = (Key) keyMap.get(PUBLIC_KEY);
-		return CryptUtils.encryptBASE64(key.getEncoded());
+		return BASE64Encryptor.encode(key.getEncoded());
 	}
 }
