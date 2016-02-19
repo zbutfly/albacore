@@ -1,0 +1,83 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>net.butfly.albacore</groupId>
+		<artifactId>albacore</artifactId>
+		<version>3.0.0-SNAPSHOT</version>
+	</parent>
+	<artifactId>albacore-orm-mongodb</artifactId>
+	<name>albacore-orm-mongodb</name>
+	<build>
+		<finalName>albacore-orm-mongodb</finalName>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>com.github.joelittlejohn.embedmongo</groupId>
+					<artifactId>embedmongo-maven-plugin</artifactId>
+					<version>0.1.12</version>
+					<executions>
+						<execution>
+							<id>start</id>
+							<goals>
+								<goal>start</goal>
+								<!-- use the 'run' goal instead to start mongodb and wait -->
+							</goals>
+							<configuration>
+								<logging>none</logging>
+								<port>27017</port>
+								<version>2.4.3</version>
+								<databaseDirectory>${project.build.directory}/mongotest
+								</databaseDirectory>
+							</configuration>
+						</execution>
+						<execution>
+							<id>stop</id>
+							<goals>
+								<goal>stop</goal>
+							</goals>
+						</execution>
+					</executions>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+	</build>
+	<dependencies>
+		<dependency>
+			<groupId>net.butfly.albacore</groupId>
+			<artifactId>albacore-orm</artifactId>
+			<version>${deps.version.albacore}</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>mybatis-spring</artifactId>
+					<groupId>org.mybatis</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>mybatis</artifactId>
+					<groupId>org.mybatis</groupId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<!-- 2.13.1 -->
+		<!-- <dependency> -->
+		<!-- <groupId>org.mongodb</groupId> -->
+		<!-- <artifactId>mongodb-java-driver</artifactId> -->
+		<!-- <version>3.2.1</version> -->
+		<!-- </dependency> -->
+		<dependency>
+			<groupId>org.mongodb</groupId>
+			<artifactId>mongodb-driver</artifactId>
+			<version>3.2.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.mongodb</groupId>
+			<artifactId>mongodb-driver-async</artifactId>
+			<version>3.2.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.mongodb.morphia</groupId>
+			<artifactId>morphia</artifactId>
+			<version>1.1.1</version>
+		</dependency>
+	</dependencies>
+</project>
