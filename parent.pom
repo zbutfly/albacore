@@ -8,9 +8,9 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.test.skip.exec>true</maven.test.skip.exec>
-		<deps.version.spring>4.1.4.RELEASE</deps.version.spring>
-		<deps.version.albacore>3.0.0</deps.version.albacore>
-		<deps.version.albus>3.0.0</deps.version.albus>
+		<deps.version.spring>4.2.4.RELEASE</deps.version.spring>
+		<deps.version.albacore>3.0.0-SNAPSHOT</deps.version.albacore>
+		<deps.version.albus>3.0.0-SNAPSHOT</deps.version.albus>
 	</properties>
 	<build>
 		<pluginManagement>
