@@ -12,12 +12,6 @@
 		<finalName>albacore-core</finalName>
 	</build>
 	<dependencies>
-		<!-- validation -->
-		<dependency>
-			<groupId>javax.validation</groupId>
-			<artifactId>validation-api</artifactId>
-			<version>1.1.0.Final</version>
-		</dependency>
 		<!-- reflection -->
 		<dependency>
 			<groupId>org.reflections</groupId>
@@ -27,51 +21,14 @@
 		<dependency>
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
-			<version>18.0</version>
+			<version>19.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.javassist</groupId>
 			<artifactId>javassist</artifactId>
 			<version>3.20.0-GA</version>
 		</dependency>
-		<!-- xml -->
-		<dependency>
-			<groupId>dom4j</groupId>
-			<artifactId>dom4j</artifactId>
-			<version>1.6.1</version>
-		</dependency>
-		<dependency>
-			<groupId>xerces</groupId>
-			<artifactId>xercesImpl</artifactId>
-			<version>2.11.0</version>
-			<scope>runtime</scope>
-		</dependency>
-		<dependency>
-			<groupId>xalan</groupId>
-			<artifactId>xalan</artifactId>
-			<version>2.7.2</version>
-			<scope>runtime</scope>
-		</dependency>
-		<dependency>
-			<groupId>xml-apis</groupId>
-			<artifactId>xml-apis</artifactId>
-			<version>1.4.01</version>
-			<scope>runtime</scope>
-		</dependency>
-		<dependency>
-			<groupId>jaxen</groupId>
-			<artifactId>jaxen</artifactId>
-			<version>1.1.6</version>
-			<scope>runtime</scope>
-		</dependency>
-		<dependency>
-			<groupId>xom</groupId>
-			<artifactId>xom</artifactId>
-			<version>1.2.5</version>
-			<scope>runtime</scope>
-		</dependency>
-		<!-- logging -->
-		<!-- maybe need log4j2 upgrading -->
+		<!-- logging --><!-- maybe need log4j2 upgrading -->
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
@@ -90,10 +47,10 @@
 			<scope>runtime</scope>
 		</dependency>
 		<!-- commons -->
-		<dependency>
-			<groupId>org.apache.commons</groupId>
-			<artifactId>commons-lang3</artifactId>
-			<version>3.3.2</version>
-		</dependency>
+<!-- 		<dependency> -->
+<!-- 			<groupId>org.apache.commons</groupId> -->
+<!-- 			<artifactId>commons-lang3</artifactId> -->
+<!-- 			<version>3.3.2</version> -->
+<!-- 		</dependency> -->
 	</dependencies>
 </project>

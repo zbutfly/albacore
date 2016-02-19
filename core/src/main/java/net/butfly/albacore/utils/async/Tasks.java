@@ -20,8 +20,8 @@ import net.butfly.albacore.utils.Instances;
 import net.butfly.albacore.utils.Utils;
 
 public final class Tasks extends Utils {
-	// static ExecutorService MORE_EX = Executors.newWorkStealingPool();
 	private static final Logger logger = LoggerFactory.getLogger(Tasks.class);
+	// static ExecutorService MORE_EX = Executors.newWorkStealingPool();
 	static ExecutorService CORE_EXECUTOR = createExecutor();
 
 	@SuppressWarnings("unchecked")
@@ -67,18 +67,15 @@ public final class Tasks extends Utils {
 				logger.error("Sliced task failed at " + i + "th slice.", e.getCause());
 			}
 		}
-		if (!errors.isEmpty())
-			logger.error("Error in concurrence",
-					new AggregaedException("", "Error in concurrence", errors.toArray(new Throwable[errors.size()])));
+		if (!errors.isEmpty()) logger.error("Error in concurrence",
+				new AggregaedException("", "Error in concurrence", errors.toArray(new Throwable[errors.size()])));
 		T[] r = results.toArray((T[]) Array.newInstance(targetClass, results.size()));
 		return r;
 	}
 
 	static <T> T execute(final Task<T> task, ExecutorService executor) throws Exception {
-		if (executor == null)
-			executor = CORE_EXECUTOR;
-		if (task.options == null)
-			task.options = new Options();
+		if (executor == null) executor = CORE_EXECUTOR;
+		if (task.options == null) task.options = new Options();
 		int repeated = 0, retried = 0;
 		T result = null;
 		while ((task.options.repeat < 0 || repeated < task.options.repeat) && retried <= task.options.retry) {
@@ -91,8 +88,7 @@ public final class Tasks extends Utils {
 			}
 			try {
 				Thread.sleep(task.options.interval);
-			} catch (InterruptedException e) {
-			}
+			} catch (InterruptedException e) {}
 		}
 		return result;
 	}
@@ -141,27 +137,23 @@ public final class Tasks extends Utils {
 	}
 
 	private static <OUT> OUT handle(Task<OUT> task, Exception ex) throws Exception {
-		if (null == task.handler)
-			throw ex;
+		if (null == task.handler) throw ex;
 		return task.handler.handle(ex);
 	}
 
 	private static <OUT> OUT callback(OUT result, Task.Callback<OUT> callback) {
-		if (null == callback)
-			return result;
+		if (null == callback) return result;
 		callback.callback(result);
 		return null;
 	}
 
 	private static <OUT> OUT fetch(final Task<OUT> task, Future<OUT> future) throws Exception {
-		if (task.options.unblock)
-			return null;
-		else
-			try {
-				return fetch(future, task.options.timeout);
-			} catch (Exception ex) {
-				return handle(task, ex);
-			}
+		if (task.options.unblock) return null;
+		else try {
+			return fetch(future, task.options.timeout);
+		} catch (Exception ex) {
+			return handle(task, ex);
+		}
 	}
 
 	private static <OUT> OUT fetch(Future<OUT> future, long timeout)
@@ -189,8 +181,8 @@ public final class Tasks extends Utils {
 				c = 0;
 			}
 			if (c < -1) {
-				logger.warn("Albacore task concurrence configuration negative (" + c
-						+ "), use work stealing thread pool with " + -c + " parallelism.");
+				logger.warn("Albacore task concurrence configuration negative (" + c + "), use work stealing thread pool with "
+						+ -c + " parallelism.");
 				return Executors.newWorkStealingPool(-c);
 			} else if (c == -1) {
 				logger.warn(
@@ -201,8 +193,7 @@ public final class Tasks extends Utils {
 				return CORE_EXECUTOR = Executors.newCachedThreadPool();
 			} else {
 				logger.info("Albacore task concurrence configuration (" + c + "), use fixed size thread pool.");
-				if (c < 5)
-					logger.warn("Albacore task concurrence configuration too small (" + c + "), debugging? ");
+				if (c < 5) logger.warn("Albacore task concurrence configuration too small (" + c + "), debugging? ");
 				return CORE_EXECUTOR = Executors.newFixedThreadPool(c);
 			}
 		}
