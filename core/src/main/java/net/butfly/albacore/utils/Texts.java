@@ -77,31 +77,4 @@ public final class Texts extends Utils {
 		map.put(format, f);
 		return f;
 	}
-
-	/**
-	 * Join strings without any spliter
-	 * 
-	 * @param list
-	 * @return
-	 */
-	public static String join(String... list) {
-		StringBuilder sb = new StringBuilder();
-		for (String tt : list)
-			sb.append(tt);
-		return sb.substring(0, sb.length()).toString();
-	}
-
-	public static String join(char split, String... list) {
-		StringBuilder sb = new StringBuilder();
-		for (String tt : list)
-			sb.append(tt).append(split);
-		return sb.substring(0, sb.length() - 1).toString();
-	}
-
-	public static String join(String split, String... list) {
-		StringBuilder sb = new StringBuilder();
-		for (String tt : list)
-			sb.append(tt).append(split);
-		return sb.substring(0, sb.length() - split.length()).toString();
-	}
 }

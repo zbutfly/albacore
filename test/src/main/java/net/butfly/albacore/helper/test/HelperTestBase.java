@@ -1,8 +1,8 @@
 package net.butfly.albacore.helper.test;
 
-import net.butfly.albacore.test.SpringTestCaseBase;
+import net.butfly.albacore.test.SpringCase;
 
-public abstract class HelperTestBase extends SpringTestCaseBase {
+public abstract class HelperTestBase extends SpringCase {
 	@Override
 	protected String[] getConfiguration() {
 		return new String[] { "classpath:/net/butfly/albacore/spring/beans.xml",

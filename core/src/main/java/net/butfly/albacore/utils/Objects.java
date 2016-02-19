@@ -419,7 +419,7 @@ public class Objects extends Utils {
 		static Class<?> getIterableClass(Class<?> clazz) {
 			if (clazz.isArray()) return clazz.getComponentType();
 			if (Iterable.class.isAssignableFrom(clazz)) {
-				Class<?> cl = Generics.getGenericParamClass(clazz, Iterable.class, "T");
+				Class<?> cl = Generics.resolveGenericParameter(clazz, Iterable.class, "T");
 				return null == cl ? Object.class : cl;
 			}
 			return null;

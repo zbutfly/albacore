@@ -1,6 +1,7 @@
 package net.butfly.albacore.utils.async;
 
-import net.butfly.albacore.utils.Texts;
+import com.google.common.base.Joiner;
+
 import net.butfly.albacore.utils.async.Options.ForkMode;
 
 public class Opts {
@@ -15,7 +16,7 @@ public class Opts {
 		fields[4] = Integer.toString(options.retry);
 		fields[5] = Integer.toString(options.concurrence);
 		fields[6] = Long.toString(options.interval);
-		return Texts.join(':', fields);
+		return Joiner.on(":").join(fields);
 	}
 
 	public Options parse(String format) {
@@ -39,7 +40,7 @@ public class Opts {
 		String[] opstrs = new String[options.length];
 		for (int i = 0; i < opstrs.length; i++)
 			opstrs[i] = format(options[i]);
-		return Texts.join(MULTI_OPTS_SPLITTER, opstrs);
+		return Joiner.on(MULTI_OPTS_SPLITTER).join(opstrs);
 	}
 
 	public Options[] parses(String string) {

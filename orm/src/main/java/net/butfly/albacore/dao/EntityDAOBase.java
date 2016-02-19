@@ -5,8 +5,8 @@ import java.io.Serializable;
 import net.butfly.albacore.dbo.criteria.Criteria;
 import net.butfly.albacore.dbo.criteria.Page;
 import net.butfly.albacore.entity.AbstractEntity;
-import net.butfly.albacore.utils.Generics;
 
+@SuppressWarnings("unchecked")
 public class EntityDAOBase extends EntityBasicDAOBase implements EntityDAO {
 	private static final long serialVersionUID = -1599466753909389837L;
 	private String namespace;
@@ -18,12 +18,12 @@ public class EntityDAOBase extends EntityBasicDAOBase implements EntityDAO {
 
 	@Override
 	public <K extends Serializable, E extends AbstractEntity<K>> K insert(final E entity) {
-		return super.insert(new SQL<E>(this.namespace, Generics.entityClass(entity)), entity);
+		return super.insert(new SQL<E>(this.namespace, (Class<E>) entity.getClass()), entity);
 	}
 
 	@Override
 	public <K extends Serializable, E extends AbstractEntity<K>> K[] insert(final E... entity) {
-		return super.insert(new SQL<E>(this.namespace, Generics.entityClass(entity)), entity);
+		return super.insert(new SQL<E>(this.namespace, (Class<E>) entity.getClass().getComponentType()), entity);
 	}
 
 	@Override
@@ -38,12 +38,12 @@ public class EntityDAOBase extends EntityBasicDAOBase implements EntityDAO {
 
 	@Override
 	public <K extends Serializable, E extends AbstractEntity<K>> E update(E entity) {
-		return super.update(new SQL<E>(this.namespace, Generics.entityClass(entity)), entity);
+		return super.update(new SQL<E>(this.namespace, (Class<E>) entity.getClass()), entity);
 	}
 
 	@Override
 	public <K extends Serializable, E extends AbstractEntity<K>> E[] update(E... entity) {
-		return super.update(new SQL<E>(this.namespace, Generics.entityClass(entity)), entity);
+		return super.update(new SQL<E>(this.namespace, (Class<E>) entity.getClass().getComponentType()), entity);
 	}
 
 	@Override
@@ -63,7 +63,7 @@ public class EntityDAOBase extends EntityBasicDAOBase implements EntityDAO {
 
 	@Override
 	public <K extends Serializable, E extends AbstractEntity<K>> E[] update(E entity, Criteria criteria) {
-		return super.update(new SQL<E>(this.namespace, Generics.entityClass(entity)), entity, criteria);
+		return super.update(new SQL<E>(this.namespace, (Class<E>) entity.getClass()), entity, criteria);
 	}
 
 	@Override
@@ -78,7 +78,8 @@ public class EntityDAOBase extends EntityBasicDAOBase implements EntityDAO {
 	}
 
 	@Override
-	public <K extends Serializable, E extends AbstractEntity<K>> E[] select(Class<E> entityClass, Criteria criteria, Page page) {
+	public <K extends Serializable, E extends AbstractEntity<K>> E[] select(Class<E> entityClass, Criteria criteria,
+			Page page) {
 		return super.select(new SQL<E>(this.namespace, entityClass), criteria, page);
 	}
 }

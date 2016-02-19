@@ -26,7 +26,7 @@ public abstract class MongoDaoBase<E extends MongoEntity> extends DAOBase implem
 	private Class<E> entityClass;
 
 	public MongoDaoBase() {
-		this.entityClass = Generics.getGenericParamClass(this.getClass(), MongoDaoBase.class, "E");
+		this.entityClass = Generics.resolveGenericParameter(this.getClass(), MongoDaoBase.class, "E");
 	}
 
 	@Override

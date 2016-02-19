@@ -4,6 +4,8 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.mybatis.spring.SqlSessionTemplate;
+
 import net.butfly.albacore.dao.DAO.SQL.Verb;
 import net.butfly.albacore.dbo.criteria.Criteria;
 import net.butfly.albacore.dbo.criteria.OrderedRowBounds;
@@ -11,11 +13,9 @@ import net.butfly.albacore.dbo.criteria.Page;
 import net.butfly.albacore.entity.AbstractEntity;
 import net.butfly.albacore.entity.Key;
 import net.butfly.albacore.exception.SystemException;
-import net.butfly.albacore.utils.Entities;
 import net.butfly.albacore.utils.Generics;
 
-import org.mybatis.spring.SqlSessionTemplate;
-
+@SuppressWarnings("unchecked")
 public class EntityBasicDAOBase extends DAOBase implements EntityBasicDAO {
 	private static final long serialVersionUID = -2472419986526183766L;
 	protected SqlSessionTemplate template;
@@ -39,7 +39,7 @@ public class EntityBasicDAOBase extends DAOBase implements EntityBasicDAO {
 			if (null != k) keys.add(k);
 		}
 		// XXX: optimize
-		Class<K> keyClass = Entities.getKeyClass(sql.entityClass());
+		Class<K> keyClass = AbstractEntity.getKeyClass(sql.entityClass());
 		return Generics.toArray(keys, keyClass);
 	}
 
@@ -118,7 +118,7 @@ public class EntityBasicDAOBase extends DAOBase implements EntityBasicDAO {
 		if (null == page) throw new SystemException("Query must be limited by page.");
 		// dirty page
 		if (page.getTotal() < 0) page.setTotal(this.count(sql, criteria));
-		Class<K> keyClass = Entities.getKeyClass(sql.entityClass());
+		Class<K> keyClass = AbstractEntity.getKeyClass(sql.entityClass());
 		if (page.getTotal() == 0) return Generics.toArray(new ArrayList<K>(), keyClass);
 		OrderedRowBounds rb = new OrderedRowBounds(page.getOffset(), page.getLimit(), criteria.getOrderFields());
 		List<K> list = this.template.selectList(sql.verb(Verb.select).toCriteriaString(), criteria, rb);

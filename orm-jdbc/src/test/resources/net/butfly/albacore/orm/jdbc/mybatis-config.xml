@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN" "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+	<plugins>
+		<plugin interceptor="net.butfly.albacore.dbo.interceptor.StatementInterceptor">
+			<!-- <property name="dialect" value="net.butfly.albacore.dbo.dialect.OracleDialect"/> -->
+		</plugin>
+		<plugin interceptor="net.butfly.albacore.dbo.interceptor.ExecutorInterceptor">
+			<!-- <property name="timestampProps" value="created" /> -->
+			<property name="keyGenerator"
+				value="net.butfly.albacore.dbo.key.ObjectIdKeyGenerator" />
+		</plugin>
+	</plugins>
+	<mappers>
+		<mapper resource="net/butfly/albacore/orm/jdbc/mapper/User.xml" />
+		<mapper resource="net/butfly/albacore/orm/jdbc/mapper/Contact.xml" />
+	</mappers>
+</configuration>  

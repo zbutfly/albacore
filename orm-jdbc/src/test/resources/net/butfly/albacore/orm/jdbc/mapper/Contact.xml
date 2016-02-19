@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.butfly.albacore.orm.jdbc.Contact">
+	<insert id="insertContact" parameterType="net.butfly.albacore.orm.jdbc.mapper.Contact" keyProperty="userId,type">
+		insert into CONTACT (USER_ID, TYPE, CONTENT) values (#{userId}, #{type}, #{content})
+	</insert>
+	<delete id="deleteContact" parameterType="net.butfly.albacore.orm.jdbc.mapper.Contact">
+		delete from CONTACT <include refid="where" />
+	</delete>
+	<update id="updateContact" parameterType="net.butfly.albacore.orm.jdbc.mapper.Contact">
+		update CONTACT SET <set>
+			<if test="content != null">CONTENT = #{content}</if>
+		</set> where ID = #{id}
+	</update>
+	<select id="selectContact" parameterType="net.butfly.albacore.orm.jdbc.mapper.ContactKey" resultType="net.butfly.albacore.orm.jdbc.mapper.Contact">
+		select USER_ID, TYPE, CONTENT from CONTACT where USER_ID = #{userId} and TYPE = #{type}
+	</select>
+	<select id="selectContactByCriteria" parameterType="net.butfly.albacore.dbo.criteria.Criteria" resultType="net.butfly.albacore.orm.jdbc.mapper.ContactKey">
+		select USER_ID, TYPE from CONTACT <include refid="where" />
+	</select>
+	<select id="countContactByCriteria" parameterType="net.butfly.albacore.dbo.criteria.Criteria" resultType="int">
+		select count(*) from CONTACT <include refid="where" />
+	</select>
+	<sql id="where">
+		<where> 
+			<if test="userId != null">and USER_ID = #{userId}</if>
+			<if test="type != null">and TYPE = #{type}</if>
+			<if test="content != null">and CONTENT = #{content}</if>
+		</where>
+	</sql>
+</mapper>

@@ -3,9 +3,10 @@ package net.butfly.albacore.dao;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.common.base.Joiner;
+
 import net.butfly.albacore.base.BizUnit;
 import net.butfly.albacore.entity.AbstractEntity;
-import net.butfly.albacore.utils.Texts;
 
 public interface DAO extends BizUnit {
 	public static final class SQL<E extends AbstractEntity<?>> {
@@ -50,7 +51,7 @@ public interface DAO extends BizUnit {
 		}
 
 		public String toString() {
-			return namespace + verb + Texts.join(suffix.toArray(new String[suffix.size()]));
+			return namespace + verb + Joiner.on("").join(suffix.toArray(new String[suffix.size()]));
 		}
 
 		public String toCriteriaString() {

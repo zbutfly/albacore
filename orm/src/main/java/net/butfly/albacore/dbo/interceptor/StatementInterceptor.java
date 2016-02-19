@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 @Intercepts({ @Signature(type = StatementHandler.class, method = "prepare", args = { Connection.class }) })
 public class StatementInterceptor extends BaseInterceptor {
 	private static final Logger logger = LoggerFactory.getLogger(StatementInterceptor.class);
-	private Dialect dialect;
+	private Dialect dialect = null;
 
 	@Override
 	public Object intercept(Invocation invocation) throws Throwable {
@@ -30,10 +30,11 @@ public class StatementInterceptor extends BaseInterceptor {
 		// misc hacking
 		if (((MappedStatement) meta.getValue("delegate.mappedStatement")).getSqlCommandType() == SqlCommandType.SELECT) {
 			String sql = (String) meta.getValue("delegate.boundSql.sql");
-			// logger.trace("Statement preparing intercepted with orininal sql: \n\t" + sql);
+			// logger.trace("Statement preparing intercepted with orininal sql:
+			// \n\t" + sql);
 			RowBounds rowBounds = (RowBounds) meta.getValue("delegate.rowBounds");
 
-			if (null != rowBounds) {
+			if (null != rowBounds && null != this.dialect) {
 				// append order
 				if (rowBounds instanceof OrderedRowBounds) {
 					sql = this.dialect.orderByWrap(sql, ((OrderedRowBounds) rowBounds).getOrderFields());
@@ -56,7 +57,8 @@ public class StatementInterceptor extends BaseInterceptor {
 	@Override
 	public void setProperties(Properties properties) {
 		try {
-			this.dialect = Reflections.construct(properties.getProperty("dialect"));
+			String dial = properties.getProperty("dialect");
+			if (null != dial) this.dialect = Reflections.construct(properties.getProperty("dialect"));
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
