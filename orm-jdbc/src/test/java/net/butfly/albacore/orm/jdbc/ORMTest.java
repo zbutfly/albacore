@@ -14,6 +14,8 @@ import javax.sql.DataSource;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.GenericXmlApplicationContext;
 
+import com.jcabi.log.Logger;
+
 import net.butfly.albacore.dbo.criteria.Criteria;
 import net.butfly.albacore.dbo.criteria.Page;
 import net.butfly.albacore.orm.jdbc.dao.ContactDAO;
@@ -68,9 +70,13 @@ public class ORMTest {
 		}
 
 		User[] all = test.userDAO.select(User.class, new Criteria(), Page.ALL_RECORD());
-		System.out.println(all.length);
+		Logger.info(test, "All user records count: " + all.length);
 		Contact[] allc = test.contactDAO.select(Contact.class, new Criteria(), Page.ALL_RECORD());
-		System.out.println(allc.length);
+		Logger.info(test, "All contact records count: " + allc.length);
+		allc = test.contactDAO.delete(Contact.class, new Criteria());
+		Logger.info(test, "Removed contact records count: " + allc.length);
+		allc = test.contactDAO.select(Contact.class, new Criteria(), Page.ALL_RECORD());
+		Logger.info(test, "Remained contact records count: " + allc.length);
 	}
 
 	private static DataSource jndi() throws NamingException {
