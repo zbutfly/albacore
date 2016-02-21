@@ -6,6 +6,7 @@ import net.butfly.albacore.dbo.criteria.Criteria;
 import net.butfly.albacore.dbo.criteria.Page;
 import net.butfly.albacore.entity.AbstractEntity;
 
+@SuppressWarnings("unchecked")
 public interface EntityBasicDAO extends DAO {
 	<K extends Serializable, E extends AbstractEntity<K>> K insert(final SQL<E> sql, final E entity);
 
