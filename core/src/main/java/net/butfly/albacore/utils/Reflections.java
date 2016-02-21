@@ -9,12 +9,20 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 import org.reflections.Configuration;
 import org.reflections.scanners.MethodAnnotationsScanner;
@@ -58,10 +66,68 @@ public final class Reflections extends Utils {
 	@SuppressWarnings("unchecked")
 	public static <T> Class<T> forClassName(String className) {
 		try {
-			return (Class<T>) Class.forName(className);
+			return (Class<T>) Thread.currentThread().getContextClassLoader().loadClass(className);
 		} catch (Exception e) {
 			return null;
 		}
+	}
+
+	public static Field getDeclaredField(Class<?> clazz, String name) {
+		while (null != clazz) {
+			try {
+				return clazz.getDeclaredField(name);
+			} catch (NoSuchFieldException ex) {}
+			clazz = clazz.getSuperclass();
+		}
+		return null;
+	}
+
+	public static Field[] getDeclaredFields(Class<?> clazz) {
+		Map<String, Field> fields = new HashMap<String, Field>();
+		while (clazz != null) {
+			for (Field field : clazz.getDeclaredFields()) {
+				if (!fields.containsKey(field.getName())) {
+					fields.put(field.getName(), field);
+				}
+			}
+
+			clazz = clazz.getSuperclass();
+		}
+
+		return fields.values().toArray(new Field[fields.size()]);
+	}
+
+	public static Method getDeclaredMethod(Class<?> clazz, String name, Class<?>... paramTypes) {
+		while (null != clazz) {
+			try {
+				return clazz.getDeclaredMethod(name, paramTypes);
+			} catch (NoSuchMethodException ex) {}
+			clazz = clazz.getSuperclass();
+		}
+		return null;
+	}
+
+	public static Method[] getDeclaredMethods(Class<?> clazz) {
+		Collection<Method> found = new ArrayList<Method>();
+		while (clazz != null) {
+			for (Method m1 : clazz.getDeclaredMethods()) {
+				boolean overridden = false;
+
+				for (Method m2 : found) {
+					if (m2.getName().equals(m1.getName())
+							&& Arrays.deepEquals(m1.getParameterTypes(), m2.getParameterTypes())) {
+						overridden = true;
+						break;
+					}
+				}
+
+				if (!overridden) found.add(m1);
+			}
+
+			clazz = clazz.getSuperclass();
+		}
+
+		return found.toArray(new Method[found.size()]);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -165,16 +231,6 @@ public final class Reflections extends Utils {
 
 	public static <T> Set<Class<? extends T>> getSubClasses(Class<T> parentClass, String... packagePrefix) {
 		return reflections(packagePrefix).getSubTypesOf(parentClass);
-	}
-
-	public static Field[] getDeclaredFields(Class<?> clazz) {
-		// XXX: use map to check override fields by name.
-		Set<Field> set = new HashSet<Field>();
-		while (null != clazz) {
-			set.addAll(Arrays.asList(clazz.getDeclaredFields()));
-			clazz = clazz.getSuperclass();
-		}
-		return set.toArray(new Field[set.size()]);
 	}
 
 	public static Field[] getDeclaredFieldsAnnotatedWith(Class<?> clazz, Class<? extends Annotation> annotation) {
@@ -853,5 +909,142 @@ public final class Reflections extends Utils {
 			}
 		}
 		return cost;
+	}
+
+	/**
+	 * Holds a map of commonly used interface types (mostly collections) to a
+	 * class that implements the interface and will, by default, be instantiated
+	 * when an instance of the interface is needed.
+	 */
+	protected static final Map<Class<?>, Class<?>> interfaceImplementations = new HashMap<Class<?>, Class<?>>();
+
+	static {
+		interfaceImplementations.put(Collection.class, ArrayList.class);
+		interfaceImplementations.put(List.class, ArrayList.class);
+		interfaceImplementations.put(Set.class, HashSet.class);
+		interfaceImplementations.put(SortedSet.class, TreeSet.class);
+		interfaceImplementations.put(Queue.class, LinkedList.class);
+		interfaceImplementations.put(Map.class, HashMap.class);
+		interfaceImplementations.put(SortedMap.class, TreeMap.class);
+	}
+
+	/**
+	 * Attempts to determine an implementing class for the interface provided
+	 * and instantiate it using a default constructor.
+	 *
+	 * @param interfaceType
+	 *            an interface (or abstract class) to make an instance of
+	 * @return an instance of the interface type supplied
+	 * @throws InstantiationException
+	 *             if no implementation type has been configured
+	 * @throws IllegalAccessException
+	 *             if thrown by the JVM during class instantiation
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> T constructInterface(Class<T> interfaceType) {
+		if (!Modifier.isInterface(interfaceType.getModifiers()))
+			throw new IllegalArgumentException("Only interfaces have default implementation.");
+		Class<?> impl = interfaceImplementations.get(interfaceType);
+		if (impl != null) try {
+			return (T) impl.newInstance();
+		} catch (InstantiationException | IllegalAccessException e) {
+			return null;
+		}
+		throw new IllegalArgumentException("Stripes needed to instantiate a property who's declared type as an "
+				+ "interface (which obviously cannot be instantiated. The interface is not "
+				+ "one that Stripes is aware of, so no implementing class was known. The " + "interface type was: '"
+				+ interfaceType.getName() + "'. To fix this "
+				+ "you'll need to do one of three things. 1) Change the getter/setter methods "
+				+ "to use a concrete type so that Stripes can instantiate it. 2) in the bean's "
+				+ "setContext() method pre-instantiate the property so Stripes doesn't have to. "
+				+ "3) Bug the Stripes author ;)  If the interface is a JDK type it can easily be "
+				+ "fixed. If not, if enough people ask, a generic way to handle the problem " + "might get implemented.");
+
+	}
+
+	/**
+	 * The set of method that annotation classes inherit, and should be avoided
+	 * when toString()ing an annotation class.
+	 */
+	private static final Set<String> INHERITED_ANNOTATION_METHODS = new HashSet<>(
+			Arrays.asList("toString", "equals", "hashCode", "annotationType", "getClass"));
+
+	/**
+	 * <p>
+	 * A better (more concise) toString method for annotation types that yields
+	 * a String that should look more like the actual usage of the annotation in
+	 * a class. The String produced is similar to that produced by calling
+	 * toString() on the annotation directly, with the following differences:
+	 * </p>
+	 *
+	 * <ul>
+	 * <li>Uses the classes simple name instead of it's fully qualified name.
+	 * </li>
+	 * <li>Only outputs attributes that are set to non-default values.</li>
+	 *
+	 * <p>
+	 * If, for some unforseen reason, an exception is thrown within this method
+	 * it will be caught and the return value will be {@code ann.toString()}.
+	 *
+	 * @param ann
+	 *            the annotation to convert to a human readable String
+	 * @return a human readable String form of the annotation and it's
+	 *         attributes
+	 */
+	public static String toString(Annotation ann) {
+		try {
+			Class<? extends Annotation> type = ann.annotationType();
+			StringBuilder builder = new StringBuilder(128);
+			builder.append("@");
+			builder.append(type.getSimpleName());
+
+			boolean appendedAnyParameters = false;
+			Method[] methods = type.getMethods();
+			for (Method method : methods) {
+				if (!INHERITED_ANNOTATION_METHODS.contains(method.getName())) {
+					Object defaultValue = method.getDefaultValue();
+					Object actualValue = method.invoke(ann);
+
+					// If we have arrays, they have to be treated a little
+					// differently
+					Object[] defaultArray = null, actualArray = null;
+					if (Object[].class.isAssignableFrom(method.getReturnType())) {
+						defaultArray = (Object[]) defaultValue;
+						actualArray = (Object[]) actualValue;
+					}
+
+					// Only print an attribute if it isn't set to the default
+					// value
+					if ((defaultArray != null && !Arrays.equals(defaultArray, actualArray))
+							|| (defaultArray == null && !actualValue.equals(defaultValue))) {
+
+						if (appendedAnyParameters) {
+							builder.append(", ");
+						} else {
+							builder.append("(");
+						}
+
+						builder.append(method.getName());
+						builder.append("=");
+
+						if (actualArray != null) {
+							builder.append(Arrays.toString(actualArray));
+						} else {
+							builder.append(actualValue);
+						}
+
+						appendedAnyParameters = true;
+					}
+				}
+			}
+
+			if (appendedAnyParameters) {
+				builder.append(")");
+			}
+
+			return builder.toString();
+		} catch (Exception e) {
+			return ann.toString();
+		}
 	}
 }
