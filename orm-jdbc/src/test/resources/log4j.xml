@@ -3,8 +3,8 @@
 	"http://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/xml/doc-files/log4j.dtd">
 <log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/"
 	debug="false">
-	<!-- <appender name="log-console-stdout" class="net.butfly.albacore.utils.logger.ANSIConsoleAppender"> -->
-	<appender name="log-console-stdout" class="org.apache.log4j.ConsoleAppender">
+	<appender name="log-console-stdout" class="net.butfly.albacore.utils.logger.ANSIConsoleAppender">
+	<!-- <appender name="log-console-stdout" class="org.apache.log4j.ConsoleAppender"> -->
 		<layout class="org.apache.log4j.EnhancedPatternLayout">
 			<param name="ConversionPattern" value="%d{HH:mm:ss,SSS} %-5.5p [%t] %-40.40C{1.} - %m%n" />
 		</layout>
@@ -16,6 +16,10 @@
 	</appender>
 	<logger name="net.butfly" additivity="false">
 		<level value="debug" />
+		<appender-ref ref="log-console-stdout" />
+	</logger>
+	<logger name="net.butfly.albacore.orm" additivity="false">
+		<level value="trace" />
 		<appender-ref ref="log-console-stdout" />
 	</logger>
 	<logger name="org.apache.ibatis.logging.jdbc" additivity="false">

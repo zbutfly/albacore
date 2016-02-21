@@ -7,14 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
-import javax.sql.DataSource;
-
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.support.GenericXmlApplicationContext;
-
-import com.jcabi.log.Logger;
+import org.junit.Test;
 
 import net.butfly.albacore.dbo.criteria.Criteria;
 import net.butfly.albacore.dbo.criteria.Page;
@@ -23,18 +16,65 @@ import net.butfly.albacore.orm.jdbc.dao.UserDAO;
 import net.butfly.albacore.orm.jdbc.mapper.Contact;
 import net.butfly.albacore.orm.jdbc.mapper.ContactKey.Type;
 import net.butfly.albacore.orm.jdbc.mapper.User;
+import net.butfly.albacore.test.SpringCase;
 
-public class ORMTest {
-	ApplicationContext spring;
-	UserDAO userDAO;
-	ContactDAO contactDAO;
+public class ORMTest extends SpringCase {
+	private UserDAO userDAO;
+	private ContactDAO contactDAO;
 
-	public ORMTest(DataSource datasource) throws SQLException {
-		super();
-		spring = new GenericXmlApplicationContext("net/butfly/albacore/orm/jdbc/spring/beans.xml");
-		userDAO = spring.getBean(UserDAO.class);
-		contactDAO = spring.getBean(ContactDAO.class);
-		Connection conn = datasource.getConnection();
+	@Override
+	protected String[] getConfiguration() {
+		return new String[] { "net/butfly/albacore/orm/jdbc/spring/beans.xml" };
+	}
+
+	@Override
+	protected void initialize() {
+		userDAO = getBean(UserDAO.class);
+		contactDAO = getBean(ContactDAO.class);
+		try {
+			this.createTables();
+		} catch (SQLException e) {
+			logger.error("H2 Database table create failure", e);
+		}
+	}
+
+	@Test
+	public void orm() throws SQLException {
+		for (Entry<User, Contact[]> e : INIT_DATA.entrySet()) {
+			String id = userDAO.insert(e.getKey());
+			for (Contact c : e.getValue())
+				c.setUserId(id);
+			contactDAO.insert(e.getValue());
+		}
+
+		User[] all = userDAO.select(User.class, new Criteria(), Page.ALL_RECORD());
+		logger.info("All user records count: " + all.length);
+		Contact[] allc = contactDAO.select(Contact.class, new Criteria(), Page.ALL_RECORD());
+		logger.info("All contact records count: " + allc.length);
+		allc = contactDAO.delete(Contact.class, new Criteria());
+		logger.info("Removed contact records count: " + allc.length);
+		allc = contactDAO.select(Contact.class, new Criteria(), Page.ALL_RECORD());
+		logger.info("Remained contact records count: " + allc.length);
+	}
+
+	@Test
+	public void color() {
+		logger.trace("Colour testing for.");
+		logger.debug("Colour testing for.");
+		logger.info("Colour testing for.");
+		logger.warn("Colour testing for.");
+		logger.error("Colour testing for.", new RuntimeException("Test error throwing and logging."));
+	}
+
+	private final static Map<User, Contact[]> INIT_DATA = new HashMap<>();
+
+	static {
+		INIT_DATA.put(new User("张欣", false, "123456"), new Contact[] { new Contact(null, Type.EMAIL, "zhangx@hzcominfo.com"),
+				new Contact(null, Type.MOBILE, "+8613958194045"), new Contact(null, Type.QQ_NUM, "14278797") });
+	}
+
+	private void createTables() throws SQLException {
+		Connection conn = dataSources[0].getConnection();
 		try {
 			conn.setAutoCommit(false);
 			Statement stmt = conn.createStatement();
@@ -50,41 +90,5 @@ public class ORMTest {
 			conn.commit();
 			conn.close();
 		}
-	}
-
-	private final static Map<User, Contact[]> INIT_DATA = new HashMap<>();
-
-	static {
-		INIT_DATA.put(new User("张欣", false, "123456"), new Contact[] { new Contact(null, Type.EMAIL, "zhangx@hzcominfo.com"),
-				new Contact(null, Type.MOBILE, "+8613958194045"), new Contact(null, Type.QQ_NUM, "14278797") });
-	}
-
-	public static void main(String[] args) throws SQLException, NamingException {
-		ORMTest test = new ORMTest(jndi());
-
-		for (Entry<User, Contact[]> e : INIT_DATA.entrySet()) {
-			String id = test.userDAO.insert(e.getKey());
-			for (Contact c : e.getValue())
-				c.setUserId(id);
-			test.contactDAO.insert(e.getValue());
-		}
-
-		User[] all = test.userDAO.select(User.class, new Criteria(), Page.ALL_RECORD());
-		Logger.info(test, "All user records count: " + all.length);
-		Contact[] allc = test.contactDAO.select(Contact.class, new Criteria(), Page.ALL_RECORD());
-		Logger.info(test, "All contact records count: " + allc.length);
-		allc = test.contactDAO.delete(Contact.class, new Criteria());
-		Logger.info(test, "Removed contact records count: " + allc.length);
-		allc = test.contactDAO.select(Contact.class, new Criteria(), Page.ALL_RECORD());
-		Logger.info(test, "Remained contact records count: " + allc.length);
-	}
-
-	private static DataSource jndi() throws NamingException {
-		InitialContext ctxt = new InitialContext();
-		DataSource ds = (DataSource) ctxt.lookup("jdbc.orm-jdbc-test");
-		// rebind for alias if needed
-		ctxt.rebind("java:comp/env/jdbc/orm-jdbc-test", ds);
-		ctxt.lookup("java:comp/env/jdbc/orm-jdbc-test");
-		return ds;
 	}
 }
