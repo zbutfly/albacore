@@ -6,26 +6,16 @@
 		<artifactId>albacore</artifactId>
 		<version>3.0.0-SNAPSHOT</version>
 	</parent>
-	<artifactId>albacore-orm-hbase</artifactId>
-	<name>albacore-orm-hbase</name>
+	<artifactId>albacore-serializer-core</artifactId>
+	<name>albacore-serializer-core</name>
 	<build>
-		<finalName>albacore-orm-hbase</finalName>
+		<finalName>albacore-serializer-core</finalName>
 	</build>
 	<dependencies>
 		<dependency>
 			<groupId>net.butfly.albacore</groupId>
-			<artifactId>albacore-orm</artifactId>
+			<artifactId>albacore-core</artifactId>
 			<version>${deps.version.albacore}</version>
-			<exclusions>
-				<exclusion>
-					<artifactId>mybatis-spring</artifactId>
-					<groupId>org.mybatis</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>mybatis</artifactId>
-					<groupId>org.mybatis</groupId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 	</dependencies>
 </project>

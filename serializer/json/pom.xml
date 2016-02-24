@@ -6,34 +6,21 @@
 		<artifactId>albacore</artifactId>
 		<version>3.0.0-SNAPSHOT</version>
 	</parent>
-	<artifactId>albacore-orm-jdbc</artifactId>
-	<name>albacore-orm-jdbc</name>
+	<artifactId>albacore-serializer-json</artifactId>
+	<name>albacore-serializer-json</name>
 	<build>
-		<finalName>albacore-orm-jdbc</finalName>
+		<finalName>albacore-serializer-json</finalName>
 	</build>
 	<dependencies>
 		<dependency>
 			<groupId>net.butfly.albacore</groupId>
-			<artifactId>albacore-orm</artifactId>
+			<artifactId>albacore-serializer-core</artifactId>
 			<version>${deps.version.albacore}</version>
 		</dependency>
 		<dependency>
 			<groupId>net.butfly.albacore</groupId>
-			<artifactId>albacore-test</artifactId>
+			<artifactId>albacore-serializer-jackson</artifactId>
 			<version>${deps.version.albacore}</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>com.h2database</groupId>
-			<artifactId>h2</artifactId>
-			<version>1.4.191</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>com.zaxxer</groupId>
-			<artifactId>HikariCP</artifactId>
-			<version>2.4.3</version>
-			<scope>test</scope>
 		</dependency>
 	</dependencies>
 </project>

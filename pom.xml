@@ -19,6 +19,7 @@
 	</scm>
 	<modules>
 		<module>core</module>
+		<module>serializer</module>
 		<module>async</module>
 		<module>frame</module>
 		<module>orm</module>

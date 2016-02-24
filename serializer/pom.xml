@@ -7,10 +7,10 @@
 		<version>3.0.0-SNAPSHOT</version>
 	</parent>
 	<groupId>net.butfly.albacore</groupId>
-	<artifactId>albacore-orm</artifactId>
+	<artifactId>albacore-serialize</artifactId>
 	<version>3.0.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
-	<name>albacore-orm</name>
+	<name>albacore-serialize</name>
 	<scm>
 		<connection>git@github.com:zbutfly/albacore.git</connection>
 		<developerConnection>git@github.com:zbutfly/albacore.git</developerConnection>
@@ -19,10 +19,10 @@
 	</scm>
 	<modules>
 		<module>core</module>
-		<module>hbase</module>
-		<module>jdbc</module>
-		<module>mongodb</module>
-		<module>nosql</module>
-		<module>solr</module>
+		<module>hessian</module>
+		<module>json</module>
+		<module>bson</module>
+		<module>jackson</module>
+		<module>kryo</module>
 	</modules>
 </project>
