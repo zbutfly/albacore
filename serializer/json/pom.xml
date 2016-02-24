@@ -17,5 +17,10 @@
 			<artifactId>albacore-serializer-core</artifactId>
 			<version>${deps.version.albacore}</version>
 		</dependency>
+		<dependency>
+			<groupId>net.butfly.albacore</groupId>
+			<artifactId>albacore-serializer-jackson</artifactId>
+			<version>${deps.version.albacore}</version>
+		</dependency>
 	</dependencies>
 </project>

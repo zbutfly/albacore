@@ -6,7 +6,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.Collection;
-import java.util.List;
+import java.util.Map;
 
 import com.google.common.reflect.TypeToken;
 
@@ -14,20 +14,18 @@ import com.google.common.reflect.TypeToken;
 public final class Generics extends Utils {
 	public static <E> Class<E> resolveGenericParameter(final Type implType, final Class<?> declareClass,
 			final String genericParamName) {
-		TypeVariable<?>[] vv = declareClass.getTypeParameters();
-		for (TypeVariable<?> v : vv) {
-			if (genericParamName.equals(v.getName())) return (Class<E>) TypeToken.of(implType).resolveType(v).getRawType();
-		}
-		return null;
+		return (Class<E>) resolveGenericParameters(implType, declareClass).get(genericParamName);
 	}
 
-	public static Class<?>[] resolveGenericParameters(final Type implType, final Class<?> declareClass) {
-		List<Class<?>> types = Reflections.constructInterface(List.class);
-		TypeVariable<?>[] vv = declareClass.getTypeParameters();
-		for (TypeVariable<?> v : vv) {
-			types.add((Class<?>) TypeToken.of(implType).resolveType(v).getRawType());
-		}
-		return toArray(types);
+	public static Map<String, Class<?>> resolveGenericParameters(final Type implType, final Class<?> declareClass) {
+		return Instances.fetch(() -> {
+			Map<String, Class<?>> types = Reflections.constructInterface(Map.class);
+			TypeVariable<?>[] vv = declareClass.getTypeParameters();
+			for (TypeVariable<?> v : vv) {
+				types.put(v.getName(), (Class<?>) TypeToken.of(implType).resolveType(v).getRawType());
+			};
+			return types;
+		} , implType, declareClass);
 	}
 
 	public static Class<?> resolveReturnType(final Type implType, Method method) {
@@ -38,8 +36,8 @@ public final class Generics extends Utils {
 		return TypeToken.of(type).resolveType(field.getGenericType()).getRawType();
 	}
 
-	public static <E> Type getGenericClass(E entity) {
-		return TypeToken.of(entity.getClass()).getType();
+	public static <E> Class<E> getGenericClass(E... entity) {
+		return (Class<E>) TypeToken.of(entity.getClass().getComponentType()).getType();
 	}
 
 	public static <E> E[] toArray(Collection<E> list, Class<E> clazz) {
