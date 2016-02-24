@@ -135,8 +135,8 @@ public class SwiftContext {
 		return this.ll(new ListOption());
 	}
 
-	public ContainerMeta[] ll(ListOption option) throws OperationFailureException, UnknownResponseException,
-			AuthenticationFailureException {
+	public ContainerMeta[] ll(ListOption option)
+			throws OperationFailureException, UnknownResponseException, AuthenticationFailureException {
 		String r = this.getListResponse(null, null == option ? new ListOption() : option);
 		return null == r ? new ContainerMeta[0] : this.gson.fromJson(r, ContainerMeta[].class);
 	}
@@ -149,8 +149,8 @@ public class SwiftContext {
 	 * @throws UnknownResponseException
 	 * @throws AuthenticationFailureException
 	 */
-	public ContainerMeta lsattr(String container) throws OperationFailureException, UnknownResponseException,
-			AuthenticationFailureException {
+	public ContainerMeta lsattr(String container)
+			throws OperationFailureException, UnknownResponseException, AuthenticationFailureException {
 		HttpResponse resp = this.executeRequest(new HttpHead(this.serviceUrl + "/" + container));
 		int c = this.handleStatusCode(resp, 204, 404);
 		if (c == 404) throw new OperationFailureException("Swift container metadata failure for given container not found.");
@@ -184,8 +184,8 @@ public class SwiftContext {
 		return this.ll(container, null);
 	}
 
-	public ObjectMeta[] ll(String container, ListOption option) throws OperationFailureException, UnknownResponseException,
-			AuthenticationFailureException {
+	public ObjectMeta[] ll(String container, ListOption option)
+			throws OperationFailureException, UnknownResponseException, AuthenticationFailureException {
 		String r = this.getListResponse(container, null == option ? new ListOption() : option);
 		return null == r ? new ObjectMeta[0] : this.gson.fromJson(r, ObjectMeta[].class);
 	}
@@ -262,14 +262,15 @@ public class SwiftContext {
 	}
 
 	/**
-	 * Retrieve object (GET /account/container/object) REMEMBER: Close the result InputStream after using...
+	 * Retrieve object (GET /account/container/object) REMEMBER: Close the
+	 * result InputStream after using...
 	 * 
 	 * @throws OperationFailureException
 	 * @throws UnknownResponseException
 	 * @throws AuthenticationFailureException
 	 */
-	public InputStream cat(String container, String object, FetchOption option) throws OperationFailureException,
-			UnknownResponseException, AuthenticationFailureException {
+	public InputStream cat(String container, String object, FetchOption option)
+			throws OperationFailureException, UnknownResponseException, AuthenticationFailureException {
 		HttpGet req = new HttpGet(this.serviceUrl + "/" + container + "/" + object);
 		if (null != option) for (Header h : option.toHeaders())
 			req.addHeader(h);
@@ -296,8 +297,8 @@ public class SwiftContext {
 	 * @throws UnknownResponseException
 	 * @throws AuthenticationFailureException
 	 */
-	public void cp(InputStream fromObjectStream, String toContainer, String toObject) throws OperationFailureException,
-			UnknownResponseException, AuthenticationFailureException {
+	public void cp(InputStream fromObjectStream, String toContainer, String toObject)
+			throws OperationFailureException, UnknownResponseException, AuthenticationFailureException {
 		this.cp(fromObjectStream, toContainer, toObject, HTTP.OCTET_STREAM_TYPE, null);
 	}
 
@@ -311,11 +312,10 @@ public class SwiftContext {
 		this.cp(fromObjectStream, toContainer, toObject, HTTP.OCTET_STREAM_TYPE, metadata);
 	}
 
-	public void cp(InputStream fromObjectStream, String toContainer, String toObject, String contentType,
-			Map<String, String> metadata) throws OperationFailureException, UnknownResponseException,
-			AuthenticationFailureException {
-		String msg = " copying to swift as user [" + this.username + "], to destination container [" + toContainer
-				+ "] and object [" + toObject + "] in chunked mode.";
+	public void cp(InputStream fromObjectStream, String toContainer, String toObject, String contentType, Map<String, String> metadata)
+			throws OperationFailureException, UnknownResponseException, AuthenticationFailureException {
+		String msg = " copying to swift as user [" + this.username + "], to destination container [" + toContainer + "] and object ["
+				+ toObject + "] in chunked mode.";
 		logger.info("Begin" + msg);
 		HttpPut req = this.initcp(toContainer, toObject, metadata);
 		BasicHttpEntity entity = new BasicHttpEntity();
@@ -352,10 +352,9 @@ public class SwiftContext {
 
 	// TODO: now no MD5 checksum.
 	public void cp(InputStream fromObjectStream, String toContainer, String toObject, long bytes, String contentType,
-			Map<String, String> metadata) throws OperationFailureException, UnknownResponseException,
-			AuthenticationFailureException {
-		String msg = " copying to swift as user [" + this.username + "], to destination container [" + toContainer
-				+ "] and object [" + toObject + "] with fixed size [" + bytes + "].";
+			Map<String, String> metadata) throws OperationFailureException, UnknownResponseException, AuthenticationFailureException {
+		String msg = " copying to swift as user [" + this.username + "], to destination container [" + toContainer + "] and object ["
+				+ toObject + "] with fixed size [" + bytes + "].";
 		logger.info("Begin" + msg);
 		HttpPut req = this.initcp(toContainer, toObject, metadata);
 		BasicHttpEntity entity = new BasicHttpEntity();
@@ -377,7 +376,8 @@ public class SwiftContext {
 		// TODO: checksum
 		// String checksumResp = resp.getFirstHeader("ETag").getValue();
 		// if (null != checksumReq && !checksumReq.equals(checksumResp))
-		// logger.warn("\tcpoying successfully, but checksum returned from swift is not correct: original ["
+		// logger.warn("\tcpoying successfully, but checksum returned from swift
+		// is not correct: original ["
 		// + checksumReq + "], returned [" + checksumResp + "].");
 	}
 
@@ -391,8 +391,8 @@ public class SwiftContext {
 		return req;
 	}
 
-	private HttpResponse docp(HttpUriRequest req) throws OperationFailureException, UnknownResponseException,
-			AuthenticationFailureException {
+	private HttpResponse docp(HttpUriRequest req)
+			throws OperationFailureException, UnknownResponseException, AuthenticationFailureException {
 		HttpResponse resp = this.executeRequest(req);
 		int c = this.handleStatusCode(resp, 201, 412, 422);
 		if (c == 422) throw new OperationFailureException("Swift object upload failure for wrong checksum.");
@@ -402,7 +402,8 @@ public class SwiftContext {
 	}
 
 	/**
-	 * TODO: update the metadata of new object to be copied, maybe copy to self to change the Content-Type
+	 * TODO: update the metadata of new object to be copied, maybe copy to self
+	 * to change the Content-Type
 	 * 
 	 * @param fromContainer
 	 * @param fromObject
@@ -430,8 +431,8 @@ public class SwiftContext {
 	 * @throws UnknownResponseException
 	 * @throws AuthenticationFailureException
 	 */
-	public void rm(String container, String object) throws OperationFailureException, UnknownResponseException,
-			AuthenticationFailureException {
+	public void rm(String container, String object)
+			throws OperationFailureException, UnknownResponseException, AuthenticationFailureException {
 		HttpResponse resp = this.executeRequest(new HttpDelete(this.serviceUrl + "/" + container + "/" + object));
 		int c = this.handleStatusCode(resp, 204, 404);
 		if (c == 404) throw new OperationFailureException("Swift object remove failure for given object not found.");
@@ -439,8 +440,8 @@ public class SwiftContext {
 	}
 
 	// private routines
-	private String getListResponse(String container, ListOption option) throws OperationFailureException,
-			UnknownResponseException, AuthenticationFailureException {
+	private String getListResponse(String container, ListOption option)
+			throws OperationFailureException, UnknownResponseException, AuthenticationFailureException {
 		StringBuilder sb = new StringBuilder(this.serviceUrl);
 		if (null != container) sb.append("/").append(container);
 		if (null != option) {
@@ -488,7 +489,8 @@ public class SwiftContext {
 	/**
 	 * @param response
 	 * @param ignoreCodes
-	 *            http result codes handler by invoker, they should be ordered for binary search.
+	 *            http result codes handler by invoker, they should be ordered
+	 *            for binary search.
 	 * @return
 	 * @throws UnknownResponseException
 	 * @throws OperationFailureException
@@ -509,13 +511,13 @@ public class SwiftContext {
 		return h.getValue();
 	}
 
-	private HttpResponse executeRequest(HttpUriRequest req) throws OperationFailureException, AuthenticationFailureException,
-			UnknownResponseException {
+	private HttpResponse executeRequest(HttpUriRequest req)
+			throws OperationFailureException, AuthenticationFailureException, UnknownResponseException {
 		return this.executeRequest(req, true);
 	}
 
-	private HttpResponse executeRequest(HttpUriRequest req, boolean reauth) throws OperationFailureException,
-			AuthenticationFailureException, UnknownResponseException {
+	private HttpResponse executeRequest(HttpUriRequest req, boolean reauth)
+			throws OperationFailureException, AuthenticationFailureException, UnknownResponseException {
 		if (null != this.token) req.addHeader(AUTH_TOKEN_HEADER_NAME, this.token);
 
 		// HttpClient client = HttpClientFactory.getSharedClient();

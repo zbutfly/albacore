@@ -26,15 +26,9 @@
 	</build>
 	<dependencies>
 		<dependency>
-			<groupId>
-				net.butfly.albacore
-			</groupId>
-			<artifactId>
-				albacore-orm-core
-			</artifactId>
-			<version>
-				${deps.version.albacore}
-			</version>
+			<groupId>net.butfly.albacore</groupId>
+			<artifactId>albacore-orm-core</artifactId>
+			<version>${deps.version.albacore}</version>
 			<exclusions>
 				<exclusion>
 					<artifactId>

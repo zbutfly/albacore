@@ -3,15 +3,9 @@
 		4.0.0
 	</modelVersion>
 	<parent>
-		<groupId>
-			net.butfly.albacore
-		</groupId>
-		<artifactId>
-			albacore-serializer
-		</artifactId>
-		<version>
-			3.0.0-SNAPSHOT
-		</version>
+		<groupId>net.butfly.albacore</groupId>
+		<artifactId>albacore-serializer</artifactId>
+		<version>3.0.0-SNAPSHOT</version>
 	</parent>
 	<artifactId>
 		albacore-serializer-kryo

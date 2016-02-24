@@ -13,21 +13,11 @@
 			3.0.0-SNAPSHOT
 		</version>
 	</parent>
-	<groupId>
-		net.butfly.albacore
-	</groupId>
-	<artifactId>
-		albacore-serializer
-	</artifactId>
-	<version>
-		3.0.0-SNAPSHOT
-	</version>
-	<packaging>
-		pom
-	</packaging>
-	<name>
-		albacore-serialize
-	</name>
+	<groupId>net.butfly.albacore</groupId>
+	<artifactId>albacore-serializer</artifactId>
+	<version>3.0.0-SNAPSHOT</version>
+	<packaging>pom</packaging>
+	<name>albacore-serialize</name>
 	<scm>
 		<connection>
 			git@github.com:zbutfly/albacore.git
