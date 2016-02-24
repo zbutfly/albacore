@@ -6,10 +6,10 @@
 		<artifactId>albacore-orm</artifactId>
 		<version>3.0.0-SNAPSHOT</version>
 	</parent>
-	<artifactId>albacore-orm</artifactId>
-	<name>albacore-orm</name>
+	<artifactId>albacore-orm-core</artifactId>
+	<name>albacore-orm-core</name>
 	<build>
-		<finalName>albacore-orm</finalName>
+		<finalName>albacore-orm-core</finalName>
 	</build>
 	<dependencies>
 		<dependency>

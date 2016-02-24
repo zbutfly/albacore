@@ -38,6 +38,7 @@ import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Joiner;
 import com.google.gson.Gson;
 
 @Deprecated
@@ -101,8 +102,7 @@ public class SwiftContext {
 		HttpResponse resp = this.executeRequest(new HttpHead(this.serviceUrl));
 		int c = this.handleStatusCode(resp, 204, 404);
 		if (c == 404) throw new OperationFailureException("Swift account metadata failure for given container not found.");
-		if (c != 204)
-			throw new OperationFailureException("Swift account emtadata failurewith invalid response: " + resp.toString());
+		if (c != 204) throw new OperationFailureException("Swift account emtadata failurewith invalid response: " + resp.toString());
 		ContainerMeta r = new ContainerMeta();
 		try {
 			r.setName(this.username);
@@ -125,8 +125,7 @@ public class SwiftContext {
 		return this.ls(new ListOption());
 	}
 
-	public String[] ls(ListOption option) throws OperationFailureException, UnknownResponseException,
-			AuthenticationFailureException {
+	public String[] ls(ListOption option) throws OperationFailureException, UnknownResponseException, AuthenticationFailureException {
 		if (null != option) option.setFormat(null);
 		String r = this.getListResponse(null, option);
 		return null == r ? new String[0] : r.split("\n");
@@ -155,8 +154,7 @@ public class SwiftContext {
 		HttpResponse resp = this.executeRequest(new HttpHead(this.serviceUrl + "/" + container));
 		int c = this.handleStatusCode(resp, 204, 404);
 		if (c == 404) throw new OperationFailureException("Swift container metadata failure for given container not found.");
-		if (c != 204)
-			throw new OperationFailureException("Swift container emtadata failurewith invalid response: " + resp.toString());
+		if (c != 204) throw new OperationFailureException("Swift container emtadata failurewith invalid response: " + resp.toString());
 		ContainerMeta r = new ContainerMeta();
 		r.setName(container);
 		r.setCount(Integer.parseInt(this.getHeaderValue(resp, "X-Container-Object-Count")));
@@ -171,20 +169,18 @@ public class SwiftContext {
 	 * @throws OperationFailureException
 	 * @throws AuthenticationFailureException
 	 */
-	public String[] ls(String container) throws OperationFailureException, UnknownResponseException,
-			AuthenticationFailureException {
+	public String[] ls(String container) throws OperationFailureException, UnknownResponseException, AuthenticationFailureException {
 		return this.ls(container, null);
 	}
 
-	public String[] ls(String container, ListOption option) throws OperationFailureException, UnknownResponseException,
-			AuthenticationFailureException {
+	public String[] ls(String container, ListOption option)
+			throws OperationFailureException, UnknownResponseException, AuthenticationFailureException {
 		if (null != option) option.setFormat(null);
 		String r = this.getListResponse(container, option);
 		return null == r ? new String[0] : r.split("\n");
 	}
 
-	public ObjectMeta[] ll(String container) throws OperationFailureException, UnknownResponseException,
-			AuthenticationFailureException {
+	public ObjectMeta[] ll(String container) throws OperationFailureException, UnknownResponseException, AuthenticationFailureException {
 		return this.ll(container, null);
 	}
 
@@ -201,14 +197,11 @@ public class SwiftContext {
 	 * @throws OperationFailureException
 	 * @throws AuthenticationFailureException
 	 */
-	public void mkdir(String container) throws OperationFailureException, UnknownResponseException,
-			AuthenticationFailureException {
+	public void mkdir(String container) throws OperationFailureException, UnknownResponseException, AuthenticationFailureException {
 		HttpResponse resp = this.executeRequest(new HttpPut(this.serviceUrl + "/" + container));
 		int c = this.handleStatusCode(resp, 202);
-		if (c == 202)
-			throw new OperationFailureException("Swift container create failure for given container already existed.");
-		if (c != 201)
-			throw new OperationFailureException("Swift container create failurewith invalid response: " + resp.toString());
+		if (c == 202) throw new OperationFailureException("Swift container create failure for given container already existed.");
+		if (c != 201) throw new OperationFailureException("Swift container create failurewith invalid response: " + resp.toString());
 	}
 
 	/**
@@ -218,14 +211,12 @@ public class SwiftContext {
 	 * @throws UnknownResponseException
 	 * @throws AuthenticationFailureException
 	 */
-	public void rmdir(String container) throws OperationFailureException, UnknownResponseException,
-			AuthenticationFailureException {
+	public void rmdir(String container) throws OperationFailureException, UnknownResponseException, AuthenticationFailureException {
 		HttpResponse resp = this.executeRequest(new HttpDelete(this.serviceUrl + "/" + container));
 		int c = this.handleStatusCode(resp, 204, 404, 409);
 		if (c == 404) throw new OperationFailureException("Swift container remove failure for given container not found.");
 		if (c == 409) throw new OperationFailureException("Swift container remove failure for given container is not empty.");
-		if (c != 204)
-			throw new OperationFailureException("Swift container remove failure with invalid response: " + resp.toString());
+		if (c != 204) throw new OperationFailureException("Swift container remove failure with invalid response: " + resp.toString());
 	}
 
 	// Storage Objects
@@ -236,13 +227,12 @@ public class SwiftContext {
 	 * @throws UnknownResponseException
 	 * @throws AuthenticationFailureException
 	 */
-	public Map<String, String> lsattr(String container, String object) throws OperationFailureException,
-			UnknownResponseException, AuthenticationFailureException {
+	public Map<String, String> lsattr(String container, String object)
+			throws OperationFailureException, UnknownResponseException, AuthenticationFailureException {
 		HttpResponse resp = this.executeRequest(new HttpHead(this.serviceUrl + "/" + container + "/" + object));
 		int c = this.handleStatusCode(resp, 200, 404);
 		if (c == 404) throw new OperationFailureException("Swift object metadata failure for given object not found.");
-		if (c != 200)
-			throw new OperationFailureException("Swift container emtadata failurewith invalid response: " + resp.toString());
+		if (c != 200) throw new OperationFailureException("Swift container emtadata failurewith invalid response: " + resp.toString());
 		Map<String, String> r = new HashMap<String, String>();
 		for (Header h : resp.getAllHeaders())
 			if (h.getName().startsWith(OBJECT_META_PREFIX)) {
@@ -260,16 +250,15 @@ public class SwiftContext {
 	 * @throws UnknownResponseException
 	 * @throws AuthenticationFailureException
 	 */
-	public void touch(String container, String object, Map<String, String> metadata) throws OperationFailureException,
-			UnknownResponseException, AuthenticationFailureException {
+	public void touch(String container, String object, Map<String, String> metadata)
+			throws OperationFailureException, UnknownResponseException, AuthenticationFailureException {
 		HttpPost req = new HttpPost(this.serviceUrl + "/" + container + "/" + object);
 		for (String name : metadata.keySet())
 			req.addHeader(OBJECT_META_PREFIX + name, metadata.get(name));
 		HttpResponse resp = this.executeRequest(req);
 		int c = this.handleStatusCode(resp, 202, 404);
 		if (c == 404) throw new OperationFailureException("Swift object metadata failure for given object not found.");
-		if (c != 202)
-			throw new OperationFailureException("Swift object memtadata failure with invalid response: " + resp.toString());
+		if (c != 202) throw new OperationFailureException("Swift object memtadata failure with invalid response: " + resp.toString());
 	}
 
 	/**
@@ -407,10 +396,8 @@ public class SwiftContext {
 		HttpResponse resp = this.executeRequest(req);
 		int c = this.handleStatusCode(resp, 201, 412, 422);
 		if (c == 422) throw new OperationFailureException("Swift object upload failure for wrong checksum.");
-		if (c == 412)
-			throw new OperationFailureException("Swift object upload failure for missing Content-Type or Content_Length.");
-		if (c != 201)
-			throw new OperationFailureException("Swift object upload failure with invalid response: " + resp.toString());
+		if (c == 412) throw new OperationFailureException("Swift object upload failure for missing Content-Type or Content_Length.");
+		if (c != 201) throw new OperationFailureException("Swift object upload failure with invalid response: " + resp.toString());
 		return resp;
 	}
 
@@ -432,10 +419,8 @@ public class SwiftContext {
 		HttpResponse resp = this.executeRequest(req);
 		int c = this.handleStatusCode(resp, 201, 412, 422);
 		if (c == 422) throw new OperationFailureException("Swift object upload failure for wrong checksum.");
-		if (c == 412)
-			throw new OperationFailureException("Swift object upload failure for missing Content-Type or Content_Length.");
-		if (c != 201)
-			throw new OperationFailureException("Swift object upload failure with invalid response: " + resp.toString());
+		if (c == 412) throw new OperationFailureException("Swift object upload failure for missing Content-Type or Content_Length.");
+		if (c != 201) throw new OperationFailureException("Swift object upload failure with invalid response: " + resp.toString());
 	}
 
 	/**
@@ -450,8 +435,7 @@ public class SwiftContext {
 		HttpResponse resp = this.executeRequest(new HttpDelete(this.serviceUrl + "/" + container + "/" + object));
 		int c = this.handleStatusCode(resp, 204, 404);
 		if (c == 404) throw new OperationFailureException("Swift object remove failure for given object not found.");
-		if (c != 204)
-			throw new OperationFailureException("Swift object remove failure with invalid response: " + resp.toString());
+		if (c != 204) throw new OperationFailureException("Swift object remove failure with invalid response: " + resp.toString());
 	}
 
 	// private routines
@@ -466,8 +450,7 @@ public class SwiftContext {
 		HttpResponse resp = this.executeRequest(new HttpGet(sb.toString()));
 		int c = this.handleStatusCode(resp, 200, 204, 404);
 		if (c == 204) return null;
-		if (c == 404)
-			throw new OperationFailureException("Swift list failure for given parent (account/container) not found.");
+		if (c == 404) throw new OperationFailureException("Swift list failure for given parent (account/container) not found.");
 		if (c != 200) throw new OperationFailureException("Swift list failure with invalid response: " + resp.toString());
 		HttpEntity entity = resp.getEntity();
 		if (null == entity) {
@@ -511,8 +494,7 @@ public class SwiftContext {
 	 * @throws OperationFailureException
 	 * @throws AuthenticationFailureException
 	 */
-	private int handleStatusCode(HttpResponse response, int... ignoreCodes) throws UnknownResponseException,
-			OperationFailureException {
+	private int handleStatusCode(HttpResponse response, int... ignoreCodes) throws UnknownResponseException, OperationFailureException {
 		ResponseStatus r = this.fetchStatus(response);
 		int c = r.code;
 		if (c < 300) return c;
@@ -522,9 +504,8 @@ public class SwiftContext {
 
 	private String getHeaderValue(HttpResponse resp, String name) throws UnknownResponseException {
 		Header h = resp.getFirstHeader(name);
-		if (null == h)
-			throw new UnknownResponseException("Can not fetch required value of header with name [" + name + "] from response:"
-					+ resp.toString());
+		if (null == h) throw new UnknownResponseException(
+				"Can not fetch required value of header with name [" + name + "] from response:" + resp.toString());
 		return h.getValue();
 	}
 
@@ -661,26 +642,24 @@ public class SwiftContext {
 			// •Range: bytes=10-15 - the five bytes after a 10-byte offset
 			// •Range: bytes=32- - all data after the first 32 bytes of the
 			// object
-			if (range != null)
-				switch (range.length) {
-				case 1:
-					if (range[0] < 0) r.add(new BasicHeader(RANGE_HEADER_NAME, RANGE_VALUE_PREFIX + range[0]));
-					else if (range[0] > 0) r.add(new BasicHeader(RANGE_HEADER_NAME, RANGE_VALUE_PREFIX + range[0] + "-"));
-					break;
-				case 2:
-					if (range[0] > 0 && range[1] > 0 && range[1] > range[0])
-						r.add(new BasicHeader(RANGE_HEADER_NAME, RANGE_VALUE_PREFIX + range[0] + "-" + range[1]));
-					break;
-				default:
-					break;
-				}
+			if (range != null) switch (range.length) {
+			case 1:
+				if (range[0] < 0) r.add(new BasicHeader(RANGE_HEADER_NAME, RANGE_VALUE_PREFIX + range[0]));
+				else if (range[0] > 0) r.add(new BasicHeader(RANGE_HEADER_NAME, RANGE_VALUE_PREFIX + range[0] + "-"));
+				break;
+			case 2:
+				if (range[0] > 0 && range[1] > 0 && range[1] > range[0])
+					r.add(new BasicHeader(RANGE_HEADER_NAME, RANGE_VALUE_PREFIX + range[0] + "-" + range[1]));
+				break;
+			default:
+				break;
+			}
 
 			if (this.match != null && this.match.length > 0)
-				r.add(new BasicHeader(IF_MATCH_HEADER_NAME, "\"" + Texts.join(',', this.match) + "\""));
+				r.add(new BasicHeader(IF_MATCH_HEADER_NAME, "\"" + Joiner.on(',').join(this.match) + "\""));
 			if (this.noneMatch != null && this.noneMatch.length > 0)
-				r.add(new BasicHeader(IF_NONE_MATCH_HEADER_NAME, "\"" + Texts.join(',', this.noneMatch) + "\""));
-			if (this.modifiedSince != null)
-				r.add(new BasicHeader(IF_MODIFIED_SINCE_HEADER_NAME, DateUtils.formatDate(this.modifiedSince)));
+				r.add(new BasicHeader(IF_NONE_MATCH_HEADER_NAME, "\"" + Joiner.on(',').join(this.noneMatch) + "\""));
+			if (this.modifiedSince != null) r.add(new BasicHeader(IF_MODIFIED_SINCE_HEADER_NAME, DateUtils.formatDate(this.modifiedSince)));
 			if (this.unmodifiedSince != null)
 				r.add(new BasicHeader(IF_UNMODIFIED_SINCE_HEADER_NAME, DateUtils.formatDate(this.unmodifiedSince)));
 			return r.toArray(new Header[r.size()]);
