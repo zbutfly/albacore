@@ -10,14 +10,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import net.butfly.albacore.helper.swift.exception.AuthenticationFailureException;
-import net.butfly.albacore.helper.swift.exception.OperationFailureException;
-import net.butfly.albacore.helper.swift.exception.UnknownResponseException;
-import net.butfly.albacore.utils.Texts;
-import net.butfly.albacore.utils.http.HttpClientFactory;
-import net.butfly.albacore.utils.storage.swift.meta.ContainerMeta;
-import net.butfly.albacore.utils.storage.swift.meta.ObjectMeta;
-
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -40,6 +32,13 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Joiner;
 import com.google.gson.Gson;
+
+import net.butfly.albacore.helper.swift.exception.AuthenticationFailureException;
+import net.butfly.albacore.helper.swift.exception.OperationFailureException;
+import net.butfly.albacore.helper.swift.exception.UnknownResponseException;
+import net.butfly.albacore.utils.http.HttpClientFactory;
+import net.butfly.albacore.utils.storage.swift.meta.ContainerMeta;
+import net.butfly.albacore.utils.storage.swift.meta.ObjectMeta;
 
 @Deprecated
 public class SwiftContext {
