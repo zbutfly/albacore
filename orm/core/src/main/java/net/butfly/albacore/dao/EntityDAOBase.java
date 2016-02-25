@@ -72,14 +72,12 @@ public class EntityDAOBase extends EntityBasicDAOBase implements EntityDAO {
 	}
 
 	@Override
-	public <K extends Serializable, E extends AbstractEntity<K>> K[] selectKeys(Class<E> entityClass, Criteria criteria,
-			Page page) {
+	public <K extends Serializable, E extends AbstractEntity<K>> K[] selectKeys(Class<E> entityClass, Criteria criteria, Page page) {
 		return super.selectKeys(new SQL<E>(this.namespace, entityClass), criteria, page);
 	}
 
 	@Override
-	public <K extends Serializable, E extends AbstractEntity<K>> E[] select(Class<E> entityClass, Criteria criteria,
-			Page page) {
+	public <K extends Serializable, E extends AbstractEntity<K>> E[] select(Class<E> entityClass, Criteria criteria, Page page) {
 		return super.select(new SQL<E>(this.namespace, entityClass), criteria, page);
 	}
 }

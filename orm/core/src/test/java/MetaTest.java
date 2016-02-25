@@ -55,8 +55,7 @@ public class MetaTest {
 		System.out.println(target.getClass().getName());
 		MetaObject meta = Objects.createMeta(target);
 		for (String name : meta.getGetterNames())
-			System.out.println("<==" + "get [" + name + "]: " + meta.getValue(name) + "[" + meta.getGetterType(name).getName()
-					+ "]");
+			System.out.println("<==" + "get [" + name + "]: " + meta.getValue(name) + "[" + meta.getGetterType(name).getName() + "]");
 		for (String name : meta.getSetterNames())
 			System.out.println("==>" + "set [" + name + "]: " + "[" + meta.getGetterType(name).getName() + "]");
 		System.out.println("=================================");

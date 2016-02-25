@@ -68,8 +68,8 @@ public class BaseCacheImpl implements ICacheHelper {
 		try {
 			strategy.getMemCacheClient(serviceType).set(key_str, strategy.getExpiration(), value);
 		} catch (SystemException e) {
-			logger.error("some error with the " + (serviceType == CacheContant.MAIN_CACHE_SERVER ? "main" : "standby")
-					+ " cace server :" + e.getMessage());
+			logger.error("some error with the " + (serviceType == CacheContant.MAIN_CACHE_SERVER ? "main" : "standby") + " cace server :"
+					+ e.getMessage());
 			CacheConfigBase.notifyError(MemCachePond.getInstance().getServiceMark(serviceType));
 			throw new SystemException("SYS_121", e);
 		}

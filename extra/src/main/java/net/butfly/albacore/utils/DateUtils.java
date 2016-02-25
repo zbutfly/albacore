@@ -30,8 +30,8 @@ public final class DateUtils extends Utils {
 
 	// format hhmm (0000 ~ 2359) to a int value 10000 ~ 12359 for comparing
 	public static int format(String time) {
-		if (time.length() != 4) { throw new SystemException("TimeFormater : Format of time String is not right! actual(" + time
-				+ "), expected format(hhmm)"); }
+		if (time.length() != 4) { throw new SystemException(
+				"TimeFormater : Format of time String is not right! actual(" + time + "), expected format(hhmm)"); }
 		return Integer.valueOf(PREFIX + time).intValue();
 	}
 

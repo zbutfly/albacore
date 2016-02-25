@@ -25,8 +25,7 @@ public final class Tasks extends Utils {
 	static ExecutorService CORE_EXECUTOR = createExecutor();
 
 	@SuppressWarnings("unchecked")
-	public static <T> T[] executeSequential(ExecutorService executor, Class<T> targetClass,
-			final List<Task.Callable<T>> tasks) {
+	public static <T> T[] executeSequential(ExecutorService executor, Class<T> targetClass, final List<Task.Callable<T>> tasks) {
 		List<T> results = new ArrayList<T>();
 		List<Throwable> errors = new ArrayList<Throwable>();
 		for (Task.Callable<T> t : tasks)
@@ -36,9 +35,8 @@ public final class Tasks extends Utils {
 				errors.add(e.getCause());
 				logger.error("Sliced task failed at slices.", e.getCause());
 			}
-		if (!errors.isEmpty())
-			logger.error("Error in concurrence",
-					new AggregaedException("", "Error in concurrence", errors.toArray(new Throwable[errors.size()])));
+		if (!errors.isEmpty()) logger.error("Error in concurrence",
+				new AggregaedException("", "Error in concurrence", errors.toArray(new Throwable[errors.size()])));
 		T[] r = results.toArray((T[]) Array.newInstance(targetClass, results.size()));
 		return r;
 	}
@@ -156,8 +154,7 @@ public final class Tasks extends Utils {
 		}
 	}
 
-	private static <OUT> OUT fetch(Future<OUT> future, long timeout)
-			throws InterruptedException, ExecutionException, TimeoutException {
+	private static <OUT> OUT fetch(Future<OUT> future, long timeout) throws InterruptedException, ExecutionException, TimeoutException {
 		try {
 			return timeout > 0 ? future.get(timeout, TimeUnit.MILLISECONDS) : future.get();
 		} catch (InterruptedException e) {
@@ -181,12 +178,11 @@ public final class Tasks extends Utils {
 				c = 0;
 			}
 			if (c < -1) {
-				logger.warn("Albacore task concurrence configuration negative (" + c + "), use work stealing thread pool with "
-						+ -c + " parallelism.");
+				logger.warn("Albacore task concurrence configuration negative (" + c + "), use work stealing thread pool with " + -c
+						+ " parallelism.");
 				return Executors.newWorkStealingPool(-c);
 			} else if (c == -1) {
-				logger.warn(
-						"Albacore task concurrence configuration negative (-1), use work stealing thread pool with AUTO parallelism.");
+				logger.warn("Albacore task concurrence configuration negative (-1), use work stealing thread pool with AUTO parallelism.");
 				return Executors.newWorkStealingPool(-c);
 			} else if (c == 0) {
 				logger.info("Albacore task concurrence configuration (" + c + "), use inlimited cached thread pool.");

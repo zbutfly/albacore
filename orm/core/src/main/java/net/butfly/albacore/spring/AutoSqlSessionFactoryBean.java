@@ -58,13 +58,16 @@ import org.springframework.core.io.Resource;
 import org.springframework.jdbc.datasource.TransactionAwareDataSourceProxy;
 
 /**
- * {@code FactoryBean} that creates an MyBatis {@code SqlSessionFactory}. This is the usual way to set up a
- * shared MyBatis {@code SqlSessionFactory} in a Spring application context; the SqlSessionFactory can then
- * be passed to MyBatis-based DAOs via dependency injection.
+ * {@code FactoryBean} that creates an MyBatis {@code SqlSessionFactory}. This
+ * is the usual way to set up a shared MyBatis {@code SqlSessionFactory} in a
+ * Spring application context; the SqlSessionFactory can then be passed to
+ * MyBatis-based DAOs via dependency injection.
  *
- * Either {@code DataSourceTransactionManager} or {@code JtaTransactionManager} can be used for transaction
- * demarcation in combination with a {@code SqlSessionFactory}. JTA should be used for transactions which
- * span multiple databases or when container managed transactions (CMT) are being used.
+ * Either {@code DataSourceTransactionManager} or {@code JtaTransactionManager}
+ * can be used for transaction demarcation in combination with a
+ * {@code SqlSessionFactory}. JTA should be used for transactions which span
+ * multiple databases or when container managed transactions (CMT) are being
+ * used.
  *
  * @author Sean Zhang (butfly)
  * 
@@ -72,8 +75,7 @@ import org.springframework.jdbc.datasource.TransactionAwareDataSourceProxy;
  * @see #setDataSource
  * @version $Id$
  */
-public class AutoSqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>, InitializingBean,
-		ApplicationListener<ApplicationEvent> {
+public class AutoSqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>, InitializingBean, ApplicationListener<ApplicationEvent> {
 	private static final Logger logger = LoggerFactory.getLogger(AutoSqlSessionFactoryBean.class);
 	private static final String DEFAULT_MYBATIS_CACHE_CONF_PATTERN = "classpath*:**/mybatis-cache.xml";
 	private static final String DEFALUT_MYBATIS_CONF_PATTERN = "classpath*:**/mybatis-config.xml";
@@ -94,7 +96,8 @@ public class AutoSqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>
 	private Class<?>[] typeAliases;
 	private String typeAliasesPackage;
 	private Class<?> typeAliasesSuperType;
-	private DatabaseIdProvider databaseIdProvider; // issue #19. No default provider.
+	private DatabaseIdProvider databaseIdProvider; // issue #19. No default
+													// provider.
 	private ObjectFactory objectFactory;
 	private ObjectWrapperFactory objectWrapperFactory;
 
@@ -129,7 +132,8 @@ public class AutoSqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>
 	}
 
 	/**
-	 * Sets the DatabaseIdProvider. As of version 1.2.2 this variable is not initialized by default.
+	 * Sets the DatabaseIdProvider. As of version 1.2.2 this variable is not
+	 * initialized by default.
 	 *
 	 * @since 1.1.0
 	 * @param databaseIdProvider
@@ -165,8 +169,8 @@ public class AutoSqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>
 	}
 
 	/**
-	 * Super class which domain objects have to extend to have a type alias created. No effect if there is
-	 * no package to scan configured.
+	 * Super class which domain objects have to extend to have a type alias
+	 * created. No effect if there is no package to scan configured.
 	 *
 	 * @since 1.1.2
 	 *
@@ -192,8 +196,8 @@ public class AutoSqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>
 	}
 
 	/**
-	 * Set type handlers. They must be annotated with {@code MappedTypes} and optionally with
-	 * {@code MappedJdbcTypes}
+	 * Set type handlers. They must be annotated with {@code MappedTypes} and
+	 * optionally with {@code MappedJdbcTypes}
 	 *
 	 * @since 1.0.1
 	 *
@@ -205,7 +209,8 @@ public class AutoSqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>
 	}
 
 	/**
-	 * List of type aliases to register. They can be annotated with {@code Alias}
+	 * List of type aliases to register. They can be annotated with
+	 * {@code Alias}
 	 *
 	 * @since 1.0.1
 	 *
@@ -217,8 +222,9 @@ public class AutoSqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>
 	}
 
 	/**
-	 * If true, a final check is done on Configuration to assure that all mapped statements are fully loaded
-	 * and there is no one still pending to resolve includes. Defaults to false.
+	 * If true, a final check is done on Configuration to assure that all mapped
+	 * statements are fully loaded and there is no one still pending to resolve
+	 * includes. Defaults to false.
 	 *
 	 * @since 1.0.1
 	 *
@@ -230,49 +236,53 @@ public class AutoSqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>
 	}
 
 	/**
-	 * Set the location of the MyBatis {@code SqlSessionFactory} config file. A typical value is
-	 * "WEB-INF/mybatis-configuration.xml".
+	 * Set the location of the MyBatis {@code SqlSessionFactory} config file. A
+	 * typical value is "WEB-INF/mybatis-configuration.xml".
 	 */
 	public void setConfigLocation(Resource configLocation) {
 		this.configLocation = configLocation;
 	}
 
 	/**
-	 * Set locations of MyBatis mapper files that are going to be merged into the {@code SqlSessionFactory}
-	 * configuration at runtime.
+	 * Set locations of MyBatis mapper files that are going to be merged into
+	 * the {@code SqlSessionFactory} configuration at runtime.
 	 *
-	 * This is an alternative to specifying "&lt;sqlmapper&gt;" entries in an MyBatis config file. This
-	 * property being based on Spring's resource abstraction also allows for specifying resource patterns
-	 * here: e.g. "classpath*:sqlmap/*-mapper.xml".
+	 * This is an alternative to specifying "&lt;sqlmapper&gt;" entries in an
+	 * MyBatis config file. This property being based on Spring's resource
+	 * abstraction also allows for specifying resource patterns here: e.g.
+	 * "classpath*:sqlmap/*-mapper.xml".
 	 */
 	public void setMapperLocations(Resource[] mapperLocations) {
 		this.mapperLocations = mapperLocations;
 	}
 
 	/**
-	 * Set optional properties to be passed into the SqlSession configuration, as alternative to a
-	 * {@code &lt;properties&gt;} tag in the configuration xml file. This will be used to resolve
-	 * placeholders in the config file.
+	 * Set optional properties to be passed into the SqlSession configuration,
+	 * as alternative to a {@code &lt;properties&gt;} tag in the configuration
+	 * xml file. This will be used to resolve placeholders in the config file.
 	 */
 	public void setConfigurationProperties(Properties sqlSessionFactoryProperties) {
 		this.configurationProperties = sqlSessionFactoryProperties;
 	}
 
 	/**
-	 * Set the JDBC {@code DataSource} that this instance should manage transactions for. The
-	 * {@code DataSource} should match the one used by the {@code SqlSessionFactory}: for example, you could
-	 * specify the same JNDI DataSource for both.
+	 * Set the JDBC {@code DataSource} that this instance should manage
+	 * transactions for. The {@code DataSource} should match the one used by the
+	 * {@code SqlSessionFactory}: for example, you could specify the same JNDI
+	 * DataSource for both.
 	 *
-	 * A transactional JDBC {@code Connection} for this {@code DataSource} will be provided to application
-	 * code accessing this {@code DataSource} directly via {@code DataSourceUtils} or
+	 * A transactional JDBC {@code Connection} for this {@code DataSource} will
+	 * be provided to application code accessing this {@code DataSource}
+	 * directly via {@code DataSourceUtils} or
 	 * {@code DataSourceTransactionManager}.
 	 *
-	 * The {@code DataSource} specified here should be the target {@code DataSource} to manage transactions
-	 * for, not a {@code TransactionAwareDataSourceProxy}. Only data access code may work with
-	 * {@code TransactionAwareDataSourceProxy}, while the transaction manager needs to work on the
-	 * underlying target {@code DataSource}. If there's nevertheless a
-	 * {@code TransactionAwareDataSourceProxy} passed in, it will be unwrapped to extract its target
-	 * {@code DataSource}.
+	 * The {@code DataSource} specified here should be the target
+	 * {@code DataSource} to manage transactions for, not a
+	 * {@code TransactionAwareDataSourceProxy}. Only data access code may work
+	 * with {@code TransactionAwareDataSourceProxy}, while the transaction
+	 * manager needs to work on the underlying target {@code DataSource}. If
+	 * there's nevertheless a {@code TransactionAwareDataSourceProxy} passed in,
+	 * it will be unwrapped to extract its target {@code DataSource}.
 	 *
 	 */
 	public void setDataSource(DataSource dataSource) {
@@ -280,17 +290,19 @@ public class AutoSqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>
 		// transactions for its underlying target DataSource, else data
 		// access code won't see properly exposed transactions (i.e.
 		// transactions for the target DataSource).
-		if (dataSource instanceof TransactionAwareDataSourceProxy) this.dataSource = ((TransactionAwareDataSourceProxy) dataSource)
-				.getTargetDataSource();
+		if (dataSource instanceof TransactionAwareDataSourceProxy)
+			this.dataSource = ((TransactionAwareDataSourceProxy) dataSource).getTargetDataSource();
 		else this.dataSource = dataSource;
 
 	}
 
 	/**
-	 * Sets the {@code SqlSessionFactoryBuilder} to use when creating the {@code SqlSessionFactory}.
+	 * Sets the {@code SqlSessionFactoryBuilder} to use when creating the
+	 * {@code SqlSessionFactory}.
 	 *
-	 * This is mainly meant for testing so that mock SqlSessionFactory classes can be injected. By default,
-	 * {@code SqlSessionFactoryBuilder} creates {@code DefaultSqlSessionFactory} instances.
+	 * This is mainly meant for testing so that mock SqlSessionFactory classes
+	 * can be injected. By default, {@code SqlSessionFactoryBuilder} creates
+	 * {@code DefaultSqlSessionFactory} instances.
 	 *
 	 */
 	public void setSqlSessionFactoryBuilder(SqlSessionFactoryBuilder sqlSessionFactoryBuilder) {
@@ -298,15 +310,18 @@ public class AutoSqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>
 	}
 
 	/**
-	 * Set the MyBatis TransactionFactory to use. Default is {@code SpringManagedTransactionFactory}
+	 * Set the MyBatis TransactionFactory to use. Default is
+	 * {@code SpringManagedTransactionFactory}
 	 *
-	 * The default {@code SpringManagedTransactionFactory} should be appropriate for all cases: be it Spring
-	 * transaction management, EJB CMT or plain JTA. If there is no active transaction, SqlSession
-	 * operations will execute SQL statements non-transactionally.
+	 * The default {@code SpringManagedTransactionFactory} should be appropriate
+	 * for all cases: be it Spring transaction management, EJB CMT or plain JTA.
+	 * If there is no active transaction, SqlSession operations will execute SQL
+	 * statements non-transactionally.
 	 *
-	 * <b>It is strongly recommended to use the default {@code TransactionFactory}.</b> If not used, any
-	 * attempt at getting an SqlSession through Spring's MyBatis framework will throw an exception if a
-	 * transaction is active.
+	 * <b>It is strongly recommended to use the default
+	 * {@code TransactionFactory}.</b> If not used, any attempt at getting an
+	 * SqlSession through Spring's MyBatis framework will throw an exception if
+	 * a transaction is active.
 	 *
 	 * @see SpringManagedTransactionFactory
 	 * @param transactionFactory
@@ -317,8 +332,9 @@ public class AutoSqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>
 	}
 
 	/**
-	 * <b>NOTE:</b> This class <em>overrides</em> any {@code Environment} you have set in the MyBatis config
-	 * file. This is used only as a placeholder name. The default value is
+	 * <b>NOTE:</b> This class <em>overrides</em> any {@code Environment} you
+	 * have set in the MyBatis config file. This is used only as a placeholder
+	 * name. The default value is
 	 * {@code AutoSqlSessionFactoryBean.class.getSimpleName()}.
 	 *
 	 * @param environment
@@ -340,8 +356,9 @@ public class AutoSqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>
 	/**
 	 * Build a {@code SqlSessionFactory} instance.
 	 *
-	 * The default implementation uses the standard MyBatis {@code XMLConfigBuilder} API to build a
-	 * {@code SqlSessionFactory} instance based on an Reader.
+	 * The default implementation uses the standard MyBatis
+	 * {@code XMLConfigBuilder} API to build a {@code SqlSessionFactory}
+	 * instance based on an Reader.
 	 *
 	 * @return SqlSessionFactory
 	 * @throws IOException
@@ -350,18 +367,16 @@ public class AutoSqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>
 	protected SqlSessionFactory buildSqlSessionFactory() throws IOException {
 		Configuration configuration;
 		XMLConfigBuilder xmlConfigBuilder = null;
-		if (this.configLocation == null)
-			this.configLocation = Springs
-					.searchResource(null == this.mybatisConfigLocationPattern ? DEFALUT_MYBATIS_CONF_PATTERN
-							: this.mybatisConfigLocationPattern);
+		if (this.configLocation == null) this.configLocation = Springs.searchResource(
+				null == this.mybatisConfigLocationPattern ? DEFALUT_MYBATIS_CONF_PATTERN : this.mybatisConfigLocationPattern);
 		if (this.configLocation != null) {
 			xmlConfigBuilder = new XMLConfigBuilder(this.configLocation.getInputStream(), null, this.configurationProperties);
 			configuration = xmlConfigBuilder.getConfiguration();
 			if (logger.isTraceEnabled())
-				logger.trace("Albacore Impl for Mybatis AutoSqlSessionFactoryBean - Mybatis configuration loaded: "
-						+ this.configLocation);
+				logger.trace("Albacore Impl for Mybatis AutoSqlSessionFactoryBean - Mybatis configuration loaded: " + this.configLocation);
 		} else {
-			logger.warn("Albacore Impl for Mybatis AutoSqlSessionFactoryBean - Property 'configLocation' not specified, using default MyBatis Configuration");
+			logger.warn(
+					"Albacore Impl for Mybatis AutoSqlSessionFactoryBean - Property 'configLocation' not specified, using default MyBatis Configuration");
 			configuration = new Configuration();
 			configuration.setVariables(this.configurationProperties);
 		}
@@ -374,24 +389,20 @@ public class AutoSqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>
 			for (String packageToScan : typeAliasPackageArray) {
 				configuration.getTypeAliasRegistry().registerAliases(packageToScan,
 						typeAliasesSuperType == null ? Object.class : typeAliasesSuperType);
-				if (logger.isTraceEnabled())
-					logger.trace("Albacore Impl for Mybatis AutoSqlSessionFactoryBean - Scanned package: '" + packageToScan
-							+ "' for aliases");
+				if (logger.isTraceEnabled()) logger.trace(
+						"Albacore Impl for Mybatis AutoSqlSessionFactoryBean - Scanned package: '" + packageToScan + "' for aliases");
 			}
 		}
-		if (!isEmpty(this.typeAliases))
-			for (Class<?> typeAlias : this.typeAliases) {
-				configuration.getTypeAliasRegistry().registerAlias(typeAlias);
-				if (logger.isTraceEnabled())
-					logger.trace("Albacore Impl for Mybatis AutoSqlSessionFactoryBean - Registered type alias: '" + typeAlias
-							+ "'");
-			}
-		if (!isEmpty(this.plugins))
-			for (Interceptor plugin : this.plugins) {
-				configuration.addInterceptor(plugin);
-				if (logger.isTraceEnabled())
-					logger.trace("Albacore Impl for Mybatis AutoSqlSessionFactoryBean - Registered plugin: '" + plugin + "'");
-			}
+		if (!isEmpty(this.typeAliases)) for (Class<?> typeAlias : this.typeAliases) {
+			configuration.getTypeAliasRegistry().registerAlias(typeAlias);
+			if (logger.isTraceEnabled())
+				logger.trace("Albacore Impl for Mybatis AutoSqlSessionFactoryBean - Registered type alias: '" + typeAlias + "'");
+		}
+		if (!isEmpty(this.plugins)) for (Interceptor plugin : this.plugins) {
+			configuration.addInterceptor(plugin);
+			if (logger.isTraceEnabled())
+				logger.trace("Albacore Impl for Mybatis AutoSqlSessionFactoryBean - Registered plugin: '" + plugin + "'");
+		}
 
 		if (hasLength(this.typeHandlersPackage)) {
 			String[] typeHandlersPackageArray = tokenizeToStringArray(this.typeHandlersPackage,
@@ -408,23 +419,21 @@ public class AutoSqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>
 			for (TypeHandler<?> typeHandler : this.typeHandlers) {
 				configuration.getTypeHandlerRegistry().register(typeHandler);
 				if (logger.isTraceEnabled()) {
-					logger.trace("Albacore Impl for Mybatis AutoSqlSessionFactoryBean - Registered type handler: '"
-							+ typeHandler + "'");
+					logger.trace("Albacore Impl for Mybatis AutoSqlSessionFactoryBean - Registered type handler: '" + typeHandler + "'");
 				}
 			}
 		}
-		if (xmlConfigBuilder != null)
-			try {
-				xmlConfigBuilder.parse();
-				if (logger.isTraceEnabled()) {
-					logger.trace("Albacore Impl for Mybatis AutoSqlSessionFactoryBean - Parsed configuration file: '"
-							+ this.configLocation + "'");
-				}
-			} catch (Exception ex) {
-				throw new NestedIOException("Failed to parse config resource: " + this.configLocation, ex);
-			} finally {
-				ErrorContext.instance().reset();
+		if (xmlConfigBuilder != null) try {
+			xmlConfigBuilder.parse();
+			if (logger.isTraceEnabled()) {
+				logger.trace(
+						"Albacore Impl for Mybatis AutoSqlSessionFactoryBean - Parsed configuration file: '" + this.configLocation + "'");
 			}
+		} catch (Exception ex) {
+			throw new NestedIOException("Failed to parse config resource: " + this.configLocation, ex);
+		} finally {
+			ErrorContext.instance().reset();
+		}
 		if (this.transactionFactory == null) this.transactionFactory = new SpringManagedTransactionFactory();
 		Environment environment = new Environment(this.environment, this.transactionFactory, this.dataSource);
 		configuration.setEnvironment(environment);
@@ -437,11 +446,10 @@ public class AutoSqlSessionFactoryBean implements FactoryBean<SqlSessionFactory>
 		if (!isEmpty(this.mapperLocations)) {
 			for (Resource mapperLocation : this.mapperLocations)
 				if (mapperLocation != null) this.registerMapper(configuration, mapperLocation);
-		} else if (logger.isTraceEnabled())
-			logger.trace("Albacore Impl for Mybatis AutoSqlSessionFactoryBean - Property 'mapperLocations' was not specified or no matching resources found");
-		Resource mapperCache = Springs
-				.searchResource(null == this.mybatisCacheConfigLocationPattern ? DEFAULT_MYBATIS_CACHE_CONF_PATTERN
-						: this.mybatisCacheConfigLocationPattern);
+		} else if (logger.isTraceEnabled()) logger.trace(
+				"Albacore Impl for Mybatis AutoSqlSessionFactoryBean - Property 'mapperLocations' was not specified or no matching resources found");
+		Resource mapperCache = Springs.searchResource(null == this.mybatisCacheConfigLocationPattern ? DEFAULT_MYBATIS_CACHE_CONF_PATTERN
+				: this.mybatisCacheConfigLocationPattern);
 		if (mapperCache != null) this.registerMapper(configuration, mapperCache);
 		return this.sqlSessionFactoryBuilder.build(configuration);
 	}

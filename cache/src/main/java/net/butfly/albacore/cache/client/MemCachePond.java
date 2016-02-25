@@ -51,12 +51,12 @@ public class MemCachePond {
 	 * get memcacheClient by select ploy get one client with stats is starting
 	 * 
 	 * @return MemcachedClient
-	 * @since CodingExample　Ver(编码范例查看) 1.1
+	 * @since CodingExample Ver(编码范例查看) 1.1
 	 * @auto xhb
 	 */
 	public MemCacheClient getClient() {
-		if (builders == null || builders.size() <= 0) { throw new SystemException("SYS_119",
-				"must init cacheServer before use memcacheClinet"); }
+		if (builders == null
+				|| builders.size() <= 0) { throw new SystemException("SYS_119", "must init cacheServer before use memcacheClinet"); }
 		MemCacheClient client = null;
 		for (Builder builder : builders) {
 			if (builder.getServiceType() == CacheContant.MAIN_CACHE_SERVER) {
@@ -67,16 +67,15 @@ public class MemCachePond {
 	}
 
 	public MemCacheClient getClient(int serviceType) {
-		if (builders == null || builders.size() <= 0) { throw new SystemException("SYS_119",
-				"must init cacheServer before use memcacheClinet"); }
+		if (builders == null
+				|| builders.size() <= 0) { throw new SystemException("SYS_119", "must init cacheServer before use memcacheClinet"); }
 		MemCacheClient client = null;
 		for (Builder builder : builders) {
 			if (builder.getServiceType().intValue() == serviceType) {
 				client = builder.getClient();
 			}
 		}
-		if (client == null) { throw new SystemException("SYS_119", " not exist available server whith serviceType:"
-				+ serviceType); }
+		if (client == null) { throw new SystemException("SYS_119", " not exist available server whith serviceType:" + serviceType); }
 		return client;
 	}
 
@@ -85,7 +84,7 @@ public class MemCachePond {
 	 * 
 	 * @param cacheConfigs
 	 * @throws IOException
-	 * @since CodingExample　Ver(编码范例查看) 1.1
+	 * @since CodingExample Ver(编码范例查看) 1.1
 	 * @auto xhb
 	 */
 	public void init(CacheConfig[] cacheConfigs) {
@@ -121,7 +120,7 @@ public class MemCachePond {
 	 * this method only use in running
 	 * 
 	 * @param cacheConfig
-	 * @since CodingExample　Ver(编码范例查看) 1.1
+	 * @since CodingExample Ver(编码范例查看) 1.1
 	 * @auto xhb
 	 */
 	public void refresh(CacheConfig cacheConfig) {
@@ -146,7 +145,7 @@ public class MemCachePond {
 		build.setBuilder(builder);
 		build.setClient(client);
 		for (int i = 0; i < builders.size(); i++) {
-			if (cacheConfig.getServiceType()==builders.get(i).getServiceType()) {
+			if (cacheConfig.getServiceType() == builders.get(i).getServiceType()) {
 				builders.remove(i);
 				builders.add(build);
 				break;
@@ -155,8 +154,8 @@ public class MemCachePond {
 	}
 
 	public void switchServer() {
-		if (builders == null || builders.size() <= 0) { throw new SystemException("SYS_119",
-				"must init cacheServer before use memcacheClinet"); }
+		if (builders == null
+				|| builders.size() <= 0) { throw new SystemException("SYS_119", "must init cacheServer before use memcacheClinet"); }
 		Builder mainServer = null;
 		Builder standbyServer = null;
 		for (Builder builder : builders) {

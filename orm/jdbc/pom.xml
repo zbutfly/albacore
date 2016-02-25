@@ -30,6 +30,12 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
+			<groupId>net.butfly.albacore</groupId>
+			<artifactId>albacore-frame</artifactId>
+			<version>${deps.version.albacore}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
 			<groupId>com.zaxxer</groupId>
 			<artifactId>HikariCP</artifactId>
 			<version>2.4.3</version>

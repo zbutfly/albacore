@@ -16,13 +16,15 @@ public final class Options implements Serializable {
 	boolean unblock = false;
 
 	/**
-	 * Forking producer (Callable call) or consumer (Callback routine), another will continue in current
-	 * thread.
+	 * Forking producer (Callable call) or consumer (Callback routine), another
+	 * will continue in current thread.
 	 * 
 	 * @param both
-	 *            </br> True to fork two thread, consumer thread will listen producer thread for
-	 *            result,</br> False to fork consumer thread only, it will listen main thread for result
-	 *            producing.
+	 *            </br>
+	 *            True to fork two thread, consumer thread will listen producer
+	 *            thread for result,</br>
+	 *            False to fork consumer thread only, it will listen main thread
+	 *            for result producing.
 	 * @return
 	 */
 	public Options fork(boolean both) {
@@ -62,7 +64,8 @@ public final class Options implements Serializable {
 	private static final int RETRIES_MAX = 100;
 	// default no continuous, < 0 for infinity
 	int repeat = 1;
-	// default no retry, finish on any failure, < 0 for forever retry (RETRIES_MAX times limited)
+	// default no retry, finish on any failure, < 0 for forever retry
+	// (RETRIES_MAX times limited)
 	int retry = 0;
 	// default start in same thread
 	int concurrence = 0;
@@ -102,7 +105,7 @@ public final class Options implements Serializable {
 	public boolean equals(Object obj) {
 		if (null == obj || !Options.class.isAssignableFrom(obj.getClass())) return false;
 		Options ops = (Options) obj;
-		return mode == ops.mode && timeout == ops.timeout && unblock == ops.unblock && repeat == ops.repeat
-				&& retry == ops.retry && concurrence == ops.concurrence && interval == ops.interval;
+		return mode == ops.mode && timeout == ops.timeout && unblock == ops.unblock && repeat == ops.repeat && retry == ops.retry
+				&& concurrence == ops.concurrence && interval == ops.interval;
 	}
 }

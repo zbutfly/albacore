@@ -72,8 +72,8 @@ public class MetaTest {
 		}
 	}
 
-	public static void main(String[] args) throws IntrospectionException, InstantiationException, IllegalAccessException,
-			NoSuchFieldException, SecurityException {
+	public static void main(String[] args)
+			throws IntrospectionException, InstantiationException, IllegalAccessException, NoSuchFieldException, SecurityException {
 		BeanInfo info = Introspector.getBeanInfo(B.class);
 		for (PropertyDescriptor p : info.getPropertyDescriptors())
 			Logger.info(p, p.toString());

@@ -119,8 +119,8 @@ public class CertUtils extends Utils {
 	 * @return
 	 * @throws Exception
 	 */
-	public static byte[] encryptByPrivateKey(byte[] data, String keyStorePath, String keyStorePassword, String alias,
-			String aliasPassword) throws Exception {
+	public static byte[] encryptByPrivateKey(byte[] data, String keyStorePath, String keyStorePassword, String alias, String aliasPassword)
+			throws Exception {
 		// 取得私钥
 		PrivateKey privateKey = getPrivateKey(keyStorePath, keyStorePassword, alias, aliasPassword);
 
@@ -143,8 +143,8 @@ public class CertUtils extends Utils {
 	 * @return
 	 * @throws Exception
 	 */
-	public static byte[] decryptByPrivateKey(byte[] data, String keyStorePath, String alias, String keyStorePassword,
-			String aliasPassword) throws Exception {
+	public static byte[] decryptByPrivateKey(byte[] data, String keyStorePath, String alias, String keyStorePassword, String aliasPassword)
+			throws Exception {
 		// 取得私钥
 		PrivateKey privateKey = getPrivateKey(keyStorePath, keyStorePassword, alias, aliasPassword);
 

@@ -17,8 +17,7 @@ import org.springframework.core.io.support.ResourcePatternResolver;
 public final class Springs extends Utils {
 	private static final Logger logger = LoggerFactory.getLogger(Springs.class);
 
-	public static void appendPlaceholderByProperties(ConfigurableBeanFactory beanFactory, int order,
-			String... propertyNameAndValue) {
+	public static void appendPlaceholderByProperties(ConfigurableBeanFactory beanFactory, int order, String... propertyNameAndValue) {
 		beanFactory.registerSingleton(Keys.key(String.class), buildPlaceholder(order, propertyNameAndValue));
 	}
 
@@ -54,9 +53,8 @@ public final class Springs extends Utils {
 			logger.warn("No " + pattern + " found in spring classpath.");
 			return null;
 		}
-		if (reses.length > 1)
-			logger.warn("More than one " + pattern + " found in spring classpath, the first one \"" + reses[0].toString()
-					+ "\" is loaded.");
+		if (reses.length > 1) logger
+				.warn("More than one " + pattern + " found in spring classpath, the first one \"" + reses[0].toString() + "\" is loaded.");
 		return reses[0];
 	}
 

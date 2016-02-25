@@ -23,8 +23,8 @@ public class CacheFactory {
 			String strategyId = CacheConfigManager.getStrategyId(configId);
 			if (null == type) { throw new SystemException("SYS_121", "the config : [" + configId + "] not defined in cache.xml"
 					+ " or the attribute type not defined in config: [" + configId + "]"); }
-			if (null == strategyId) { throw new SystemException("SYS_121", "the config : [" + configId
-					+ "] not defined in cache.xml" + " or the attribute strategyId not defined in config: [" + configId + "]"); }
+			if (null == strategyId) { throw new SystemException("SYS_121", "the config : [" + configId + "] not defined in cache.xml"
+					+ " or the attribute strategyId not defined in config: [" + configId + "]"); }
 			if (CacheConfigManager.CACHE_TYPE_BASE.equals(type)) {
 				BaseCacheImpl baseImpl = new BaseCacheImpl();
 				baseImpl.setStrategy(strategyId);

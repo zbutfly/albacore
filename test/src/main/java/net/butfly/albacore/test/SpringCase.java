@@ -81,8 +81,8 @@ public abstract class SpringCase {
 			Context root = new InitialContext();
 			for (Binding b : Collections.list(root.listBindings(JNDI_JDBC_PREFIX))) {
 				if (b.getObject() instanceof DataSource) {
-					Logger.info(b.getObject(), "DataSource found: [" + JNDI_JDBC_PREFIX + "/" + b.getName() + "]:["
-							+ b.getObject().toString() + "]");
+					Logger.info(b.getObject(),
+							"DataSource found: [" + JNDI_JDBC_PREFIX + "/" + b.getName() + "]:[" + b.getObject().toString() + "]");
 					allDS.put(b.getName(), (DataSource) b.getObject());
 				}
 			}

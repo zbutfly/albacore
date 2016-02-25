@@ -114,8 +114,7 @@ public final class Reflections extends Utils {
 				boolean overridden = false;
 
 				for (Method m2 : found) {
-					if (m2.getName().equals(m1.getName())
-							&& Arrays.deepEquals(m1.getParameterTypes(), m2.getParameterTypes())) {
+					if (m2.getName().equals(m1.getName()) && Arrays.deepEquals(m1.getParameterTypes(), m2.getParameterTypes())) {
 						overridden = true;
 						break;
 					}
@@ -178,8 +177,7 @@ public final class Reflections extends Utils {
 		for (Constructor<?> ctor : cls.getDeclaredConstructors())
 			if (isAssignable(parameterTypes, ctor.getParameterTypes(), true) && ctor != null) {
 				setAccessibleWorkaround(ctor);
-				if (result == null
-						|| compareParameterTypes(ctor.getParameterTypes(), result.getParameterTypes(), parameterTypes) < 0) {
+				if (result == null || compareParameterTypes(ctor.getParameterTypes(), result.getParameterTypes(), parameterTypes) < 0) {
 					result = (Constructor<T>) ctor;
 				}
 			}
@@ -378,8 +376,7 @@ public final class Reflections extends Utils {
 	 *            find method with most compatible parameters
 	 * @return The accessible method
 	 */
-	public static Method getMatchingAccessibleMethod(final Class<?> cls, final String methodName,
-			final Class<?>... parameterTypes) {
+	public static Method getMatchingAccessibleMethod(final Class<?> cls, final String methodName, final Class<?>... parameterTypes) {
 		try {
 			final Method method = cls.getMethod(methodName, parameterTypes);
 			setAccessibleWorkaround(method);
@@ -395,9 +392,8 @@ public final class Reflections extends Utils {
 			if (method.getName().equals(methodName) && isAssignable(parameterTypes, method.getParameterTypes(), true)) {
 				// get accessible version of method
 				final Method accessibleMethod = getAccessibleMethod(method);
-				if (accessibleMethod != null
-						&& (bestMatch == null || compareParameterTypes(accessibleMethod.getParameterTypes(),
-								bestMatch.getParameterTypes(), parameterTypes) < 0)) {
+				if (accessibleMethod != null && (bestMatch == null || compareParameterTypes(accessibleMethod.getParameterTypes(),
+						bestMatch.getParameterTypes(), parameterTypes) < 0)) {
 					bestMatch = accessibleMethod;
 				}
 			}
@@ -516,18 +512,17 @@ public final class Reflections extends Utils {
 		if (cls.equals(toClass)) { return true; }
 		if (cls.isPrimitive()) {
 			if (toClass.isPrimitive() == false) { return false; }
-			if (Integer.TYPE.equals(
-					cls)) { return Long.TYPE.equals(toClass) || Float.TYPE.equals(toClass) || Double.TYPE.equals(toClass); }
+			if (Integer.TYPE.equals(cls)) { return Long.TYPE.equals(toClass) || Float.TYPE.equals(toClass) || Double.TYPE.equals(toClass); }
 			if (Long.TYPE.equals(cls)) { return Float.TYPE.equals(toClass) || Double.TYPE.equals(toClass); }
 			if (Boolean.TYPE.equals(cls)) { return false; }
 			if (Double.TYPE.equals(cls)) { return false; }
 			if (Float.TYPE.equals(cls)) { return Double.TYPE.equals(toClass); }
-			if (Character.TYPE.equals(cls)) { return Integer.TYPE.equals(toClass) || Long.TYPE.equals(toClass)
+			if (Character.TYPE.equals(cls)) { return Integer.TYPE.equals(toClass) || Long.TYPE.equals(toClass) || Float.TYPE.equals(toClass)
+					|| Double.TYPE.equals(toClass); }
+			if (Short.TYPE.equals(cls)) { return Integer.TYPE.equals(toClass) || Long.TYPE.equals(toClass) || Float.TYPE.equals(toClass)
+					|| Double.TYPE.equals(toClass); }
+			if (Byte.TYPE.equals(cls)) { return Short.TYPE.equals(toClass) || Integer.TYPE.equals(toClass) || Long.TYPE.equals(toClass)
 					|| Float.TYPE.equals(toClass) || Double.TYPE.equals(toClass); }
-			if (Short.TYPE.equals(cls)) { return Integer.TYPE.equals(toClass) || Long.TYPE.equals(toClass)
-					|| Float.TYPE.equals(toClass) || Double.TYPE.equals(toClass); }
-			if (Byte.TYPE.equals(cls)) { return Short.TYPE.equals(toClass) || Integer.TYPE.equals(toClass)
-					|| Long.TYPE.equals(toClass) || Float.TYPE.equals(toClass) || Double.TYPE.equals(toClass); }
 			// should never get here
 			return false;
 		}
@@ -707,8 +702,7 @@ public final class Reflections extends Utils {
 	 *            The parameter type signatures
 	 * @return the accessible method or {@code null} if not found
 	 */
-	private static Method getAccessibleMethodFromInterfaceNest(Class<?> cls, final String methodName,
-			final Class<?>... parameterTypes) {
+	private static Method getAccessibleMethodFromInterfaceNest(Class<?> cls, final String methodName, final Class<?>... parameterTypes) {
 		// Search up the superclass chain
 		for (; cls != null; cls = cls.getSuperclass()) {
 
@@ -751,8 +745,7 @@ public final class Reflections extends Utils {
 	 *            The parameter type signatures
 	 * @return the accessible method or {@code null} if not found
 	 */
-	private static Method getAccessibleMethodFromSuperclass(final Class<?> cls, final String methodName,
-			final Class<?>... parameterTypes) {
+	private static Method getAccessibleMethodFromSuperclass(final Class<?> cls, final String methodName, final Class<?>... parameterTypes) {
 		Class<?> parentClass = cls.getSuperclass();
 		while (parentClass != null) {
 			if (Modifier.isPublic(parentClass.getModifiers())) {
@@ -879,8 +872,8 @@ public final class Reflections extends Utils {
 	}
 
 	/** Array of primitive number types ordered by "promotability" */
-	private static final Class<?>[] ORDERED_PRIMITIVE_TYPES = { Byte.TYPE, Short.TYPE, Character.TYPE, Integer.TYPE, Long.TYPE,
-			Float.TYPE, Double.TYPE };
+	private static final Class<?>[] ORDERED_PRIMITIVE_TYPES = { Byte.TYPE, Short.TYPE, Character.TYPE, Integer.TYPE, Long.TYPE, Float.TYPE,
+			Double.TYPE };
 
 	/**
 	 * Gets the number of steps required to promote a primitive number to
