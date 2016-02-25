@@ -28,8 +28,9 @@ import java.io.*;
 
 /**
  * Implements MD5 functionality on a stream. More information about this class
- * is available from <a target="_top" href=
- * "http://ostermiller.org/utils/MD5.html">ostermiller.org</a>.
+ * is available from
+ * <a target="_top" href= "http://ostermiller.org/utils/MD5.html">ostermiller.
+ * org</a>.
  * <p>
  * This class produces a 128-bit "fingerprint" or "message digest" for all data
  * read from this stream. It is conjectured that it is computationally
@@ -584,9 +585,8 @@ class MD5 {
 	 * 
 	 * @since ostermillerutils 1.00.00
 	 */
-	private static final byte padding[] = { (byte) 0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-			0, 0, };
+	private static final byte padding[] = { (byte) 0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, };
 
 	/**
 	 * Contains internal state of the MD5 class. Passes MD5 test suite as

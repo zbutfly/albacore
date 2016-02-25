@@ -24,8 +24,7 @@ import org.apache.ibatis.session.RowBounds;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Intercepts({
-		@Signature(type = Executor.class, method = "update", args = { MappedStatement.class, Object.class }),
+@Intercepts({ @Signature(type = Executor.class, method = "update", args = { MappedStatement.class, Object.class }),
 		@Signature(type = Executor.class, method = "query", args = { MappedStatement.class, Object.class, RowBounds.class,
 				ResultHandler.class }),
 		@Signature(type = Executor.class, method = "query", args = { MappedStatement.class, Object.class, RowBounds.class,
@@ -44,8 +43,7 @@ public class ExecutorInterceptor extends BaseInterceptor {
 			if (!HACKED_STAT_ID_POOL.contains(sid) && null != keyGenerator) {
 				HACKED_STAT_ID_POOL.add(sid);
 				Reflections.set(stat, "keyGenerator", keyGenerator);
-				logger.trace("KeyGenerator is hacked as [" + keyGenerator.getClass().getName() + "] for statement [" + sid
-						+ "]");
+				logger.trace("KeyGenerator is hacked as [" + keyGenerator.getClass().getName() + "] for statement [" + sid + "]");
 			}
 			MetaObject meta = Objects.createMeta(invocation.getArgs()[1]);
 			for (String p : this.timeProps)

@@ -10,7 +10,8 @@ import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.TypeHandler;
 
 @SuppressWarnings("unchecked")
-public abstract class JdbcTypeHandler<D extends Serializable, S> /* extends BaseTypeHandler<K> */implements TypeHandler<D> {
+public abstract class JdbcTypeHandler<D extends Serializable, S>
+		/* extends BaseTypeHandler<K> */ implements TypeHandler<D> {
 	final public void setParameter(PreparedStatement ps, int i, D param, JdbcType jdbcType) throws SQLException {
 		int sqlType = null == jdbcType ? this.getSQLType().ordinal() : jdbcType.ordinal();
 		if (param == null) ps.setNull(i, sqlType);

@@ -58,8 +58,7 @@ public class CacheConfigManager {
 			List<Element> strategyList = document.selectNodes("/elements/strategys/strategy");
 			for (Element el : strategyList) {
 				String id = el.valueOf("@id");
-				IKeyGenerator keyG = Reflections
-						.construct(keygenerators.get(el.selectSingleNode("keygenerator").valueOf("@ref")));
+				IKeyGenerator keyG = Reflections.construct(keygenerators.get(el.selectSingleNode("keygenerator").valueOf("@ref")));
 				int expiration = Integer.parseInt(el.selectSingleNode("expiration").valueOf("@value"));
 				ICacheStrategy strategy = new ICacheStrategy(keyG, expiration);
 				strategysMap.put(id, strategy);

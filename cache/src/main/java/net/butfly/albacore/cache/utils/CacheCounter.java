@@ -27,7 +27,7 @@ public class CacheCounter {
 	 * 
 	 * @param key
 	 * @return
-	 * @since CodingExample　Ver(编码范例查看) 1.1
+	 * @since CodingExample Ver(编码范例查看) 1.1
 	 * @auto xhb
 	 */
 	public static int delete(String key) {

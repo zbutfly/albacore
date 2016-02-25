@@ -49,8 +49,7 @@ public class AsyncHelperImpl extends HelperBase implements AsyncHelper {
 		try {
 			executor = (AsyncTaskExecutor) executorClass.newInstance();
 		} catch (Exception ex) {
-			throw new SystemException("ALC_000", "Unable to create instance of call executor of class: "
-					+ executorClass.getName(), ex);
+			throw new SystemException("ALC_000", "Unable to create instance of call executor of class: " + executorClass.getName(), ex);
 		}
 		MetaObject bm = Objects.createMeta(executor);
 		for (String name : params.keySet())
@@ -63,13 +62,11 @@ public class AsyncHelperImpl extends HelperBase implements AsyncHelper {
 		} catch (NoSuchMethodException e) {
 			initMethod = null;
 		}
-		if (initMethod != null)
-			try {
-				initMethod.invoke(executor);
-			} catch (Exception ex) {
-				throw new SystemException("ALC_000", "Unable to initialize call executor of class: " + executorClass.getName(),
-						ex);
-			}
+		if (initMethod != null) try {
+			initMethod.invoke(executor);
+		} catch (Exception ex) {
+			throw new SystemException("ALC_000", "Unable to initialize call executor of class: " + executorClass.getName(), ex);
+		}
 		return executor;
 	}
 }

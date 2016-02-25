@@ -22,16 +22,14 @@ public class Cache4DaoAutoProxy implements MethodInterceptor {
 	public static final String FLIGHT_NAMESPACE = ".flight";
 
 	public Object invoke(MethodInvocation invocation) throws Throwable {
-		if (invocation.getMethod().toString().contains(HOTEL_NAMESPACE) && !CacheControl.isCacheOn()) { return invocation
-				.proceed(); }
-		if (invocation.getMethod().toString().contains(FLIGHT_NAMESPACE) && !CacheControl.isCacheOnFlight()) { return invocation
-				.proceed(); }
+		if (invocation.getMethod().toString().contains(HOTEL_NAMESPACE) && !CacheControl.isCacheOn()) { return invocation.proceed(); }
+		if (invocation.getMethod().toString().contains(FLIGHT_NAMESPACE)
+				&& !CacheControl.isCacheOnFlight()) { return invocation.proceed(); }
 		if (!CacheConfigManager.isAutoProxy(invocation.getMethod())) { return invocation.proceed(); }
 		String configId = CacheConfigManager.getConfigsByMethod(invocation.getMethod());
-		if (invocation.getMethod().toString().contains(HOTEL_NAMESPACE) && !CacheControl.isCacheUseOn()) { return invocation
-				.proceed(); }
-		if (invocation.getMethod().toString().contains(FLIGHT_NAMESPACE) && !CacheControl.isCacheUseOnFlight()) { return invocation
-				.proceed(); }
+		if (invocation.getMethod().toString().contains(HOTEL_NAMESPACE) && !CacheControl.isCacheUseOn()) { return invocation.proceed(); }
+		if (invocation.getMethod().toString().contains(FLIGHT_NAMESPACE)
+				&& !CacheControl.isCacheUseOnFlight()) { return invocation.proceed(); }
 		String type = CacheConfigManager.getCacheType(configId);
 		if (CacheConfigManager.CACHE_TYPE_BASE.equals(type)) {
 			return baseUse(invocation, configId);

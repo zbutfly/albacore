@@ -20,8 +20,7 @@ public interface DAO extends BizUnit {
 		private Class<E> entityClass;
 		private List<String> suffix;
 
-		public static final <E extends AbstractEntity<?>> SQL<E> build(Class<? extends EntityDAO> daoClass,
-				Class<E> entityClass) {
+		public static final <E extends AbstractEntity<?>> SQL<E> build(Class<? extends EntityDAO> daoClass, Class<E> entityClass) {
 			return new SQL<E>(daoClass, entityClass);
 		}
 

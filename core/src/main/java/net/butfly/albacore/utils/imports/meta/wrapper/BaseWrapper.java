@@ -68,8 +68,7 @@ public abstract class BaseWrapper implements ObjectWrapper {
 			} else if (collection instanceof short[]) {
 				return ((short[]) collection)[i];
 			} else {
-				throw new ReflectionException("The '" + prop.getName() + "' property of " + collection
-						+ " is not a List or Array.");
+				throw new ReflectionException("The '" + prop.getName() + "' property of " + collection + " is not a List or Array.");
 			}
 		}
 	}
@@ -101,8 +100,7 @@ public abstract class BaseWrapper implements ObjectWrapper {
 			} else if (collection instanceof short[]) {
 				((short[]) collection)[i] = (Short) value;
 			} else {
-				throw new ReflectionException("The '" + prop.getName() + "' property of " + collection
-						+ " is not a List or Array.");
+				throw new ReflectionException("The '" + prop.getName() + "' property of " + collection + " is not a List or Array.");
 			}
 		}
 	}

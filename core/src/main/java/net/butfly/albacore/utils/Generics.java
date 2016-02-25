@@ -12,8 +12,7 @@ import com.google.common.reflect.TypeToken;
 
 @SuppressWarnings("unchecked")
 public final class Generics extends Utils {
-	public static <E> Class<E> resolveGenericParameter(final Type implType, final Class<?> declareClass,
-			final String genericParamName) {
+	public static <E> Class<E> resolveGenericParameter(final Type implType, final Class<?> declareClass, final String genericParamName) {
 		return (Class<E>) resolveGenericParameters(implType, declareClass).get(genericParamName);
 	}
 
