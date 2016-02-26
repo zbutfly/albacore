@@ -17,7 +17,9 @@ public final class Page extends Bean<Page> {
 		return new Page(TOTAL_NOT_SET, 1, FIRST_PAGE);
 	}
 
-	/** page information of the query, all page index should be started from 1. */
+	/**
+	 * page information of the query, all page index should be started from 1.
+	 */
 	// the current page index of the current query.
 	private int curr = FIRST_PAGE;
 	// the next page index of the current query.

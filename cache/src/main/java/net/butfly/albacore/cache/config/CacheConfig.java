@@ -47,16 +47,16 @@ public class CacheConfig extends Bean<CacheConfig> {
 
 	public void setConnectionPool(Integer valueOf) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	public void setServiceContent(String property) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	public void setServiceType(int standbyCacheServer) {
 		// TODO Auto-generated method stub
-		
+
 	}
 }
