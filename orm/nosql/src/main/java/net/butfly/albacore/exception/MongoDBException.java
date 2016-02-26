@@ -1,5 +1,6 @@
 package net.butfly.albacore.exception;
 
+
 public class MongoDBException extends DatabaseException {
 	private static final long serialVersionUID = 3697666641023435666L;
 

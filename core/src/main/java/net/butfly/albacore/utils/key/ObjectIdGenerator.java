@@ -60,10 +60,8 @@ public class ObjectIdGenerator extends IdGenerator<String> {
 				logger.trace("machine piece post: " + Integer.toHexString(machinePiece));
 			}
 
-			// add a 2 byte process piece. It must represent not only the JVM
-			// but the class loader.
-			// Since static var belong to class loader there could be collisions
-			// otherwise
+			// add a 2 byte process piece. It must represent not only the JVM but the class loader.
+			// Since static var belong to class loader there could be collisions otherwise
 			final int processPiece;
 			{
 				int processId = new java.util.Random().nextInt();
