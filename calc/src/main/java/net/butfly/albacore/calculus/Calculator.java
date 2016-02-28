@@ -20,6 +20,7 @@ import net.butfly.albacore.calculus.CalculatorConfig.MongodbConfig;
 import net.butfly.albacore.calculus.Calculus.Mode;
 import net.butfly.albacore.calculus.Functor.Type;
 import net.butfly.albacore.utils.Reflections;
+import net.butfly.albacore.utils.async.Options;
 import net.butfly.albacore.utils.async.Task;
 
 public class Calculator {
@@ -51,7 +52,7 @@ public class Calculator {
 	private static void scanCalculus(Properties props) throws Exception {
 		final CalculatorConfig conf = new CalculatorConfig();
 		conf.sc = new JavaSparkContext(props.getProperty("calculus.spark.url"), props.getProperty("calculus.spark.app.name"));
-//		conf.sqsc = new SQLContext(conf.sc);
+		// conf.sqsc = new SQLContext(conf.sc);
 		conf.ssc = new JavaStreamingContext(conf.sc,
 				Durations.seconds(Integer.parseInt(props.getProperty("calculus.spark.duration.seconds", "0"))));
 		Map<String, Properties> dbs = foreach(props, "calculus.db.");
@@ -90,10 +91,10 @@ public class Calculator {
 				new Task<Void>(new Task.Callable<Void>() {
 					@Override
 					public Void call() throws Exception {
-						calc.calculate(Mode.STOCKING);
+						calc.calculate(Mode.valueOf(props.getProperty("calculus.mode", "STREAMING")));
 						return null;
 					}
-				}).execute();
+				}, new Options().fork()).execute();
 			}
 		} finally {
 			conf.ssc.close();
