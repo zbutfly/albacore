@@ -1,7 +1,5 @@
 package net.butfly.albacore.calculus.marshall;
 
-import java.io.Serializable;
-
 import net.butfly.albacore.calculus.Functor;
 
 public interface Marshaller<V> {

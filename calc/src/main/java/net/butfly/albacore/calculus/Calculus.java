@@ -1,13 +1,13 @@
 package net.butfly.albacore.calculus;
 
 public @interface Calculus {
-	enum Mode {
+	public enum Mode {
 		STOCKING, STREAMING
 	}
 
-	Class<? extends Functor<?>>[] masters();
+	Class<? extends Functor<?>>[] stocking();
 
-	Class<? extends Functor<?>>[] vices() default {};
+	Class<? extends Functor<?>>[] streaming() default {};
 
-	Class<? extends Functor<?>> destination();
+	Class<? extends Functor<?>> saving();
 }
