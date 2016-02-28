@@ -8,7 +8,7 @@ import org.apache.spark.streaming.api.java.AbstractJavaDStreamLike;
 
 import net.butfly.albacore.calculus.marshall.Marshaller;
 
-public class CalculusConfig {
+public class FunctorConfig {
 	public Class<?> functorClass;
 	public AbstractJavaDStreamLike<?, ?, ?> stream;
 	// db conf
