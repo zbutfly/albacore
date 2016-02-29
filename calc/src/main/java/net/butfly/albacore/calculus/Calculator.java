@@ -28,13 +28,14 @@ public class Calculator {
 
 	public static void main(String[] args) throws Exception {
 		final Properties props = new Properties();
-		props.load(Thread.currentThread().getContextClassLoader()
-				.getResourceAsStream(args.length >= 2 ? args[1] : "calculus.properties"));
-		props.putAll(System.getProperties());
+		props.load(Thread.currentThread().getContextClassLoader().getResourceAsStream(args.length >= 2 ? args[1] : "calculus.properties"));
+//		System.setProperty("hadoop.home.dir", props.getProperty("hadoop.home.dir"));
+		for (String key : System.getProperties().stringPropertyNames())
+			if (key.startsWith("calculus")) props.put(key, System.getProperty(key));
 		scanCalculus(props);
 	}
 
-	private static Map<String, Properties> foreach(Properties props, String prefix) {
+	private static Map<String, Properties> subprops(Properties props, String prefix) {
 		Map<String, Properties> r = new HashMap<>();
 		for (String key : props.stringPropertyNames()) {
 			if (!key.startsWith(prefix)) continue;
@@ -51,11 +52,12 @@ public class Calculator {
 
 	private static void scanCalculus(Properties props) throws Exception {
 		final CalculatorConfig conf = new CalculatorConfig();
-		conf.sc = new JavaSparkContext(props.getProperty("calculus.spark.url"), props.getProperty("calculus.spark.app.name"));
+		final String appname = props.getProperty("calculus.app.name", "Calculuses");
+		conf.sc = new JavaSparkContext(props.getProperty("calculus.spark.url"), appname + "-Spark");
 		// conf.sqsc = new SQLContext(conf.sc);
 		conf.ssc = new JavaStreamingContext(conf.sc,
 				Durations.seconds(Integer.parseInt(props.getProperty("calculus.spark.duration.seconds", "0"))));
-		Map<String, Properties> dbs = foreach(props, "calculus.db.");
+		Map<String, Properties> dbs = subprops(props, "calculus.db.");
 		for (String dbid : dbs.keySet()) {
 			Properties dbprops = dbs.get(dbid);
 			Type type = Type.valueOf(dbprops.getProperty("type"));
@@ -78,7 +80,7 @@ public class Calculator {
 			case KAFKA:
 				KafkaConfig k = new KafkaConfig();
 				k.quonum = props.getProperty("quonum");
-				k.group = props.getProperty("group");
+				k.group = props.getProperty(appname);
 				conf.kafkas.put(dbid, k);
 				break;
 			default:
