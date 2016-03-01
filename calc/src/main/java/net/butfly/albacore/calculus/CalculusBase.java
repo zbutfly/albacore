@@ -147,13 +147,13 @@ public abstract class CalculusBase {
 		Stocking stocking = klass.getAnnotation(Stocking.class);
 		Streaming streaming = klass.getAnnotation(Streaming.class);
 		FunctorConfig conf = new FunctorConfig();
-		conf.source = stocking.source();
+		conf.datasource = stocking.source();
 		conf.functorClass = klass;
 		switch (stocking.type()) {
 		case HBASE:
 			conf.hconf = HBaseConfiguration.create();
-			conf.hconf.addResource(
-					Thread.currentThread().getContextClassLoader().getResource(globalConfig.hbases.get(conf.source).config).openStream());
+			conf.hconf.addResource(Thread.currentThread().getContextClassLoader()
+					.getResource(globalConfig.hbases.get(conf.datasource).config).openStream());
 			conf.htname = TableName.valueOf(stocking.table());
 			// TODO confirm/create table.
 			// Admin ha = conf.hconn.getAdmin();
@@ -167,18 +167,18 @@ public abstract class CalculusBase {
 		case MONGODB:
 			conf.mconf = new Configuration();
 			conf.mconf.set("mongo.job.input.format", "com.mongodb.hadoop.MongoInputFormat");
-			conf.mconf.set("mongo.auth.uri", globalConfig.mongodbs.get(conf.source).authuri);
-			conf.mconf.set("mongo.input.uri", globalConfig.mongodbs.get(conf.source).uri + "." + stocking.table());
+			conf.mconf.set("mongo.auth.uri", globalConfig.mongodbs.get(conf.datasource).authuri);
+			conf.mconf.set("mongo.input.uri", globalConfig.mongodbs.get(conf.datasource).uri + "." + stocking.table());
 			conf.mconf.set("mongo.input.query", stocking.filter());
 			// conf.mconf.set("mongo.input.fields
 			conf.mconf.set("mongo.input.notimeout", "true");
-			conf.mcol = globalConfig.mongodbs.get(destConfig.source).jongo.getCollection(stocking.table());
+			conf.mcol = globalConfig.mongodbs.get(destConfig.datasource).jongo.getCollection(stocking.table());
 			conf.marshaller = new MongodbMarshaller();
 			break;
 		default:
 			throw new IllegalArgumentException("Unsupportted stocking mode: " + streaming.type());
 		}
-		conf.marshaller.confirm(klass);
+		conf.marshaller.confirm(klass, conf, globalConfig);
 		switch (streaming.type()) {
 		case KAFKA:
 			conf.kafkaTopics = streaming.topics();

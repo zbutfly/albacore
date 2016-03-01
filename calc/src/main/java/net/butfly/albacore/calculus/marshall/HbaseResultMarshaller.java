@@ -1,26 +1,58 @@
 package net.butfly.albacore.calculus.marshall;
 
+import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.charset.CharacterCodingException;
+import java.util.HashSet;
+import java.util.Set;
 
+import org.apache.hadoop.hbase.CellUtil;
+import org.apache.hadoop.hbase.HColumnDescriptor;
+import org.apache.hadoop.hbase.HTableDescriptor;
+import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.io.Text;
+import org.jongo.marshall.jackson.bson4jackson.MongoBsonFactory;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.CaseFormat;
 import com.jcabi.log.Logger;
 
+import net.butfly.albacore.calculus.CalculatorConfig;
 import net.butfly.albacore.calculus.Functor;
+import net.butfly.albacore.calculus.FunctorConfig;
+import net.butfly.albacore.utils.Reflections;
 
 public class HbaseResultMarshaller implements Marshaller<Result, ImmutableBytesWritable> {
+	private static ObjectMapper mapper = new ObjectMapper(new MongoBsonFactory());
+
 	@Override
 	public <T extends Functor<T>> T unmarshall(Result from, Class<T> to) {
-		// TODO Auto-generated method stub
-		return null;
+		String dcf = to.isAnnotationPresent(HbaseColumnFamily.class) ? to.getAnnotation(HbaseColumnFamily.class).value() : null;
+		T t = Reflections.construct(to);
+		for (Field f : Reflections.getDeclaredFields(to)) {
+			String colname = f.isAnnotationPresent(JsonProperty.class) ? f.getAnnotation(JsonProperty.class).value()
+					: CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, f.getName());
+			String colfamily = f.isAnnotationPresent(HbaseColumnFamily.class) ? f.getAnnotation(HbaseColumnFamily.class).value() : dcf;
+			if (colfamily == null)
+				throw new IllegalArgumentException("Column family is not defined on class " + to.toString() + ", field " + f.getName());
+			try {
+				f.set(t, mapper.readValue(
+						CellUtil.cloneValue(from.getColumnLatestCell(Text.encode(colfamily).array(), Text.encode(colname).array())),
+						f.getType()));
+			} catch (Exception e) {
+				Logger.error(HbaseResultMarshaller.class,
+						"Parse of hbase result failure on  class " + to.toString() + ", field " + f.getName());
+			}
+		}
+		return t;
 	}
 
 	@Override
 	public <T extends Functor<T>> Result marshall(T from) {
-		// TODO Auto-generated method stub
-		return null;
+		throw new UnsupportedOperationException("Hbase marshall / write not supported.");
 	}
 
 	@Override
@@ -28,7 +60,7 @@ public class HbaseResultMarshaller implements Marshaller<Result, ImmutableBytesW
 		try {
 			return Text.decode(id.get());
 		} catch (CharacterCodingException e) {
-			Logger.error(this.getClass(), "ImmutableBytesWritable unmarshall failure.", e);
+			Logger.error(HbaseResultMarshaller.class, "ImmutableBytesWritable unmarshall failure.", e);
 			return null;
 		}
 	}
@@ -38,14 +70,40 @@ public class HbaseResultMarshaller implements Marshaller<Result, ImmutableBytesW
 		try {
 			return new ImmutableBytesWritable(Text.encode(id).array());
 		} catch (CharacterCodingException e) {
-			Logger.error(this.getClass(), "ImmutableBytesWritable marshall failure.", e);
+			Logger.error(HbaseResultMarshaller.class, "ImmutableBytesWritable marshall failure.", e);
 			return null;
 		}
 	}
 
-	@SuppressWarnings("rawtypes")
 	@Override
-	public <F extends Functor> void confirm(Class<F> functor) {
-		// TODO Auto-generated method stub
+	public <F extends Functor<F>> void confirm(Class<F> functor, FunctorConfig config, CalculatorConfig globalConfig) {
+		try {
+			Admin a = config.hconn.getAdmin();
+			if (a.tableExists(config.htname)) return;
+			Set<String> families = new HashSet<>();
+			Set<String> columns = new HashSet<>();
+			String dcf = functor.isAnnotationPresent(HbaseColumnFamily.class) ? functor.getAnnotation(HbaseColumnFamily.class).value()
+					: null;
+			families.add(dcf);
+			for (Field f : Reflections.getDeclaredFields(functor)) {
+				String colname = f.isAnnotationPresent(JsonProperty.class) ? f.getAnnotation(JsonProperty.class).value()
+						: CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, f.getName());
+				String colfamily = f.isAnnotationPresent(HbaseColumnFamily.class) ? f.getAnnotation(HbaseColumnFamily.class).value() : dcf;
+				families.add(colfamily);
+				columns.add(colfamily + ":" + colname);
+			}
+			HTableDescriptor td = new HTableDescriptor(config.htname);
+			for (String fn : families) {
+				HColumnDescriptor fd = new HColumnDescriptor(fn);
+				td.addFamily(fd);
+			}
+			a.createTable(td);
+			a.disableTable(config.htname);
+			for (String col : columns)
+				a.addColumn(config.htname, new HColumnDescriptor(col));
+			a.enableTable(config.htname);
+		} catch (IOException e) {
+			throw new IllegalArgumentException("Hbase verify failure on server: " + config.datasource + ", class: " + functor.toString());
+		}
 	}
 }

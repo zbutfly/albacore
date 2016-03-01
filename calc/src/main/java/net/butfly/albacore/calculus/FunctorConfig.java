@@ -10,8 +10,8 @@ import net.butfly.albacore.calculus.marshall.Marshaller;
 
 public class FunctorConfig {
 	public Class<?> functorClass;
-	public String source;
-	public AbstractJavaDStreamLike<?, ?, ?> stream;
+	public String datasource;
+	public AbstractJavaDStreamLike<?, ?, ?> dstream;
 	public Marshaller<?, ?> marshaller;
 	// db conf
 	public Configuration hconf, mconf;

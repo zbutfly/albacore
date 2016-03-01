@@ -10,7 +10,6 @@ import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.jongo.Jongo;
 import org.reflections.util.ConfigurationBuilder;
 
-import com.mongodb.DB;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 
@@ -49,6 +48,7 @@ public class Calculator {
 		return r;
 	}
 
+	@SuppressWarnings("deprecation")
 	private static void scanCalculus(Properties props) throws Exception {
 		final CalculatorConfig conf = new CalculatorConfig();
 		final String appname = props.getProperty("calculus.app.name", "Calculuses");
@@ -68,9 +68,8 @@ public class Calculator {
 				m.authuri = props.getProperty("authuri");
 				m.db = props.getProperty("db");
 				m.client = new MongoClient(new MongoClientURI(m.uri));
-				@SuppressWarnings("deprecation")
-				DB db = m.client.getDB(m.db);
-				m.jongo = new Jongo(db);
+				m.mongo = m.client.getDB(m.db);
+				m.jongo = new Jongo(m.mongo);
 				break;
 			case KAFKA:
 				KafkaConfig k = new KafkaConfig();
