@@ -13,12 +13,16 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
 import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
+import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.streaming.api.java.JavaPairReceiverInputDStream;
 import org.apache.spark.streaming.kafka.KafkaUtils;
 import org.bson.BSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.mongodb.hadoop.MongoInputFormat;
 
@@ -26,55 +30,53 @@ import net.butfly.albacore.calculus.Calculus.Mode;
 import net.butfly.albacore.calculus.Functor.Stocking;
 import net.butfly.albacore.calculus.Functor.Streaming;
 import net.butfly.albacore.calculus.marshall.HbaseResultMarshaller;
+import net.butfly.albacore.calculus.marshall.KafkaMarshaller;
 import net.butfly.albacore.calculus.marshall.MongodbMarshaller;
 import scala.Tuple2;
 
-@SuppressWarnings("serial")
+@SuppressWarnings({ "rawtypes", "unchecked", "serial" })
 public abstract class CalculusBase {
+	protected Logger logger = LoggerFactory.getLogger(this.getClass());
 	// spark
 	protected CalculatorConfig globalConfig;
-	protected Map<Class<? extends Functor<?>>, FunctorConfig> stockingFunctorConfigs = new HashMap<>();
-	protected Map<Class<? extends Functor<?>>, FunctorConfig> streamingFunctorConfigs = new HashMap<>();
+	protected Map<Class<? extends Functor>, FunctorConfig> stockingConfigs = new HashMap<>();
+	protected Map<Class<? extends Functor>, FunctorConfig> streamingConfigs = new HashMap<>();
 	private FunctorConfig destConfig;
-	private Class<? extends Functor<?>> destFunctor;
 
 	protected CalculusBase() {}
 
-	public CalculusBase(CalculatorConfig econf) throws IOException {
+	public CalculusBase(CalculatorConfig config) throws IOException {
 		Class<? extends CalculusBase> c = this.getClass();
 		Calculus calc = c.getAnnotation(Calculus.class);
-		for (Class<? extends Functor<?>> f : calc.stocking())
-			this.stockingFunctorConfigs.put(f, parseConfig(f));
-		for (Class<? extends Functor<?>> f : calc.streaming())
-			this.streamingFunctorConfigs.put(f, parseConfig(f));
-		this.destFunctor = calc.saving();
-		this.destConfig = parseConfig(this.destFunctor);
+		for (Class<? extends Functor> f : calc.stocking())
+			this.stockingConfigs.put(f, parseConfig(f));
+		for (Class<? extends Functor> f : calc.streaming())
+			this.streamingConfigs.put(f, parseConfig(f));
+		this.destConfig = parseConfig(calc.saving());
 	}
 
-	abstract public JavaPairRDD<?, ?> calculate(Map<Class<? extends Functor<?>>, JavaPairRDD<?, ?>> stockingFunctors,
-			Map<Class<? extends Functor<?>>, JavaPairRDD<?, ?>> streamingFunctors);
+	abstract public JavaRDD<? extends Functor> calculate(Map<Class<? extends Functor>, JavaPairRDD<String, ? extends Functor>> stocking,
+			Map<Class<? extends Functor>, JavaPairRDD<String, ? extends Functor>> streaming);
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	final public void calculate(Mode mode) throws IOException {
-		Map<Class<? extends Functor<?>>, JavaPairRDD<?, ?>> stockingFunctors = new HashMap<>();
-		Map<Class<? extends Functor<?>>, JavaPairRDD<?, ?>> streamingFunctors = new HashMap<>();
+	final public <F extends Functor> void calculate(Mode mode) throws IOException {
+		Map<Class<? extends Functor>, JavaPairRDD<String, ? extends Functor>> stockingFunctors = new HashMap<>();
+		Map<Class<? extends Functor>, JavaPairRDD<String, ? extends Functor>> streamingFunctors = new HashMap<>();
 		switch (mode) {
 		case STOCKING:
-			for (Class<? extends Functor<?>> c : this.stockingFunctorConfigs.keySet())
-				stockingFunctors.put(c, stocking(c, this.stockingFunctorConfigs.get(c)));
+			for (Class<? extends Functor> c : this.stockingConfigs.keySet())
+				stockingFunctors.put(c, stocking((Class<? extends Functor>) c, this.stockingConfigs.get(c)));
 			break;
 		case STREAMING:
-			for (Class<? extends Functor<?>> c : this.stockingFunctorConfigs.keySet())
-				stockingFunctors.put(c, streaming(c, this.stockingFunctorConfigs.get(c)));
+			for (Class<? extends Functor> c : this.stockingConfigs.keySet())
+				stockingFunctors.put(c, streaming((Class<? extends Functor>) c, this.stockingConfigs.get(c)));
 			break;
 		}
-		for (Class<? extends Functor<?>> c : this.streamingFunctorConfigs.keySet())
-			streamingFunctors.put(c, stocking(c, this.streamingFunctorConfigs.get(c)));
-		JavaPairRDD r = this.calculate(stockingFunctors, streamingFunctors);
-		r.foreach(new VoidFunction<Tuple2>() {
+		for (Class<? extends Functor> c : this.streamingConfigs.keySet())
+			streamingFunctors.put(c, stocking((Class<? extends Functor>) c, this.streamingConfigs.get(c)));
+		((JavaRDD<F>) this.calculate(stockingFunctors, streamingFunctors)).foreach(new VoidFunction<F>() {
 			@Override
-			public void call(Tuple2 t) throws Exception {
-				write(t._1, (BSONObject) t._2, destConfig);
+			public void call(F result) throws Exception {
+				destConfig.mcol.save(result);
 			}
 		});
 	}
@@ -83,27 +85,34 @@ public abstract class CalculusBase {
 		return this.globalConfig.sc;
 	}
 
-	private void write(Object key, BSONObject value, FunctorConfig functorConfig) {
-		// Only support write to mongodb.
-		functorConfig.mcol.save(value);
-	}
-
-	private JavaPairRDD<?, ?> stocking(Class<? extends Functor<?>> functor, FunctorConfig functorConfig) {
-		switch (functor.getAnnotation(Stocking.class).type()) {
+	private <F extends Functor<F>> JavaPairRDD<String, F> stocking(Class<F> klass, FunctorConfig config) {
+		switch (klass.getAnnotation(Stocking.class).type()) {
 		case HBASE: // TODO: adaptor to hbase data frame
-			return this.globalConfig.sc.newAPIHadoopRDD(functorConfig.hconf, TableInputFormat.class,
-					ImmutableBytesWritable.class, Result.class);
+			HbaseResultMarshaller hm = (HbaseResultMarshaller) config.marshaller;
+			return this.globalConfig.sc.newAPIHadoopRDD(config.hconf, TableInputFormat.class, ImmutableBytesWritable.class, Result.class)
+					.mapToPair(new PairFunction<Tuple2<ImmutableBytesWritable, Result>, String, F>() {
+						@Override
+						public Tuple2<String, F> call(Tuple2<ImmutableBytesWritable, Result> t) throws Exception {
+							return new Tuple2<String, F>(hm.unmarshallId(t._1), hm.unmarshall(t._2, klass));
+						}
+					});
 		case MONGODB:
-			return this.globalConfig.sc.newAPIHadoopRDD(functorConfig.mconf, MongoInputFormat.class, Object.class,
-					BSONObject.class);
+			MongodbMarshaller mm = (MongodbMarshaller) config.marshaller;
+			return (JavaPairRDD<String, F>) this.globalConfig.sc
+					.newAPIHadoopRDD(config.mconf, MongoInputFormat.class, Object.class, BSONObject.class)
+					.mapToPair(new PairFunction<Tuple2<Object, BSONObject>, String, F>() {
+						@Override
+						public Tuple2<String, F> call(Tuple2<Object, BSONObject> t) throws Exception {
+							return new Tuple2<String, F>(mm.unmarshallId(t._1), mm.unmarshall(t._2, klass));
+						}
+					});
 		default:
-			throw new IllegalArgumentException("Unsupportted stocking mode: " + functor.getAnnotation(Stocking.class).type());
+			throw new IllegalArgumentException("Unsupportted stocking mode: " + klass.getAnnotation(Stocking.class).type());
 		}
 	}
 
-	private JavaPairRDD<?, ?> streaming(Class<? extends Functor<?>> functorClass, FunctorConfig functorConfig)
-			throws IOException {
-		Streaming streaming = functorClass.getAnnotation(Streaming.class);
+	private <F extends Functor<F>> JavaPairRDD<String, F> streaming(Class<F> klass, FunctorConfig config) throws IOException {
+		Streaming streaming = klass.getAnnotation(Streaming.class);
 		String src = streaming.source();
 		switch (streaming.type()) {
 		case KAFKA:
@@ -121,23 +130,30 @@ public abstract class CalculusBase {
 					return null;
 				}
 			});
-			return results.get(0);
+			KafkaMarshaller km = (KafkaMarshaller) config.marshaller;
+			return results.get(0).mapToPair(new PairFunction<Tuple2<String, String>, String, F>() {
+				@Override
+				public Tuple2<String, F> call(Tuple2<String, String> t) throws Exception {
+					return new Tuple2<String, F>(km.unmarshallId(t._1), km.unmarshall(t._2, klass));
+				}
+			});
 		default:
 			throw new IllegalArgumentException("Unsupportted stocking mode: " + streaming.type());
 		}
 	}
 
-	private FunctorConfig parseConfig(Class<? extends Functor<?>> f) throws IOException {
-		Stocking stocking = f.getAnnotation(Stocking.class);
-		Streaming streaming = f.getAnnotation(Streaming.class);
+	private <F extends Functor> FunctorConfig parseConfig(Class<F> klass) throws IOException {
+		if (null == klass) return null;
+		Stocking stocking = klass.getAnnotation(Stocking.class);
+		Streaming streaming = klass.getAnnotation(Streaming.class);
 		FunctorConfig conf = new FunctorConfig();
 		conf.source = stocking.source();
-		conf.functorClass = f;
+		conf.functorClass = klass;
 		switch (stocking.type()) {
 		case HBASE:
 			conf.hconf = HBaseConfiguration.create();
-			conf.hconf.addResource(Thread.currentThread().getContextClassLoader()
-					.getResource(globalConfig.hbases.get(conf.source).config).openStream());
+			conf.hconf.addResource(
+					Thread.currentThread().getContextClassLoader().getResource(globalConfig.hbases.get(conf.source).config).openStream());
 			conf.htname = TableName.valueOf(stocking.table());
 			// TODO confirm/create table.
 			// Admin ha = conf.hconn.getAdmin();
@@ -162,9 +178,11 @@ public abstract class CalculusBase {
 		default:
 			throw new IllegalArgumentException("Unsupportted stocking mode: " + streaming.type());
 		}
+		conf.marshaller.confirm(klass);
 		switch (streaming.type()) {
 		case KAFKA:
 			conf.kafkaTopics = streaming.topics();
+			conf.marshaller = new KafkaMarshaller();
 			break;
 		default:
 			throw new IllegalArgumentException("Unsupportted stocking mode: " + streaming.type());

@@ -7,8 +7,8 @@
 		<version>3.0.0-SNAPSHOT</version>
 	</parent>
 	<artifactId>albacore-calc</artifactId>
-	<name>albacore-calc</name>
 	<version>1.0.0-SNAPSHOT</version>
+	<name>albacore-calc</name>
 	<build>
 		<finalName>albacore-calc</finalName>
 	</build>
@@ -17,6 +17,27 @@
 		<deps.version.spark>1.5.0-cdh5.5.2</deps.version.spark>
 	</properties>
 	<dependencies>
+		<dependency>
+			<groupId>org.apache.spark</groupId>
+			<artifactId>spark-core_2.10</artifactId>
+			<version>${deps.version.spark}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.spark</groupId>
+			<artifactId>spark-assembly_2.10</artifactId>
+			<version>${deps.version.spark}</version>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.spark</groupId>
+			<artifactId>spark-streaming_2.10</artifactId>
+			<version>${deps.version.spark}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.spark</groupId>
+			<artifactId>spark-streaming-kafka_2.10</artifactId>
+			<version>${deps.version.spark}</version>
+		</dependency>
 		<dependency>
 			<groupId>net.butfly.albacore</groupId>
 			<artifactId>albacore-core</artifactId>
@@ -96,26 +117,6 @@
 					<groupId>javax.servlet</groupId>
 				</exclusion>
 			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.spark</groupId>
-			<artifactId>spark-core_2.10</artifactId>
-			<version>${deps.version.spark}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.spark</groupId>
-			<artifactId>spark-streaming_2.10</artifactId>
-			<version>${deps.version.spark}</version>
-		</dependency>
-		<!-- <dependency> -->
-		<!-- <groupId>org.apache.spark</groupId> -->
-		<!-- <artifactId>spark-sql_2.10</artifactId> -->
-		<!-- <version>${deps.version.spark}</version> -->
-		<!-- </dependency> -->
-		<dependency>
-			<groupId>org.apache.spark</groupId>
-			<artifactId>spark-streaming-kafka_2.10</artifactId>
-			<version>${deps.version.spark}</version>
 		</dependency>
 	</dependencies>
 	<repositories>

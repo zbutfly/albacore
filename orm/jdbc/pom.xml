@@ -14,7 +14,7 @@
 	<dependencies>
 		<dependency>
 			<groupId>net.butfly.albacore</groupId>
-			<artifactId>albacore-orm</artifactId>
+			<artifactId>albacore-orm-core</artifactId>
 			<version>${deps.version.albacore}</version>
 		</dependency>
 		<dependency>

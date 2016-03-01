@@ -29,9 +29,8 @@ public class Calculator {
 	public static void main(String[] args) throws Exception {
 		final Properties props = new Properties();
 		props.load(Thread.currentThread().getContextClassLoader().getResourceAsStream(args.length >= 2 ? args[1] : "calculus.properties"));
-//		System.setProperty("hadoop.home.dir", props.getProperty("hadoop.home.dir"));
 		for (String key : System.getProperties().stringPropertyNames())
-			if (key.startsWith("calculus")) props.put(key, System.getProperty(key));
+			if (key.startsWith("calculus.")) props.put(key, System.getProperty(key));
 		scanCalculus(props);
 	}
 
@@ -53,11 +52,7 @@ public class Calculator {
 	private static void scanCalculus(Properties props) throws Exception {
 		final CalculatorConfig conf = new CalculatorConfig();
 		final String appname = props.getProperty("calculus.app.name", "Calculuses");
-		conf.sc = new JavaSparkContext(props.getProperty("calculus.spark.url"), appname + "-Spark");
-		// conf.sqsc = new SQLContext(conf.sc);
-		conf.ssc = new JavaStreamingContext(conf.sc,
-				Durations.seconds(Integer.parseInt(props.getProperty("calculus.spark.duration.seconds", "0"))));
-		Map<String, Properties> dbs = subprops(props, "calculus.db.");
+		final Map<String, Properties> dbs = subprops(props, "calculus.db.");
 		for (String dbid : dbs.keySet()) {
 			Properties dbprops = dbs.get(dbid);
 			Type type = Type.valueOf(dbprops.getProperty("type"));
@@ -87,19 +82,17 @@ public class Calculator {
 				throw new IllegalArgumentException("Unsupportted type: " + type);
 			}
 		}
-		try {
-			for (Class<?> c : ref.getTypesAnnotatedWith(Calculus.class)) {
-				CalculusBase calc = (CalculusBase) Reflections.construct(c, conf);
-				new Task<Void>(new Task.Callable<Void>() {
-					@Override
-					public Void call() throws Exception {
-						calc.calculate(Mode.valueOf(props.getProperty("calculus.mode", "STREAMING")));
-						return null;
-					}
-				}, new Options().fork()).execute();
-			}
-		} finally {
-			conf.ssc.close();
-		}
+		conf.sc = new JavaSparkContext(props.getProperty("calculus.spark.url"), appname + "-Spark");
+		conf.ssc = new JavaStreamingContext(conf.sc,
+				Durations.seconds(Integer.parseInt(props.getProperty("calculus.spark.duration.seconds", "5"))));
+		for (Class<?> c : ref.getTypesAnnotatedWith(Calculus.class))
+			new Task<Void>(new Task.Callable<Void>() {
+				@Override
+				public Void call() throws Exception {
+					((CalculusBase) Reflections.construct(c, conf))
+							.calculate(Mode.valueOf(props.getProperty("calculus.mode", "STREAMING")));
+					return null;
+				}
+			}, new Options().fork()).execute();
 	}
 }

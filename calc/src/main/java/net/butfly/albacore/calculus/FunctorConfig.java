@@ -12,7 +12,7 @@ public class FunctorConfig {
 	public Class<?> functorClass;
 	public String source;
 	public AbstractJavaDStreamLike<?, ?, ?> stream;
-	public Marshaller<?> marshaller;
+	public Marshaller<?, ?> marshaller;
 	// db conf
 	public Configuration hconf, mconf;
 	public Connection hconn;
