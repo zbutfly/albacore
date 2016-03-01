@@ -10,42 +10,11 @@
 	<name>albacore-orm-nosql</name>
 	<build>
 		<finalName>albacore-orm-nosql</finalName>
-		<pluginManagement>
-			<plugins>
-				<plugin>
-					<groupId>com.github.joelittlejohn.embedmongo</groupId>
-					<artifactId>embedmongo-maven-plugin</artifactId>
-					<version>0.1.12</version>
-					<executions>
-						<execution>
-							<id>start</id>
-							<goals>
-								<goal>start</goal>
-								<!-- use the 'run' goal instead to start mongodb and wait -->
-							</goals>
-							<configuration>
-								<logging>none</logging>
-								<port>27017</port>
-								<version>2.4.3</version>
-								<databaseDirectory>${project.build.directory}/mongotest
-								</databaseDirectory>
-							</configuration>
-						</execution>
-						<execution>
-							<id>stop</id>
-							<goals>
-								<goal>stop</goal>
-							</goals>
-						</execution>
-					</executions>
-				</plugin>
-			</plugins>
-		</pluginManagement>
 	</build>
 	<dependencies>
 		<dependency>
 			<groupId>net.butfly.albacore</groupId>
-			<artifactId>albacore-orm</artifactId>
+			<artifactId>albacore-orm-core</artifactId>
 			<version>${deps.version.albacore}</version>
 			<exclusions>
 				<exclusion>

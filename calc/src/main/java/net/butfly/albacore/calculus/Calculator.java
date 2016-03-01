@@ -10,7 +10,7 @@ import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.jongo.Jongo;
 import org.reflections.util.ConfigurationBuilder;
 
-import com.mongodb.DB;
+import com.jcabi.log.Logger;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 
@@ -28,76 +28,71 @@ public class Calculator {
 
 	public static void main(String[] args) throws Exception {
 		final Properties props = new Properties();
-		props.load(Thread.currentThread().getContextClassLoader()
-				.getResourceAsStream(args.length >= 2 ? args[1] : "calculus.properties"));
-		props.putAll(System.getProperties());
+		props.load(Thread.currentThread().getContextClassLoader().getResourceAsStream(args.length >= 2 ? args[1] : "calculus.properties"));
+		for (String key : System.getProperties().stringPropertyNames())
+			if (key.startsWith("calculus.")) props.put(key, System.getProperty(key));
 		scanCalculus(props);
 	}
 
-	private static Map<String, Properties> foreach(Properties props, String prefix) {
+	private static Map<String, Properties> subprops(Properties props, String prefix) {
 		Map<String, Properties> r = new HashMap<>();
 		for (String key : props.stringPropertyNames()) {
 			if (!key.startsWith(prefix)) continue;
-			String mainkey = prefix;
-			if (mainkey.endsWith(".")) mainkey = mainkey.substring(0, mainkey.length() - 1);
-			String subkey = key.substring(prefix.length());
-			if (subkey.startsWith(".")) subkey = subkey.substring(1);
-
+			String seg = key.substring(prefix.length());
+			int pos = seg.indexOf('.');
+			String mainkey = seg.substring(0, pos);
+			String subkey = seg.substring(pos + 1, seg.length());
 			if (!r.containsKey(mainkey)) r.put(mainkey, new Properties());
 			r.get(mainkey).put(subkey, props.getProperty(key));
 		}
 		return r;
 	}
 
+	@SuppressWarnings("deprecation")
 	private static void scanCalculus(Properties props) throws Exception {
 		final CalculatorConfig conf = new CalculatorConfig();
-		conf.sc = new JavaSparkContext(props.getProperty("calculus.spark.url"), props.getProperty("calculus.spark.app.name"));
-		// conf.sqsc = new SQLContext(conf.sc);
-		conf.ssc = new JavaStreamingContext(conf.sc,
-				Durations.seconds(Integer.parseInt(props.getProperty("calculus.spark.duration.seconds", "0"))));
-		Map<String, Properties> dbs = foreach(props, "calculus.db.");
+		conf.validate = Boolean.parseBoolean(props.getProperty("calculus.validate.table", "false"));
+		final String appname = props.getProperty("calculus.app.name", "Calculuses");
+		final Map<String, Properties> dbs = subprops(props, "calculus.db.");
 		for (String dbid : dbs.keySet()) {
 			Properties dbprops = dbs.get(dbid);
 			Type type = Type.valueOf(dbprops.getProperty("type"));
 			switch (type) {
 			case HBASE:
 				HbaseConfig h = new HbaseConfig();
-				h.config = props.getProperty("config", "hbase-site.xml");
+				h.config = dbprops.getProperty("config", "hbase-site.xml");
 				conf.hbases.put(dbid, h);
 				break;
 			case MONGODB:
 				MongodbConfig m = new MongodbConfig();
-				m.uri = props.getProperty("uri");
-				m.authuri = props.getProperty("authuri");
-				m.db = props.getProperty("db");
+				m.uri = dbprops.getProperty("uri");
+				m.authuri = dbprops.getProperty("authuri", m.uri);
+				m.db = dbprops.getProperty("db");
 				m.client = new MongoClient(new MongoClientURI(m.uri));
-				@SuppressWarnings("deprecation")
-				DB db = m.client.getDB(m.db);
-				m.jongo = new Jongo(db);
+				m.mongo = m.client.getDB(m.db);
+				m.jongo = new Jongo(m.mongo);
 				break;
 			case KAFKA:
 				KafkaConfig k = new KafkaConfig();
-				k.quonum = props.getProperty("quonum");
-				k.group = props.getProperty("group");
+				k.quonum = dbprops.getProperty("quonum");
+				k.group = appname;
 				conf.kafkas.put(dbid, k);
 				break;
 			default:
-				throw new IllegalArgumentException("Unsupportted type: " + type);
+				Logger.warn(Calculator.class, "Unsupportted type: " + type);
 			}
 		}
-		try {
-			for (Class<?> c : ref.getTypesAnnotatedWith(Calculus.class)) {
-				CalculusBase calc = (CalculusBase) Reflections.construct(c, conf);
-				new Task<Void>(new Task.Callable<Void>() {
-					@Override
-					public Void call() throws Exception {
-						calc.calculate(Mode.valueOf(props.getProperty("calculus.mode", "STREAMING")));
-						return null;
-					}
-				}, new Options().fork()).execute();
-			}
-		} finally {
-			conf.ssc.close();
-		}
+		conf.sc = new JavaSparkContext(props.getProperty("calculus.spark.url"), appname + "-Spark");
+		conf.ssc = new JavaStreamingContext(conf.sc,
+				Durations.seconds(Integer.parseInt(props.getProperty("calculus.spark.duration.seconds", "5"))));
+		for (Class<?> c : ref.getTypesAnnotatedWith(Calculus.class))
+			new Task<Void>(new Task.Callable<Void>() {
+				@Override
+				public Void call() throws Exception {
+					((CalculusBase) Reflections.construct(c, conf))
+							.calculate(Mode.valueOf(props.getProperty("calculus.mode", "STREAMING")));
+					return null;
+				}
+			}, new Options().fork()).execute();
 	}
 }

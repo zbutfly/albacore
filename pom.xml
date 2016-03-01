@@ -24,6 +24,7 @@
 		<module>frame</module>
 		<module>orm</module>
 		<module>utils</module>
+		<module>calc</module>
 		<!--<module>extra</module>-->
 		<module>cache</module>
 		<module>test</module>
