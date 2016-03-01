@@ -10,6 +10,7 @@ import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.jongo.Jongo;
 import org.reflections.util.ConfigurationBuilder;
 
+import com.jcabi.log.Logger;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 
@@ -37,11 +38,10 @@ public class Calculator {
 		Map<String, Properties> r = new HashMap<>();
 		for (String key : props.stringPropertyNames()) {
 			if (!key.startsWith(prefix)) continue;
-			String mainkey = prefix;
-			if (mainkey.endsWith(".")) mainkey = mainkey.substring(0, mainkey.length() - 1);
-			String subkey = key.substring(prefix.length());
-			if (subkey.startsWith(".")) subkey = subkey.substring(1);
-
+			String seg = key.substring(prefix.length());
+			int pos = seg.indexOf('.');
+			String mainkey = seg.substring(0, pos);
+			String subkey = seg.substring(pos + 1, seg.length());
 			if (!r.containsKey(mainkey)) r.put(mainkey, new Properties());
 			r.get(mainkey).put(subkey, props.getProperty(key));
 		}
@@ -51,6 +51,7 @@ public class Calculator {
 	@SuppressWarnings("deprecation")
 	private static void scanCalculus(Properties props) throws Exception {
 		final CalculatorConfig conf = new CalculatorConfig();
+		conf.validate = Boolean.parseBoolean(props.getProperty("calculus.validate.table", "false"));
 		final String appname = props.getProperty("calculus.app.name", "Calculuses");
 		final Map<String, Properties> dbs = subprops(props, "calculus.db.");
 		for (String dbid : dbs.keySet()) {
@@ -59,26 +60,26 @@ public class Calculator {
 			switch (type) {
 			case HBASE:
 				HbaseConfig h = new HbaseConfig();
-				h.config = props.getProperty("config", "hbase-site.xml");
+				h.config = dbprops.getProperty("config", "hbase-site.xml");
 				conf.hbases.put(dbid, h);
 				break;
 			case MONGODB:
 				MongodbConfig m = new MongodbConfig();
-				m.uri = props.getProperty("uri");
-				m.authuri = props.getProperty("authuri");
-				m.db = props.getProperty("db");
+				m.uri = dbprops.getProperty("uri");
+				m.authuri = dbprops.getProperty("authuri", m.uri);
+				m.db = dbprops.getProperty("db");
 				m.client = new MongoClient(new MongoClientURI(m.uri));
 				m.mongo = m.client.getDB(m.db);
 				m.jongo = new Jongo(m.mongo);
 				break;
 			case KAFKA:
 				KafkaConfig k = new KafkaConfig();
-				k.quonum = props.getProperty("quonum");
-				k.group = props.getProperty(appname);
+				k.quonum = dbprops.getProperty("quonum");
+				k.group = appname;
 				conf.kafkas.put(dbid, k);
 				break;
 			default:
-				throw new IllegalArgumentException("Unsupportted type: " + type);
+				Logger.warn(Calculator.class, "Unsupportted type: " + type);
 			}
 		}
 		conf.sc = new JavaSparkContext(props.getProperty("calculus.spark.url"), appname + "-Spark");

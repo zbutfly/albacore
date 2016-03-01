@@ -178,7 +178,7 @@ public abstract class CalculusBase {
 		default:
 			throw new IllegalArgumentException("Unsupportted stocking mode: " + streaming.type());
 		}
-		conf.marshaller.confirm(klass, conf, globalConfig);
+		if (globalConfig.validate) conf.marshaller.confirm(klass, conf, globalConfig);
 		switch (streaming.type()) {
 		case KAFKA:
 			conf.kafkaTopics = streaming.topics();

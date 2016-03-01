@@ -18,6 +18,7 @@ public class CalculatorConfig {
 	public Map<String, KafkaConfig> kafkas = new HashMap<>();
 	public Map<String, HbaseConfig> hbases = new HashMap<>();
 	public Map<String, MongodbConfig> mongodbs = new HashMap<>();
+	public boolean validate;
 
 	public static class KafkaConfig {
 		public String quonum;
