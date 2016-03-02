@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.streaming.Durations;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
@@ -53,6 +54,7 @@ public class Calculator {
 		final CalculatorConfig conf = new CalculatorConfig();
 		conf.validate = Boolean.parseBoolean(props.getProperty("calculus.validate.table", "false"));
 		final String appname = props.getProperty("calculus.app.name", "Calculuses");
+		// dadatabse configurations parsing
 		final Map<String, Properties> dbs = subprops(props, "calculus.db.");
 		for (String dbid : dbs.keySet()) {
 			Properties dbprops = dbs.get(dbid);
@@ -82,9 +84,22 @@ public class Calculator {
 				Logger.warn(Calculator.class, "Unsupportted type: " + type);
 			}
 		}
-		conf.sc = new JavaSparkContext(props.getProperty("calculus.spark.url"), appname + "-Spark");
+		// spark configurations parsing
+		if (props.containsKey("calculus.spark.executor.instances"))
+			System.setProperty("SPARK_EXECUTOR_INSTANCES", props.getProperty("calculus.spark.executor.instances"));
+		SparkConf sconf = new SparkConf();
+		sconf.setMaster(props.getProperty("calculus.spark.url"));
+		sconf.setAppName(appname + "-Spark");
+		if (props.containsKey("calculus.spark.jars")) sconf.setJars(props.getProperty("calculus.spark.jars").split(","));
+		if (props.containsKey("calculus.spark.home")) sconf.setSparkHome(props.getProperty("calculus.spark.home"));
+		if (props.containsKey("calculus.spark.files")) sconf.set("spark.files", props.getProperty("calculus.spark.files"));
+		if (props.containsKey("calculus.spark.executor.memory.mb"))
+			sconf.set("spark.executor.memory", props.getProperty("calculus.spark.executor.memory.mb"));
+		if (props.containsKey("calculus.spark.testing")) sconf.set("spark.testing", props.getProperty("calculus.spark.testing"));
+		conf.sc = new JavaSparkContext(sconf);
 		conf.ssc = new JavaStreamingContext(conf.sc,
 				Durations.seconds(Integer.parseInt(props.getProperty("calculus.spark.duration.seconds", "5"))));
+		// scan and run calculuses
 		for (Class<?> c : ref.getTypesAnnotatedWith(Calculus.class))
 			new Task<Void>(new Task.Callable<Void>() {
 				@Override
