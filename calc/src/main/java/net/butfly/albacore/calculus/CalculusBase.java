@@ -1,6 +1,7 @@
 package net.butfly.albacore.calculus;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -8,7 +9,6 @@ import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
-import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
@@ -21,6 +21,7 @@ import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.streaming.api.java.JavaPairReceiverInputDStream;
 import org.apache.spark.streaming.kafka.KafkaUtils;
 import org.bson.BSONObject;
+import org.jongo.MongoCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,13 +30,19 @@ import com.mongodb.hadoop.MongoInputFormat;
 import net.butfly.albacore.calculus.Calculus.Mode;
 import net.butfly.albacore.calculus.Functor.Stocking;
 import net.butfly.albacore.calculus.Functor.Streaming;
+import net.butfly.albacore.calculus.datasource.CalculatorDataSource;
+import net.butfly.albacore.calculus.datasource.CalculatorDataSource.HbaseDataSource;
+import net.butfly.albacore.calculus.datasource.CalculatorDataSource.KafkaDataSource;
+import net.butfly.albacore.calculus.datasource.CalculatorDataSource.MongoDataSource;
 import net.butfly.albacore.calculus.marshall.HbaseResultMarshaller;
 import net.butfly.albacore.calculus.marshall.KafkaMarshaller;
-import net.butfly.albacore.calculus.marshall.MongodbMarshaller;
+import net.butfly.albacore.calculus.marshall.MongoMarshaller;
 import scala.Tuple2;
 
 @SuppressWarnings({ "rawtypes", "unchecked", "serial" })
-public abstract class CalculusBase {
+public abstract class CalculusBase implements Serializable {
+	private static final long serialVersionUID = -1L;
+
 	protected Logger logger = LoggerFactory.getLogger(this.getClass());
 	// spark
 	protected CalculatorConfig globalConfig;
@@ -43,24 +50,25 @@ public abstract class CalculusBase {
 	protected Map<Class<? extends Functor>, FunctorConfig> streamingConfigs = new HashMap<>();
 	private FunctorConfig destConfig;
 
-	protected CalculusBase() {}
-
-	public CalculusBase(CalculatorConfig config) throws IOException {
+	final CalculusBase initialize(CalculatorConfig config) throws IOException {
+		this.globalConfig = config;
 		Class<? extends CalculusBase> c = this.getClass();
 		Calculus calc = c.getAnnotation(Calculus.class);
+		this.destConfig = parseConfig(calc.saving());
 		for (Class<? extends Functor> f : calc.stocking())
 			this.stockingConfigs.put(f, parseConfig(f));
 		for (Class<? extends Functor> f : calc.streaming())
 			this.streamingConfigs.put(f, parseConfig(f));
-		this.destConfig = parseConfig(calc.saving());
+		return this;
 	}
 
 	abstract public JavaRDD<? extends Functor> calculate(Map<Class<? extends Functor>, JavaPairRDD<String, ? extends Functor>> stocking,
 			Map<Class<? extends Functor>, JavaPairRDD<String, ? extends Functor>> streaming);
 
-	final public <F extends Functor> void calculate(Mode mode) throws IOException {
+	final <F extends Functor> void calculate(Mode mode) throws IOException {
 		Map<Class<? extends Functor>, JavaPairRDD<String, ? extends Functor>> stockingFunctors = new HashMap<>();
 		Map<Class<? extends Functor>, JavaPairRDD<String, ? extends Functor>> streamingFunctors = new HashMap<>();
+
 		switch (mode) {
 		case STOCKING:
 			for (Class<? extends Functor> c : this.stockingConfigs.keySet())
@@ -76,7 +84,9 @@ public abstract class CalculusBase {
 		((JavaRDD<F>) this.calculate(stockingFunctors, streamingFunctors)).foreach(new VoidFunction<F>() {
 			@Override
 			public void call(F result) throws Exception {
-				destConfig.mcol.save(result);
+				MongoCollection col = ((MongoDataSource) globalConfig.datasources.get(destConfig.datasource)).jongo
+						.getCollection(destConfig.mongoTable);
+				col.save(result);
 			}
 		});
 	}
@@ -86,10 +96,20 @@ public abstract class CalculusBase {
 	}
 
 	private <F extends Functor<F>> JavaPairRDD<String, F> stocking(Class<F> klass, FunctorConfig config) {
+		CalculatorDataSource dsc = globalConfig.datasources.get(config.datasource);
 		switch (klass.getAnnotation(Stocking.class).type()) {
 		case HBASE: // TODO: adaptor to hbase data frame
-			HbaseResultMarshaller hm = (HbaseResultMarshaller) config.marshaller;
-			return this.globalConfig.sc.newAPIHadoopRDD(config.hconf, TableInputFormat.class, ImmutableBytesWritable.class, Result.class)
+			Configuration hconf = HBaseConfiguration.create();
+			try {
+				hconf.addResource(Thread.currentThread().getContextClassLoader()
+						.getResource(((HbaseDataSource) globalConfig.datasources.get(config.datasource)).configFile).openStream());
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+			hconf.set(TableInputFormat.INPUT_TABLE, config.hbaseTable);
+			// conf.hconf.set(TableInputFormat.SCAN_COLUMNS, "cf1:vc cf1:vs");
+			final HbaseResultMarshaller hm = (HbaseResultMarshaller) dsc.marshaller;
+			return this.globalConfig.sc.newAPIHadoopRDD(hconf, TableInputFormat.class, ImmutableBytesWritable.class, Result.class)
 					.mapToPair(new PairFunction<Tuple2<ImmutableBytesWritable, Result>, String, F>() {
 						@Override
 						public Tuple2<String, F> call(Tuple2<ImmutableBytesWritable, Result> t) throws Exception {
@@ -97,9 +117,17 @@ public abstract class CalculusBase {
 						}
 					});
 		case MONGODB:
-			MongodbMarshaller mm = (MongodbMarshaller) config.marshaller;
+			Configuration mconf = new Configuration();
+			MongoDataSource mds = (MongoDataSource) globalConfig.datasources.get(config.datasource);
+			mconf.set("mongo.job.input.format", "com.mongodb.hadoop.MongoInputFormat");
+			mconf.set("mongo.auth.uri", mds.authuri);
+			mconf.set("mongo.input.uri", mds.uri + "." + config.mongoTable);
+			if (config.mongoFilter != null) mconf.set("mongo.input.query", config.mongoFilter);
+			// conf.mconf.set("mongo.input.fields
+			mconf.set("mongo.input.notimeout", "true");
+			MongoMarshaller mm = (MongoMarshaller) dsc.marshaller;
 			return (JavaPairRDD<String, F>) this.globalConfig.sc
-					.newAPIHadoopRDD(config.mconf, MongoInputFormat.class, Object.class, BSONObject.class)
+					.newAPIHadoopRDD(((MongoDataSource) dsc).mconf, MongoInputFormat.class, Object.class, BSONObject.class)
 					.mapToPair(new PairFunction<Tuple2<Object, BSONObject>, String, F>() {
 						@Override
 						public Tuple2<String, F> call(Tuple2<Object, BSONObject> t) throws Exception {
@@ -113,7 +141,7 @@ public abstract class CalculusBase {
 
 	private <F extends Functor<F>> JavaPairRDD<String, F> streaming(Class<F> klass, FunctorConfig config) throws IOException {
 		Streaming streaming = klass.getAnnotation(Streaming.class);
-		String src = streaming.source();
+		CalculatorDataSource dsc = globalConfig.datasources.get(config.datasource);
 		switch (streaming.type()) {
 		case KAFKA:
 			Map<String, Integer> topicsMap = new HashMap<>();
@@ -121,7 +149,7 @@ public abstract class CalculusBase {
 			for (String t : streaming.topics())
 				topicsMap.put(t, 1);
 			JavaPairReceiverInputDStream<String, String> kafka = KafkaUtils.createStream(this.globalConfig.ssc,
-					globalConfig.kafkas.get(src).quonum, globalConfig.kafkas.get(src).group, topicsMap);
+					((KafkaDataSource) dsc).quonum, ((KafkaDataSource) dsc).group, topicsMap);
 			kafka.foreachRDD(new Function<JavaPairRDD<String, String>, Void>() {
 				@Override
 				public Void call(JavaPairRDD<String, String> rdd) throws Exception {
@@ -130,7 +158,7 @@ public abstract class CalculusBase {
 					return null;
 				}
 			});
-			KafkaMarshaller km = (KafkaMarshaller) config.marshaller;
+			KafkaMarshaller km = (KafkaMarshaller) dsc.marshaller;
 			return results.get(0).mapToPair(new PairFunction<Tuple2<String, String>, String, F>() {
 				@Override
 				public Tuple2<String, F> call(Tuple2<String, String> t) throws Exception {
@@ -146,47 +174,30 @@ public abstract class CalculusBase {
 		if (null == klass) return null;
 		Stocking stocking = klass.getAnnotation(Stocking.class);
 		Streaming streaming = klass.getAnnotation(Streaming.class);
-		FunctorConfig conf = new FunctorConfig();
-		conf.datasource = stocking.source();
-		conf.functorClass = klass;
-		switch (stocking.type()) {
+		FunctorConfig config = new FunctorConfig();
+		config.datasource = stocking.source();
+		config.functorClass = klass;
+		if (!globalConfig.datasources.containsKey(stocking.source())) switch (stocking.type()) {
 		case HBASE:
-			conf.hconf = HBaseConfiguration.create();
-			conf.hconf.addResource(Thread.currentThread().getContextClassLoader()
-					.getResource(globalConfig.hbases.get(conf.datasource).config).openStream());
-			conf.htname = TableName.valueOf(stocking.table());
-			// TODO confirm/create table.
-			// Admin ha = conf.hconn.getAdmin();
-			// TODO confirm/insert data into table.
-			// Table ht = conf.hconn.getTable(conf.htname);
-			conf.hconf.set(TableInputFormat.INPUT_TABLE, stocking.table());
-			// conf.hconf.set(TableInputFormat.SCAN_COLUMNS, "cf1:vc cf1:vs");
-			// schema for data frame
-			conf.marshaller = new HbaseResultMarshaller();
+			config.hbaseTable = stocking.table();
+			globalConfig.datasources.get(config.datasource).marshaller = new HbaseResultMarshaller();
 			break;
 		case MONGODB:
-			conf.mconf = new Configuration();
-			conf.mconf.set("mongo.job.input.format", "com.mongodb.hadoop.MongoInputFormat");
-			conf.mconf.set("mongo.auth.uri", globalConfig.mongodbs.get(conf.datasource).authuri);
-			conf.mconf.set("mongo.input.uri", globalConfig.mongodbs.get(conf.datasource).uri + "." + stocking.table());
-			conf.mconf.set("mongo.input.query", stocking.filter());
-			// conf.mconf.set("mongo.input.fields
-			conf.mconf.set("mongo.input.notimeout", "true");
-			conf.mcol = globalConfig.mongodbs.get(destConfig.datasource).jongo.getCollection(stocking.table());
-			conf.marshaller = new MongodbMarshaller();
+			config.mongoTable = stocking.table();
+			config.mongoFilter = stocking.filter();
 			break;
 		default:
 			throw new IllegalArgumentException("Unsupportted stocking mode: " + streaming.type());
 		}
-		if (globalConfig.validate) conf.marshaller.confirm(klass, conf, globalConfig);
-		switch (streaming.type()) {
+		if (globalConfig.validate) globalConfig.datasources.get(config.datasource).marshaller.confirm(klass, config, globalConfig);
+		if (streaming != null) switch (streaming.type()) {
 		case KAFKA:
-			conf.kafkaTopics = streaming.topics();
-			conf.marshaller = new KafkaMarshaller();
+			config.kafkaTopics = streaming.topics();
+			globalConfig.datasources.get(config.datasource).marshaller = new KafkaMarshaller();
 			break;
 		default:
 			throw new IllegalArgumentException("Unsupportted stocking mode: " + streaming.type());
 		}
-		return conf;
+		return config;
 	}
 }

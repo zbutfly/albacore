@@ -30,6 +30,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 public final class SparkPi {
 	public static void main(String[] args) throws Exception {
 		final SparkConf sparkConf = new SparkConf().setAppName("SparkPi");
+		@SuppressWarnings("resource")
 		final JavaSparkContext jsc = new JavaSparkContext(sparkConf);
 
 		final int slices = (args.length == 1) ? Integer.parseInt(args[0]) : 2;

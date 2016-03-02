@@ -9,23 +9,25 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.streaming.Durations;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.jongo.Jongo;
+import org.reflections.scanners.MethodAnnotationsScanner;
+import org.reflections.scanners.SubTypesScanner;
+import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
+import org.reflections.util.FilterBuilder;
 
 import com.jcabi.log.Logger;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 
-import net.butfly.albacore.calculus.CalculatorConfig.HbaseConfig;
-import net.butfly.albacore.calculus.CalculatorConfig.KafkaConfig;
-import net.butfly.albacore.calculus.CalculatorConfig.MongodbConfig;
 import net.butfly.albacore.calculus.Calculus.Mode;
 import net.butfly.albacore.calculus.Functor.Type;
-import net.butfly.albacore.utils.Reflections;
-import net.butfly.albacore.utils.async.Options;
-import net.butfly.albacore.utils.async.Task;
+import net.butfly.albacore.calculus.datasource.CalculatorDataSource.HbaseDataSource;
+import net.butfly.albacore.calculus.datasource.CalculatorDataSource.KafkaDataSource;
+import net.butfly.albacore.calculus.datasource.CalculatorDataSource.MongoDataSource;
 
 public class Calculator {
-	private static org.reflections.Reflections ref = new org.reflections.Reflections(new ConfigurationBuilder());
+	// private static org.reflections.Reflections ref = new
+	// org.reflections.Reflections(new ConfigurationBuilder());
 
 	public static void main(String[] args) throws Exception {
 		final Properties props = new Properties();
@@ -61,24 +63,25 @@ public class Calculator {
 			Type type = Type.valueOf(dbprops.getProperty("type"));
 			switch (type) {
 			case HBASE:
-				HbaseConfig h = new HbaseConfig();
-				h.config = dbprops.getProperty("config", "hbase-site.xml");
-				conf.hbases.put(dbid, h);
+				HbaseDataSource h = new HbaseDataSource();
+				h.configFile = dbprops.getProperty("config", "hbase-site.xml");
+				conf.datasources.put(dbid, h);
 				break;
 			case MONGODB:
-				MongodbConfig m = new MongodbConfig();
+				MongoDataSource m = new MongoDataSource();
 				m.uri = dbprops.getProperty("uri");
 				m.authuri = dbprops.getProperty("authuri", m.uri);
 				m.db = dbprops.getProperty("db");
 				m.client = new MongoClient(new MongoClientURI(m.uri));
 				m.mongo = m.client.getDB(m.db);
 				m.jongo = new Jongo(m.mongo);
+				conf.datasources.put(dbid, m);
 				break;
 			case KAFKA:
-				KafkaConfig k = new KafkaConfig();
+				KafkaDataSource k = new KafkaDataSource();
 				k.quonum = dbprops.getProperty("quonum");
 				k.group = appname;
-				conf.kafkas.put(dbid, k);
+				conf.datasources.put(dbid, k);
 				break;
 			default:
 				Logger.warn(Calculator.class, "Unsupportted type: " + type);
@@ -100,14 +103,17 @@ public class Calculator {
 		conf.ssc = new JavaStreamingContext(conf.sc,
 				Durations.seconds(Integer.parseInt(props.getProperty("calculus.spark.duration.seconds", "5"))));
 		// scan and run calculuses
+		FilterBuilder filterBuilder = new FilterBuilder().includePackage(props.getProperty("calculus.package", ""));
+		org.reflections.Reflections ref = new org.reflections.Reflections(
+				new ConfigurationBuilder().filterInputsBy(filterBuilder).setUrls(ClasspathHelper.forClassLoader())
+						.addScanners(new MethodAnnotationsScanner().filterResultsBy(filterBuilder), new SubTypesScanner(false)));
 		for (Class<?> c : ref.getTypesAnnotatedWith(Calculus.class))
-			new Task<Void>(new Task.Callable<Void>() {
-				@Override
-				public Void call() throws Exception {
-					((CalculusBase) Reflections.construct(c, conf))
-							.calculate(Mode.valueOf(props.getProperty("calculus.mode", "STREAMING")));
-					return null;
-				}
-			}, new Options().fork()).execute();
+			// new Task<Void>(new Task.Callable<Void>() {
+			// @Override
+			// public Void call() throws Exception {
+			((CalculusBase) c.newInstance()).initialize(conf).calculate(Mode.valueOf(props.getProperty("calculus.mode", "STREAMING")));
+		// return null;
+		// }
+		// }, new Options().fork()).execute();
 	}
 }

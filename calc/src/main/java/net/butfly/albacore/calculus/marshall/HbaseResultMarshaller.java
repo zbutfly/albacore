@@ -9,6 +9,7 @@ import java.util.Set;
 import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
+import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
@@ -23,19 +24,22 @@ import com.jcabi.log.Logger;
 import net.butfly.albacore.calculus.CalculatorConfig;
 import net.butfly.albacore.calculus.Functor;
 import net.butfly.albacore.calculus.FunctorConfig;
+import net.butfly.albacore.calculus.datasource.CalculatorDataSource.HbaseDataSource;
+import net.butfly.albacore.calculus.datasource.ColumnFamily;
 import net.butfly.albacore.utils.Reflections;
 
 public class HbaseResultMarshaller implements Marshaller<Result, ImmutableBytesWritable> {
+	private static final long serialVersionUID = -4529825710243214685L;
 	private static ObjectMapper mapper = new ObjectMapper(new MongoBsonFactory());
 
 	@Override
 	public <T extends Functor<T>> T unmarshall(Result from, Class<T> to) {
-		String dcf = to.isAnnotationPresent(HbaseColumnFamily.class) ? to.getAnnotation(HbaseColumnFamily.class).value() : null;
+		String dcf = to.isAnnotationPresent(ColumnFamily.class) ? to.getAnnotation(ColumnFamily.class).value() : null;
 		T t = Reflections.construct(to);
 		for (Field f : Reflections.getDeclaredFields(to)) {
 			String colname = f.isAnnotationPresent(JsonProperty.class) ? f.getAnnotation(JsonProperty.class).value()
 					: CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, f.getName());
-			String colfamily = f.isAnnotationPresent(HbaseColumnFamily.class) ? f.getAnnotation(HbaseColumnFamily.class).value() : dcf;
+			String colfamily = f.isAnnotationPresent(ColumnFamily.class) ? f.getAnnotation(ColumnFamily.class).value() : dcf;
 			if (colfamily == null)
 				throw new IllegalArgumentException("Column family is not defined on class " + to.toString() + ", field " + f.getName());
 			try {
@@ -78,30 +82,30 @@ public class HbaseResultMarshaller implements Marshaller<Result, ImmutableBytesW
 	@Override
 	public <F extends Functor<F>> void confirm(Class<F> functor, FunctorConfig config, CalculatorConfig globalConfig) {
 		try {
-			Admin a = config.hconn.getAdmin();
-			if (a.tableExists(config.htname)) return;
+			TableName ht = TableName.valueOf(config.hbaseTable);
+			Admin a = ((HbaseDataSource) globalConfig.datasources.get(config.datasource)).hconn.getAdmin();
+			if (a.tableExists(ht)) return;
 			Set<String> families = new HashSet<>();
 			Set<String> columns = new HashSet<>();
-			String dcf = functor.isAnnotationPresent(HbaseColumnFamily.class) ? functor.getAnnotation(HbaseColumnFamily.class).value()
-					: null;
+			String dcf = functor.isAnnotationPresent(ColumnFamily.class) ? functor.getAnnotation(ColumnFamily.class).value() : null;
 			families.add(dcf);
 			for (Field f : Reflections.getDeclaredFields(functor)) {
 				String colname = f.isAnnotationPresent(JsonProperty.class) ? f.getAnnotation(JsonProperty.class).value()
 						: CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, f.getName());
-				String colfamily = f.isAnnotationPresent(HbaseColumnFamily.class) ? f.getAnnotation(HbaseColumnFamily.class).value() : dcf;
+				String colfamily = f.isAnnotationPresent(ColumnFamily.class) ? f.getAnnotation(ColumnFamily.class).value() : dcf;
 				families.add(colfamily);
 				columns.add(colfamily + ":" + colname);
 			}
-			HTableDescriptor td = new HTableDescriptor(config.htname);
+			HTableDescriptor td = new HTableDescriptor(ht);
 			for (String fn : families) {
 				HColumnDescriptor fd = new HColumnDescriptor(fn);
 				td.addFamily(fd);
 			}
 			a.createTable(td);
-			a.disableTable(config.htname);
+			a.disableTable(ht);
 			for (String col : columns)
-				a.addColumn(config.htname, new HColumnDescriptor(col));
-			a.enableTable(config.htname);
+				a.addColumn(ht, new HColumnDescriptor(col));
+			a.enableTable(ht);
 		} catch (IOException e) {
 			throw new IllegalArgumentException("Hbase verify failure on server: " + config.datasource + ", class: " + functor.toString());
 		}
