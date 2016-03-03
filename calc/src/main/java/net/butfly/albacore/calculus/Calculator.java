@@ -36,7 +36,7 @@ import net.butfly.albacore.calculus.marshall.MongoMarshaller;
 import scala.Tuple2;
 
 @SuppressWarnings({ "rawtypes", "unchecked", "serial" })
-public class Calculator {
+public final class Calculator {
 	// spark
 	protected CalculatorConfig globalConfig;
 	protected Map<Class<? extends Functor<?>>, FunctorConfig> stockingConfigs = new HashMap<>();

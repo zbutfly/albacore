@@ -1,9 +1,16 @@
 package net.butfly.albacore.calculus;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.streaming.Durations;
@@ -24,18 +31,39 @@ import net.butfly.albacore.calculus.Functor.Type;
 import net.butfly.albacore.calculus.datasource.CalculatorDataSource.HbaseDataSource;
 import net.butfly.albacore.calculus.datasource.CalculatorDataSource.KafkaDataSource;
 import net.butfly.albacore.calculus.datasource.CalculatorDataSource.MongoDataSource;
+import net.butfly.albacore.utils.Reflections;
 
 public class SparkCalculator {
 	// private static org.reflections.Reflections ref = new
 	// org.reflections.Reflections(new ConfigurationBuilder());
 
-	public static void main(String[] args) throws Exception {
+	public static void main(String... args) throws Exception {
 		final Properties props = new Properties();
+		CommandLine cmd = commandline(args);
 		props.load(Thread.currentThread().getContextClassLoader()
-				.getResourceAsStream(args.length >= 2 ? args[1] : "calculus.properties"));
+				.getResourceAsStream(cmd.getOptionValue('f', "calculus.properties")));
 		for (String key : System.getProperties().stringPropertyNames())
 			if (key.startsWith("calculus.")) props.put(key, System.getProperty(key));
+		if (cmd.hasOption('m')) props.setProperty("calculus.mode", cmd.getOptionValue('m').toUpperCase());
+		if (cmd.hasOption('c')) props.setProperty("calculus.classes", cmd.getOptionValue('c'));
+
 		scanCalculus(props);
+	}
+
+	private static CommandLine commandline(String... args) throws ParseException {
+		DefaultParser parser = new DefaultParser();
+		Options opts = new Options();
+		opts.addOption("f", "config", true,
+				"Calculus configuration file location. Defalt calculus.properties in classpath root.");
+		opts.addOption("c", "classes", true,
+				"Calculus classes list to be calculated, splitted by comma. Default scan all subclasses of Calculus, with annotation \"Calculating\".");
+		opts.addOption("m", "mode", true, "Calculating mode, STOCKING or STREAMING. Default STREAMING.");
+		opts.addOption("h", "help", false, "Print help information like this.");
+
+		CommandLine cmd = parser.parse(opts, args);
+		if (cmd.hasOption('h'))
+			new HelpFormatter().printHelp("java net.butfly.albacore.calculus.SparkCalculator [option]...", opts);
+		return cmd;
 	}
 
 	private static Map<String, Properties> subprops(Properties props, String prefix) {
@@ -58,7 +86,7 @@ public class SparkCalculator {
 		conf.validate = Boolean.parseBoolean(props.getProperty("calculus.validate.table", "false"));
 		final String appname = props.getProperty("calculus.app.name", "Calculuses");
 		// dadatabse configurations parsing
-		final Map<String, Properties> dbs = subprops(props, "calculus.db.");
+		final Map<String, Properties> dbs = subprops(props, "calculus.ds.");
 		for (String dbid : dbs.keySet()) {
 			Properties dbprops = dbs.get(dbid);
 			Type type = Type.valueOf(dbprops.getProperty("type"));
@@ -109,7 +137,13 @@ public class SparkCalculator {
 		org.reflections.Reflections ref = new org.reflections.Reflections(
 				new ConfigurationBuilder().filterInputsBy(filterBuilder).setUrls(ClasspathHelper.forClassLoader()).addScanners(
 						new MethodAnnotationsScanner().filterResultsBy(filterBuilder), new SubTypesScanner(false)));
-		for (Class<?> c : ref.getTypesAnnotatedWith(Calculating.class)) {
+		Set<Class<?>> ccs;
+		if (props.containsKey("calculus.classes")) {
+			ccs = new HashSet<>();
+			for (String c : props.getProperty("calculus.classes").split(","))
+				ccs.add(Reflections.forClassName(c));
+		} else ccs = ref.getTypesAnnotatedWith(Calculating.class);
+		for (Class<?> c : ccs) {
 			// new Task<Void>(new Task.Callable<Void>() {
 			// @Override
 			// public Void call() throws Exception {
