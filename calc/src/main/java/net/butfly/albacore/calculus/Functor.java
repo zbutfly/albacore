@@ -1,12 +1,18 @@
 package net.butfly.albacore.calculus;
 
 import java.io.Serializable;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 public interface Functor<F extends Functor<F>> extends Serializable {
 	public enum Type {
 		HBASE, MONGODB, KAFKA
 	}
 
+	@Retention(RetentionPolicy.RUNTIME)
+	@Target({ ElementType.TYPE })
 	public @interface Stocking {
 		Type type();
 
@@ -17,6 +23,8 @@ public interface Functor<F extends Functor<F>> extends Serializable {
 		String filter() default "";
 	}
 
+	@Retention(RetentionPolicy.RUNTIME)
+	@Target({ ElementType.TYPE })
 	public @interface Streaming {
 		Type type();
 

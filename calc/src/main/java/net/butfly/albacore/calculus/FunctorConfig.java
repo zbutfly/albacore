@@ -1,24 +1,20 @@
 package net.butfly.albacore.calculus;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.Connection;
+import java.io.Serializable;
+
 import org.apache.spark.streaming.api.java.AbstractJavaDStreamLike;
-import org.jongo.MongoCollection;
 
-import net.butfly.albacore.calculus.marshall.Marshaller;
-
-public class FunctorConfig {
+public class FunctorConfig implements Serializable {
+	private static final long serialVersionUID = 5323846657146326084L;
 	public Class<?> functorClass;
 	public String datasource;
+	// spark conf
 	public AbstractJavaDStreamLike<?, ?, ?> dstream;
-	public Marshaller<?, ?> marshaller;
-	// db conf
-	public Configuration hconf, mconf;
-	public Connection hconn;
-	public TableName htname;
+	// hbase conf
+	public String hbaseTable;
 	// kafka
 	public String[] kafkaTopics;
 	// mongodb
-	public MongoCollection mcol;
+	public String mongoTable;
+	public String mongoFilter;
 }

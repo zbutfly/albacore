@@ -5,6 +5,8 @@ import net.butfly.albacore.calculus.Functor;
 import net.butfly.albacore.calculus.FunctorConfig;
 
 public class KafkaMarshaller implements Marshaller<String, String> {
+	private static final long serialVersionUID = -4471098188111221100L;
+
 	@Override
 	public String unmarshallId(String id) {
 		// TODO Auto-generated method stub
