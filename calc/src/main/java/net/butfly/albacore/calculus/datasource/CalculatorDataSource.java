@@ -31,4 +31,8 @@ public abstract class CalculatorDataSource {
 		public DB mongo;
 		public Jongo jongo;
 	}
+
+	public static class ConstDataSource extends CalculatorDataSource {
+		public String[] values;
+	}
 }

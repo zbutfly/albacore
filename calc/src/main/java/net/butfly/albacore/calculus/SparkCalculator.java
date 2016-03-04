@@ -28,6 +28,7 @@ import com.mongodb.MongoClientURI;
 
 import net.butfly.albacore.calculus.Calculating.Mode;
 import net.butfly.albacore.calculus.Functor.Type;
+import net.butfly.albacore.calculus.datasource.CalculatorDataSource.ConstDataSource;
 import net.butfly.albacore.calculus.datasource.CalculatorDataSource.HbaseDataSource;
 import net.butfly.albacore.calculus.datasource.CalculatorDataSource.KafkaDataSource;
 import net.butfly.albacore.calculus.datasource.CalculatorDataSource.MongoDataSource;
@@ -91,6 +92,11 @@ public class SparkCalculator {
 			Properties dbprops = dbs.get(dbid);
 			Type type = Type.valueOf(dbprops.getProperty("type"));
 			switch (type) {
+			case CONST:
+				ConstDataSource cst = new ConstDataSource();
+				cst.values = dbprops.getProperty("values").split(",");
+				conf.datasources.put(dbid, cst);
+				break;
 			case HBASE:
 				HbaseDataSource h = new HbaseDataSource();
 				h.configFile = dbprops.getProperty("config", "hbase-site.xml");

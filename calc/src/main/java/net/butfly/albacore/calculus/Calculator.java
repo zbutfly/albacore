@@ -2,9 +2,11 @@ package net.butfly.albacore.calculus;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
@@ -27,12 +29,14 @@ import net.butfly.albacore.calculus.Calculating.Mode;
 import net.butfly.albacore.calculus.Functor.Stocking;
 import net.butfly.albacore.calculus.Functor.Streaming;
 import net.butfly.albacore.calculus.datasource.CalculatorDataSource;
+import net.butfly.albacore.calculus.datasource.CalculatorDataSource.ConstDataSource;
 import net.butfly.albacore.calculus.datasource.CalculatorDataSource.HbaseDataSource;
 import net.butfly.albacore.calculus.datasource.CalculatorDataSource.KafkaDataSource;
 import net.butfly.albacore.calculus.datasource.CalculatorDataSource.MongoDataSource;
 import net.butfly.albacore.calculus.marshall.HbaseResultMarshaller;
 import net.butfly.albacore.calculus.marshall.KafkaMarshaller;
 import net.butfly.albacore.calculus.marshall.MongoMarshaller;
+import net.butfly.albacore.utils.Reflections;
 import scala.Tuple2;
 
 @SuppressWarnings({ "rawtypes", "unchecked", "serial" })
@@ -47,10 +51,14 @@ public final class Calculator {
 		this.globalConfig = config;
 		Calculating calcing = calc.getClass().getAnnotation(Calculating.class);
 		this.destConfig = parseConfig(calcing.saving());
-		for (Class<? extends Functor<?>> f : calcing.stocking())
-			this.stockingConfigs.put(f, parseConfig(f));
-		for (Class<? extends Functor<?>> f : calcing.streaming())
-			this.streamingConfigs.put(f, parseConfig(f));
+		for (Class<? extends Functor<?>> f : calcing.stocking()) {
+			FunctorConfig c = parseConfig(f);
+			if (null != c) this.stockingConfigs.put(f, c);
+		}
+		for (Class<? extends Functor<?>> f : calcing.streaming()) {
+			FunctorConfig c = parseConfig(f);
+			if (null != c) this.streamingConfigs.put(f, c);
+		}
 	}
 
 	final <F extends Functor> void calculate(Calculus calc, Mode mode) throws IOException {
@@ -71,7 +79,8 @@ public final class Calculator {
 		for (Class<? extends Functor<?>> c : this.streamingConfigs.keySet())
 			streamingFunctors.put(c, (JavaPairRDD<String, ? extends Functor<?>>) stocking((Class<? extends Functor>) c,
 					this.streamingConfigs.get(c)));
-		((JavaRDD<F>) calc.calculate(globalConfig.sc, stockingFunctors, streamingFunctors)).foreach(new VoidFunction<F>() {
+		JavaRDD<F> r = (JavaRDD<F>) calc.calculate(globalConfig.sc, stockingFunctors, streamingFunctors);
+		if (this.destConfig != null && null != r) r.foreach(new VoidFunction<F>() {
 			@Override
 			public void call(F result) throws Exception {
 				MongoCollection col = ((MongoDataSource) globalConfig.datasources.get(destConfig.datasource)).jongo
@@ -110,7 +119,7 @@ public final class Calculator {
 			mconf.set("mongo.job.input.format", "com.mongodb.hadoop.MongoInputFormat");
 			mconf.set("mongo.auth.uri", mds.authuri);
 			mconf.set("mongo.input.uri", mds.uri + "." + config.mongoTable);
-			if (config.mongoFilter != null) mconf.set("mongo.input.query", config.mongoFilter);
+			if (!"".equals(config.mongoFilter)) mconf.set("mongo.input.query", config.mongoFilter);
 			// conf.mconf.set("mongo.input.fields
 			mconf.set("mongo.input.notimeout", "true");
 			MongoMarshaller mm = (MongoMarshaller) dsc.marshaller;
@@ -120,6 +129,15 @@ public final class Calculator {
 						@Override
 						public Tuple2<String, F> call(Tuple2<Object, BSONObject> t) throws Exception {
 							return new Tuple2<String, F>(mm.unmarshallId(t._1), mm.unmarshall(t._2, klass));
+						}
+					});
+		case CONST:
+			return this.globalConfig.sc
+					.parallelize(Arrays.asList(((ConstDataSource) globalConfig.datasources.get(config.datasource)).values))
+					.mapToPair(new PairFunction<String, String, F>() {
+						@Override
+						public Tuple2<String, F> call(String t) throws Exception {
+							return new Tuple2<String, F>(UUID.randomUUID().toString(), (F) Reflections.construct(klass, t));
 						}
 					});
 		default:
@@ -167,13 +185,20 @@ public final class Calculator {
 		config.functorClass = klass;
 		if (!globalConfig.datasources.containsKey(stocking.source())) switch (stocking.type()) {
 		case HBASE:
+			if (Functor.NOT_DEFINED.equals(stocking.table()))
+				throw new IllegalArgumentException("Table not defined for functor " + klass.toString());
 			config.hbaseTable = stocking.table();
 			globalConfig.datasources.get(config.datasource).marshaller = new HbaseResultMarshaller();
 			break;
 		case MONGODB:
+			if (Functor.NOT_DEFINED.equals(stocking.table()))
+				throw new IllegalArgumentException("Table not defined for functor " + klass.toString());
 			config.mongoTable = stocking.table();
 			config.mongoFilter = stocking.filter();
 			break;
+		case CONST:
+		case CONSOLE:
+			return null;
 		default:
 			throw new IllegalArgumentException("Unsupportted stocking mode: " + streaming.type());
 		}
@@ -185,7 +210,7 @@ public final class Calculator {
 			globalConfig.datasources.get(config.datasource).marshaller = new KafkaMarshaller();
 			break;
 		default:
-			throw new IllegalArgumentException("Unsupportted stocking mode: " + streaming.type());
+			throw new IllegalArgumentException("Unsupportted streaming mode: " + streaming.type());
 		}
 		return config;
 	}

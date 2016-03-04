@@ -7,8 +7,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 public interface Functor<F extends Functor<F>> extends Serializable {
+	static final String NOT_DEFINED = "";
+
 	public enum Type {
-		HBASE, MONGODB, KAFKA
+		CONST, CONSOLE, HBASE, MONGODB, KAFKA
 	}
 
 	@Retention(RetentionPolicy.RUNTIME)
@@ -18,9 +20,9 @@ public interface Functor<F extends Functor<F>> extends Serializable {
 
 		String source();
 
-		String table();
+		String table() default NOT_DEFINED;
 
-		String filter() default "";
+		String filter() default NOT_DEFINED;
 	}
 
 	@Retention(RetentionPolicy.RUNTIME)
@@ -30,6 +32,6 @@ public interface Functor<F extends Functor<F>> extends Serializable {
 
 		String source();
 
-		String[] topics();
+		String[] topics() default {};
 	}
 }
