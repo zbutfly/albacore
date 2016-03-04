@@ -29,7 +29,8 @@ import org.apache.spark.api.java.JavaSparkContext;
  */
 public final class SparkPi {
 	public static void main(String[] args) throws Exception {
-		final SparkConf sparkConf = new SparkConf().setAppName("SparkPi");
+		final SparkConf sparkConf = new SparkConf().setAppName("SparkPi").setMaster("local[*]")
+				.setSparkHome("C:\\Applications\\spark-1.6.0-bin-hadoop2.6");
 		@SuppressWarnings("resource")
 		final JavaSparkContext jsc = new JavaSparkContext(sparkConf);
 

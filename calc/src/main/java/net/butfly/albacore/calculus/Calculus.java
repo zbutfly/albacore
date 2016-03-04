@@ -1,20 +1,19 @@
 package net.butfly.albacore.calculus;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.io.Serializable;
+import java.util.Map;
 
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.TYPE })
-public @interface Calculus {
-	public enum Mode {
-		STOCKING, STREAMING
-	}
+import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaSparkContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-	Class<? extends Functor<?>>[] stocking();
+public abstract class Calculus implements Serializable {
+	private static final long serialVersionUID = 1L;
+	protected Logger logger = LoggerFactory.getLogger(this.getClass());
 
-	Class<? extends Functor<?>>[] streaming() default {};
-
-	Class<? extends Functor<?>> saving();
+	abstract protected JavaRDD<? extends Functor<?>> calculate(final JavaSparkContext sc,
+			Map<Class<? extends Functor<?>>, JavaPairRDD<String, ? extends Functor<?>>> stocking,
+			Map<Class<? extends Functor<?>>, JavaPairRDD<String, ? extends Functor<?>>> streaming);
 }

@@ -26,7 +26,6 @@ import com.mongodb.LazyDBObject;
 
 import net.butfly.albacore.calculus.CalculatorConfig;
 import net.butfly.albacore.calculus.Functor;
-import net.butfly.albacore.calculus.Functor.Stocking;
 import net.butfly.albacore.calculus.FunctorConfig;
 import net.butfly.albacore.calculus.datasource.CalculatorDataSource.MongoDataSource;
 import net.butfly.albacore.calculus.datasource.Index;
@@ -78,12 +77,11 @@ public class MongoMarshaller implements Marshaller<BSONObject, Object> {
 
 	@Override
 	public <F extends Functor<F>> void confirm(Class<F> functor, FunctorConfig config, CalculatorConfig globalConfig) {
-		Stocking stocking = functor.getAnnotation(Stocking.class);
 		// jongo has confirm or create collection on getCollection, so we need
 		// only to create index.
 		DB db = ((MongoDataSource) globalConfig.datasources.get(config.datasource)).mongo;
-		if (db.collectionExists(stocking.table())) return;
-		DBCollection col = db.createCollection(stocking.table(), new BasicDBObject());
+		if (db.collectionExists(config.mongoTable)) return;
+		DBCollection col = db.createCollection(config.mongoTable, new BasicDBObject());
 
 		for (Field f : Reflections.getDeclaredFields(functor))
 			if (f.isAnnotationPresent(Index.class)) {
