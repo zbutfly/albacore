@@ -1,6 +1,6 @@
 package net.butfly.albacore.calculus.marshall;
 
-import net.butfly.albacore.calculus.CalculatorConfig;
+import net.butfly.albacore.calculus.CalculatorContext;
 import net.butfly.albacore.calculus.Functor;
 import net.butfly.albacore.calculus.FunctorConfig;
 
@@ -32,5 +32,5 @@ public class KafkaMarshaller implements Marshaller<String, String> {
 	}
 
 	@Override
-	public <F extends Functor<F>> void confirm(Class<F> functor, FunctorConfig config, CalculatorConfig globalConfig) {}
+	public <F extends Functor<F>> void confirm(Class<F> functor, FunctorConfig config, CalculatorContext globalConfig) {}
 }

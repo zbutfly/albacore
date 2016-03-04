@@ -21,7 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.CaseFormat;
 import com.jcabi.log.Logger;
 
-import net.butfly.albacore.calculus.CalculatorConfig;
+import net.butfly.albacore.calculus.CalculatorContext;
 import net.butfly.albacore.calculus.Functor;
 import net.butfly.albacore.calculus.FunctorConfig;
 import net.butfly.albacore.calculus.datasource.CalculatorDataSource.HbaseDataSource;
@@ -80,7 +80,7 @@ public class HbaseResultMarshaller implements Marshaller<Result, ImmutableBytesW
 	}
 
 	@Override
-	public <F extends Functor<F>> void confirm(Class<F> functor, FunctorConfig config, CalculatorConfig globalConfig) {
+	public <F extends Functor<F>> void confirm(Class<F> functor, FunctorConfig config, CalculatorContext globalConfig) {
 		try {
 			TableName ht = TableName.valueOf(config.hbaseTable);
 			Admin a = ((HbaseDataSource) globalConfig.datasources.get(config.datasource)).hconn.getAdmin();

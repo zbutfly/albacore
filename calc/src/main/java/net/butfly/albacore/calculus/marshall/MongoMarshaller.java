@@ -24,7 +24,7 @@ import com.mongodb.DBObject;
 import com.mongodb.DefaultDBEncoder;
 import com.mongodb.LazyDBObject;
 
-import net.butfly.albacore.calculus.CalculatorConfig;
+import net.butfly.albacore.calculus.CalculatorContext;
 import net.butfly.albacore.calculus.Functor;
 import net.butfly.albacore.calculus.FunctorConfig;
 import net.butfly.albacore.calculus.datasource.CalculatorDataSource.MongoDataSource;
@@ -76,7 +76,7 @@ public class MongoMarshaller implements Marshaller<BSONObject, Object> {
 	}
 
 	@Override
-	public <F extends Functor<F>> void confirm(Class<F> functor, FunctorConfig config, CalculatorConfig globalConfig) {
+	public <F extends Functor<F>> void confirm(Class<F> functor, FunctorConfig config, CalculatorContext globalConfig) {
 		// jongo has confirm or create collection on getCollection, so we need
 		// only to create index.
 		DB db = ((MongoDataSource) globalConfig.datasources.get(config.datasource)).mongo;
