@@ -409,8 +409,7 @@ public class Objects extends Utils {
 			if (Enum.class.isAssignableFrom(clazz)) return PrimaryCategory.ENUM;
 			if (boolean.class.equals(clazz) || Boolean.class.equals(clazz)) return PrimaryCategory.BOOL;
 			if (NumberCategory.isNumber(clazz)) return PrimaryCategory.NUMBER;
-			if (String.class.equals(clazz) || char.class.equals(clazz) || Character.class.equals(clazz))
-				return PrimaryCategory.STRING;
+			if (String.class.equals(clazz) || char.class.equals(clazz) || Character.class.equals(clazz)) return PrimaryCategory.STRING;
 			if (clazz.isArray() || Iterable.class.isAssignableFrom(clazz)) return PrimaryCategory.LIST;
 			if (Map.class.isAssignableFrom(clazz) || Beans.class.isAssignableFrom(clazz)) return PrimaryCategory.MAP;
 			return PrimaryCategory.RAW_OBJ;
@@ -419,7 +418,7 @@ public class Objects extends Utils {
 		static Class<?> getIterableClass(Class<?> clazz) {
 			if (clazz.isArray()) return clazz.getComponentType();
 			if (Iterable.class.isAssignableFrom(clazz)) {
-				Class<?> cl = Generics.getGenericParamClass(clazz, Iterable.class, "T");
+				Class<?> cl = Generics.resolveGenericParameter(clazz, Iterable.class, "T");
 				return null == cl ? Object.class : cl;
 			}
 			return null;

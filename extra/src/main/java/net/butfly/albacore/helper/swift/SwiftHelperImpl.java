@@ -37,14 +37,14 @@ public class SwiftHelperImpl extends HelperBase implements SwiftHelper, Initiali
 	}
 
 	@Override
-	public InputStream fetch(String container, String path) throws OperationFailureException, UnknownResponseException,
-			AuthenticationFailureException {
+	public InputStream fetch(String container, String path)
+			throws OperationFailureException, UnknownResponseException, AuthenticationFailureException {
 		return this.context.cat(container, path, null);
 	}
 
 	@Override
-	public void upload(InputStream srcStream, String dstContainer, String dstPath) throws OperationFailureException,
-			UnknownResponseException, AuthenticationFailureException {
+	public void upload(InputStream srcStream, String dstContainer, String dstPath)
+			throws OperationFailureException, UnknownResponseException, AuthenticationFailureException {
 		this.context.cp(srcStream, dstContainer, dstPath);
 	}
 
@@ -55,8 +55,8 @@ public class SwiftHelperImpl extends HelperBase implements SwiftHelper, Initiali
 	}
 
 	@Override
-	public void delete(String container, String path) throws OperationFailureException, UnknownResponseException,
-			AuthenticationFailureException {
+	public void delete(String container, String path)
+			throws OperationFailureException, UnknownResponseException, AuthenticationFailureException {
 		this.context.rm(container, path);
 	}
 }

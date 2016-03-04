@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>net.butfly.parent</groupId>
 		<artifactId>parent</artifactId>
-		<version>3.0.0</version>
+		<version>3.0.0-SNAPSHOT</version>
 	</parent>
 	<groupId>net.butfly.albacore</groupId>
 	<artifactId>albacore</artifactId>
@@ -17,17 +17,15 @@
 		<tag>MASTER</tag>
 		<url>https://github.com/zbutfly/albacore</url>
 	</scm>
-	<properties>
-	    <deps.version.albacore>3.0.0-SNAPSHOT</deps.version.albacore>
-	</properties>
 	<modules>
 		<module>core</module>
+		<module>serializer</module>
 		<module>async</module>
 		<module>frame</module>
 		<module>orm</module>
-		<module>orm-nosql</module>
 		<module>utils</module>
-		<module>extra</module>
+		<module>calc</module>
+		<!--<module>extra</module>-->
 		<module>cache</module>
 		<module>test</module>
 		<module>demo</module>

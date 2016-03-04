@@ -22,7 +22,6 @@ public class CacheInit {
 	private CacheConfigService cacheConfigService;
 	public static boolean cacheTaskWait = false;
 
-
 	public void setCacheConfigService(CacheConfigService cacheConfigService) {
 		this.cacheConfigService = cacheConfigService;
 	}
@@ -31,14 +30,13 @@ public class CacheInit {
 		CacheConfig[] cacheConfigs;
 		try {
 			cacheConfigs = cacheConfigService.loadConfig();
-			if (!CacheConfigCheck.check(cacheConfigs)) { throw new SystemException("SYS_119",
-					"the cache config is error  ,can't init with this config! "); }
+			if (!CacheConfigCheck.check(
+					cacheConfigs)) { throw new SystemException("SYS_119", "the cache config is error  ,can't init with this config! "); }
 			MemCachePond.getInstance().init(cacheConfigs);
 			Thread heartBeat = new CacheTask("cacheInit");
 			heartBeat.start();
 		} catch (Exception e1) {
-			throw new SystemException("SYS_119", "the cache config is error  ,can't init with this config!  case by \n"
-					+ e1.getMessage());
+			throw new SystemException("SYS_119", "the cache config is error  ,can't init with this config!  case by \n" + e1.getMessage());
 		}
 	}
 

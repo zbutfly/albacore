@@ -82,10 +82,8 @@ public class Exceptions extends Utils {
 			wrapperClasses.put(Exception.class, RuntimeException.class.getMethod("getCause"));
 			wrapperClasses.put(RuntimeException.class, RuntimeException.class.getMethod("getCause"));
 			wrapperClasses.put(ExecutionException.class, ExecutionException.class.getMethod("getCause"));
-			wrapperClasses.put(InvocationTargetException.class,
-					InvocationTargetException.class.getMethod("getTargetException"));
-			wrapperClasses.put(UndeclaredThrowableException.class,
-					UndeclaredThrowableException.class.getMethod("getUndeclaredThrowable"));
+			wrapperClasses.put(InvocationTargetException.class, InvocationTargetException.class.getMethod("getTargetException"));
+			wrapperClasses.put(UndeclaredThrowableException.class, UndeclaredThrowableException.class.getMethod("getUndeclaredThrowable"));
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}

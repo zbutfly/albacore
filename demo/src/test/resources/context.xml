@@ -3,9 +3,9 @@
 	<Resource name="jdbc/neo4j" poolName="hikari-dataggr-pool"
 		username="aggr" password="aggr123456"
 		jdbcUrl="jdbc:neo4j://localhost:7474/"
-<!-- 		factory="com.zaxxer.hikari.HikariJNDIFactory" -->
-<!-- 		type="javax.sql.DataSource" -->
 		minimumIdle="5"
 		maximumPoolSize="10"
 		connectionTimeout="300000" />
+<!-- 		factory="com.zaxxer.hikari.HikariJNDIFactory" -->
+<!-- 		type="javax.sql.DataSource" -->
 </Context>

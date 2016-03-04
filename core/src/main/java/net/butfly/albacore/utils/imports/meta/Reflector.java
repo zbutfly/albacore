@@ -81,7 +81,8 @@ public class Reflector {
 					try {
 						constructor.setAccessible(true);
 					} catch (Exception e) {
-						// Ignored. This is only a final precaution, nothing we can do.
+						// Ignored. This is only a final precaution, nothing we
+						// can do.
 					}
 				}
 				if (constructor.isAccessible()) {
@@ -125,8 +126,8 @@ public class Reflector {
 					Method method = iterator.next();
 					Class<?> methodType = method.getReturnType();
 					if (methodType.equals(getterType)) {
-						throw new ReflectionException("Illegal overloaded getter method with ambiguous type for property "
-								+ propName + " in class " + firstMethod.getDeclaringClass() + ".  This breaks the JavaBeans "
+						throw new ReflectionException("Illegal overloaded getter method with ambiguous type for property " + propName
+								+ " in class " + firstMethod.getDeclaringClass() + ".  This breaks the JavaBeans "
 								+ "specification and can cause unpredicatble results.");
 					} else if (methodType.isAssignableFrom(getterType)) {
 						// OK getter type is descendant
@@ -134,8 +135,8 @@ public class Reflector {
 						getter = method;
 						getterType = methodType;
 					} else {
-						throw new ReflectionException("Illegal overloaded getter method with ambiguous type for property "
-								+ propName + " in class " + firstMethod.getDeclaringClass() + ".  This breaks the JavaBeans "
+						throw new ReflectionException("Illegal overloaded getter method with ambiguous type for property " + propName
+								+ " in class " + firstMethod.getDeclaringClass() + ".  This breaks the JavaBeans "
 								+ "specification and can cause unpredicatble results.");
 					}
 				}
@@ -184,8 +185,8 @@ public class Reflector {
 			} else {
 				Class<?> expectedType = getTypes.get(propName);
 				if (expectedType == null) {
-					throw new ReflectionException("Illegal overloaded setter method with ambiguous type for property "
-							+ propName + " in class " + firstMethod.getDeclaringClass() + ".  This breaks the JavaBeans "
+					throw new ReflectionException("Illegal overloaded setter method with ambiguous type for property " + propName
+							+ " in class " + firstMethod.getDeclaringClass() + ".  This breaks the JavaBeans "
 							+ "specification and can cause unpredicatble results.");
 				} else {
 					Iterator<Method> methods = setters.iterator();
@@ -197,10 +198,9 @@ public class Reflector {
 							break;
 						}
 					}
-					if (setter == null) { throw new ReflectionException(
-							"Illegal overloaded setter method with ambiguous type for property " + propName + " in class "
-									+ firstMethod.getDeclaringClass() + ".  This breaks the JavaBeans "
-									+ "specification and can cause unpredicatble results."); }
+					if (setter == null) { throw new ReflectionException("Illegal overloaded setter method with ambiguous type for property "
+							+ propName + " in class " + firstMethod.getDeclaringClass() + ".  This breaks the JavaBeans "
+							+ "specification and can cause unpredicatble results."); }
 					addSetMethod(propName, setter);
 				}
 			}
@@ -221,14 +221,17 @@ public class Reflector {
 				try {
 					field.setAccessible(true);
 				} catch (Exception e) {
-					// Ignored. This is only a final precaution, nothing we can do.
+					// Ignored. This is only a final precaution, nothing we can
+					// do.
 				}
 			}
 			if (field.isAccessible()) {
 				int modifiers = field.getModifiers();
 				boolean add = !(Modifier.isFinal(modifiers) && Modifier.isStatic(modifiers));
-				// issue #379 - removed the check for final because JDK 1.5 allows
-				// modification of final fields through reflection (JSR-133). (JGB)
+				// issue #379 - removed the check for final because JDK 1.5
+				// allows
+				// modification of final fields through reflection (JSR-133).
+				// (JGB)
 				// pr #16 - static final can only be set by the classloader
 				if (!setMethods.containsKey(field.getName()) && add) addSetField(field);
 				// XXX: avoid loop in toString
@@ -259,9 +262,9 @@ public class Reflector {
 	}
 
 	/*
-	 * This method returns an array containing all methods declared in this class and any superclass. We use
-	 * this method, instead of the simpler Class.getMethods(), because we want to look for private methods
-	 * as well.
+	 * This method returns an array containing all methods declared in this
+	 * class and any superclass. We use this method, instead of the simpler
+	 * Class.getMethods(), because we want to look for private methods as well.
 	 * 
 	 * @param cls The class
 	 * 
@@ -300,7 +303,8 @@ public class Reflector {
 						try {
 							currentMethod.setAccessible(true);
 						} catch (Exception e) {
-							// Ignored. This is only a final precaution, nothing we can do.
+							// Ignored. This is only a final precaution, nothing
+							// we can do.
 						}
 					}
 
@@ -360,15 +364,15 @@ public class Reflector {
 
 	public Invoker getSetInvoker(String propertyName) {
 		Invoker method = setMethods.get(propertyName);
-		if (method == null) { throw new ReflectionException("There is no setter for property named '" + propertyName + "' in '"
-				+ type + "'"); }
+		if (method == null) { throw new ReflectionException(
+				"There is no setter for property named '" + propertyName + "' in '" + type + "'"); }
 		return method;
 	}
 
 	public Invoker getGetInvoker(String propertyName) {
 		Invoker method = getMethods.get(propertyName);
-		if (method == null) { throw new ReflectionException("There is no getter for property named '" + propertyName + "' in '"
-				+ type + "'"); }
+		if (method == null) { throw new ReflectionException(
+				"There is no getter for property named '" + propertyName + "' in '" + type + "'"); }
 		return method;
 	}
 
@@ -381,8 +385,8 @@ public class Reflector {
 	 */
 	public Class<?> getSetterType(String propertyName) {
 		Class<?> clazz = setTypes.get(propertyName);
-		if (clazz == null) { throw new ReflectionException("There is no setter for property named '" + propertyName + "' in '"
-				+ type + "'"); }
+		if (clazz == null) { throw new ReflectionException(
+				"There is no setter for property named '" + propertyName + "' in '" + type + "'"); }
 		return clazz;
 	}
 
@@ -395,8 +399,8 @@ public class Reflector {
 	 */
 	public Class<?> getGetterType(String propertyName) {
 		Class<?> clazz = getTypes.get(propertyName);
-		if (clazz == null) { throw new ReflectionException("There is no getter for property named '" + propertyName + "' in '"
-				+ type + "'"); }
+		if (clazz == null) { throw new ReflectionException(
+				"There is no getter for property named '" + propertyName + "' in '" + type + "'"); }
 		return clazz;
 	}
 

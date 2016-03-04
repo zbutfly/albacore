@@ -24,10 +24,15 @@
 			<version>3.3.0</version>
 			<scope>test</scope>
 		</dependency>
+		<!-- <dependency> -->
+		<!-- <groupId>kilim</groupId> -->
+		<!-- <artifactId>kilim</artifactId> -->
+		<!-- <version>1.0</version> -->
+		<!-- </dependency> -->
 		<dependency>
-			<groupId>kilim</groupId>
-			<artifactId>kilim</artifactId>
-			<version>1.0</version>
+			<groupId>com.typesafe.akka</groupId>
+			<artifactId>akka-actor_2.11</artifactId>
+			<version>2.4.2-RC3</version>
 		</dependency>
 	</dependencies>
 </project>

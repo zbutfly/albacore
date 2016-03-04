@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Context>
+	<Resource name="jdbc/orm-jdbc-test" poolName="hikari-h2-pool"
+		dataSource.user="" dataSource.password=""
+		dataSource.url="jdbc:h2:mem:test;DB_CLOSE_DELAY=-1"	
+		dataSourceClassName="org.h2.jdbcx.JdbcDataSource" 
+		dataSource.implicitCachingEnabled="true"
+		factory="com.zaxxer.hikari.HikariJNDIFactory"
+		type="javax.sql.DataSource"
+		minimumIdle="5" 
+		maximumPoolSize="10"
+		connectionTimeout="300000" />
+</Context>

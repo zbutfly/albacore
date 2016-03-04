@@ -83,8 +83,8 @@ public class DefaultObjectFactory implements ObjectFactory, Serializable {
 					argValues.append(",");
 				}
 			}
-			throw new ReflectionException("Error instantiating " + type + " with invalid types (" + argTypes + ") or values ("
-					+ argValues + "). Cause: " + e, e);
+			throw new ReflectionException(
+					"Error instantiating " + type + " with invalid types (" + argTypes + ") or values (" + argValues + "). Cause: " + e, e);
 		}
 	}
 

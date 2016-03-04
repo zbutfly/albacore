@@ -9,11 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import net.butfly.albacore.cache.utils.methodintrude.BaseMethodIntrudeBase;
-import net.butfly.albacore.cache.utils.strategy.ICacheStrategy;
-import net.butfly.albacore.cache.utils.strategy.keygenerate.IKeyGenerator;
-import net.butfly.albacore.exception.SystemException;
-
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
@@ -22,6 +17,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+
+import net.butfly.albacore.cache.utils.methodintrude.BaseMethodIntrudeBase;
+import net.butfly.albacore.cache.utils.strategy.ICacheStrategy;
+import net.butfly.albacore.cache.utils.strategy.keygenerate.IKeyGenerator;
+import net.butfly.albacore.exception.SystemException;
+import net.butfly.albacore.utils.Reflections;
 
 @SuppressWarnings({ "unchecked" })
 public class CacheConfigManager {
@@ -57,8 +58,7 @@ public class CacheConfigManager {
 			List<Element> strategyList = document.selectNodes("/elements/strategys/strategy");
 			for (Element el : strategyList) {
 				String id = el.valueOf("@id");
-				IKeyGenerator keyG = (IKeyGenerator) Class.forName(
-						keygenerators.get(el.selectSingleNode("keygenerator").valueOf("@ref"))).newInstance();
+				IKeyGenerator keyG = Reflections.construct(keygenerators.get(el.selectSingleNode("keygenerator").valueOf("@ref")));
 				int expiration = Integer.parseInt(el.selectSingleNode("expiration").valueOf("@value"));
 				ICacheStrategy strategy = new ICacheStrategy(keyG, expiration);
 				strategysMap.put(id, strategy);
@@ -73,8 +73,7 @@ public class CacheConfigManager {
 				String methodIntrude_str = el.valueOf("@methodIntrude");
 				if (null != methodIntrude_str && !"".equals(methodIntrude_str)) {
 					if (CACHE_TYPE_BASE.equals(type)) {
-						BaseMethodIntrudeBase methodIntrude = (BaseMethodIntrudeBase) Class.forName(
-								el.valueOf("@methodIntrude")).newInstance();
+						BaseMethodIntrudeBase methodIntrude = Reflections.construct(el.valueOf("@methodIntrude"));
 						Set<Method> methods = methodIntrude.getUseMethods();
 						opAndconfigsAndmethodsMapPut(methods, id);
 					}
@@ -91,18 +90,6 @@ public class CacheConfigManager {
 			logger.error(e.getMessage());
 			throw new SystemException("SYS_121", e);
 		} catch (DocumentException e) {
-			e.printStackTrace();
-			logger.error(e.getMessage());
-			throw new SystemException("SYS_121", e);
-		} catch (InstantiationException e) {
-			e.printStackTrace();
-			logger.error(e.getMessage());
-			throw new SystemException("SYS_121", e);
-		} catch (IllegalAccessException e) {
-			e.printStackTrace();
-			logger.error(e.getMessage());
-			throw new SystemException("SYS_121", e);
-		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 			logger.error(e.getMessage());
 			throw new SystemException("SYS_121", e);

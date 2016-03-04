@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.butfly.albacore.orm.jdbc.User">
+	<insert id="insertUser" parameterType="net.butfly.albacore.orm.jdbc.mapper.User">
+		insert into USER (ID, NAME, GENDER, PASSWORD) values (#{id}, #{name}, #{gender}, #{password})
+	</insert>
+	<delete id="deleteUser" parameterType="net.butfly.albacore.orm.jdbc.mapper.User">
+		delete from USER <include refid="where" />
+	</delete>
+	<update id="updateUser" parameterType="net.butfly.albacore.orm.jdbc.mapper.User">
+		update USER SET <set>
+			<if test="name != null">NAME = #{name}</if>
+			<if test="gender != null">GENDER = #{gender}</if>
+			<if test="password != null">PASSWORD = #{password}</if>
+		</set> where ID = #{id}
+	</update>
+	<select id="selectUser" parameterType="string" resultType="net.butfly.albacore.orm.jdbc.mapper.User">
+		select ID, NAME, GENDER, PASSWORD from USER where ID = #{id}
+	</select>
+	<select id="countUserByCriteria" parameterType="net.butfly.albacore.dbo.criteria.Criteria" resultType="int">
+		select count(*) from USER <include refid="where" />
+	</select>
+	<select id="selectUserByCriteria" parameterType="net.butfly.albacore.dbo.criteria.Criteria" resultType="string">
+		select ID from USER <include refid="where" />
+	</select>
+	<sql id="where">
+		<where>
+			<if test="name != null">and NAME = #{name}</if>
+			<if test="gender != null">and GENDER = #{gender}</if>
+			<if test="password != null">and PASSWORD = #{password}</if>
+		</where>
+	</sql>
+</mapper>

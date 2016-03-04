@@ -17,7 +17,7 @@
 	<dependencies>
 		<dependency>
 			<groupId>net.butfly.albacore</groupId>
-			<artifactId>albacore-orm</artifactId>
+			<artifactId>albacore-orm-core</artifactId>
 			<version>${deps.version.albacore}</version>
 		</dependency>
 		<dependency>
@@ -32,14 +32,12 @@
 			<version>2.4.1</version>
 			<scope>runtime</scope>
 		</dependency>
-
 		<dependency>
 			<groupId>com.oracle.db</groupId>
 			<artifactId>oracle-jdbc</artifactId>
 			<version>11.2.0.3</version>
 			<scope>runtime</scope>
 		</dependency>
-
 		<dependency>
 			<groupId>org.neo4j</groupId>
 			<artifactId>neo4j-jdbc</artifactId>
@@ -49,15 +47,21 @@
 	</dependencies>
 	<repositories>
 		<repository>
-			<id>Spark repository</id>
+			<id>
+				Spark repository
+			</id>
 			<url>http://www.sparkjava.com/nexus/content/repositories/spark/</url>
 		</repository>
 		<repository>
-			<id>Neo4j releases</id>
+			<id>
+				Neo4j releases
+			</id>
 			<url>http://m2.neo4j.org/content/repositories/releases</url>
 		</repository>
 		<repository>
-			<id>Neo4j snapshots</id>
+			<id>
+				Neo4j snapshots
+			</id>
 			<url>http://m2.neo4j.org/content/repositories/snapshots</url>
 		</repository>
 		<repository>

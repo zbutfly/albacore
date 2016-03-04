@@ -16,10 +16,12 @@ import java.util.Set;
  * @version 21.01.13 17:16
  *
  *          id is composed of: <br />
- *          time - 41 bits (millisecond precision w/ a custom epoch gives us 69 years) <br />
- *          configured machine id - 10 bits - gives us up to 1024 machines <br />
- *          sequence number - 12 bits - rolls over every 4096 per machine (with protection to avoid rollover
- *          in the same ms)
+ *          time - 41 bits (millisecond precision w/ a custom epoch gives us 69
+ *          years) <br />
+ *          configured machine id - 10 bits - gives us up to 1024 machines
+ *          <br />
+ *          sequence number - 12 bits - rolls over every 4096 per machine (with
+ *          protection to avoid rollover in the same ms)
  *
  */
 public class SnowflakeIdGenerator extends IdGenerator<Long> {
@@ -36,16 +38,14 @@ public class SnowflakeIdGenerator extends IdGenerator<Long> {
 
 	public SnowflakeIdGenerator() throws GetHardwareIdFailed {
 		datacenterId = machine();
-		if (datacenterId > maxDatacenterId || datacenterId < 0)
-			throw new GetHardwareIdFailed("datacenterId > maxDatacenterId");
+		if (datacenterId > maxDatacenterId || datacenterId < 0) throw new GetHardwareIdFailed("datacenterId > maxDatacenterId");
 	}
 
 	@Override
 	public synchronized Long generate() {
 		long timestamp = System.currentTimeMillis();
-		if (timestamp < lastTimestamp)
-			throw new InvalidSystemClock("Clock moved backwards. Refusing to generate id for " + (lastTimestamp - timestamp)
-					+ " milliseconds.");
+		if (timestamp < lastTimestamp) throw new InvalidSystemClock(
+				"Clock moved backwards. Refusing to generate id for " + (lastTimestamp - timestamp) + " milliseconds.");
 		if (lastTimestamp == timestamp) {
 			sequence = (sequence + 1) % sequenceMax;
 			if (sequence == 0) {
