@@ -2,7 +2,6 @@ package net.butfly.albacore.calculus.datasource;
 
 import java.io.Serializable;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Connection;
 import org.jongo.Jongo;
 
@@ -29,7 +28,6 @@ public abstract class CalculatorDataSource implements Serializable {
 
 	public static class MongoDataSource extends CalculatorDataSource {
 		private static final long serialVersionUID = -2617369621178264387L;
-		public Configuration mconf;
 		public String uri;
 		public String authuri;
 		public String db;

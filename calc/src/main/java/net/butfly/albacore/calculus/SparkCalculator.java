@@ -26,6 +26,7 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
+import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.streaming.Durations;
 import org.apache.spark.streaming.api.java.JavaPairReceiverInputDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
@@ -159,11 +160,9 @@ public class SparkCalculator {
 						break;
 					}
 					JavaRDD<F> r = (JavaRDD<F>) calc.calculate(context.sc, stockingFunctors, streamingFunctors);
-					if (destConfig != null && null != r) r.foreach(result -> {
-						MongoCollection col = ((MongoDataSource) context.datasources.get(destConfig.datasource)).jongo
-								.getCollection(destConfig.mongoTable);
-						col.save(result);
-					});
+					if (destConfig != null && null != r) {
+						r.foreach(new WriteFunction(destConfig, context.datasources.get(destConfig.datasource)));
+					}
 					return null;
 				}
 			}/* , new net.butfly.albacore.utils.async.Options().fork() */).execute();
@@ -171,7 +170,34 @@ public class SparkCalculator {
 		}
 	}
 
-	private <F extends Functor<F>> JavaPairRDD<String, F> stocking(Class<F> functorClass, FunctorConfig fucntorConfig) {
+	private static class WriteFunction<F extends Functor<F>> implements VoidFunction<F> {
+		private static final long serialVersionUID = -3114062446562954303L;
+		private FunctorConfig functorConfig;
+		private CalculatorDataSource dataSource;
+
+		public WriteFunction(FunctorConfig functorConfig, CalculatorDataSource dataSource) {
+			this.functorConfig = functorConfig;
+			this.dataSource = dataSource;
+		}
+
+		@Override
+		public void call(F result) throws Exception {
+			switch (functorConfig.functorClass.getAnnotation(Stocking.class).type()) {
+			case MONGODB:
+				MongoCollection col = ((MongoDataSource) dataSource).jongo.getCollection(functorConfig.mongoTable);
+				col.save(result);
+				break;
+			case CONST:
+				logger.info("Result: " + result.toString());
+				break;
+			default:
+				throw new IllegalArgumentException(
+						"Write to " + functorConfig.functorClass.getAnnotation(Stocking.class).type() + " is not supported.");
+			}
+		}
+	}
+
+	<F extends Functor<F>> JavaPairRDD<String, F> stocking(Class<F> functorClass, FunctorConfig fucntorConfig) {
 		CalculatorDataSource dsc = context.datasources.get(fucntorConfig.datasource);
 		switch (functorClass.getAnnotation(Stocking.class).type()) {
 		case HBASE: // TODO: adaptor to hbase data frame
@@ -198,8 +224,7 @@ public class SparkCalculator {
 			// conf.mconf.set("mongo.input.fields
 			mconf.set("mongo.input.notimeout", "true");
 			MongoMarshaller mm = (MongoMarshaller) dsc.marshaller;
-			return (JavaPairRDD<String, F>) context.sc
-					.newAPIHadoopRDD(((MongoDataSource) dsc).mconf, MongoInputFormat.class, Object.class, BSONObject.class)
+			return (JavaPairRDD<String, F>) context.sc.newAPIHadoopRDD(mconf, MongoInputFormat.class, Object.class, BSONObject.class)
 					.mapToPair(t -> new Tuple2<String, F>(mm.unmarshallId(t._1), mm.unmarshall(t._2, functorClass)));
 		case CONST:
 			return context.sc.parallelize(Arrays.asList(((ConstDataSource) context.datasources.get(fucntorConfig.datasource)).values))
@@ -209,7 +234,7 @@ public class SparkCalculator {
 		}
 	}
 
-	private <F extends Functor<F>> JavaPairRDD<String, F> streaming(Class<F> functorClass, FunctorConfig fucntorConfig) throws IOException {
+	<F extends Functor<F>> JavaPairRDD<String, F> streaming(Class<F> functorClass, FunctorConfig fucntorConfig) throws IOException {
 		Streaming streaming = functorClass.getAnnotation(Streaming.class);
 		CalculatorDataSource dsc = context.datasources.get(fucntorConfig.datasource);
 		switch (streaming.type()) {
@@ -271,7 +296,6 @@ public class SparkCalculator {
 			config.mongoFilter = stocking.filter();
 			break;
 		case CONST:
-		case CONSOLE:
 			return null;
 		default:
 			throw new IllegalArgumentException("Unsupportted stocking mode: " + streaming.type());

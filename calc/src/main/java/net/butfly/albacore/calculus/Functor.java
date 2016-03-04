@@ -10,7 +10,7 @@ public interface Functor<F extends Functor<F>> extends Serializable {
 	static final String NOT_DEFINED = "";
 
 	public enum Type {
-		CONST, CONSOLE, HBASE, MONGODB, KAFKA
+		CONST, HBASE, MONGODB, KAFKA
 	}
 
 	@Retention(RetentionPolicy.RUNTIME)
