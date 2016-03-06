@@ -8,10 +8,12 @@ import org.jongo.Jongo;
 import com.mongodb.DB;
 import com.mongodb.MongoClient;
 
+import net.butfly.albacore.calculus.Functor;
 import net.butfly.albacore.calculus.marshall.Marshaller;
 
 public abstract class CalculatorDataSource implements Serializable {
 	private static final long serialVersionUID = 1L;
+	public Functor.Type type;
 	public Marshaller<?, ?> marshaller;
 
 	public static class KafkaDataSource extends CalculatorDataSource {

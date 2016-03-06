@@ -136,7 +136,18 @@ public class SparkCalculator {
 					Map<Class<? extends Functor<?>>, JavaPairRDD<String, ? extends Functor<?>>> streamingFunctors = new HashMap<>();
 					Map<Class<? extends Functor<?>>, FunctorConfig> stockingConfigs = new HashMap<>();
 					Map<Class<? extends Functor<?>>, FunctorConfig> streamingConfigs = new HashMap<>();
-					FunctorConfig destConfig = parseFunctorConfigs(calc, stockingConfigs, streamingConfigs);
+
+					Calculating calcing = c.getAnnotation(Calculating.class);
+					FunctorConfig destConfig = parseConfig((Class<? extends Functor>) calcing.saving(), Mode.STOCKING);
+					for (Class<? extends Functor> f : calcing.stocking()) {
+						FunctorConfig c = parseConfig(f, Mode.STOCKING);
+						if (null != c) stockingConfigs.put((Class<? extends Functor<?>>) f, c);
+					}
+					for (Class<? extends Functor> f : calcing.streaming()) {
+						FunctorConfig c = parseConfig(f, Mode.STREAMING);
+						if (null != c) streamingConfigs.put((Class<? extends Functor<?>>) f, c);
+					}
+
 					switch (mode) {
 					case STOCKING:
 						for (Class<? extends Functor<?>> functorClass : stockingConfigs.keySet())
@@ -173,33 +184,32 @@ public class SparkCalculator {
 	private static class WriteFunction<F extends Functor<F>> implements VoidFunction<F> {
 		private static final long serialVersionUID = -3114062446562954303L;
 		private FunctorConfig functorConfig;
-		private CalculatorDataSource dataSource;
+		private CalculatorDataSource datasource;
 
 		public WriteFunction(FunctorConfig functorConfig, CalculatorDataSource dataSource) {
 			this.functorConfig = functorConfig;
-			this.dataSource = dataSource;
+			this.datasource = dataSource;
 		}
 
 		@Override
 		public void call(F result) throws Exception {
-			switch (functorConfig.functorClass.getAnnotation(Stocking.class).type()) {
+			switch (datasource.type) {
 			case MONGODB:
-				MongoCollection col = ((MongoDataSource) dataSource).jongo.getCollection(functorConfig.mongoTable);
+				MongoCollection col = ((MongoDataSource) datasource).jongo.getCollection(functorConfig.mongoTable);
 				col.save(result);
 				break;
 			case CONST:
 				logger.info("Result: " + result.toString());
 				break;
 			default:
-				throw new IllegalArgumentException(
-						"Write to " + functorConfig.functorClass.getAnnotation(Stocking.class).type() + " is not supported.");
+				throw new IllegalArgumentException("Write to " + datasource.type + " is not supported.");
 			}
 		}
 	}
 
 	<F extends Functor<F>> JavaPairRDD<String, F> stocking(Class<F> functorClass, FunctorConfig fucntorConfig) {
-		CalculatorDataSource dsc = context.datasources.get(fucntorConfig.datasource);
-		switch (functorClass.getAnnotation(Stocking.class).type()) {
+		CalculatorDataSource ds = context.datasources.get(fucntorConfig.datasource);
+		switch (ds.type) {
 		case HBASE: // TODO: adaptor to hbase data frame
 			Configuration hconf = HBaseConfiguration.create();
 			try {
@@ -210,7 +220,7 @@ public class SparkCalculator {
 			}
 			hconf.set(TableInputFormat.INPUT_TABLE, fucntorConfig.hbaseTable);
 			// conf.hconf.set(TableInputFormat.SCAN_COLUMNS, "cf1:vc cf1:vs");
-			final HbaseResultMarshaller hm = (HbaseResultMarshaller) dsc.marshaller;
+			final HbaseResultMarshaller hm = (HbaseResultMarshaller) ds.marshaller;
 			return context.sc.newAPIHadoopRDD(hconf, TableInputFormat.class, ImmutableBytesWritable.class, Result.class)
 					.mapToPair(t -> new Tuple2<String, F>(hm.unmarshallId(t._1), hm.unmarshall(t._2, functorClass)));
 		case MONGODB:
@@ -223,91 +233,76 @@ public class SparkCalculator {
 				mconf.set("mongo.input.query", fucntorConfig.mongoFilter);
 			// conf.mconf.set("mongo.input.fields
 			mconf.set("mongo.input.notimeout", "true");
-			MongoMarshaller mm = (MongoMarshaller) dsc.marshaller;
+			MongoMarshaller mm = (MongoMarshaller) ds.marshaller;
 			return (JavaPairRDD<String, F>) context.sc.newAPIHadoopRDD(mconf, MongoInputFormat.class, Object.class, BSONObject.class)
 					.mapToPair(t -> new Tuple2<String, F>(mm.unmarshallId(t._1), mm.unmarshall(t._2, functorClass)));
 		case CONST:
 			return context.sc.parallelize(Arrays.asList(((ConstDataSource) context.datasources.get(fucntorConfig.datasource)).values))
 					.mapToPair(t -> new Tuple2<String, F>(UUID.randomUUID().toString(), (F) Reflections.construct(functorClass, t)));
 		default:
-			throw new IllegalArgumentException("Unsupportted stocking mode: " + functorClass.getAnnotation(Stocking.class).type());
+			throw new IllegalArgumentException("Unsupportted stocking mode: " + ds.type);
 		}
 	}
 
 	<F extends Functor<F>> JavaPairRDD<String, F> streaming(Class<F> functorClass, FunctorConfig fucntorConfig) throws IOException {
-		Streaming streaming = functorClass.getAnnotation(Streaming.class);
-		CalculatorDataSource dsc = context.datasources.get(fucntorConfig.datasource);
-		switch (streaming.type()) {
+		CalculatorDataSource ds = context.datasources.get(fucntorConfig.datasource);
+		switch (ds.type) {
 		case KAFKA:
 			Map<String, Integer> topicsMap = new HashMap<>();
 			final List<JavaPairRDD<String, String>> results = new ArrayList<>();
-			for (String t : streaming.topics())
+			for (String t : functorClass.getAnnotation(Streaming.class).topics())
 				topicsMap.put(t, 1);
-			JavaPairReceiverInputDStream<String, String> kafka = KafkaUtils.createStream(context.ssc, ((KafkaDataSource) dsc).quonum,
-					((KafkaDataSource) dsc).group, topicsMap);
+			JavaPairReceiverInputDStream<String, String> kafka = KafkaUtils.createStream(context.ssc, ((KafkaDataSource) ds).quonum,
+					((KafkaDataSource) ds).group, topicsMap);
 			kafka.foreachRDD((Function<JavaPairRDD<String, String>, Void>) rdd -> {
 				if (results.size() == 0) results.add(rdd);
 				else results.set(0, results.get(0).union(rdd));
 				return null;
 			});
-			KafkaMarshaller km = (KafkaMarshaller) dsc.marshaller;
+			KafkaMarshaller km = (KafkaMarshaller) ds.marshaller;
 			return results.get(0).mapToPair(t -> new Tuple2<String, F>(km.unmarshallId(t._1), km.unmarshall(t._2, functorClass)));
 		default:
-			throw new IllegalArgumentException("Unsupportted stocking mode: " + streaming.type());
+			throw new IllegalArgumentException("Unsupportted stocking mode: " + ds.type);
 		}
 	}
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private FunctorConfig parseFunctorConfigs(Calculus calc, Map<Class<? extends Functor<?>>, FunctorConfig> stocking,
-			Map<Class<? extends Functor<?>>, FunctorConfig> streaming) throws IOException {
-		Calculating calcing = calc.getClass().getAnnotation(Calculating.class);
-		FunctorConfig destConfig = parseConfig((Class<? extends Functor>) calcing.saving());
-		stocking.clear();
-		for (Class<? extends Functor> f : calcing.stocking()) {
-			FunctorConfig c = parseConfig(f);
-			if (null != c) stocking.put((Class<? extends Functor<?>>) f, c);
-		}
-		streaming.clear();
-		for (Class<? extends Functor> f : calcing.streaming()) {
-			FunctorConfig c = parseConfig(f);
-			if (null != c) streaming.put((Class<? extends Functor<?>>) f, c);
-		}
-		return destConfig;
-	}
-
-	private <F extends Functor<F>> FunctorConfig parseConfig(Class<F> functorClass) throws IOException {
+	private <F extends Functor<F>> FunctorConfig parseConfig(Class<F> functorClass, Mode mode) throws IOException {
 		if (null == functorClass) return null;
-		Stocking stocking = functorClass.getAnnotation(Stocking.class);
-		Streaming streaming = functorClass.getAnnotation(Streaming.class);
 		FunctorConfig config = new FunctorConfig();
-		config.datasource = stocking.source();
 		config.functorClass = functorClass;
-		if (!context.datasources.containsKey(stocking.source())) switch (stocking.type()) {
-		case HBASE:
-			if (Functor.NOT_DEFINED.equals(stocking.table()))
-				throw new IllegalArgumentException("Table not defined for functor " + functorClass.toString());
-			config.hbaseTable = stocking.table();
-			context.datasources.get(config.datasource).marshaller = new HbaseResultMarshaller();
+		switch (mode) {
+		case STOCKING:
+			Stocking stocking = functorClass.getAnnotation(Stocking.class);
+			config.datasource = stocking.source();
+			switch (stocking.type()) {
+			case HBASE:
+				if (Functor.NOT_DEFINED.equals(stocking.table()))
+					throw new IllegalArgumentException("Table not defined for functor " + functorClass.toString());
+				config.hbaseTable = stocking.table();
+				break;
+			case MONGODB:
+				if (Functor.NOT_DEFINED.equals(stocking.table()))
+					throw new IllegalArgumentException("Table not defined for functor " + functorClass.toString());
+				config.mongoTable = stocking.table();
+				if (Functor.NOT_DEFINED.equals(stocking.filter())) config.mongoFilter = stocking.filter();
+				break;
+			case CONST:
+				return null;
+			default:
+				throw new IllegalArgumentException("Unsupportted stocking mode: " + stocking.type());
+			}
+			if (context.validate) context.datasources.get(config.datasource).marshaller.confirm(functorClass, config, context);
 			break;
-		case MONGODB:
-			if (Functor.NOT_DEFINED.equals(stocking.table()))
-				throw new IllegalArgumentException("Table not defined for functor " + functorClass.toString());
-			config.mongoTable = stocking.table();
-			config.mongoFilter = stocking.filter();
-			break;
-		case CONST:
-			return null;
-		default:
-			throw new IllegalArgumentException("Unsupportted stocking mode: " + streaming.type());
-		}
-		if (context.validate) context.datasources.get(config.datasource).marshaller.confirm(functorClass, config, context);
-		if (streaming != null) switch (streaming.type()) {
-		case KAFKA:
-			config.kafkaTopics = streaming.topics();
-			context.datasources.get(config.datasource).marshaller = new KafkaMarshaller();
-			break;
-		default:
-			throw new IllegalArgumentException("Unsupportted streaming mode: " + streaming.type());
+		case STREAMING:
+			Streaming streaming = functorClass.getAnnotation(Streaming.class);
+			config.datasource = streaming.source();
+			if (streaming != null) switch (streaming.type()) {
+			case KAFKA:
+				config.kafkaTopics = streaming.topics();
+				break;
+			default:
+				throw new IllegalArgumentException("Unsupportted streaming mode: " + streaming.type());
+			}
 		}
 		return config;
 	}
@@ -348,28 +343,35 @@ public class SparkCalculator {
 			switch (type) {
 			case CONST:
 				ConstDataSource cst = new ConstDataSource();
+				cst.type = type;
 				cst.values = dbprops.getProperty("values").split(",");
 				context.datasources.put(dsid, cst);
 				break;
 			case HBASE:
 				HbaseDataSource h = new HbaseDataSource();
+				h.type = type;
 				h.configFile = dbprops.getProperty("config", "hbase-site.xml");
+				h.marshaller = new HbaseResultMarshaller();
 				context.datasources.put(dsid, h);
 				break;
 			case MONGODB:
 				MongoDataSource m = new MongoDataSource();
+				m.type = type;
 				m.uri = dbprops.getProperty("uri");
 				m.authuri = dbprops.getProperty("authuri", m.uri);
 				m.db = dbprops.getProperty("db");
 				m.client = new MongoClient(new MongoClientURI(m.uri));
 				m.mongo = m.client.getDB(m.db);
 				m.jongo = new Jongo(m.mongo);
+				m.marshaller = new MongoMarshaller();
 				context.datasources.put(dsid, m);
 				break;
 			case KAFKA:
 				KafkaDataSource k = new KafkaDataSource();
+				k.type = type;
 				k.quonum = dbprops.getProperty("quonum");
 				k.group = appname;
+				k.marshaller = new KafkaMarshaller();
 				context.datasources.put(dsid, k);
 				break;
 			default:
