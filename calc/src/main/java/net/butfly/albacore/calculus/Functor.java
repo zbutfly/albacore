@@ -10,15 +10,16 @@ public interface Functor<F extends Functor<F>> extends Serializable {
 	static final String NOT_DEFINED = "";
 
 	public enum Type {
-		CONST, HBASE, MONGODB, KAFKA
+		CONSTAND_TO_CONSOLE, HBASE, MONGODB, KAFKA
 	}
 
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target({ ElementType.TYPE })
 	public @interface Stocking {
+
 		Type type();
 
-		String source();
+		String source() default NOT_DEFINED;
 
 		String table() default NOT_DEFINED;
 

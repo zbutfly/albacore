@@ -23,7 +23,8 @@ import com.jcabi.log.Logger;
 
 import net.butfly.albacore.calculus.CalculatorContext;
 import net.butfly.albacore.calculus.Functor;
-import net.butfly.albacore.calculus.FunctorConfig;
+import net.butfly.albacore.calculus.FunctorConfig.Detail;
+import net.butfly.albacore.calculus.datasource.CalculatorDataSource;
 import net.butfly.albacore.calculus.datasource.CalculatorDataSource.HbaseDataSource;
 import net.butfly.albacore.calculus.datasource.ColumnFamily;
 import net.butfly.albacore.utils.Reflections;
@@ -80,10 +81,10 @@ public class HbaseResultMarshaller implements Marshaller<Result, ImmutableBytesW
 	}
 
 	@Override
-	public <F extends Functor<F>> void confirm(Class<F> functor, FunctorConfig config, CalculatorContext globalConfig) {
+	public <F extends Functor<F>> void confirm(Class<F> functor, CalculatorDataSource ds, Detail detail, CalculatorContext globalConfig) {
 		try {
-			TableName ht = TableName.valueOf(config.hbaseTable);
-			Admin a = ((HbaseDataSource) globalConfig.datasources.get(config.datasource)).hconn.getAdmin();
+			TableName ht = TableName.valueOf(detail.hbaseTable);
+			Admin a = ((HbaseDataSource) ds).getHconn().getAdmin();
 			if (a.tableExists(ht)) return;
 			Set<String> families = new HashSet<>();
 			Set<String> columns = new HashSet<>();
@@ -107,7 +108,7 @@ public class HbaseResultMarshaller implements Marshaller<Result, ImmutableBytesW
 				a.addColumn(ht, new HColumnDescriptor(col));
 			a.enableTable(ht);
 		} catch (IOException e) {
-			throw new IllegalArgumentException("Hbase verify failure on server: " + config.datasource + ", class: " + functor.toString());
+			throw new IllegalArgumentException("Hbase verify failure on server: " + ds.toString() + ", class: " + functor.toString());
 		}
 	}
 }

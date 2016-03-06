@@ -2,7 +2,8 @@ package net.butfly.albacore.calculus.marshall;
 
 import net.butfly.albacore.calculus.CalculatorContext;
 import net.butfly.albacore.calculus.Functor;
-import net.butfly.albacore.calculus.FunctorConfig;
+import net.butfly.albacore.calculus.FunctorConfig.Detail;
+import net.butfly.albacore.calculus.datasource.CalculatorDataSource;
 
 public class KafkaMarshaller implements Marshaller<String, String> {
 	private static final long serialVersionUID = -4471098188111221100L;
@@ -32,5 +33,7 @@ public class KafkaMarshaller implements Marshaller<String, String> {
 	}
 
 	@Override
-	public <F extends Functor<F>> void confirm(Class<F> functor, FunctorConfig config, CalculatorContext globalConfig) {}
+	public <F extends Functor<F>> void confirm(Class<F> functor, CalculatorDataSource ds, Detail detail, CalculatorContext globalConfig) {
+		throw new UnsupportedOperationException();
+	}
 }
