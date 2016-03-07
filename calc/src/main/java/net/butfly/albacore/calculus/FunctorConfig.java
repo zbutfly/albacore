@@ -55,6 +55,20 @@ public class FunctorConfig implements Serializable {
 			this.mongoTable = mongoTable;
 			this.mongoFilter = mongoFilter;
 		}
+
+		@Override
+		public String toString() {
+			switch (type) {
+			case HBASE:
+				return "[Table: " + hbaseTable + "]";
+			case KAFKA:
+				return "[Table: " + String.join(",", kafkaTopics) + "]";
+			case MONGODB:
+				return "[Table: " + mongoTable + ", Filter: " + mongoFilter + "]";
+			default:
+				return "";
+			}
+		}
 	}
 
 	static <F extends Functor<F>> FunctorConfig parse(Class<F> functor, Mode mode) throws IOException {
