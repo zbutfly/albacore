@@ -43,26 +43,44 @@ public abstract class CalculatorDataSource implements Serializable {
 
 	public static class KafkaDataSource extends CalculatorDataSource {
 		private static final long serialVersionUID = 7500441385655250814L;
-		private String quonum;
+		private String servers;
+		private String root;
 		private String group;
+		private int topicPartitions;
 
-		public KafkaDataSource(String quonum, String group) {
+		public KafkaDataSource(String servers, String root, int topicPartitions, String group) {
 			super(Type.KAFKA, new KafkaMarshaller());
-			this.quonum = quonum;
+			int pos = servers.indexOf('/');
+			if (root == null && pos >= 0) {
+				this.servers = servers.substring(0, pos);
+				this.root = servers.substring(pos + 1);
+			} else {
+				this.root = root;
+				this.servers = servers;
+			}
 			this.group = group;
+			this.topicPartitions = topicPartitions;
 		}
 
 		@Override
 		public String toString() {
-			return super.toString() + ":" + this.quonum + "(" + group + ")";
-		}
-
-		public String getQuonum() {
-			return quonum;
+			return super.toString() + ":" + this.getServers() + "(" + group + ")";
 		}
 
 		public String getGroup() {
 			return group;
+		}
+
+		public String getRoot() {
+			return root;
+		}
+
+		public String getServers() {
+			return this.servers + (null == this.root ? "" : "/" + this.root);
+		}
+
+		public int getTopicPartitions() {
+			return topicPartitions;
 		}
 	}
 
