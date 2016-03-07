@@ -11,6 +11,7 @@ import org.bson.io.OutputBuffer;
 import org.jongo.marshall.jackson.bson4jackson.MongoBsonFactory;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -24,16 +25,17 @@ import com.mongodb.DBObject;
 import com.mongodb.DefaultDBEncoder;
 import com.mongodb.LazyDBObject;
 
-import net.butfly.albacore.calculus.CalculatorConfig;
 import net.butfly.albacore.calculus.Functor;
-import net.butfly.albacore.calculus.FunctorConfig;
+import net.butfly.albacore.calculus.FunctorConfig.Detail;
+import net.butfly.albacore.calculus.datasource.CalculatorDataSource;
 import net.butfly.albacore.calculus.datasource.CalculatorDataSource.MongoDataSource;
 import net.butfly.albacore.calculus.datasource.Index;
 import net.butfly.albacore.utils.Reflections;
 
 public class MongoMarshaller implements Marshaller<BSONObject, Object> {
 	private static final long serialVersionUID = 8467183278278572295L;
-	private static ObjectMapper mapper = new ObjectMapper(new MongoBsonFactory());
+	private static ObjectMapper mapper = new ObjectMapper(new MongoBsonFactory())
+			.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
 	@Override
 	public <T extends Functor<T>> T unmarshall(BSONObject from, Class<T> to) {
@@ -76,12 +78,12 @@ public class MongoMarshaller implements Marshaller<BSONObject, Object> {
 	}
 
 	@Override
-	public <F extends Functor<F>> void confirm(Class<F> functor, FunctorConfig config, CalculatorConfig globalConfig) {
+	public <F extends Functor<F>> void confirm(Class<F> functor, CalculatorDataSource ds, Detail detail) {
 		// jongo has confirm or create collection on getCollection, so we need
 		// only to create index.
-		DB db = ((MongoDataSource) globalConfig.datasources.get(config.datasource)).mongo;
-		if (db.collectionExists(config.mongoTable)) return;
-		DBCollection col = db.createCollection(config.mongoTable, new BasicDBObject());
+		DB db = ((MongoDataSource) ds).getMongo();
+		if (db.collectionExists(detail.mongoTable)) return;
+		DBCollection col = db.createCollection(detail.mongoTable, new BasicDBObject());
 
 		for (Field f : Reflections.getDeclaredFields(functor))
 			if (f.isAnnotationPresent(Index.class)) {

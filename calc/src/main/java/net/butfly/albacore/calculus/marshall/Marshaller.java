@@ -2,9 +2,9 @@ package net.butfly.albacore.calculus.marshall;
 
 import java.io.Serializable;
 
-import net.butfly.albacore.calculus.CalculatorConfig;
 import net.butfly.albacore.calculus.Functor;
-import net.butfly.albacore.calculus.FunctorConfig;
+import net.butfly.albacore.calculus.FunctorConfig.Detail;
+import net.butfly.albacore.calculus.datasource.CalculatorDataSource;
 
 public interface Marshaller<V, K> extends Serializable {
 	String unmarshallId(K id);
@@ -15,5 +15,5 @@ public interface Marshaller<V, K> extends Serializable {
 
 	<T extends Functor<T>> V marshall(T from);
 
-	<F extends Functor<F>> void confirm(Class<F> functor, FunctorConfig config, CalculatorConfig globalConfig);
+	<F extends Functor<F>> void confirm(Class<F> functorClass, CalculatorDataSource ds, Detail detail);
 }
