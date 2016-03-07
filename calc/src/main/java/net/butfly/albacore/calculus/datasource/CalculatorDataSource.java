@@ -94,8 +94,7 @@ public abstract class CalculatorDataSource implements Serializable {
 
 	public static class MongoDataSource extends CalculatorDataSource {
 		private static final long serialVersionUID = -2617369621178264387L;
-		private String uri;
-		private String authuri;
+		private MongoClientURI uri;
 
 		private MongoClient client;
 		private String db;
@@ -103,14 +102,13 @@ public abstract class CalculatorDataSource implements Serializable {
 		private Jongo jongo;
 
 		@SuppressWarnings("deprecation")
-		public MongoDataSource(String uri, String authuri) {
+		public MongoDataSource(
+				String uri/* , String authDB, String authMechanism */) {
 			super(Type.MONGODB, new MongoMarshaller());
-			this.uri = uri;
-			this.authuri = authuri;
+			this.uri = new MongoClientURI(uri);// b.build();
 
-			MongoClientURI u = new MongoClientURI(this.uri);
-			this.client = new MongoClient(u);
-			this.db = u.getDatabase();
+			this.client = new MongoClient(this.uri);
+			this.db = this.uri.getDatabase();
 			this.mongo = this.client.getDB(db);
 			this.jongo = new Jongo(this.mongo);
 		}
@@ -120,12 +118,8 @@ public abstract class CalculatorDataSource implements Serializable {
 			return super.toString() + ":" + this.uri + "." + db;
 		}
 
-		public String getUri() {
+		public MongoClientURI getUri() {
 			return uri;
-		}
-
-		public String getAuthuri() {
-			return authuri;
 		}
 
 		public MongoClient getClient() {

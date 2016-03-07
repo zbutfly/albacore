@@ -22,11 +22,10 @@ public class PiCalculus implements Calculus {
 	@SuppressWarnings({ "serial", "unchecked" })
 	@Override
 	public JavaRDD<? extends Functor<?>> calculate(JavaSparkContext sc,
-			Map<Class<? extends Functor<?>>, JavaPairRDD<String, ? extends Functor<?>>> stocking,
-			Map<Class<? extends Functor<?>>, JavaPairRDD<String, ? extends Functor<?>>> streaming) {
-		JavaPairRDD<String, PiFunctor> rdds = (JavaPairRDD<String, PiFunctor>) stocking.get(PiFunctor.class);
+			Map<Class<? extends Functor<?>>, JavaPairRDD<String, ? extends Functor<?>>> rdds) {
+		JavaPairRDD<String, PiFunctor> rdd = (JavaPairRDD<String, PiFunctor>) rdds.get(PiFunctor.class);
 		PiFunctor pi = new PiFunctor("0");
-		pi.pi = rdds.map(new Function<Tuple2<String, PiFunctor>, Integer>() {
+		pi.pi = rdd.map(new Function<Tuple2<String, PiFunctor>, Integer>() {
 			@Override
 			public Integer call(Tuple2<String, PiFunctor> rdd) throws Exception {
 				Logger.trace(PiCalculus.class, "Mapping: " + rdd._2.value);
@@ -34,7 +33,7 @@ public class PiCalculus implements Calculus {
 				double y = Math.random() * 2 - 1;
 				return (x * x + y * y < 1) ? 1 : 0;
 			}
-		}).reduce((a, b) -> a + b) * 4.0 / rdds.count();
+		}).reduce((a, b) -> a + b) * 4.0 / rdd.count();
 
 		return sc.parallelize(Arrays.asList(pi));
 	}

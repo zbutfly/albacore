@@ -47,7 +47,6 @@ import com.mongodb.hadoop.util.MongoClientURIBuilder;
 
 import net.butfly.albacore.calculus.Calculating.Mode;
 import net.butfly.albacore.calculus.CalculatorContext.SparkCalculatorContext;
-import net.butfly.albacore.calculus.Functor.Stocking;
 import net.butfly.albacore.calculus.Functor.Streaming;
 import net.butfly.albacore.calculus.Functor.Type;
 import net.butfly.albacore.calculus.FunctorConfig.Detail;
@@ -69,7 +68,6 @@ public class SparkCalculator {
 
 	private SparkCalculatorContext context;
 	private Set<Class<?>> calculuses;
-
 	private Mode mode;
 
 	public static void main(String... args) throws Exception {
@@ -90,7 +88,7 @@ public class SparkCalculator {
 		context.validate = Boolean.parseBoolean(props.getProperty("calculus.validate.table", "false"));
 		final String appname = props.getProperty("calculus.app.name", "Calculuses");
 		// dadatabse configurations parsing
-		scanDatasources(appname, subprops(props, "calculus.ds."));
+		parseDatasources(appname, subprops(props, "calculus.ds."));
 		// spark configurations parsing
 		if (props.containsKey("calculus.spark.executor.instances"))
 			System.setProperty("SPARK_EXECUTOR_INSTANCES", props.getProperty("calculus.spark.executor.instances"));
@@ -135,10 +133,10 @@ public class SparkCalculator {
 						logger.error("Calculus " + c.toString() + " constructor failure, ignored", e);
 						return null;
 					}
-					Map<Class<? extends Functor<?>>, JavaPairRDD<String, ? extends Functor<?>>>[] functors = scanCalcFunctors(
-							scanCalcConfigs(c));
-					JavaRDD<F> r = (JavaRDD<F>) calc.calculate(context.sc, functors[0], functors[1]);
-					FunctorConfig destConfig = parseConfig((Class<? extends Functor>) c.getAnnotation(Calculating.class).saving());
+					Map<Class<? extends Functor<?>>, JavaPairRDD<String, ? extends Functor<?>>> functors = fetchFunctors(scanFunctors(c));
+					JavaRDD<F> r = (JavaRDD<F>) calc.calculate(context.sc, functors);
+					FunctorConfig destConfig = FunctorConfig.parse((Class<? extends Functor>) c.getAnnotation(Calculating.class).saving(),
+							Mode.STOCKING);
 					if (destConfig != null && null != r) {
 						for (String ds : destConfig.savingDSs.keySet())
 							r.foreach(new WriteFunction(context.datasources.get(ds), destConfig.savingDSs.get(ds)));
@@ -151,14 +149,36 @@ public class SparkCalculator {
 		}
 	}
 
-	protected Map<Class<? extends Functor<?>>, JavaPairRDD<String, ? extends Functor<?>>>[] scanCalcFunctors(
+	private Map<Class<? extends Functor<?>>, FunctorConfig>[] scanFunctors(Class<?> calc) throws IOException {
+		Map<Class<? extends Functor<?>>, FunctorConfig> stockingConfigs = new HashMap<>();
+		Map<Class<? extends Functor<?>>, FunctorConfig> streamingConfigs = new HashMap<>();
+
+		Calculating calcing = calc.getAnnotation(Calculating.class);
+		for (Class<? extends Functor> f : calcing.stocking()) {
+			FunctorConfig fc = FunctorConfig.parse(f, Mode.STOCKING);
+			if (null != fc) stockingConfigs.put((Class<? extends Functor<?>>) f, fc);
+		}
+		for (Class<? extends Functor> f : calcing.streaming()) {
+			FunctorConfig fc = FunctorConfig.parse(f, mode);
+			if (null != fc) streamingConfigs.put((Class<? extends Functor<?>>) f, fc);
+		}
+		if (context.validate) for (FunctorConfig c : stockingConfigs.values())
+			c.confirm(context);
+
+		return new Map[] { stockingConfigs, streamingConfigs };
+	}
+
+	private Map<Class<? extends Functor<?>>, JavaPairRDD<String, ? extends Functor<?>>> fetchFunctors(
 			Map<Class<? extends Functor<?>>, FunctorConfig>[] configs) throws IOException {
-		Map<Class<? extends Functor<?>>, JavaPairRDD<String, ? extends Functor<?>>> stockingFunctors = new HashMap<>();
-		Map<Class<? extends Functor<?>>, JavaPairRDD<String, ? extends Functor<?>>> streamingFunctors = new HashMap<>();
+		Map<Class<? extends Functor<?>>, JavaPairRDD<String, ? extends Functor<?>>> functors = new HashMap<>();
+		// Map<Class<? extends Functor<?>>, JavaPairRDD<String, ? extends
+		// Functor<?>>> stockingFunctors = new HashMap<>();
+		// Map<Class<? extends Functor<?>>, JavaPairRDD<String, ? extends
+		// Functor<?>>> streamingFunctors = new HashMap<>();
 		for (Class<? extends Functor<?>> f : configs[0].keySet()) {
 			FunctorConfig fc = configs[0].get(f);
 			for (String ds : fc.stockingDSs.keySet())
-				stockingFunctors.put(f, (JavaPairRDD<String, ? extends Functor<?>>) stocking((Class<? extends Functor>) f,
+				functors.put(f, (JavaPairRDD<String, ? extends Functor<?>>) stocking((Class<? extends Functor>) f,
 						context.datasources.get(ds), fc.stockingDSs.get(ds)));
 		}
 		switch (mode) {
@@ -166,7 +186,7 @@ public class SparkCalculator {
 			for (Class<? extends Functor<?>> f : configs[1].keySet()) {
 				FunctorConfig fc = configs[1].get(f);
 				for (String ds : fc.stockingDSs.keySet())
-					stockingFunctors.put(f, (JavaPairRDD<String, ? extends Functor<?>>) stocking((Class<? extends Functor>) f,
+					functors.put(f, (JavaPairRDD<String, ? extends Functor<?>>) stocking((Class<? extends Functor>) f,
 							context.datasources.get(ds), fc.stockingDSs.get(ds)));
 			}
 			break;
@@ -174,54 +194,12 @@ public class SparkCalculator {
 			for (Class<? extends Functor<?>> f : configs[1].keySet()) {
 				FunctorConfig fc = configs[1].get(f);
 				for (String ds : fc.streamingDSs.keySet())
-					streamingFunctors.put(f, (JavaPairRDD<String, ? extends Functor<?>>) streaming((Class<? extends Functor>) f,
+					functors.put(f, (JavaPairRDD<String, ? extends Functor<?>>) streaming((Class<? extends Functor>) f,
 							context.datasources.get(ds), fc.streamingDSs.get(ds)));
 			}
 			break;
 		}
-		return new Map[] { stockingFunctors, streamingFunctors };
-	}
-
-	private Map<Class<? extends Functor<?>>, FunctorConfig>[] scanCalcConfigs(Class<?> calc) throws IOException {
-		Map<Class<? extends Functor<?>>, FunctorConfig> stockingConfigs = new HashMap<>();
-		Map<Class<? extends Functor<?>>, FunctorConfig> streamingConfigs = new HashMap<>();
-
-		Calculating calcing = calc.getAnnotation(Calculating.class);
-		for (Class<? extends Functor> f : calcing.stocking()) {
-			FunctorConfig fc = parseConfig(f);
-			if (null != fc) stockingConfigs.put((Class<? extends Functor<?>>) f, fc);
-		}
-		for (Class<? extends Functor> f : calcing.streaming()) {
-			FunctorConfig fc = parseConfig(f);
-			if (null != fc) streamingConfigs.put((Class<? extends Functor<?>>) f, fc);
-		}
-		return new Map[] { stockingConfigs, streamingConfigs };
-	}
-
-	private static class WriteFunction<F extends Functor<F>> implements VoidFunction<F> {
-		private static final long serialVersionUID = -3114062446562954303L;
-		private CalculatorDataSource datasource;
-		private Detail detail;
-
-		public WriteFunction(CalculatorDataSource dataSource, Detail detail) {
-			this.datasource = dataSource;
-			this.detail = detail;
-		}
-
-		@Override
-		public void call(F result) throws Exception {
-			switch (datasource.getType()) {
-			case MONGODB:
-				MongoCollection col = ((MongoDataSource) datasource).getJongo().getCollection(detail.mongoTable);
-				col.save(result);
-				break;
-			case CONSTAND_TO_CONSOLE:
-				logger.info("Result: " + result.toString());
-				break;
-			default:
-				throw new UnsupportedOperationException("Write to " + datasource.getType() + " is not supported.");
-			}
-		}
+		return functors;
 	}
 
 	private <F extends Functor<F>> JavaPairRDD<String, F> stocking(Class<F> functor, CalculatorDataSource ds, FunctorConfig.Detail detail) {
@@ -243,9 +221,9 @@ public class SparkCalculator {
 			Configuration mconf = new Configuration();
 			MongoDataSource mds = (MongoDataSource) ds;
 			mconf.set("mongo.job.input.format", "com.mongodb.hadoop.MongoInputFormat");
-			mconf.set("mongo.auth.uri", mds.getAuthuri());
-			mconf.set("mongo.input.uri", new MongoClientURIBuilder(new MongoClientURI(mds.getUri()))
-					.collection(mds.getDb(), detail.mongoTable).build().toString());
+			MongoClientURI uri = mds.getUri();
+			// mconf.set("mongo.auth.uri", uri.toString());
+			mconf.set("mongo.input.uri", new MongoClientURIBuilder(uri).collection(mds.getDb(), detail.mongoTable).build().toString());
 			if (detail.mongoFilter != null && !"".equals(detail.mongoFilter)) mconf.set("mongo.input.query", detail.mongoFilter);
 			// conf.mconf.set("mongo.input.fields
 			mconf.set("mongo.input.notimeout", "true");
@@ -284,60 +262,6 @@ public class SparkCalculator {
 		}
 	}
 
-	private <F extends Functor<F>> FunctorConfig parseConfig(Class<F> functor) throws IOException {
-		if (null == functor) return null;
-		Streaming streaming = functor.getAnnotation(Streaming.class);
-		FunctorConfig config = new FunctorConfig();
-		config.functorClass = functor;
-		switch (mode) {
-		case STOCKING:
-			config.stockingDSs.put(functor.getAnnotation(Stocking.class).source(), parseStockingConfig(functor));
-			break;
-		case STREAMING:
-			config.stockingDSs.put(functor.getAnnotation(Stocking.class).source(), parseStockingConfig(functor));
-			if (streaming != null) config.streamingDSs.put(streaming.source(), parseStreamingConfig(streaming));
-			break;
-		}
-		return config;
-	}
-
-	private <F extends Functor<F>> Detail parseStreamingConfig(Streaming streaming) {
-		if (streaming == null) return null;
-		switch (streaming.type()) {
-		case KAFKA:
-			return new Detail(streaming.topics());
-		default:
-			throw new UnsupportedOperationException("Unsupportted streaming mode: " + streaming.type());
-		}
-	}
-
-	private <F extends Functor<F>> Detail parseStockingConfig(Class<F> functor) {
-		Stocking stocking = functor.getAnnotation(Stocking.class);
-		if (Functor.NOT_DEFINED.equals(stocking.source())) return null;
-		Detail detail = null;
-		switch (stocking.type()) {
-		case HBASE:
-			if (Functor.NOT_DEFINED.equals(stocking.table()))
-				throw new IllegalArgumentException("Table not defined for functor " + functor.toString());
-			detail = new Detail(stocking.table());
-			break;
-		case MONGODB:
-			if (Functor.NOT_DEFINED.equals(stocking.table()))
-				throw new IllegalArgumentException("Table not defined for functor " + functor.toString());
-			detail = new Detail(stocking.table(), Functor.NOT_DEFINED.equals(stocking.filter()) ? null : stocking.filter());
-			break;
-		case CONSTAND_TO_CONSOLE:
-			break;
-		default:
-			throw new UnsupportedOperationException("Unsupportted stocking mode: " + stocking.type());
-		}
-		if (context.validate) {
-			CalculatorDataSource ds = context.datasources.get(stocking.source());
-			ds.getMarshaller().confirm(functor, ds, detail, context);
-		}
-		return detail;
-	}
-
 	private static Map<String, Properties> subprops(Properties props, String prefix) {
 		Map<String, Properties> r = new HashMap<>();
 		for (String key : props.stringPropertyNames()) {
@@ -366,7 +290,7 @@ public class SparkCalculator {
 		return cmd;
 	}
 
-	private void scanDatasources(String appname, Map<String, Properties> dsprops) {
+	private void parseDatasources(String appname, Map<String, Properties> dsprops) {
 		for (String dsid : dsprops.keySet()) {
 			Properties dbprops = dsprops.get(dsid);
 			Type type = Type.valueOf(dbprops.getProperty("type"));
@@ -378,14 +302,43 @@ public class SparkCalculator {
 				context.datasources.put(dsid, new HbaseDataSource(dbprops.getProperty("config", "hbase-site.xml")));
 				break;
 			case MONGODB:
-				context.datasources.put(dsid,
-						new MongoDataSource(dbprops.getProperty("uri"), dbprops.getProperty("uri.auth", dbprops.getProperty("uri"))));
+				context.datasources.put(dsid, new MongoDataSource(dbprops
+						.getProperty("uri")/*
+											 * , dbprops.getProperty("authdb"),
+											 * dbprops.getProperty("authdb")
+											 */));
 				break;
 			case KAFKA:
 				context.datasources.put(dsid, new KafkaDataSource(dbprops.getProperty("quonum"), appname));
 				break;
 			default:
 				logger.warn("Unsupportted type: " + type);
+			}
+		}
+	}
+
+	private static class WriteFunction<F extends Functor<F>> implements VoidFunction<F> {
+		private static final long serialVersionUID = -3114062446562954303L;
+		private CalculatorDataSource datasource;
+		private Detail detail;
+
+		public WriteFunction(CalculatorDataSource dataSource, Detail detail) {
+			this.datasource = dataSource;
+			this.detail = detail;
+		}
+
+		@Override
+		public void call(F result) throws Exception {
+			switch (datasource.getType()) {
+			case MONGODB:
+				MongoCollection col = ((MongoDataSource) datasource).getJongo().getCollection(detail.mongoTable);
+				col.save(result);
+				break;
+			case CONSTAND_TO_CONSOLE:
+				logger.info("Result: " + result.toString());
+				break;
+			default:
+				throw new UnsupportedOperationException("Write to " + datasource.getType() + " is not supported.");
 			}
 		}
 	}
