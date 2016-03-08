@@ -8,11 +8,11 @@ import java.util.Map;
 import org.apache.spark.streaming.api.java.AbstractJavaDStreamLike;
 
 import net.butfly.albacore.calculus.Calculating.Mode;
-import net.butfly.albacore.calculus.CalculatorContext.SparkCalculatorContext;
+import net.butfly.albacore.calculus.CalculatorContext.StockingContext;
 import net.butfly.albacore.calculus.Functor.Stocking;
 import net.butfly.albacore.calculus.Functor.Streaming;
 import net.butfly.albacore.calculus.Functor.Type;
-import net.butfly.albacore.calculus.datasource.CalculatorDataSource;
+import net.butfly.albacore.calculus.datasource.DataSource;
 
 public class FunctorConfig implements Serializable {
 	private static final long serialVersionUID = 5323846657146326084L;
@@ -113,8 +113,8 @@ public class FunctorConfig implements Serializable {
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	void confirm(SparkCalculatorContext context) {
-		CalculatorDataSource ds = context.datasources.get(functorClass.getAnnotation(Stocking.class).source());
+	void confirm(StockingContext context) {
+		DataSource ds = context.datasources.get(functorClass.getAnnotation(Stocking.class).source());
 		for (Detail detail : this.stockingDSs.values())
 			ds.getMarshaller().confirm((Class<? extends Functor>) functorClass, ds, detail);
 	}

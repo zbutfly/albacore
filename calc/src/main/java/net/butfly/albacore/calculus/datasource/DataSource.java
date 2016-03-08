@@ -3,12 +3,8 @@ package net.butfly.albacore.calculus.datasource;
 import java.io.Serializable;
 
 import org.apache.hadoop.hbase.client.Connection;
-import org.jongo.Jongo;
 
 import com.google.common.base.Joiner;
-import com.mongodb.DB;
-import com.mongodb.MongoClient;
-import com.mongodb.MongoClientURI;
 
 import net.butfly.albacore.calculus.Functor;
 import net.butfly.albacore.calculus.Functor.Type;
@@ -17,10 +13,10 @@ import net.butfly.albacore.calculus.marshall.KafkaMarshaller;
 import net.butfly.albacore.calculus.marshall.Marshaller;
 import net.butfly.albacore.calculus.marshall.MongoMarshaller;
 
-public abstract class CalculatorDataSource implements Serializable {
+public abstract class DataSource implements Serializable {
 	private static final long serialVersionUID = 1L;
-	private Functor.Type type;
-	private Marshaller<?, ?> marshaller;
+	Functor.Type type;
+	Marshaller<?, ?> marshaller;
 
 	public Functor.Type getType() {
 		return type;
@@ -30,7 +26,7 @@ public abstract class CalculatorDataSource implements Serializable {
 		return marshaller;
 	}
 
-	public CalculatorDataSource(Type type, Marshaller<?, ?> marshaller) {
+	public DataSource(Type type, Marshaller<?, ?> marshaller) {
 		super();
 		this.type = type;
 		this.marshaller = marshaller;
@@ -41,12 +37,12 @@ public abstract class CalculatorDataSource implements Serializable {
 		return "CalculatorDataSource:" + this.type;
 	}
 
-	public static class KafkaDataSource extends CalculatorDataSource {
+	public static class KafkaDataSource extends DataSource {
 		private static final long serialVersionUID = 7500441385655250814L;
-		private String servers;
-		private String root;
-		private String group;
-		private int topicPartitions;
+		String servers;
+		String root;
+		String group;
+		int topicPartitions;
 
 		public KafkaDataSource(String servers, String root, int topicPartitions, String group) {
 			super(Type.KAFKA, new KafkaMarshaller());
@@ -84,10 +80,10 @@ public abstract class CalculatorDataSource implements Serializable {
 		}
 	}
 
-	public static class HbaseDataSource extends CalculatorDataSource {
+	public static class HbaseDataSource extends DataSource {
 		private static final long serialVersionUID = 3367501286179801635L;
-		private String configFile;
-		private Connection hconn;
+		String configFile;
+		Connection hconn;
 
 		public HbaseDataSource(String configFile) {
 			super(Type.HBASE, new HbaseResultMarshaller());
@@ -110,54 +106,27 @@ public abstract class CalculatorDataSource implements Serializable {
 		}
 	}
 
-	public static class MongoDataSource extends CalculatorDataSource {
+	public static class MongoDataSource extends DataSource {
 		private static final long serialVersionUID = -2617369621178264387L;
-		private MongoClientURI uri;
+		String uri;
+		// String db;
 
-		private MongoClient client;
-		private String db;
-		private DB mongo;
-		private Jongo jongo;
-
-		@SuppressWarnings("deprecation")
-		public MongoDataSource(
-				String uri/* , String authDB, String authMechanism */) {
+		public MongoDataSource(String uri) {
 			super(Type.MONGODB, new MongoMarshaller());
-			this.uri = new MongoClientURI(uri);// b.build();
-
-			this.client = new MongoClient(this.uri);
-			this.db = this.uri.getDatabase();
-			this.mongo = this.client.getDB(db);
-			this.jongo = new Jongo(this.mongo);
+			this.uri = uri;
 		}
 
 		@Override
 		public String toString() {
-			return super.toString() + ":" + this.uri + "." + db;
+			return super.toString() + ":" + this.uri;
 		}
 
-		public MongoClientURI getUri() {
+		public String getUri() {
 			return uri;
-		}
-
-		public MongoClient getClient() {
-			return client;
-		}
-
-		public DB getMongo() {
-			return mongo;
-		}
-
-		public Jongo getJongo() {
-			return jongo;
-		}
-
-		public String getDb() {
-			return db;
 		}
 	}
 
-	public static class ConstDataSource extends CalculatorDataSource {
+	public static class ConstDataSource extends DataSource {
 		private static final long serialVersionUID = -673387208224779163L;
 		private String[] values;
 

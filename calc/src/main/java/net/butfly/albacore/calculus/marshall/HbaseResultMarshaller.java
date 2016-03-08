@@ -23,9 +23,9 @@ import com.jcabi.log.Logger;
 
 import net.butfly.albacore.calculus.Functor;
 import net.butfly.albacore.calculus.FunctorConfig.Detail;
-import net.butfly.albacore.calculus.datasource.CalculatorDataSource;
-import net.butfly.albacore.calculus.datasource.CalculatorDataSource.HbaseDataSource;
-import net.butfly.albacore.calculus.datasource.ColumnFamily;
+import net.butfly.albacore.calculus.datasource.DataSource;
+import net.butfly.albacore.calculus.datasource.DataSource.HbaseDataSource;
+import net.butfly.albacore.calculus.datasource.HbaseColumnFamily;
 import net.butfly.albacore.utils.Reflections;
 
 public class HbaseResultMarshaller implements Marshaller<Result, ImmutableBytesWritable> {
@@ -34,12 +34,12 @@ public class HbaseResultMarshaller implements Marshaller<Result, ImmutableBytesW
 
 	@Override
 	public <T extends Functor<T>> T unmarshall(Result from, Class<T> to) {
-		String dcf = to.isAnnotationPresent(ColumnFamily.class) ? to.getAnnotation(ColumnFamily.class).value() : null;
+		String dcf = to.isAnnotationPresent(HbaseColumnFamily.class) ? to.getAnnotation(HbaseColumnFamily.class).value() : null;
 		T t = Reflections.construct(to);
 		for (Field f : Reflections.getDeclaredFields(to)) {
 			String colname = f.isAnnotationPresent(JsonProperty.class) ? f.getAnnotation(JsonProperty.class).value()
 					: CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, f.getName());
-			String colfamily = f.isAnnotationPresent(ColumnFamily.class) ? f.getAnnotation(ColumnFamily.class).value() : dcf;
+			String colfamily = f.isAnnotationPresent(HbaseColumnFamily.class) ? f.getAnnotation(HbaseColumnFamily.class).value() : dcf;
 			if (colfamily == null)
 				throw new IllegalArgumentException("Column family is not defined on class " + to.toString() + ", field " + f.getName());
 			try {
@@ -80,19 +80,19 @@ public class HbaseResultMarshaller implements Marshaller<Result, ImmutableBytesW
 	}
 
 	@Override
-	public <F extends Functor<F>> void confirm(Class<F> functor, CalculatorDataSource ds, Detail detail) {
+	public <F extends Functor<F>> void confirm(Class<F> functor, DataSource ds, Detail detail) {
 		try {
 			TableName ht = TableName.valueOf(detail.hbaseTable);
 			Admin a = ((HbaseDataSource) ds).getHconn().getAdmin();
 			if (a.tableExists(ht)) return;
 			Set<String> families = new HashSet<>();
 			Set<String> columns = new HashSet<>();
-			String dcf = functor.isAnnotationPresent(ColumnFamily.class) ? functor.getAnnotation(ColumnFamily.class).value() : null;
+			String dcf = functor.isAnnotationPresent(HbaseColumnFamily.class) ? functor.getAnnotation(HbaseColumnFamily.class).value() : null;
 			families.add(dcf);
 			for (Field f : Reflections.getDeclaredFields(functor)) {
 				String colname = f.isAnnotationPresent(JsonProperty.class) ? f.getAnnotation(JsonProperty.class).value()
 						: CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, f.getName());
-				String colfamily = f.isAnnotationPresent(ColumnFamily.class) ? f.getAnnotation(ColumnFamily.class).value() : dcf;
+				String colfamily = f.isAnnotationPresent(HbaseColumnFamily.class) ? f.getAnnotation(HbaseColumnFamily.class).value() : dcf;
 				families.add(colfamily);
 				columns.add(colfamily + ":" + colname);
 			}
