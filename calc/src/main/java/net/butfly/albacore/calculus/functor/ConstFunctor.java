@@ -12,4 +12,8 @@ public abstract class ConstFunctor<V> implements Functor<ConstFunctor<V>> {
 	public ConstFunctor(String str) {
 		throw new NotImplementedException();
 	}
+
+	public ConstFunctor(V value) {
+		this.value = value;
+	}
 }
