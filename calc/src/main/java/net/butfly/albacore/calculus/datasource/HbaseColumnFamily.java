@@ -7,7 +7,7 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.FIELD, ElementType.TYPE })
-public @interface ColumnFamily {
+public @interface HbaseColumnFamily {
 	public static final String DEFAULT_COLUMN_FAMILY = "cf1";
 
 	String value() default DEFAULT_COLUMN_FAMILY;

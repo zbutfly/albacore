@@ -1,6 +1,7 @@
 package net.butfly.albacore.calculus;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -29,11 +30,9 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.VoidFunction;
-import org.apache.spark.streaming.Durations;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaDStreamLike;
 import org.apache.spark.streaming.api.java.JavaPairInputDStream;
-import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.spark.streaming.kafka.KafkaUtils;
 import org.bson.BSONObject;
 import org.jongo.MongoCollection;
@@ -51,15 +50,18 @@ import com.mongodb.hadoop.util.MongoClientURIBuilder;
 
 import kafka.serializer.StringDecoder;
 import net.butfly.albacore.calculus.Calculating.Mode;
-import net.butfly.albacore.calculus.CalculatorContext.SparkCalculatorContext;
+import net.butfly.albacore.calculus.CalculatorContext.StockingContext;
+import net.butfly.albacore.calculus.CalculatorContext.StreamingContext;
 import net.butfly.albacore.calculus.Functor.Streaming;
 import net.butfly.albacore.calculus.Functor.Type;
 import net.butfly.albacore.calculus.FunctorConfig.Detail;
-import net.butfly.albacore.calculus.datasource.CalculatorDataSource;
-import net.butfly.albacore.calculus.datasource.CalculatorDataSource.ConstDataSource;
-import net.butfly.albacore.calculus.datasource.CalculatorDataSource.HbaseDataSource;
-import net.butfly.albacore.calculus.datasource.CalculatorDataSource.KafkaDataSource;
-import net.butfly.albacore.calculus.datasource.CalculatorDataSource.MongoDataSource;
+import net.butfly.albacore.calculus.datasource.DataContext;
+import net.butfly.albacore.calculus.datasource.DataContext.MongoContext;
+import net.butfly.albacore.calculus.datasource.DataSource;
+import net.butfly.albacore.calculus.datasource.DataSource.ConstDataSource;
+import net.butfly.albacore.calculus.datasource.DataSource.HbaseDataSource;
+import net.butfly.albacore.calculus.datasource.DataSource.KafkaDataSource;
+import net.butfly.albacore.calculus.datasource.DataSource.MongoDataSource;
 import net.butfly.albacore.calculus.marshall.HbaseResultMarshaller;
 import net.butfly.albacore.calculus.marshall.KafkaMarshaller;
 import net.butfly.albacore.calculus.marshall.MongoMarshaller;
@@ -68,10 +70,14 @@ import net.butfly.albacore.utils.async.Task;
 import scala.Tuple2;
 
 @SuppressWarnings({ "unchecked", "rawtypes" })
-public class SparkCalculator {
+public class SparkCalculator implements Serializable {
+	private static final long serialVersionUID = 7850755405377027618L;
+
 	private static final Logger logger = LoggerFactory.getLogger(SparkCalculator.class);
 
-	private SparkCalculatorContext context;
+	private StockingContext stockingContext;
+	private StreamingContext streamingContext;
+	private int streamingDuration;
 	private Set<Class<?>> calculuses;
 	private Mode mode;
 
@@ -89,8 +95,9 @@ public class SparkCalculator {
 
 	private SparkCalculator(Properties props) throws Exception {
 		mode = Mode.valueOf(props.getProperty("calculus.mode", "STREAMING").toUpperCase());
-		context = new SparkCalculatorContext();
-		context.validate = Boolean.parseBoolean(props.getProperty("calculus.validate.table", "false"));
+		streamingDuration = Integer.parseInt(props.getProperty("calculus.spark.duration.seconds", "5"));
+		stockingContext = new StockingContext();
+		stockingContext.validate = Boolean.parseBoolean(props.getProperty("calculus.validate.table", "false"));
 		final String appname = props.getProperty("calculus.app.name", "Calculuses");
 		// dadatabse configurations parsing
 		parseDatasources(appname, subprops(props, "calculus.ds."));
@@ -107,9 +114,7 @@ public class SparkCalculator {
 		if (props.containsKey("calculus.spark.executor.memory.mb"))
 			sconf.set("spark.executor.memory", props.getProperty("calculus.spark.executor.memory.mb"));
 		if (props.containsKey("calculus.spark.testing")) sconf.set("spark.testing", props.getProperty("calculus.spark.testing"));
-		context.sc = new JavaSparkContext(sconf);
-		context.ssc = new JavaStreamingContext(context.sc,
-				Durations.seconds(Integer.parseInt(props.getProperty("calculus.spark.duration.seconds", "5"))));
+		stockingContext.sc = new JavaSparkContext(sconf);
 		// scan and run calculuses
 		FilterBuilder filterBuilder = new FilterBuilder().includePackage(props.getProperty("calculus.package", ""));
 		org.reflections.Reflections ref = new org.reflections.Reflections(
@@ -126,6 +131,7 @@ public class SparkCalculator {
 	}
 
 	private <F extends Functor<F>> void calculate() throws Exception {
+		if (mode == Mode.STREAMING) streamingContext = new StreamingContext(stockingContext, streamingDuration);
 		for (Class<?> c : calculuses) {
 			logger.info("Calculus " + c.toString() + " starting... ");
 			new Task<Void>(new Task.Callable<Void>() {
@@ -139,20 +145,20 @@ public class SparkCalculator {
 						return null;
 					}
 					Map<Class<? extends Functor<?>>, JavaPairRDD<String, ? extends Functor<?>>> functors = fetchFunctors(scanFunctors(c));
-					JavaRDD<F> r = (JavaRDD<F>) calc.calculate(context.sc, functors);
+					JavaRDD<F> r = (JavaRDD<F>) calc.calculate(stockingContext.sc, functors);
 					FunctorConfig destConfig = FunctorConfig.parse((Class<? extends Functor>) c.getAnnotation(Calculating.class).saving(),
 							Mode.STOCKING);
 					if (destConfig != null && null != r) {
 						for (String ds : destConfig.savingDSs.keySet())
-							r.foreach(new WriteFunction(context.datasources.get(ds), destConfig.savingDSs.get(ds)));
+							r.foreach(new WriteFunction(stockingContext.datasources.get(ds), destConfig.savingDSs.get(ds)));
 					}
 					return null;
 				}
 
 			}/* , new net.butfly.albacore.utils.async.Options().fork() */).execute();
 			if (mode == Mode.STREAMING) {
-				context.ssc.start();
-				context.ssc.awaitTermination();
+				streamingContext.ssc.start();
+				streamingContext.ssc.awaitTermination();
 			}
 			logger.info("Calculus " + c.toString() + " started. ");
 		}
@@ -171,8 +177,8 @@ public class SparkCalculator {
 			FunctorConfig fc = FunctorConfig.parse(f, mode);
 			if (null != fc) streamingConfigs.put((Class<? extends Functor<?>>) f, fc);
 		}
-		if (context.validate) for (FunctorConfig c : stockingConfigs.values())
-			c.confirm(context);
+		if (stockingContext.validate) for (FunctorConfig c : stockingConfigs.values())
+			c.confirm(stockingContext);
 
 		return new Map[] { stockingConfigs, streamingConfigs };
 	}
@@ -188,7 +194,7 @@ public class SparkCalculator {
 			FunctorConfig fc = configs[0].get(f);
 			for (String ds : fc.stockingDSs.keySet())
 				functors.put(f, (JavaPairRDD<String, ? extends Functor<?>>) stocking((Class<? extends Functor>) f,
-						context.datasources.get(ds), fc.stockingDSs.get(ds)));
+						stockingContext.datasources.get(ds), fc.stockingDSs.get(ds)));
 		}
 		switch (mode) {
 		case STOCKING:
@@ -196,7 +202,7 @@ public class SparkCalculator {
 				FunctorConfig fc = configs[1].get(f);
 				for (String ds : fc.stockingDSs.keySet())
 					functors.put(f, (JavaPairRDD<String, ? extends Functor<?>>) stocking((Class<? extends Functor>) f,
-							context.datasources.get(ds), fc.stockingDSs.get(ds)));
+							stockingContext.datasources.get(ds), fc.stockingDSs.get(ds)));
 			}
 			break;
 		case STREAMING:
@@ -204,14 +210,14 @@ public class SparkCalculator {
 				FunctorConfig fc = configs[1].get(f);
 				for (String ds : fc.streamingDSs.keySet())
 					functors.put(f, (JavaPairRDD<String, ? extends Functor<?>>) streaming((Class<? extends Functor>) f,
-							context.datasources.get(ds), fc.streamingDSs.get(ds)));
+							stockingContext.datasources.get(ds), fc.streamingDSs.get(ds)));
 			}
 			break;
 		}
 		return functors;
 	}
 
-	private <F extends Functor<F>> JavaPairRDD<String, F> stocking(Class<F> functor, CalculatorDataSource ds, FunctorConfig.Detail detail) {
+	private <F extends Functor<F>> JavaPairRDD<String, F> stocking(Class<F> functor, DataSource ds, FunctorConfig.Detail detail) {
 		switch (ds.getType()) {
 		case HBASE: // TODO: adaptor to hbase data frame
 			Configuration hconf = HBaseConfiguration.create();
@@ -224,7 +230,7 @@ public class SparkCalculator {
 			hconf.set(TableInputFormat.INPUT_TABLE, detail.hbaseTable);
 			// conf.hconf.set(TableInputFormat.SCAN_COLUMNS, "cf1:vc cf1:vs");
 			final HbaseResultMarshaller hm = (HbaseResultMarshaller) ds.getMarshaller();
-			JavaPairRDD<ImmutableBytesWritable, Result> hbase = context.sc.newAPIHadoopRDD(hconf, TableInputFormat.class,
+			JavaPairRDD<ImmutableBytesWritable, Result> hbase = stockingContext.sc.newAPIHadoopRDD(hconf, TableInputFormat.class,
 					ImmutableBytesWritable.class, Result.class);
 			traceRDD(hbase, ds, detail);
 			return hbase.mapToPair(t -> new Tuple2<String, F>(hm.unmarshallId(t._1), hm.unmarshall(t._2, functor)));
@@ -232,27 +238,28 @@ public class SparkCalculator {
 			Configuration mconf = new Configuration();
 			MongoDataSource mds = (MongoDataSource) ds;
 			mconf.set("mongo.job.input.format", "com.mongodb.hadoop.MongoInputFormat");
-			MongoClientURI uri = mds.getUri();
+			MongoClientURI uri = new MongoClientURI(mds.getUri());
 			// mconf.set("mongo.auth.uri", uri.toString());
-			mconf.set("mongo.input.uri", new MongoClientURIBuilder(uri).collection(mds.getDb(), detail.mongoTable).build().toString());
+			mconf.set("mongo.input.uri",
+					new MongoClientURIBuilder(uri).collection(uri.getDatabase(), detail.mongoTable).build().toString());
 			if (detail.mongoFilter != null && !"".equals(detail.mongoFilter)) mconf.set("mongo.input.query", detail.mongoFilter);
 			// conf.mconf.set("mongo.input.fields
 			mconf.set("mongo.input.notimeout", "true");
 			MongoMarshaller mm = (MongoMarshaller) ds.getMarshaller();
-			JavaPairRDD<Object, BSONObject> mongo = context.sc.newAPIHadoopRDD(mconf, MongoInputFormat.class, Object.class,
+			JavaPairRDD<Object, BSONObject> mongo = stockingContext.sc.newAPIHadoopRDD(mconf, MongoInputFormat.class, Object.class,
 					BSONObject.class);
 			return mongo.mapToPair(t -> new Tuple2<String, F>(mm.unmarshallId(t._1), mm.unmarshall(t._2, functor)));
 		case CONSTAND_TO_CONSOLE:
 			String[] values = ((ConstDataSource) ds).getValues();
 			if (values == null) values = new String[0];
-			return context.sc.parallelize(Arrays.asList(values))
+			return stockingContext.sc.parallelize(Arrays.asList(values))
 					.mapToPair(t -> new Tuple2<String, F>(UUID.randomUUID().toString(), (F) Reflections.construct(functor, t)));
 		default:
 			throw new UnsupportedOperationException("Unsupportted stocking mode: " + ds.getType());
 		}
 	}
 
-	private <F extends Functor<F>> JavaPairRDD<String, F> streaming(Class<F> functor, CalculatorDataSource ds, FunctorConfig.Detail detail)
+	private <F extends Functor<F>> JavaPairRDD<String, F> streaming(Class<F> functor, DataSource ds, FunctorConfig.Detail detail)
 			throws IOException {
 		switch (ds.getType()) {
 		case KAFKA:
@@ -277,16 +284,17 @@ public class SparkCalculator {
 	private JavaPairInputDStream kafka(KafkaDataSource ds, String[] topics) {
 		if (ds.getRoot() == null) { // direct mode
 			Map<String, String> params = new HashMap<>();
-			params.put("bootstrap.servers", ds.getServers());
+			params.put("metadata.broker.list", ds.getServers());
+			//params.put("bootstrap.servers", ds.getServers());
 			// params.put("auto.commit.enable", "false");
 			params.put("group.id", ds.getGroup());
-			return KafkaUtils.createDirectStream(context.ssc, String.class, String.class, StringDecoder.class, StringDecoder.class, params,
-					new HashSet<String>(Arrays.asList(topics)));
+			return KafkaUtils.createDirectStream(streamingContext.ssc, String.class, String.class, StringDecoder.class, StringDecoder.class,
+					params, new HashSet<String>(Arrays.asList(topics)));
 		} else {
 			Map<String, Integer> topicsMap = new HashMap<>();
 			for (String t : topics)
 				topicsMap.put(t, ds.getTopicPartitions());
-			return KafkaUtils.createStream(context.ssc, ds.getServers(), ds.getGroup(), topicsMap);
+			return KafkaUtils.createStream(streamingContext.ssc, ds.getServers(), ds.getGroup(), topicsMap);
 		}
 	}
 
@@ -324,20 +332,20 @@ public class SparkCalculator {
 			Type type = Type.valueOf(dbprops.getProperty("type"));
 			switch (type) {
 			case CONSTAND_TO_CONSOLE:
-				context.datasources.put(dsid, new ConstDataSource(dbprops.getProperty("values").split(",")));
+				stockingContext.datasources.put(dsid, new ConstDataSource(dbprops.getProperty("values").split(",")));
 				break;
 			case HBASE:
-				context.datasources.put(dsid, new HbaseDataSource(dbprops.getProperty("config", "hbase-site.xml")));
+				stockingContext.datasources.put(dsid, new HbaseDataSource(dbprops.getProperty("config", "hbase-site.xml")));
 				break;
 			case MONGODB:
-				context.datasources.put(dsid, new MongoDataSource(dbprops
+				stockingContext.datasources.put(dsid, new MongoDataSource(dbprops
 						.getProperty("uri")/*
 											 * , dbprops.getProperty("authdb"),
 											 * dbprops.getProperty("authdb")
 											 */));
 				break;
 			case KAFKA:
-				context.datasources.put(dsid, new KafkaDataSource(dbprops.getProperty("servers"), dbprops.getProperty("root"),
+				stockingContext.datasources.put(dsid, new KafkaDataSource(dbprops.getProperty("servers"), dbprops.getProperty("root"),
 						Integer.parseInt(dbprops.getProperty("topic.partitions", "1")), appname));
 				break;
 			default:
@@ -347,7 +355,7 @@ public class SparkCalculator {
 	}
 
 	@SuppressWarnings("serial")
-	private void traceStream(JavaDStreamLike stream, CalculatorDataSource ds, Detail detail) {
+	private void traceStream(JavaDStreamLike stream, DataSource ds, Detail detail) {
 		if (!logger.isTraceEnabled()) return;
 		long[] i = new long[] { 0 };
 		JavaDStream<Long> s = stream.count();
@@ -367,7 +375,7 @@ public class SparkCalculator {
 
 	}
 
-	private void traceRDD(JavaRDDLike rdd, CalculatorDataSource ds, Detail detail) {
+	private void traceRDD(JavaRDDLike rdd, DataSource ds, Detail detail) {
 		if (!logger.isTraceEnabled()) return;
 		logger.trace("{" + rdd.count() + "} Raw records from " + ds.getType() + " [" + ds.toString() + "]=>" + detail.toString() + "]. ");
 
@@ -375,19 +383,30 @@ public class SparkCalculator {
 
 	private static class WriteFunction<F extends Functor<F>> implements VoidFunction<F> {
 		private static final long serialVersionUID = -3114062446562954303L;
-		private CalculatorDataSource datasource;
+		private DataSource datasource;
+		private DataContext datacontext;
 		private Detail detail;
 
-		public WriteFunction(CalculatorDataSource dataSource, Detail detail) {
-			this.datasource = dataSource;
+		public WriteFunction(DataSource ds, Detail detail) {
+			this.datasource = ds;
 			this.detail = detail;
+			switch (ds.getType()) {
+			case MONGODB:
+				this.datacontext = new MongoContext(ds);
+				break;
+			case CONSTAND_TO_CONSOLE:
+				break;
+			default:
+				throw new UnsupportedOperationException("Write to " + datasource.getType() + " is not supported.");
+			}
 		}
 
 		@Override
 		public void call(F result) throws Exception {
 			switch (datasource.getType()) {
 			case MONGODB:
-				MongoCollection col = ((MongoDataSource) datasource).getJongo().getCollection(detail.mongoTable);
+				MongoContext dc = (MongoContext) this.datacontext;
+				MongoCollection col = dc.getJongo().getCollection(detail.mongoTable);
 				col.save(result);
 				break;
 			case CONSTAND_TO_CONSOLE:
