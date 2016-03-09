@@ -13,10 +13,10 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.cli.PosixParser;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.Result;
@@ -313,7 +313,7 @@ public class SparkCalculator implements Serializable {
 	}
 
 	private static CommandLine commandline(String... args) throws ParseException {
-		DefaultParser parser = new DefaultParser();
+		PosixParser parser = new PosixParser();
 		Options opts = new Options();
 		opts.addOption("f", "config", true, "Calculus configuration file location. Defalt calculus.properties in classpath root.");
 		opts.addOption("c", "classes", true,
