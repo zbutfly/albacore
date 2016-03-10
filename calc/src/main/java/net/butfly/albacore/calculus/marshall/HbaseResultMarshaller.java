@@ -48,7 +48,7 @@ public class HbaseResultMarshaller implements Marshaller<Result, ImmutableBytesW
 						f.getType()));
 			} catch (Exception e) {
 				Logger.error(HbaseResultMarshaller.class,
-						"Parse of hbase result failure on  class " + to.toString() + ", field " + f.getName());
+						"Parse of hbase result failure on class " + to.toString() + ", field " + f.getName());
 			}
 		}
 		return t;
@@ -87,7 +87,8 @@ public class HbaseResultMarshaller implements Marshaller<Result, ImmutableBytesW
 			if (a.tableExists(ht)) return;
 			Set<String> families = new HashSet<>();
 			Set<String> columns = new HashSet<>();
-			String dcf = functor.isAnnotationPresent(HbaseColumnFamily.class) ? functor.getAnnotation(HbaseColumnFamily.class).value() : null;
+			String dcf = functor.isAnnotationPresent(HbaseColumnFamily.class) ? functor.getAnnotation(HbaseColumnFamily.class).value()
+					: null;
 			families.add(dcf);
 			for (Field f : Reflections.getDeclaredFields(functor)) {
 				String colname = f.isAnnotationPresent(JsonProperty.class) ? f.getAnnotation(JsonProperty.class).value()

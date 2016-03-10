@@ -13,6 +13,7 @@
 		<finalName>albacore-calc</finalName>
 	</build>
 	<properties>
+		<deps.version.hive>1.1.0-cdh5.5.2</deps.version.hive>
 		<deps.version.hbase>1.0.0-cdh5.5.2</deps.version.hbase>
 		<deps.version.spark>1.5.0-cdh5.5.2</deps.version.spark>
 	</properties>
@@ -26,7 +27,6 @@
 			<groupId>org.apache.spark</groupId>
 			<artifactId>spark-core_2.10</artifactId>
 			<version>${deps.version.spark}</version>
-			<!-- <scope>provided</scope> -->
 		</dependency>
 		<!-- <dependency> -->
 		<!-- <groupId>org.apache.spark</groupId> -->
@@ -38,13 +38,11 @@
 			<groupId>org.apache.spark</groupId>
 			<artifactId>spark-streaming_2.10</artifactId>
 			<version>${deps.version.spark}</version>
-			<!-- <scope>provided</scope> -->
 		</dependency>
 		<dependency>
 			<groupId>org.apache.spark</groupId>
 			<artifactId>spark-streaming-kafka_2.10</artifactId>
 			<version>${deps.version.spark}</version>
-			<!-- <scope>provided</scope> -->
 		</dependency>
 		<dependency>
 			<groupId>org.apache.hbase</groupId>
@@ -60,7 +58,11 @@
 					<groupId>javax.servlet</groupId>
 				</exclusion>
 			</exclusions>
-			<!-- <scope>provided</scope> -->
+		</dependency>
+		<dependency>
+			<groupId>org.apache.hive</groupId>
+			<artifactId>hive-serde</artifactId>
+			<version>${deps.version.hive}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.jongo</groupId>
