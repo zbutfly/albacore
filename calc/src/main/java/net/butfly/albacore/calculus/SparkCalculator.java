@@ -66,7 +66,7 @@ import net.butfly.albacore.calculus.datasource.DataSource.ConstDataSource;
 import net.butfly.albacore.calculus.datasource.DataSource.HbaseDataSource;
 import net.butfly.albacore.calculus.datasource.DataSource.KafkaDataSource;
 import net.butfly.albacore.calculus.datasource.DataSource.MongoDataSource;
-import net.butfly.albacore.calculus.marshall.HbaseResultMarshaller;
+import net.butfly.albacore.calculus.marshall.HbaseHiveMarshaller;
 import net.butfly.albacore.calculus.marshall.KafkaMarshaller;
 import net.butfly.albacore.calculus.marshall.MongoMarshaller;
 import net.butfly.albacore.utils.Reflections;
@@ -232,7 +232,7 @@ public class SparkCalculator implements Serializable {
 			}
 			hconf.set(TableInputFormat.INPUT_TABLE, detail.hbaseTable);
 			// conf.hconf.set(TableInputFormat.SCAN_COLUMNS, "cf1:vc cf1:vs");
-			final HbaseResultMarshaller hm = (HbaseResultMarshaller) ds.getMarshaller();
+			final HbaseHiveMarshaller hm = (HbaseHiveMarshaller) ds.getMarshaller();
 			JavaPairRDD<ImmutableBytesWritable, Result> hbase = stockingContext.sc.newAPIHadoopRDD(hconf, TableInputFormat.class,
 					ImmutableBytesWritable.class, Result.class);
 			traceRDD(hbase, ds, detail);

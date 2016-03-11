@@ -13,11 +13,12 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
+import org.apache.hadoop.hive.hbase.HBaseSerDe;
+import org.apache.hadoop.hive.serde2.SerDeException;
 import org.apache.hadoop.io.Text;
-import org.jongo.marshall.jackson.bson4jackson.MongoBsonFactory;
+import org.apache.hadoop.io.Writable;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.CaseFormat;
 import com.jcabi.log.Logger;
 
@@ -28,10 +29,19 @@ import net.butfly.albacore.calculus.datasource.DataSource.HbaseDataSource;
 import net.butfly.albacore.calculus.datasource.HbaseColumnFamily;
 import net.butfly.albacore.utils.Reflections;
 
-public class HbaseResultMarshaller implements Marshaller<Result, ImmutableBytesWritable> {
+public class HbaseHiveMarshaller implements Marshaller<Result, ImmutableBytesWritable> {
 	private static final long serialVersionUID = -4529825710243214685L;
-	private static ObjectMapper mapper = new ObjectMapper(new MongoBsonFactory());
+	private static HBaseSerDe serde;
 
+	static {
+		try {
+			serde = new HBaseSerDe();
+		} catch (SerDeException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@SuppressWarnings("unchecked")
 	@Override
 	public <T extends Functor<T>> T unmarshall(Result from, Class<T> to) {
 		String dcf = to.isAnnotationPresent(HbaseColumnFamily.class) ? to.getAnnotation(HbaseColumnFamily.class).value() : null;
@@ -43,11 +53,12 @@ public class HbaseResultMarshaller implements Marshaller<Result, ImmutableBytesW
 			if (colfamily == null)
 				throw new IllegalArgumentException("Column family is not defined on class " + to.toString() + ", field " + f.getName());
 			try {
-				f.set(t, mapper.readValue(
-						CellUtil.cloneValue(from.getColumnLatestCell(Text.encode(colfamily).array(), Text.encode(colname).array())),
-						f.getType()));
+				byte[] value = CellUtil.cloneValue(from.getColumnLatestCell(Text.encode(colfamily).array(), Text.encode(colname).array()));
+				Logger.trace(HbaseHiveMarshaller.class,
+						"Read hbase value: " + colfamily + ":" + colname + " ==> " + value.length + " bytes.");
+				return (T) serde.deserialize((Writable) from);
 			} catch (Exception e) {
-				Logger.error(HbaseResultMarshaller.class,
+				Logger.error(HbaseHiveMarshaller.class,
 						"Parse of hbase result failure on class " + to.toString() + ", field " + f.getName());
 			}
 		}
@@ -64,7 +75,7 @@ public class HbaseResultMarshaller implements Marshaller<Result, ImmutableBytesW
 		try {
 			return Text.decode(id.get());
 		} catch (CharacterCodingException e) {
-			Logger.error(HbaseResultMarshaller.class, "ImmutableBytesWritable unmarshall failure.", e);
+			Logger.error(HbaseHiveMarshaller.class, "ImmutableBytesWritable unmarshall failure.", e);
 			return null;
 		}
 	}
@@ -74,7 +85,7 @@ public class HbaseResultMarshaller implements Marshaller<Result, ImmutableBytesW
 		try {
 			return new ImmutableBytesWritable(Text.encode(id).array());
 		} catch (CharacterCodingException e) {
-			Logger.error(HbaseResultMarshaller.class, "ImmutableBytesWritable marshall failure.", e);
+			Logger.error(HbaseHiveMarshaller.class, "ImmutableBytesWritable marshall failure.", e);
 			return null;
 		}
 	}
