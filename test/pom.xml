@@ -3,14 +3,11 @@
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>net.butfly.albacore</groupId>
-		<artifactId>albacore</artifactId>
+		<artifactId>albacore-parent</artifactId>
 		<version>3.0.0-SNAPSHOT</version>
 	</parent>
 	<artifactId>albacore-test</artifactId>
 	<name>albacore-test</name>
-	<build>
-		<finalName>albacore-test</finalName>
-	</build>
 	<dependencies>
 		<dependency>
 			<groupId>net.butfly.albacore</groupId>

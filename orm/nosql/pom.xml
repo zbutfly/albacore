@@ -3,14 +3,11 @@
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>net.butfly.albacore</groupId>
-		<artifactId>albacore-orm</artifactId>
+		<artifactId>albacore-orm-parent</artifactId>
 		<version>3.0.0-SNAPSHOT</version>
 	</parent>
 	<artifactId>albacore-orm-nosql</artifactId>
 	<name>albacore-orm-nosql</name>
-	<build>
-		<finalName>albacore-orm-nosql</finalName>
-	</build>
 	<dependencies>
 		<dependency>
 			<groupId>net.butfly.albacore</groupId>
