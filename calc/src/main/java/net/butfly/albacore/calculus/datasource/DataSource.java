@@ -8,7 +8,7 @@ import com.google.common.base.Joiner;
 
 import net.butfly.albacore.calculus.Functor;
 import net.butfly.albacore.calculus.Functor.Type;
-import net.butfly.albacore.calculus.marshall.HbaseResultMarshaller;
+import net.butfly.albacore.calculus.marshall.HbaseHiveMarshaller;
 import net.butfly.albacore.calculus.marshall.KafkaMarshaller;
 import net.butfly.albacore.calculus.marshall.Marshaller;
 import net.butfly.albacore.calculus.marshall.MongoMarshaller;
@@ -86,7 +86,7 @@ public abstract class DataSource implements Serializable {
 		Connection hconn;
 
 		public HbaseDataSource(String configFile) {
-			super(Type.HBASE, new HbaseResultMarshaller());
+			super(Type.HBASE, new HbaseHiveMarshaller());
 			this.configFile = configFile;
 			// XXX
 			// this.hconn = ConnectionFactory.createConnection(conf)

@@ -1,7 +1,11 @@
 package net.butfly.albacore.calculus;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Serializable;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -13,10 +17,10 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.cli.PosixParser;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.Result;
@@ -62,7 +66,7 @@ import net.butfly.albacore.calculus.datasource.DataSource.ConstDataSource;
 import net.butfly.albacore.calculus.datasource.DataSource.HbaseDataSource;
 import net.butfly.albacore.calculus.datasource.DataSource.KafkaDataSource;
 import net.butfly.albacore.calculus.datasource.DataSource.MongoDataSource;
-import net.butfly.albacore.calculus.marshall.HbaseResultMarshaller;
+import net.butfly.albacore.calculus.marshall.HbaseHiveMarshaller;
 import net.butfly.albacore.calculus.marshall.KafkaMarshaller;
 import net.butfly.albacore.calculus.marshall.MongoMarshaller;
 import net.butfly.albacore.utils.Reflections;
@@ -84,7 +88,7 @@ public class SparkCalculator implements Serializable {
 	public static void main(String... args) throws Exception {
 		final Properties props = new Properties();
 		CommandLine cmd = commandline(args);
-		props.load(Thread.currentThread().getContextClassLoader().getResourceAsStream(cmd.getOptionValue('f', "calculus.properties")));
+		props.load(scanInputStream(cmd.getOptionValue('f', "calculus.properties")));
 		for (String key : System.getProperties().stringPropertyNames())
 			if (key.startsWith("calculus.")) props.put(key, System.getProperty(key));
 		if (cmd.hasOption('m')) props.setProperty("calculus.mode", cmd.getOptionValue('m').toUpperCase());
@@ -222,14 +226,13 @@ public class SparkCalculator implements Serializable {
 		case HBASE: // TODO: adaptor to hbase data frame
 			Configuration hconf = HBaseConfiguration.create();
 			try {
-				hconf.addResource(
-						Thread.currentThread().getContextClassLoader().getResource(((HbaseDataSource) ds).getConfigFile()).openStream());
+				hconf.addResource(scanInputStream(((HbaseDataSource) ds).getConfigFile()));
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
 			hconf.set(TableInputFormat.INPUT_TABLE, detail.hbaseTable);
 			// conf.hconf.set(TableInputFormat.SCAN_COLUMNS, "cf1:vc cf1:vs");
-			final HbaseResultMarshaller hm = (HbaseResultMarshaller) ds.getMarshaller();
+			final HbaseHiveMarshaller hm = (HbaseHiveMarshaller) ds.getMarshaller();
 			JavaPairRDD<ImmutableBytesWritable, Result> hbase = stockingContext.sc.newAPIHadoopRDD(hconf, TableInputFormat.class,
 					ImmutableBytesWritable.class, Result.class);
 			traceRDD(hbase, ds, detail);
@@ -285,7 +288,7 @@ public class SparkCalculator implements Serializable {
 		if (ds.getRoot() == null) { // direct mode
 			Map<String, String> params = new HashMap<>();
 			params.put("metadata.broker.list", ds.getServers());
-			//params.put("bootstrap.servers", ds.getServers());
+			// params.put("bootstrap.servers", ds.getServers());
 			// params.put("auto.commit.enable", "false");
 			params.put("group.id", ds.getGroup());
 			return KafkaUtils.createDirectStream(streamingContext.ssc, String.class, String.class, StringDecoder.class, StringDecoder.class,
@@ -313,7 +316,7 @@ public class SparkCalculator implements Serializable {
 	}
 
 	private static CommandLine commandline(String... args) throws ParseException {
-		DefaultParser parser = new DefaultParser();
+		PosixParser parser = new PosixParser();
 		Options opts = new Options();
 		opts.addOption("f", "config", true, "Calculus configuration file location. Defalt calculus.properties in classpath root.");
 		opts.addOption("c", "classes", true,
@@ -416,5 +419,10 @@ public class SparkCalculator implements Serializable {
 				throw new UnsupportedOperationException("Write to " + datasource.getType() + " is not supported.");
 			}
 		}
+	}
+
+	public static final InputStream scanInputStream(String file) throws FileNotFoundException, IOException {
+		URL url = Thread.currentThread().getContextClassLoader().getResource(file);
+		return null == url ? new FileInputStream(file) : url.openStream();
 	}
 }
