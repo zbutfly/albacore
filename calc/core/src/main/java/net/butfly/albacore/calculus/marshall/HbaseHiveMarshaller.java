@@ -27,7 +27,7 @@ import net.butfly.albacore.calculus.FunctorConfig.Detail;
 import net.butfly.albacore.calculus.datasource.DataSource;
 import net.butfly.albacore.calculus.datasource.DataSource.HbaseDataSource;
 import net.butfly.albacore.calculus.datasource.HbaseColumnFamily;
-import net.butfly.albacore.utils.Reflections;
+import net.butfly.albacore.calculus.utils.Reflections;
 
 public class HbaseHiveMarshaller implements Marshaller<Result, ImmutableBytesWritable> {
 	private static final long serialVersionUID = -4529825710243214685L;
@@ -45,7 +45,12 @@ public class HbaseHiveMarshaller implements Marshaller<Result, ImmutableBytesWri
 	@Override
 	public <T extends Functor<T>> T unmarshall(Result from, Class<T> to) {
 		String dcf = to.isAnnotationPresent(HbaseColumnFamily.class) ? to.getAnnotation(HbaseColumnFamily.class).value() : null;
-		T t = Reflections.construct(to);
+		T t;
+		try {
+			t = to.newInstance();
+		} catch (InstantiationException | IllegalAccessException e) {
+			throw new RuntimeException (e);
+		}
 		for (Field f : Reflections.getDeclaredFields(to)) {
 			String colname = f.isAnnotationPresent(JsonProperty.class) ? f.getAnnotation(JsonProperty.class).value()
 					: CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, f.getName());

@@ -9,14 +9,17 @@ public class Task<T> {
 	protected Options options;
 	protected ExceptionHandler<T> handler = null;
 
+	@FunctionalInterface
 	public interface ExceptionHandler<R> {
 		R handle(final Exception exception) throws Exception;
 	}
 
+	@FunctionalInterface
 	public interface Callback<R> {
 		public void callback(final R result);
 	}
 
+	@FunctionalInterface
 	public interface Callable<R> extends java.util.concurrent.Callable<R> {
 		public R call() throws Exception;
 	}

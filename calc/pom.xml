@@ -13,10 +13,5 @@
 	<name>albacore-calc-parent</name>
 	<modules>
 		<module>core</module>
-		<module>spark</module>
-		<module>mongodb</module>
-		<module>hbase</module>
-		<module>kafka</module>
-		<!-- <module>jdbc</module> -->
 	</modules>
 </project>

@@ -8,7 +8,6 @@ import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -24,44 +23,16 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import org.reflections.Configuration;
-import org.reflections.scanners.MethodAnnotationsScanner;
-import org.reflections.scanners.Scanner;
-import org.reflections.scanners.SubTypesScanner;
-import org.reflections.util.ClasspathHelper;
-import org.reflections.util.ConfigurationBuilder;
-import org.reflections.util.FilterBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.butfly.albacore.utils.async.Task;
+import com.google.common.base.Joiner;
+
+import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
 import net.butfly.albacore.utils.imports.meta.MetaObject;
 
 public final class Reflections extends Utils {
 	private static final Logger logger = LoggerFactory.getLogger(Reflections.class);
-	private static String DEFAULT_PACKAGE_PREFIX = "";
-
-	private static org.reflections.Reflections reflections(String... packagePrefix) {
-		if (null == packagePrefix || packagePrefix.length == 0) return reflections(DEFAULT_PACKAGE_PREFIX);
-		// TODO
-		else return reflections(packagePrefix[0]);
-	}
-
-	private static org.reflections.Reflections reflections(final String packagePrefix) {
-		return Instances.fetch(new Task.Callable<org.reflections.Reflections>() {
-			@Override
-			public org.reflections.Reflections call() {
-				FilterBuilder filterBuilder = new FilterBuilder()
-						.includePackage(null == packagePrefix ? DEFAULT_PACKAGE_PREFIX : packagePrefix);
-				Collection<URL> urls = ClasspathHelper.forClassLoader();
-				Scanner methodScanner = new MethodAnnotationsScanner().filterResultsBy(filterBuilder);
-				Scanner subTypesScanner = new SubTypesScanner(false);
-				Configuration configuration = new ConfigurationBuilder().filterInputsBy(filterBuilder).setUrls(urls)
-						.addScanners(methodScanner, subTypesScanner);
-				return new org.reflections.Reflections(configuration);
-			}
-		}, packagePrefix);
-	}
 
 	@SuppressWarnings("unchecked")
 	public static <T> Class<T> forClassName(String className) {
@@ -114,7 +85,8 @@ public final class Reflections extends Utils {
 				boolean overridden = false;
 
 				for (Method m2 : found) {
-					if (m2.getName().equals(m1.getName()) && Arrays.deepEquals(m1.getParameterTypes(), m2.getParameterTypes())) {
+					if (m2.getName().equals(m1.getName())
+							&& Arrays.deepEquals(m1.getParameterTypes(), m2.getParameterTypes())) {
 						overridden = true;
 						break;
 					}
@@ -177,7 +149,8 @@ public final class Reflections extends Utils {
 		for (Constructor<?> ctor : cls.getDeclaredConstructors())
 			if (isAssignable(parameterTypes, ctor.getParameterTypes(), true) && ctor != null) {
 				setAccessibleWorkaround(ctor);
-				if (result == null || compareParameterTypes(ctor.getParameterTypes(), result.getParameterTypes(), parameterTypes) < 0) {
+				if (result == null
+						|| compareParameterTypes(ctor.getParameterTypes(), result.getParameterTypes(), parameterTypes) < 0) {
 					result = (Constructor<T>) ctor;
 				}
 			}
@@ -227,29 +200,31 @@ public final class Reflections extends Utils {
 		else throw new RuntimeException("No setter method for target.");
 	}
 
-	public static <T> Set<Class<? extends T>> getSubClasses(Class<T> parentClass, String... packagePrefix) {
-		return reflections(packagePrefix).getSubTypesOf(parentClass);
-	}
+	private static final Joiner j = Joiner.on(";");
 
-	public static Field[] getDeclaredFieldsAnnotatedWith(Class<?> clazz, Class<? extends Annotation> annotation) {
-		Set<Field> s = new HashSet<Field>();
-		for (Field f : getDeclaredFields(clazz))
-			if (f.isAnnotationPresent(annotation)) s.add(f);
-		return s.toArray(new Field[s.size()]);
+	public static <T> Set<Class<? extends T>> getSubClasses(Class<T> parentClass, String... packagePrefix) {
+		return Instances.fetch(() -> {
+			final Set<Class<? extends T>> r = new HashSet<>();
+			new FastClasspathScanner(packagePrefix).matchSubclassesOf(parentClass, c -> r.add(c)).scan();
+			return r;
+		} , parentClass, j.join(packagePrefix));
 	}
 
 	public static Class<?>[] getClassesAnnotatedWith(Class<? extends Annotation> annotation, String... packagePrefix) {
-		return reflections(packagePrefix).getTypesAnnotatedWith(annotation).toArray(new Class[0]);
+		return Instances.fetch(() -> {
+			Set<Class<?>> r = new HashSet<>();
+			new FastClasspathScanner(packagePrefix).matchClassesWithAnnotation(annotation, c -> r.add(c)).scan();
+			return r.toArray(new Class[r.size()]);
+		} , annotation, j.join(packagePrefix));
 	}
 
-	public static Field[] getFieldsAnnotatedWith(Class<? extends Annotation> annotation, String... packagePrefix) {
-		Set<Field> s = reflections(packagePrefix).getFieldsAnnotatedWith(annotation);
-		return s.toArray(new Field[s.size()]);
-	}
-
-	public static Method[] getMethodsAnnotatedWith(Class<? extends Annotation> annotation, String... packagePrefix) {
-		Set<Method> s = reflections(packagePrefix).getMethodsAnnotatedWith(annotation);
-		return s.toArray(new Method[s.size()]);
+	public static Field[] getDeclaredFieldsAnnotatedWith(Class<?> clazz, Class<? extends Annotation> annotation) {
+		return Instances.fetch(() -> {
+			Set<Field> s = new HashSet<Field>();
+			for (Field f : getDeclaredFields(clazz))
+				if (f.isAnnotationPresent(annotation)) s.add(f);
+			return s.toArray(new Field[s.size()]);
+		} , clazz, annotation);
 	}
 
 	public static Class<?> getMainClass() {
@@ -376,7 +351,8 @@ public final class Reflections extends Utils {
 	 *            find method with most compatible parameters
 	 * @return The accessible method
 	 */
-	public static Method getMatchingAccessibleMethod(final Class<?> cls, final String methodName, final Class<?>... parameterTypes) {
+	public static Method getMatchingAccessibleMethod(final Class<?> cls, final String methodName,
+			final Class<?>... parameterTypes) {
 		try {
 			final Method method = cls.getMethod(methodName, parameterTypes);
 			setAccessibleWorkaround(method);
@@ -392,8 +368,9 @@ public final class Reflections extends Utils {
 			if (method.getName().equals(methodName) && isAssignable(parameterTypes, method.getParameterTypes(), true)) {
 				// get accessible version of method
 				final Method accessibleMethod = getAccessibleMethod(method);
-				if (accessibleMethod != null && (bestMatch == null || compareParameterTypes(accessibleMethod.getParameterTypes(),
-						bestMatch.getParameterTypes(), parameterTypes) < 0)) {
+				if (accessibleMethod != null
+						&& (bestMatch == null || compareParameterTypes(accessibleMethod.getParameterTypes(),
+								bestMatch.getParameterTypes(), parameterTypes) < 0)) {
 					bestMatch = accessibleMethod;
 				}
 			}
@@ -512,17 +489,18 @@ public final class Reflections extends Utils {
 		if (cls.equals(toClass)) { return true; }
 		if (cls.isPrimitive()) {
 			if (toClass.isPrimitive() == false) { return false; }
-			if (Integer.TYPE.equals(cls)) { return Long.TYPE.equals(toClass) || Float.TYPE.equals(toClass) || Double.TYPE.equals(toClass); }
+			if (Integer.TYPE.equals(
+					cls)) { return Long.TYPE.equals(toClass) || Float.TYPE.equals(toClass) || Double.TYPE.equals(toClass); }
 			if (Long.TYPE.equals(cls)) { return Float.TYPE.equals(toClass) || Double.TYPE.equals(toClass); }
 			if (Boolean.TYPE.equals(cls)) { return false; }
 			if (Double.TYPE.equals(cls)) { return false; }
 			if (Float.TYPE.equals(cls)) { return Double.TYPE.equals(toClass); }
-			if (Character.TYPE.equals(cls)) { return Integer.TYPE.equals(toClass) || Long.TYPE.equals(toClass) || Float.TYPE.equals(toClass)
-					|| Double.TYPE.equals(toClass); }
-			if (Short.TYPE.equals(cls)) { return Integer.TYPE.equals(toClass) || Long.TYPE.equals(toClass) || Float.TYPE.equals(toClass)
-					|| Double.TYPE.equals(toClass); }
-			if (Byte.TYPE.equals(cls)) { return Short.TYPE.equals(toClass) || Integer.TYPE.equals(toClass) || Long.TYPE.equals(toClass)
+			if (Character.TYPE.equals(cls)) { return Integer.TYPE.equals(toClass) || Long.TYPE.equals(toClass)
 					|| Float.TYPE.equals(toClass) || Double.TYPE.equals(toClass); }
+			if (Short.TYPE.equals(cls)) { return Integer.TYPE.equals(toClass) || Long.TYPE.equals(toClass)
+					|| Float.TYPE.equals(toClass) || Double.TYPE.equals(toClass); }
+			if (Byte.TYPE.equals(cls)) { return Short.TYPE.equals(toClass) || Integer.TYPE.equals(toClass)
+					|| Long.TYPE.equals(toClass) || Float.TYPE.equals(toClass) || Double.TYPE.equals(toClass); }
 			// should never get here
 			return false;
 		}
@@ -702,7 +680,8 @@ public final class Reflections extends Utils {
 	 *            The parameter type signatures
 	 * @return the accessible method or {@code null} if not found
 	 */
-	private static Method getAccessibleMethodFromInterfaceNest(Class<?> cls, final String methodName, final Class<?>... parameterTypes) {
+	private static Method getAccessibleMethodFromInterfaceNest(Class<?> cls, final String methodName,
+			final Class<?>... parameterTypes) {
 		// Search up the superclass chain
 		for (; cls != null; cls = cls.getSuperclass()) {
 
@@ -745,7 +724,8 @@ public final class Reflections extends Utils {
 	 *            The parameter type signatures
 	 * @return the accessible method or {@code null} if not found
 	 */
-	private static Method getAccessibleMethodFromSuperclass(final Class<?> cls, final String methodName, final Class<?>... parameterTypes) {
+	private static Method getAccessibleMethodFromSuperclass(final Class<?> cls, final String methodName,
+			final Class<?>... parameterTypes) {
 		Class<?> parentClass = cls.getSuperclass();
 		while (parentClass != null) {
 			if (Modifier.isPublic(parentClass.getModifiers())) {
@@ -872,8 +852,8 @@ public final class Reflections extends Utils {
 	}
 
 	/** Array of primitive number types ordered by "promotability" */
-	private static final Class<?>[] ORDERED_PRIMITIVE_TYPES = { Byte.TYPE, Short.TYPE, Character.TYPE, Integer.TYPE, Long.TYPE, Float.TYPE,
-			Double.TYPE };
+	private static final Class<?>[] ORDERED_PRIMITIVE_TYPES = { Byte.TYPE, Short.TYPE, Character.TYPE, Integer.TYPE, Long.TYPE,
+			Float.TYPE, Double.TYPE };
 
 	/**
 	 * Gets the number of steps required to promote a primitive number to

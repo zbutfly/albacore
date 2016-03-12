@@ -6,7 +6,7 @@ import net.butfly.albacore.calculus.Functor;
 import net.butfly.albacore.calculus.FunctorConfig.Detail;
 import net.butfly.albacore.calculus.datasource.DataSource;
 
-public class KafkaMarshaller implements Marshaller<String, String> {
+public class KafkaMarshaller implements Marshaller<byte[], String> {
 	private static final long serialVersionUID = -4471098188111221100L;
 
 	@Override
@@ -16,7 +16,7 @@ public class KafkaMarshaller implements Marshaller<String, String> {
 	}
 
 	@Override
-	public <T extends Functor<T>> T unmarshall(String from, Class<T> to) {
+	public <T extends Functor<T>> T unmarshall(byte[] from, Class<T> to) {
 		Logger.trace(KafkaMarshaller.class, "Unmarshall data (" + to.toString() + "): " + from);
 		return null;
 	}
@@ -28,7 +28,7 @@ public class KafkaMarshaller implements Marshaller<String, String> {
 	}
 
 	@Override
-	public <T extends Functor<T>> String marshall(T from) {
+	public <T extends Functor<T>> byte[] marshall(T from) {
 		Logger.trace(KafkaMarshaller.class, "Marshall data (" + from.getClass().toString() + "): " + from.toString());
 		return null;
 	}
