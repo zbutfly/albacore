@@ -1,8 +1,12 @@
 package net.butfly.albacore.calculus.utils;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.util.HashMap;
 import java.util.Map;
+
+import com.google.common.reflect.TypeToken;
 
 public final class Reflections {
 	private Reflections() {}
@@ -63,5 +67,14 @@ public final class Reflections {
 		for (int i = 0; i < array.length; i++)
 			classes[i] = array[i] == null ? null : array[i].getClass();
 		return classes;
+	}
+
+	public static Map<String, Class<?>> resolveGenericParameters(final Type implType, final Class<?> declareClass) {
+		Map<String, Class<?>> types = new HashMap<>();
+		TypeVariable<?>[] vv = declareClass.getTypeParameters();
+		for (TypeVariable<?> v : vv) {
+			types.put(v.getName(), (Class<?>) TypeToken.of(implType).resolveType(v).getRawType());
+		};
+		return types;
 	}
 }
