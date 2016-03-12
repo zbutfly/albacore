@@ -5,15 +5,16 @@ import net.butfly.albacore.calculus.Functor.Stocking;
 import net.butfly.albacore.calculus.Functor.Type;
 
 @Stocking(type = Type.CONSTAND_TO_CONSOLE)
-public class IntegerFunctor extends ConstFunctor<Integer> implements Functor<ConstFunctor<Integer>> {
+public class IntegerFunctor implements Functor<IntegerFunctor> {
 	private static final long serialVersionUID = 9100426079561362807L;
+	public int value;
 
 	public IntegerFunctor(String str) {
-		super(str);
+		this(Integer.parseInt(str));
 	}
 
-	public IntegerFunctor(Integer value) {
-		super(value);
+	public IntegerFunctor(int value) {
+		this.value = value;
 	}
 
 	@Override

@@ -35,4 +35,8 @@ public interface Functor<F extends Functor<F>> extends Serializable {
 
 		String[] topics() default {};
 	}
+
+	public class VoidFunctor implements Functor<VoidFunctor> {
+		private static final long serialVersionUID = -5722216150920437482L;
+	}
 }
