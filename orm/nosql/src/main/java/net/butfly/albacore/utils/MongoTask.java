@@ -2,8 +2,6 @@ package net.butfly.albacore.utils;
 
 import com.mongodb.ConnectionString;
 
-import net.butfly.albacore.utils.async.Task;
-
 public abstract class MongoTask {
 	private ConnectionString conn;
 
@@ -16,21 +14,13 @@ public abstract class MongoTask {
 	abstract protected void execute(com.mongodb.client.MongoDatabase db);
 
 	public void execute() {
-		this.execute(Instances.fetch(new Task.Callable<com.mongodb.MongoClient>() {
-			@Override
-			public com.mongodb.MongoClient call() throws Exception {
-				return new com.mongodb.MongoClient(new com.mongodb.MongoClientURI(MongoTask.this.conn.toString()));
-			}
-		}, MongoTask.this.conn).getDatabase(MongoTask.this.conn.getDatabase()));
+		this.execute(Instances.fetch(() -> new com.mongodb.MongoClient(new com.mongodb.MongoClientURI(MongoTask.this.conn.toString())),
+				MongoTask.this.conn).getDatabase(MongoTask.this.conn.getDatabase()));
 	}
 
 	public void executeAsync() {
-		this.executeAsync(Instances.fetch(new Task.Callable<com.mongodb.async.client.MongoClient>() {
-			@Override
-			public com.mongodb.async.client.MongoClient call() throws Exception {
-				return com.mongodb.async.client.MongoClients.create(MongoTask.this.conn);
-			}
-		}, MongoTask.this.conn).getDatabase(MongoTask.this.conn.getDatabase()));
+		this.executeAsync(Instances.fetch(() -> com.mongodb.async.client.MongoClients.create(MongoTask.this.conn), MongoTask.this.conn)
+				.getDatabase(MongoTask.this.conn.getDatabase()));
 	}
 
 	public static ConnectionString buildConnectionString(String host, int port, String db, String username, String password) {

@@ -6,11 +6,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -31,11 +29,11 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaRDDLike;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.Function;
-import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.VoidFunction;
+import org.apache.spark.storage.StorageLevel;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaDStreamLike;
+import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaPairInputDStream;
 import org.apache.spark.streaming.kafka.KafkaUtils;
 import org.bson.BSONObject;
@@ -48,6 +46,7 @@ import com.mongodb.hadoop.MongoInputFormat;
 import com.mongodb.hadoop.util.MongoClientURIBuilder;
 
 import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
+import kafka.serializer.DefaultDecoder;
 import kafka.serializer.StringDecoder;
 import net.butfly.albacore.calculus.Calculating.Mode;
 import net.butfly.albacore.calculus.CalculatorContext.StockingContext;
@@ -175,10 +174,6 @@ public class SparkCalculator implements Serializable {
 	private Map<Class<? extends Functor<?>>, JavaPairRDD<String, ? extends Functor<?>>> fetchFunctors(
 			Map<Class<? extends Functor<?>>, FunctorConfig>[] configs) throws IOException {
 		Map<Class<? extends Functor<?>>, JavaPairRDD<String, ? extends Functor<?>>> functors = new HashMap<>();
-		// Map<Class<? extends Functor<?>>, JavaPairRDD<String, ? extends
-		// Functor<?>>> stockingFunctors = new HashMap<>();
-		// Map<Class<? extends Functor<?>>, JavaPairRDD<String, ? extends
-		// Functor<?>>> streamingFunctors = new HashMap<>();
 		for (Class<? extends Functor<?>> f : configs[0].keySet()) {
 			FunctorConfig fc = configs[0].get(f);
 			for (String ds : fc.stockingDSs.keySet())
@@ -197,9 +192,11 @@ public class SparkCalculator implements Serializable {
 		case STREAMING:
 			for (Class<? extends Functor<?>> f : configs[1].keySet()) {
 				FunctorConfig fc = configs[1].get(f);
-				for (String ds : fc.streamingDSs.keySet())
-					functors.put(f, (JavaPairRDD<String, ? extends Functor<?>>) streaming((Class<? extends Functor>) f,
-							stockingContext.datasources.get(ds), fc.streamingDSs.get(ds)));
+				for (String ds : fc.streamingDSs.keySet()) {
+					JavaPairDStream<String, ? extends Functor> dstr = streaming((Class<? extends Functor>) f,
+							stockingContext.datasources.get(ds), fc.streamingDSs.get(ds));
+					functors.put(f, (JavaPairRDD<String, ? extends Functor<?>>) Calculus.union(dstr));
+				}
 			}
 			break;
 		}
@@ -247,42 +244,37 @@ public class SparkCalculator implements Serializable {
 		}
 	}
 
-	private <F extends Functor<F>> JavaPairRDD<String, F> streaming(Class<F> functor, DataSource ds, FunctorConfig.Detail detail)
+	private <F extends Functor<F>> JavaPairDStream<String, F> streaming(Class<F> functor, DataSource ds, FunctorConfig.Detail detail)
 			throws IOException {
 		switch (ds.getType()) {
 		case KAFKA:
-			final List<JavaPairRDD<String, String>> results = new ArrayList<>();
-			// KafkaUtils.createRDD(context.sc, arg1, arg2, arg3, arg4, arg5,
-			// arg6, arg7, arg8, arg9);
-			JavaPairInputDStream kafka = this.kafka((KafkaDataSource) ds, functor.getAnnotation(Streaming.class).topics());
+			JavaPairInputDStream<String, byte[]> kafka = this.kafka((KafkaDataSource) ds, functor.getAnnotation(Streaming.class).topics());
 			traceStream(kafka, ds, detail);
-			kafka.foreachRDD((Function<JavaPairRDD<String, String>, Void>) rdd -> {
-				if (results.size() == 0) results.add(rdd);
-				else results.set(0, results.get(0).union(rdd));
-				return null;
-			});
 			KafkaMarshaller km = (KafkaMarshaller) ds.getMarshaller();
-			return results.size() > 0
-					? results.get(0).mapToPair(t -> new Tuple2<String, F>(km.unmarshallId(t._1), km.unmarshall(t._2, functor))) : null;
+			return kafka.mapToPair(t -> new Tuple2<String, F>(km.unmarshallId(t._1), km.unmarshall(t._2, functor)));
 		default:
 			throw new UnsupportedOperationException("Unsupportted stocking mode: " + ds.getType() + " on " + functor);
 		}
 	}
 
-	private JavaPairInputDStream kafka(KafkaDataSource ds, String[] topics) {
+	private JavaPairInputDStream<String, byte[]> kafka(KafkaDataSource ds, String[] topics) {
+		Map<String, String> params = new HashMap<>();
 		if (ds.getRoot() == null) { // direct mode
-			Map<String, String> params = new HashMap<>();
 			params.put("metadata.broker.list", ds.getServers());
 			// params.put("bootstrap.servers", ds.getServers());
 			// params.put("auto.commit.enable", "false");
 			params.put("group.id", ds.getGroup());
-			return KafkaUtils.createDirectStream(streamingContext.ssc, String.class, String.class, StringDecoder.class, StringDecoder.class,
-					params, new HashSet<String>(Arrays.asList(topics)));
+			return KafkaUtils.createDirectStream(streamingContext.ssc, String.class, byte[].class, StringDecoder.class,
+					DefaultDecoder.class, params, new HashSet<String>(Arrays.asList(topics)));
 		} else {
+			params.put("bootstrap.servers", ds.getServers());
+			params.put("auto.commit.enable", "false");
+			params.put("group.id", ds.getGroup());
 			Map<String, Integer> topicsMap = new HashMap<>();
 			for (String t : topics)
 				topicsMap.put(t, ds.getTopicPartitions());
-			return KafkaUtils.createStream(streamingContext.ssc, ds.getServers(), ds.getGroup(), topicsMap);
+			return KafkaUtils.createStream(streamingContext.ssc, String.class, byte[].class, StringDecoder.class, DefaultDecoder.class,
+					params, topicsMap, StorageLevel.MEMORY_ONLY());
 		}
 	}
 
@@ -342,22 +334,11 @@ public class SparkCalculator implements Serializable {
 		}
 	}
 
-	@SuppressWarnings("serial")
 	private void traceStream(JavaDStreamLike stream, DataSource ds, Detail detail) {
 		if (!logger.isTraceEnabled()) return;
 		long[] i = new long[] { 0 };
-		JavaDStream<Long> s = stream.count();
-		s.foreachRDD(new Function<JavaRDD<Long>, Void>() {
-			@Override
-			public Void call(JavaRDD<Long> rdd) throws Exception {
-				i[0] += rdd.reduce(new Function2<Long, Long, Long>() {
-					@Override
-					public Long call(Long v1, Long v2) throws Exception {
-						return v1 + v2;
-					}
-				});
-				return null;
-			};
+		((JavaDStream<Long>) stream.count()).foreachRDD(rdd -> {
+			i[0] += rdd.reduce((c1, c2) -> c1 + c2);
 		});
 		logger.trace("{" + i[0] + "} Raw records from " + ds.getType() + " [" + ds.toString() + "]=>" + detail.toString() + "].");
 

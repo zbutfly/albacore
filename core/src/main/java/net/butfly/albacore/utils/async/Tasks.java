@@ -46,12 +46,7 @@ public final class Tasks extends Utils {
 			final List<? extends Task.Callable<T>> tasks) {
 		List<T> results = new ArrayList<T>();
 		List<Throwable> errors = new ArrayList<Throwable>();
-		CompletionService<T> cs = Instances.fetch(new Task.Callable<CompletionService<T>>() {
-			@Override
-			public CompletionService<T> call() throws Exception {
-				return new ExecutorCompletionService<T>(executor);
-			}
-		}, executor);
+		CompletionService<T> cs = Instances.fetch(() -> new ExecutorCompletionService<T>(executor), executor);
 		for (Task.Callable<T> t : tasks) {
 			cs.submit(t);
 		}
