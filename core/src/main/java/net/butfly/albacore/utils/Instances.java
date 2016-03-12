@@ -29,7 +29,7 @@ public class Instances extends Utils {
 		if (null == obj) {
 			obj = bottom ? obj = construct(instantiator, otherKeys) : new ConcurrentHashMap<Object, Object>();
 			if (null != obj) pool.put(currKey, obj);
-			else throw new NullPointerException("Construction return null lvalue.");
+			else throw new NullPointerException("Construction return null value.");
 		}
 		return (T) (bottom ? obj : fetchFrom(instantiator, (Map<Object, Object>) obj, otherKeys[pos], otherKeys, pos + 1));
 	}
