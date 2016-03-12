@@ -9,29 +9,25 @@
 	<artifactId>albacore-calc-core</artifactId>
 	<name>albacore-calc-core</name>
 	<properties>
-		<deps.version.hive>1.1.0-cdh5.5.2</deps.version.hive>
-		<deps.version.hbase>1.0.0-cdh5.5.2</deps.version.hbase>
-		<deps.version.spark>1.5.0-cdh5.5.2</deps.version.spark>
+		<deps.version.scala>2.11</deps.version.scala>
+		<deps.version.spark>1.6.0</deps.version.spark>
+		<deps.version.hbase>1.2.0</deps.version.hbase>
+		<deps.version.hive>2.0.0</deps.version.hive>
 	</properties>
 	<dependencies>
-		<dependency><!-- fuck hbase-client use old version, some method is closed in new version -->
-			<groupId>com.google.guava</groupId>
-			<artifactId>guava</artifactId>
-			<version>12.0.1</version>
-		</dependency>
 		<dependency>
 			<groupId>org.apache.spark</groupId>
-			<artifactId>spark-core_2.10</artifactId>
+			<artifactId>spark-core_${deps.version.scala}</artifactId>
 			<version>${deps.version.spark}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.spark</groupId>
-			<artifactId>spark-streaming_2.10</artifactId>
+			<artifactId>spark-streaming_${deps.version.scala}</artifactId>
 			<version>${deps.version.spark}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.spark</groupId>
-			<artifactId>spark-streaming-kafka_2.10</artifactId>
+			<artifactId>spark-streaming-kafka_${deps.version.scala}</artifactId>
 			<version>${deps.version.spark}</version>
 		</dependency>
 		<dependency>
@@ -120,10 +116,4 @@
 			<version>1.2</version>
 		</dependency>
 	</dependencies>
-	<repositories>
-		<repository>
-			<id>cloudera</id>
-			<url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
-		</repository>
-	</repositories>
 </project>
