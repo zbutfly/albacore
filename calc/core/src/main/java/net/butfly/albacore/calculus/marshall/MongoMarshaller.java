@@ -30,7 +30,7 @@ import net.butfly.albacore.calculus.FunctorConfig.Detail;
 import net.butfly.albacore.calculus.datasource.DataContext.MongoContext;
 import net.butfly.albacore.calculus.datasource.DataSource;
 import net.butfly.albacore.calculus.datasource.Index;
-import net.butfly.albacore.utils.Reflections;
+import net.butfly.albacore.calculus.utils.Reflections;
 
 public class MongoMarshaller implements Marshaller<BSONObject, Object> {
 	private static final long serialVersionUID = 8467183278278572295L;

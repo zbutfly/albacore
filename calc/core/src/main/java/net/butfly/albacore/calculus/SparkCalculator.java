@@ -40,11 +40,6 @@ import org.apache.spark.streaming.api.java.JavaPairInputDStream;
 import org.apache.spark.streaming.kafka.KafkaUtils;
 import org.bson.BSONObject;
 import org.jongo.MongoCollection;
-import org.reflections.scanners.MethodAnnotationsScanner;
-import org.reflections.scanners.SubTypesScanner;
-import org.reflections.util.ClasspathHelper;
-import org.reflections.util.ConfigurationBuilder;
-import org.reflections.util.FilterBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,6 +47,7 @@ import com.mongodb.MongoClientURI;
 import com.mongodb.hadoop.MongoInputFormat;
 import com.mongodb.hadoop.util.MongoClientURIBuilder;
 
+import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
 import kafka.serializer.StringDecoder;
 import net.butfly.albacore.calculus.Calculating.Mode;
 import net.butfly.albacore.calculus.CalculatorContext.StockingContext;
@@ -69,8 +65,7 @@ import net.butfly.albacore.calculus.datasource.DataSource.MongoDataSource;
 import net.butfly.albacore.calculus.marshall.HbaseHiveMarshaller;
 import net.butfly.albacore.calculus.marshall.KafkaMarshaller;
 import net.butfly.albacore.calculus.marshall.MongoMarshaller;
-import net.butfly.albacore.utils.Reflections;
-import net.butfly.albacore.utils.async.Task;
+import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
 
 @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -120,46 +115,36 @@ public class SparkCalculator implements Serializable {
 		if (props.containsKey("calculus.spark.testing")) sconf.set("spark.testing", props.getProperty("calculus.spark.testing"));
 		stockingContext.sc = new JavaSparkContext(sconf);
 		// scan and run calculuses
-		FilterBuilder filterBuilder = new FilterBuilder().includePackage(props.getProperty("calculus.package", ""));
-		org.reflections.Reflections ref = new org.reflections.Reflections(
-				new ConfigurationBuilder().filterInputsBy(filterBuilder).setUrls(ClasspathHelper.forClassLoader())
-						.addScanners(new MethodAnnotationsScanner().filterResultsBy(filterBuilder), new SubTypesScanner(false)));
-		if (props.containsKey("calculus.classes")) {
-			calculuses = new HashSet<>();
-			for (String c : props.getProperty("calculus.classes").split(",")) {
-				Class<?> cc = Reflections.forClassName(c);
-				if (cc != null && Calculus.class.isAssignableFrom(cc)) calculuses.add(cc);
-				else logger.warn(c + " is not Calculus, ignored.");
-			}
-		} else calculuses = ref.getTypesAnnotatedWith(Calculating.class);
+		Set<String> names = new HashSet<>();
+		if (props.containsKey("calculus.classes")) names.addAll(Arrays.asList(props.getProperty("calculus.classes").split(",")));
+
+		calculuses = new HashSet<>();
+		FastClasspathScanner scaner = props.containsKey("calculus.package") ? new FastClasspathScanner()
+				: new FastClasspathScanner(props.getProperty("calculus.package").split(","));
+		scaner.matchClassesWithAnnotation(Calculating.class, c -> {}).matchClassesImplementing(Calculus.class, c -> {
+			if (!names.isEmpty() && names.contains(c)) calculuses.add(c);
+		}).scan();
 	}
 
 	private <F extends Functor<F>> void calculate() throws Exception {
 		if (mode == Mode.STREAMING) streamingContext = new StreamingContext(stockingContext, streamingDuration);
 		for (Class<?> c : calculuses) {
 			logger.info("Calculus " + c.toString() + " starting... ");
-			new Task<Void>(new Task.Callable<Void>() {
-				@Override
-				public Void call() throws IOException {
-					Calculus calc;
-					try {
-						calc = (Calculus) c.newInstance();
-					} catch (Exception e) {
-						logger.error("Calculus " + c.toString() + " constructor failure, ignored", e);
-						return null;
-					}
-					Map<Class<? extends Functor<?>>, JavaPairRDD<String, ? extends Functor<?>>> functors = fetchFunctors(scanFunctors(c));
-					JavaRDD<F> r = (JavaRDD<F>) calc.calculate(stockingContext.sc, functors);
-					FunctorConfig destConfig = FunctorConfig.parse((Class<? extends Functor>) c.getAnnotation(Calculating.class).saving(),
-							Mode.STOCKING);
-					if (destConfig != null && null != r) {
-						for (String ds : destConfig.savingDSs.keySet())
-							r.foreach(new WriteFunction(stockingContext.datasources.get(ds), destConfig.savingDSs.get(ds)));
-					}
-					return null;
-				}
-
-			}/* , new net.butfly.albacore.utils.async.Options().fork() */).execute();
+			Calculus calc;
+			try {
+				calc = (Calculus) c.newInstance();
+			} catch (Exception e) {
+				logger.error("Calculus " + c.toString() + " constructor failure, ignored", e);
+				continue;
+			}
+			Map<Class<? extends Functor<?>>, JavaPairRDD<String, ? extends Functor<?>>> functors = fetchFunctors(scanFunctors(c));
+			JavaRDD<F> r = (JavaRDD<F>) calc.calculate(stockingContext.sc, functors);
+			FunctorConfig destConfig = FunctorConfig.parse((Class<? extends Functor>) c.getAnnotation(Calculating.class).saving(),
+					Mode.STOCKING);
+			if (destConfig != null && null != r) {
+				for (String ds : destConfig.savingDSs.keySet())
+					r.foreach(new WriteFunction(stockingContext.datasources.get(ds), destConfig.savingDSs.get(ds)));
+			}
 			if (mode == Mode.STREAMING) {
 				streamingContext.ssc.start();
 				streamingContext.ssc.awaitTermination();
