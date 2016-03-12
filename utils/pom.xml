@@ -14,12 +14,6 @@
 			<artifactId>albacore-frame</artifactId>
 			<version>${deps.version.albacore}</version>
 		</dependency>
-		<!-- validation -->
-		<dependency>
-			<groupId>javax.validation</groupId>
-			<artifactId>validation-api</artifactId>
-			<version>1.1.0.Final</version>
-		</dependency>
 		<!-- xml -->
 		<dependency>
 			<groupId>dom4j</groupId>
@@ -62,6 +56,24 @@
 			<artifactId>xom</artifactId>
 			<version>1.2.5</version>
 			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.bouncycastle</groupId>
+			<artifactId>bcprov-jdk15on</artifactId>
+			<version>1.54</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.bouncycastle</groupId>
+			<artifactId>bcpg-jdk15on</artifactId>
+			<version>1.54</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.bouncycastle</groupId>
+			<artifactId>bcpkix-jdk15on</artifactId>
+			<version>1.54</version>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
 </project>
