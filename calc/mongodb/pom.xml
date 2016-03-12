@@ -8,56 +8,12 @@
 	</parent>
 	<artifactId>albacore-calc-mongodb</artifactId>
 	<name>albacore-calc-mongodb</name>
-	<properties>
-		<deps.version.hive>1.1.0-cdh5.5.2</deps.version.hive>
-		<deps.version.hbase>1.0.0-cdh5.5.2</deps.version.hbase>
-		<deps.version.spark>1.5.0-cdh5.5.2</deps.version.spark>
-	</properties>
+	<version>1.0.1-SNAPSHOT</version>
 	<dependencies>
-		<dependency><!-- fuck hbase-client use old version, some method is closed in new version -->
-			<groupId>com.google.guava</groupId>
-			<artifactId>guava</artifactId>
-			<version>12.0.1</version>
-		</dependency>
 		<dependency>
-			<groupId>org.apache.spark</groupId>
-			<artifactId>spark-core_2.10</artifactId>
-			<version>${deps.version.spark}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.spark</groupId>
-			<artifactId>spark-streaming_2.10</artifactId>
-			<version>${deps.version.spark}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.spark</groupId>
-			<artifactId>spark-streaming-kafka_2.10</artifactId>
-			<version>${deps.version.spark}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.hbase</groupId>
-			<artifactId>hbase-server</artifactId>
-			<version>${deps.version.hbase}</version>
-			<exclusions>
-				<exclusion>
-					<artifactId>servlet-api-2.5</artifactId>
-					<groupId>org.mortbay.jetty</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>servlet-api</artifactId>
-					<groupId>javax.servlet</groupId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.hive</groupId>
-			<artifactId>hive-serde</artifactId>
-			<version>${deps.version.hive}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.hive</groupId>
-			<artifactId>hive-hbase-handler</artifactId>
-			<version>${deps.version.hive}</version>
+			<groupId>net.butfly.albacore</groupId>
+			<artifactId>albacore-calc-core</artifactId>
+			<version>1.0.1-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>org.jongo</groupId>
@@ -109,21 +65,5 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
-		<dependency>
-			<groupId>net.butfly.albacore</groupId>
-			<artifactId>albacore-core</artifactId>
-			<version>${deps.version.albacore}</version>
-		</dependency>
-		<dependency>
-			<groupId>commons-cli</groupId>
-			<artifactId>commons-cli</artifactId>
-			<version>1.2</version>
-		</dependency>
 	</dependencies>
-	<repositories>
-		<repository>
-			<id>cloudera</id>
-			<url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
-		</repository>
-	</repositories>
 </project>

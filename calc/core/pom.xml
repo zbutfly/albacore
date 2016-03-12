@@ -8,6 +8,7 @@
 	</parent>
 	<artifactId>albacore-calc-core</artifactId>
 	<name>albacore-calc-core</name>
+	<version>1.0.1-SNAPSHOT</version>
 	<properties>
 		<deps.version.scala>2.11</deps.version.scala>
 		<deps.version.spark>1.6.0</deps.version.spark>
