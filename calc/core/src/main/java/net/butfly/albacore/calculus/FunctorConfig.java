@@ -13,6 +13,7 @@ import net.butfly.albacore.calculus.Functor.Stocking;
 import net.butfly.albacore.calculus.Functor.Streaming;
 import net.butfly.albacore.calculus.Functor.Type;
 import net.butfly.albacore.calculus.datasource.DataSource;
+import net.butfly.albacore.calculus.marshall.Marshaller;
 
 public class FunctorConfig implements Serializable {
 	private static final long serialVersionUID = 5323846657146326084L;
@@ -115,8 +116,9 @@ public class FunctorConfig implements Serializable {
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	void confirm(StockingContext context) {
 		DataSource ds = context.datasources.get(functorClass.getAnnotation(Stocking.class).source());
+		Marshaller<?, ?> m = Marshaller.parseMarshaller(functorClass, ds);
 		for (Detail detail : this.stockingDSs.values())
-			ds.getMarshaller().confirm((Class<? extends Functor>) functorClass, ds, detail);
+			m.confirm((Class<? extends Functor>) functorClass, ds, detail);
 	}
 
 	private <F extends Functor<F>> Detail parseStreamingConfig() {

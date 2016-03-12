@@ -60,9 +60,7 @@ import net.butfly.albacore.calculus.datasource.DataSource.ConstDataSource;
 import net.butfly.albacore.calculus.datasource.DataSource.HbaseDataSource;
 import net.butfly.albacore.calculus.datasource.DataSource.KafkaDataSource;
 import net.butfly.albacore.calculus.datasource.DataSource.MongoDataSource;
-import net.butfly.albacore.calculus.marshall.HbaseHiveMarshaller;
-import net.butfly.albacore.calculus.marshall.KafkaMarshaller;
-import net.butfly.albacore.calculus.marshall.MongoMarshaller;
+import net.butfly.albacore.calculus.marshall.Marshaller;
 import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
 
@@ -207,7 +205,8 @@ public class SparkCalculator implements Serializable {
 			}
 			hconf.set(TableInputFormat.INPUT_TABLE, detail.hbaseTable);
 			// conf.hconf.set(TableInputFormat.SCAN_COLUMNS, "cf1:vc cf1:vs");
-			final HbaseHiveMarshaller hm = (HbaseHiveMarshaller) ds.getMarshaller();
+			final Marshaller<Result, ImmutableBytesWritable> hm = (Marshaller<Result, ImmutableBytesWritable>) Marshaller
+					.parseMarshaller(functor, ds);
 			JavaPairRDD<ImmutableBytesWritable, Result> hbase = stockingContext.sc.newAPIHadoopRDD(hconf, TableInputFormat.class,
 					ImmutableBytesWritable.class, Result.class);
 			traceRDD(hbase, ds, detail);
@@ -223,7 +222,7 @@ public class SparkCalculator implements Serializable {
 			if (detail.mongoFilter != null && !"".equals(detail.mongoFilter)) mconf.set("mongo.input.query", detail.mongoFilter);
 			// conf.mconf.set("mongo.input.fields
 			mconf.set("mongo.input.notimeout", "true");
-			MongoMarshaller mm = (MongoMarshaller) ds.getMarshaller();
+			Marshaller<BSONObject, Object> mm = (Marshaller<BSONObject, Object>) Marshaller.parseMarshaller(functor, ds);
 			JavaPairRDD<Object, BSONObject> mongo = stockingContext.sc.newAPIHadoopRDD(mconf, MongoInputFormat.class, Object.class,
 					BSONObject.class);
 			return mongo.mapToPair(t -> new Tuple2<String, F>(mm.unmarshallId(t._1), mm.unmarshall(t._2, functor)));
@@ -243,7 +242,7 @@ public class SparkCalculator implements Serializable {
 		case KAFKA:
 			JavaPairInputDStream<String, byte[]> kafka = this.kafka((KafkaDataSource) ds, functor.getAnnotation(Streaming.class).topics());
 			traceStream(kafka, ds, detail);
-			KafkaMarshaller km = (KafkaMarshaller) ds.getMarshaller();
+			Marshaller<byte[], String> km = (Marshaller<byte[], String>) Marshaller.parseMarshaller(functor, ds);
 			return kafka.mapToPair(t -> new Tuple2<String, F>(km.unmarshallId(t._1), km.unmarshall(t._2, functor)));
 		default:
 			throw new UnsupportedOperationException("Unsupportted stocking mode: " + ds.getType() + " on " + functor);
