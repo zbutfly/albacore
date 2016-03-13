@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
@@ -48,11 +49,19 @@ public class HbaseMarshaller implements Marshaller<Result, ImmutableBytesWritabl
 			if (colfamily == null)
 				throw new IllegalArgumentException("Column family is not defined on class " + to.toString() + ", field " + f.getName());
 			try {
-				byte[] value = CellUtil.cloneValue(from.getColumnLatestCell(Text.encode(colfamily).array(), Text.encode(colname).array()));
-				Logger.trace(HbaseMarshaller.class, "Read hbase value: " + colfamily + ":" + colname + " ==> " + value.length + " bytes.");
-				Reflections.set(t, f, fromBytes(f.getType(), value));
+				Cell cell = from.getColumnLatestCell(Text.encode(colfamily).array(), Text.encode(colname).array());
+				if (cell != null) {
+					byte[] value = CellUtil.cloneValue(cell);
+					Logger.trace(HbaseMarshaller.class,
+							"Read hbase value: " + colfamily + ":" + colname + " ==> " + value.length + " bytes.");
+					Reflections.set(t, f, fromBytes(f.getType(), value));
+				} else {
+					Logger.warn(HbaseMarshaller.class, "Cell not found on class " + to.toString() + ", field " + f.getName() + ", column "
+							+ colfamily + ":" + colname);
+				}
 			} catch (Exception e) {
-				Logger.error(HbaseMarshaller.class, "Parse of hbase result failure on class " + to.toString() + ", field " + f.getName());
+				Logger.error(HbaseMarshaller.class, "Parse of hbase result failure on class " + to.toString() + ", field " + f.getName(),
+						e);
 			}
 		}
 		return t;

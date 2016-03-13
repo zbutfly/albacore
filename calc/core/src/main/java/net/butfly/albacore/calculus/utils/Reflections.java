@@ -1,6 +1,7 @@
 package net.butfly.albacore.calculus.utils;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.HashMap;
@@ -15,9 +16,14 @@ public final class Reflections {
 		Map<String, Field> fields = new HashMap<String, Field>();
 		while (clazz != null) {
 			for (Field field : clazz.getDeclaredFields()) {
-				if (!fields.containsKey(field.getName())) {
-					fields.put(field.getName(), field);
-				}
+				if (fields.containsKey(field.getName())) continue;
+				int mod = field.getModifiers();
+				if (Modifier.isFinal(mod)) continue;
+				if (Modifier.isStatic(mod)) continue;
+				if (Modifier.isTransient(mod)) continue;
+				if (Modifier.isVolatile(mod)) continue;
+
+				fields.put(field.getName(), field);
 			}
 			clazz = clazz.getSuperclass();
 		}
