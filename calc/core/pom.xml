@@ -12,13 +12,13 @@
 		<deps.version.scala>2.11</deps.version.scala>
 		<deps.version.spark>1.6.0</deps.version.spark>
 		<deps.version.hbase>1.2.0</deps.version.hbase>
-		<deps.version.hive>2.0.0</deps.version.hive>
+<!-- 		<deps.version.hive>2.0.0</deps.version.hive> -->
 	</properties>
 	<dependencies>
 		<dependency>
 			<groupId>io.github.lukehutch</groupId>
 			<artifactId>fast-classpath-scanner</artifactId>
-			<version>LATEST</version>
+			<version>1.9.17</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.spark</groupId>
@@ -49,16 +49,6 @@
 					<groupId>javax.servlet</groupId>
 				</exclusion>
 			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.hive</groupId>
-			<artifactId>hive-serde</artifactId>
-			<version>${deps.version.hive}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.hive</groupId>
-			<artifactId>hive-hbase-handler</artifactId>
-			<version>${deps.version.hive}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.jongo</groupId>

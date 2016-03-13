@@ -1,8 +1,9 @@
 package net.butfly.albacore.calculus.marshall;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
-import java.nio.charset.CharacterCodingException;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -13,13 +14,12 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
-import org.apache.hadoop.hive.hbase.HBaseSerDe;
-import org.apache.hadoop.hive.serde2.SerDeException;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.io.Writable;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.CaseFormat;
+import com.google.common.base.Defaults;
 import com.jcabi.log.Logger;
 
 import net.butfly.albacore.calculus.Functor;
@@ -29,19 +29,9 @@ import net.butfly.albacore.calculus.datasource.DataSource.HbaseDataSource;
 import net.butfly.albacore.calculus.datasource.HbaseColumnFamily;
 import net.butfly.albacore.calculus.utils.Reflections;
 
-public class HbaseHiveMarshaller implements Marshaller<Result, ImmutableBytesWritable> {
+public class HbaseMarshaller implements Marshaller<Result, ImmutableBytesWritable> {
 	private static final long serialVersionUID = -4529825710243214685L;
-	private static HBaseSerDe serde;
 
-	static {
-		try {
-			serde = new HBaseSerDe();
-		} catch (SerDeException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	@SuppressWarnings("unchecked")
 	@Override
 	public <T extends Functor<T>> T unmarshall(Result from, Class<T> to) {
 		String dcf = to.isAnnotationPresent(HbaseColumnFamily.class) ? to.getAnnotation(HbaseColumnFamily.class).value() : null;
@@ -49,7 +39,7 @@ public class HbaseHiveMarshaller implements Marshaller<Result, ImmutableBytesWri
 		try {
 			t = to.newInstance();
 		} catch (InstantiationException | IllegalAccessException e) {
-			throw new RuntimeException (e);
+			throw new RuntimeException(e);
 		}
 		for (Field f : Reflections.getDeclaredFields(to)) {
 			String colname = f.isAnnotationPresent(JsonProperty.class) ? f.getAnnotation(JsonProperty.class).value()
@@ -59,15 +49,14 @@ public class HbaseHiveMarshaller implements Marshaller<Result, ImmutableBytesWri
 				throw new IllegalArgumentException("Column family is not defined on class " + to.toString() + ", field " + f.getName());
 			try {
 				byte[] value = CellUtil.cloneValue(from.getColumnLatestCell(Text.encode(colfamily).array(), Text.encode(colname).array()));
-				Logger.trace(HbaseHiveMarshaller.class,
-						"Read hbase value: " + colfamily + ":" + colname + " ==> " + value.length + " bytes.");
-				return (T) serde.deserialize((Writable) from);
+				Logger.trace(HbaseMarshaller.class, "Read hbase value: " + colfamily + ":" + colname + " ==> " + value.length + " bytes.");
+				Reflections.set(t, f, fromBytes(f.getType(), value));
 			} catch (Exception e) {
-				Logger.error(HbaseHiveMarshaller.class,
-						"Parse of hbase result failure on class " + to.toString() + ", field " + f.getName());
+				Logger.error(HbaseMarshaller.class, "Parse of hbase result failure on class " + to.toString() + ", field " + f.getName());
 			}
 		}
 		return t;
+
 	}
 
 	@Override
@@ -77,22 +66,12 @@ public class HbaseHiveMarshaller implements Marshaller<Result, ImmutableBytesWri
 
 	@Override
 	public String unmarshallId(ImmutableBytesWritable id) {
-		try {
-			return Text.decode(id.get());
-		} catch (CharacterCodingException e) {
-			Logger.error(HbaseHiveMarshaller.class, "ImmutableBytesWritable unmarshall failure.", e);
-			return null;
-		}
+		return Bytes.toString(id.get());
 	}
 
 	@Override
 	public ImmutableBytesWritable marshallId(String id) {
-		try {
-			return new ImmutableBytesWritable(Text.encode(id).array());
-		} catch (CharacterCodingException e) {
-			Logger.error(HbaseHiveMarshaller.class, "ImmutableBytesWritable marshall failure.", e);
-			return null;
-		}
+		return new ImmutableBytesWritable(Bytes.toBytes(id));
 	}
 
 	@Override
@@ -126,5 +105,54 @@ public class HbaseHiveMarshaller implements Marshaller<Result, ImmutableBytesWri
 		} catch (IOException e) {
 			throw new IllegalArgumentException("Hbase verify failure on server: " + ds.toString() + ", class: " + functor.toString());
 		}
+	}
+
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public static <R> R fromBytes(Class<R> type, byte[] value) {
+		if (null == value || value.length == 0) return null;
+		if (Reflections.isAny(type, CharSequence.class)) return (R) Bytes.toString(value);
+		if (Reflections.isAny(type, long.class, Long.class)) return (R) (Long) Bytes.toLong(value);
+		if (Reflections.isAny(type, byte.class, Byte.class)) return (R) (value != null && value.length > 0 ? value[0] : null);
+		if (Reflections.isAny(type, double.class, Double.class)) return (R) (Double) Bytes.toDouble(value);
+		if (Reflections.isAny(type, float.class, Float.class)) return (R) (Float) Bytes.toFloat(value);
+		if (Reflections.isAny(type, boolean.class, Boolean.class)) return (R) (Boolean) Bytes.toBoolean(value);
+		if (Reflections.isAny(type, int.class, Integer.class)) return (R) (Integer) Bytes.toInt(value);
+		if (type.isArray()) {
+			byte[][] v = Bytes.toByteArrays(value);
+			Object[] r = (Object[]) Array.newInstance(type.getComponentType(), v.length);
+			for (int i = 0; i < v.length; i++)
+				r[i] = fromBytes(type.getComponentType(), v[i]);
+			return (R) r;
+		}
+		if (Reflections.isAny(type, Collection.class)) {
+			byte[][] v = Bytes.toByteArrays(value);
+			Collection r = (Collection) Defaults.defaultValue(type);
+			Class<?> t = Reflections.resolveGenericParameter(type, Collection.class, "E");
+			for (int i = 0; i < v.length; i++)
+				r.add(fromBytes(t, v[i]));
+			return (R) r;
+		}
+		throw new UnsupportedOperationException("Not supportted marshall: " + type.toString());
+	}
+
+	public static <R> byte[] toBytes(Class<R> type, R value) {
+		if (null == value) return null;
+		if (Reflections.isAny(type, CharSequence.class)) return Bytes.toBytes(((CharSequence) value).toString());
+		if (Reflections.isAny(type, long.class, Long.class)) return Bytes.toBytes((Long) value);
+		if (Reflections.isAny(type, byte.class, Byte.class)) return (new byte[] { (Byte) value });
+		if (Reflections.isAny(type, double.class, Double.class)) return Bytes.toBytes((Double) value);
+		if (Reflections.isAny(type, float.class, Float.class)) return Bytes.toBytes((Float) value);
+		if (Reflections.isAny(type, boolean.class, Boolean.class)) return Bytes.toBytes((Boolean) value);
+		if (Reflections.isAny(type, int.class, Integer.class)) return Bytes.toBytes((Integer) value);
+		throw new UnsupportedOperationException("Not supportted marshall: " + type.toString());
+	}
+
+	@SuppressWarnings("unchecked")
+	public static <R> byte[][] toByteArray(Class<R> type, R[] value) {
+		if (null == value) return null;
+		byte[][] r = new byte[value.length][];
+		for (int i = 0; i < value.length; i++)
+			r[i] = toBytes((Class<R>) type.getComponentType(), value[i]);
+		return r;
 	}
 }

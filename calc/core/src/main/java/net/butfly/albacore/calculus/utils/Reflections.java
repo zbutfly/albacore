@@ -69,7 +69,23 @@ public final class Reflections {
 		return classes;
 	}
 
-	public static Map<String, Class<?>> resolveGenericParameters(final Type implType, final Class<?> declareClass) {
+	public static void set(Object owner, Field field, Object value) throws IllegalArgumentException, IllegalAccessException {
+		field.setAccessible(true);
+		field.set(owner, value);
+	}
+
+	public static boolean isAny(Class<?> cl, Class<?>... target) {
+		for (Class<?> t : target)
+			if (t.isAssignableFrom(cl)) return true;
+		return false;
+	}
+
+	@SuppressWarnings("unchecked")
+	public static <E> Class<E> resolveGenericParameter(final Type implType, final Class<?> declareClass, final String genericParamName) {
+		return (Class<E>) resolveGenericParameters(implType, declareClass).get(genericParamName);
+	}
+
+	private static Map<String, Class<?>> resolveGenericParameters(final Type implType, final Class<?> declareClass) {
 		Map<String, Class<?>> types = new HashMap<>();
 		TypeVariable<?>[] vv = declareClass.getTypeParameters();
 		for (TypeVariable<?> v : vv) {

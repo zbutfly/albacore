@@ -70,9 +70,9 @@ public class SparkCalculator implements Serializable {
 
 	private static final Logger logger = LoggerFactory.getLogger(SparkCalculator.class);
 
-	private StockingContext stockingContext;
-	private StreamingContext streamingContext;
-	private int streamingDuration;
+	private StockingContext stocker;
+	private StreamingContext streamer;
+	private int dura;
 	private Set<Class<?>> calculuses;
 	private Mode mode;
 
@@ -90,9 +90,9 @@ public class SparkCalculator implements Serializable {
 
 	private SparkCalculator(Properties props) throws Exception {
 		mode = Mode.valueOf(props.getProperty("calculus.mode", "STREAMING").toUpperCase());
-		streamingDuration = Integer.parseInt(props.getProperty("calculus.spark.duration.seconds", "5"));
-		stockingContext = new StockingContext();
-		stockingContext.validate = Boolean.parseBoolean(props.getProperty("calculus.validate.table", "false"));
+		dura = Integer.parseInt(props.getProperty("calculus.spark.duration.seconds", "5"));
+		stocker = new StockingContext();
+		stocker.validate = Boolean.parseBoolean(props.getProperty("calculus.validate.table", "false"));
 		final String appname = props.getProperty("calculus.app.name", "Calculuses");
 		// dadatabse configurations parsing
 		parseDatasources(appname, subprops(props, "calculus.ds."));
@@ -109,21 +109,32 @@ public class SparkCalculator implements Serializable {
 		if (props.containsKey("calculus.spark.executor.memory.mb"))
 			sconf.set("spark.executor.memory", props.getProperty("calculus.spark.executor.memory.mb"));
 		if (props.containsKey("calculus.spark.testing")) sconf.set("spark.testing", props.getProperty("calculus.spark.testing"));
-		stockingContext.sc = new JavaSparkContext(sconf);
-		// scan and run calculuses
-		Set<String> names = new HashSet<>();
-		if (props.containsKey("calculus.classes")) names.addAll(Arrays.asList(props.getProperty("calculus.classes").split(",")));
+		stocker.sc = new JavaSparkContext(sconf);
 
 		calculuses = new HashSet<>();
-		FastClasspathScanner scaner = props.containsKey("calculus.package") ? new FastClasspathScanner()
-				: new FastClasspathScanner(props.getProperty("calculus.package").split(","));
-		scaner.matchClassesWithAnnotation(Calculating.class, c -> {}).matchClassesImplementing(Calculus.class, c -> {
-			if (!names.isEmpty() && names.contains(c)) calculuses.add(c);
-		}).scan();
+		// scan and run calculuses
+		if (props.containsKey("calculus.classes")) {
+			for (String cn : props.getProperty("calculus.classes").split(",")) {
+				Class<?> c = Class.forName(cn);
+				if (Calculus.class.isAssignableFrom(c) && c.isAnnotationPresent(Calculating.class)) {
+					calculuses.add(c);
+					logger.debug("Calculating: " + c.toString());
+				} else {
+					logger.warn("Ignore: " + c.toString() + ", either not Calculus or not annotated by @Calculating.");
+				}
+			}
+		} else {
+			FastClasspathScanner scaner = props.containsKey("calculus.package") ? new FastClasspathScanner()
+					: new FastClasspathScanner(props.getProperty("calculus.package").split(","));
+			scaner.matchClassesWithAnnotation(Calculating.class, c -> {}).matchClassesImplementing(Calculus.class, c -> {
+				calculuses.add(c);
+			}).scan();
+		}
+		logger.debug("Running calculuses: " + calculuses.toString());
 	}
 
 	private <OUT extends Functor<OUT>> void calculate() throws Exception {
-		if (mode == Mode.STREAMING) streamingContext = new StreamingContext(stockingContext, streamingDuration);
+		streamer = new StreamingContext(stocker, dura);
 		for (Class<?> c : calculuses) {
 			logger.info("Calculus " + c.toString() + " starting... ");
 			Calculus<?> calc;
@@ -133,61 +144,67 @@ public class SparkCalculator implements Serializable {
 				logger.error("Calculus " + c.toString() + " constructor failure, ignored", e);
 				continue;
 			}
-			Functors functors = fetchFunctors(scanFunctors(c));
-			FunctorConfig destConfig = FunctorConfig.parse((Class<OUT>) c.getAnnotation(Calculating.class).saving(), Mode.STOCKING);
-			if (destConfig == null) calc.calculate(stockingContext.sc, functors);
-			else calc.calculate(stockingContext.sc, functors, r -> {
+			Calculating calcing = c.getAnnotation(Calculating.class);
+			Functors functors = fetch(scanStocking(calcing.stocking()), scanStreaming(calcing.streaming()));
+			FunctorConfig destConfig = FunctorConfig.parse((Class<OUT>) calcing.saving(), Mode.STOCKING);
+			if (destConfig == null) calc.calculate(stocker.sc, functors);
+			else calc.calculate(stocker.sc, functors, r -> {
 				if (null != r) for (String ds : destConfig.savingDSs.keySet())
-					((JavaRDD<OUT>) r).foreach(new WriteFunction<OUT>(stockingContext.datasources.get(ds), destConfig.savingDSs.get(ds)));
+					((JavaRDD<OUT>) r).foreach(new WriteFunction<OUT>(stocker.datasources.get(ds), destConfig.savingDSs.get(ds)));
 				return null;
 			});
 			if (mode == Mode.STREAMING) {
-				streamingContext.ssc.start();
-				streamingContext.ssc.awaitTermination();
+				streamer.ssc.start();
+				streamer.ssc.awaitTermination();
 			}
 			logger.info("Calculus " + c.toString() + " started. ");
 		}
 	}
 
-	private Map<Class<? extends Functor<?>>, FunctorConfig>[] scanFunctors(Class<?> calc) throws IOException {
+	private Map<Class<? extends Functor<?>>, FunctorConfig> scanStocking(Class<? extends Functor<?>>... functor) throws IOException {
 		Map<Class<? extends Functor<?>>, FunctorConfig> stockingConfigs = new HashMap<>();
-		Map<Class<? extends Functor<?>>, FunctorConfig> streamingConfigs = new HashMap<>();
-
-		Calculating calcing = calc.getAnnotation(Calculating.class);
-		for (Class<? extends Functor> f : calcing.stocking()) {
+		for (Class<? extends Functor> f : functor) {
 			FunctorConfig fc = FunctorConfig.parse(f, Mode.STOCKING);
 			if (null != fc) stockingConfigs.put((Class<? extends Functor<?>>) f, fc);
 		}
-		for (Class<? extends Functor> f : calcing.streaming()) {
+		if (stocker.validate) for (FunctorConfig c : stockingConfigs.values())
+			c.confirm(stocker);
+
+		return stockingConfigs;
+	}
+
+	private Map<Class<? extends Functor<?>>, FunctorConfig> scanStreaming(Class<? extends Functor<?>>... functor) throws IOException {
+		Map<Class<? extends Functor<?>>, FunctorConfig> streamingConfigs = new HashMap<>();
+		for (Class<? extends Functor> f : functor) {
 			FunctorConfig fc = FunctorConfig.parse(f, mode);
 			if (null != fc) streamingConfigs.put((Class<? extends Functor<?>>) f, fc);
 		}
-		if (stockingContext.validate) for (FunctorConfig c : stockingConfigs.values())
-			c.confirm(stockingContext);
-
-		return new Map[] { stockingConfigs, streamingConfigs };
+		return streamingConfigs;
 	}
 
-	private Functors fetchFunctors(Map<Class<? extends Functor<?>>, FunctorConfig>[] configs) throws IOException {
+	private Functors fetch(Map<Class<? extends Functor<?>>, FunctorConfig> stocking,
+			Map<Class<? extends Functor<?>>, FunctorConfig> streaming) throws IOException {
 		Functors functors = new Functors();
-		for (Class<? extends Functor<?>> f : configs[0].keySet()) {
-			FunctorConfig fc = configs[0].get(f);
+		for (Class<? extends Functor<?>> f : stocking.keySet()) {
+			FunctorConfig fc = stocking.get(f);
 			for (String ds : fc.stockingDSs.keySet())
-				functors.add(f, stocking((Class<? extends Functor>) f, stockingContext.datasources.get(ds), fc.stockingDSs.get(ds)));
+				functors.add(f, (JavaPairRDD<String, ? extends Functor<?>>) stocking((Class<? extends Functor>) f,
+						stocker.datasources.get(ds), fc.stockingDSs.get(ds)));
 		}
 		switch (mode) {
 		case STOCKING:
-			for (Class<? extends Functor<?>> f : configs[1].keySet()) {
-				FunctorConfig fc = configs[1].get(f);
+			for (Class<? extends Functor<?>> f : streaming.keySet()) {
+				FunctorConfig fc = streaming.get(f);
 				for (String ds : fc.stockingDSs.keySet())
-					functors.add(f, stocking((Class<? extends Functor>) f, stockingContext.datasources.get(ds), fc.stockingDSs.get(ds)));
+					functors.add(f, (JavaPairRDD<String, ? extends Functor<?>>) stocking((Class<? extends Functor>) f,
+							stocker.datasources.get(ds), fc.stockingDSs.get(ds)));
 			}
 			break;
 		case STREAMING:
-			for (Class<? extends Functor<?>> f : configs[1].keySet()) {
-				FunctorConfig fc = configs[1].get(f);
+			for (Class<? extends Functor<?>> f : streaming.keySet()) {
+				FunctorConfig fc = streaming.get(f);
 				for (String ds : fc.streamingDSs.keySet())
-					functors.add(f, streaming((Class<? extends Functor>) f, stockingContext.datasources.get(ds), fc.streamingDSs.get(ds)));
+					functors.add(f, streaming((Class<? extends Functor>) f, stocker.datasources.get(ds), fc.streamingDSs.get(ds)));
 			}
 			break;
 		}
@@ -207,7 +224,7 @@ public class SparkCalculator implements Serializable {
 			// conf.hconf.set(TableInputFormat.SCAN_COLUMNS, "cf1:vc cf1:vs");
 			final Marshaller<Result, ImmutableBytesWritable> hm = (Marshaller<Result, ImmutableBytesWritable>) Marshaller
 					.parseMarshaller(functor, ds);
-			JavaPairRDD<ImmutableBytesWritable, Result> hbase = stockingContext.sc.newAPIHadoopRDD(hconf, TableInputFormat.class,
+			JavaPairRDD<ImmutableBytesWritable, Result> hbase = stocker.sc.newAPIHadoopRDD(hconf, TableInputFormat.class,
 					ImmutableBytesWritable.class, Result.class);
 			traceRDD(hbase, ds, detail);
 			return hbase.mapToPair(t -> new Tuple2<String, F>(hm.unmarshallId(t._1), hm.unmarshall(t._2, functor)));
@@ -223,13 +240,13 @@ public class SparkCalculator implements Serializable {
 			// conf.mconf.set("mongo.input.fields
 			mconf.set("mongo.input.notimeout", "true");
 			Marshaller<BSONObject, Object> mm = (Marshaller<BSONObject, Object>) Marshaller.parseMarshaller(functor, ds);
-			JavaPairRDD<Object, BSONObject> mongo = stockingContext.sc.newAPIHadoopRDD(mconf, MongoInputFormat.class, Object.class,
+			JavaPairRDD<Object, BSONObject> mongo = stocker.sc.newAPIHadoopRDD(mconf, MongoInputFormat.class, Object.class,
 					BSONObject.class);
 			return mongo.mapToPair(t -> new Tuple2<String, F>(mm.unmarshallId(t._1), mm.unmarshall(t._2, functor)));
 		case CONSTAND_TO_CONSOLE:
 			String[] values = ((ConstDataSource) ds).getValues();
 			if (values == null) values = new String[0];
-			return stockingContext.sc.parallelize(Arrays.asList(values))
+			return stocker.sc.parallelize(Arrays.asList(values))
 					.mapToPair(t -> new Tuple2<String, F>(UUID.randomUUID().toString(), (F) Reflections.construct(functor, t)));
 		default:
 			throw new UnsupportedOperationException("Unsupportted stocking mode: " + ds.getType());
@@ -256,8 +273,8 @@ public class SparkCalculator implements Serializable {
 			// params.put("bootstrap.servers", ds.getServers());
 			// params.put("auto.commit.enable", "false");
 			params.put("group.id", ds.getGroup());
-			return KafkaUtils.createDirectStream(streamingContext.ssc, String.class, byte[].class, StringDecoder.class,
-					DefaultDecoder.class, params, new HashSet<String>(Arrays.asList(topics)));
+			return KafkaUtils.createDirectStream(streamer.ssc, String.class, byte[].class, StringDecoder.class, DefaultDecoder.class,
+					params, new HashSet<String>(Arrays.asList(topics)));
 		} else {
 			params.put("bootstrap.servers", ds.getServers());
 			params.put("auto.commit.enable", "false");
@@ -265,8 +282,8 @@ public class SparkCalculator implements Serializable {
 			Map<String, Integer> topicsMap = new HashMap<>();
 			for (String t : topics)
 				topicsMap.put(t, ds.getTopicPartitions());
-			return KafkaUtils.createStream(streamingContext.ssc, String.class, byte[].class, StringDecoder.class, DefaultDecoder.class,
-					params, topicsMap, StorageLevel.MEMORY_ONLY());
+			return KafkaUtils.createStream(streamer.ssc, String.class, byte[].class, StringDecoder.class, DefaultDecoder.class, params,
+					topicsMap, StorageLevel.MEMORY_ONLY());
 		}
 	}
 
@@ -304,20 +321,20 @@ public class SparkCalculator implements Serializable {
 			Type type = Type.valueOf(dbprops.getProperty("type"));
 			switch (type) {
 			case CONSTAND_TO_CONSOLE:
-				stockingContext.datasources.put(dsid, new ConstDataSource(dbprops.getProperty("values").split(",")));
+				stocker.datasources.put(dsid, new ConstDataSource(dbprops.getProperty("values").split(",")));
 				break;
 			case HBASE:
-				stockingContext.datasources.put(dsid, new HbaseDataSource(dbprops.getProperty("config", "hbase-site.xml")));
+				stocker.datasources.put(dsid, new HbaseDataSource(dbprops.getProperty("config", "hbase-site.xml")));
 				break;
 			case MONGODB:
-				stockingContext.datasources.put(dsid, new MongoDataSource(dbprops
+				stocker.datasources.put(dsid, new MongoDataSource(dbprops
 						.getProperty("uri")/*
 											 * , dbprops.getProperty("authdb"),
 											 * dbprops.getProperty("authdb")
 											 */));
 				break;
 			case KAFKA:
-				stockingContext.datasources.put(dsid, new KafkaDataSource(dbprops.getProperty("servers"), dbprops.getProperty("root"),
+				stocker.datasources.put(dsid, new KafkaDataSource(dbprops.getProperty("servers"), dbprops.getProperty("root"),
 						Integer.parseInt(dbprops.getProperty("topic.partitions", "1")), appname));
 				break;
 			default:
@@ -326,8 +343,9 @@ public class SparkCalculator implements Serializable {
 		}
 	}
 
+	@SuppressWarnings("deprecation")
 	private void traceStream(JavaDStreamLike stream, DataSource ds, Detail detail) {
-		if (logger.isTraceEnabled()) logger.trace("{" + Calculus.count(stream) + "} Raw records from " + ds.getType() + " [" + ds.toString()
+		if (logger.isTraceEnabled()) logger.trace("{" + Functors.count(stream) + "} Raw records from " + ds.getType() + " [" + ds.toString()
 				+ "]=>" + detail.toString() + "].");
 	}
 

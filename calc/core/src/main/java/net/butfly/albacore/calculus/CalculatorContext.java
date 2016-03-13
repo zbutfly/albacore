@@ -18,12 +18,12 @@ abstract class CalculatorContext {
 	}
 
 	static class StreamingContext extends CalculatorContext {
+		JavaStreamingContext ssc;
+
 		StreamingContext(StockingContext sc, int duration) {
 			this.validate = sc.validate;
 			this.datasources.putAll(sc.datasources);
 			this.ssc = new JavaStreamingContext(sc.sc, Durations.seconds(duration));
 		}
-
-		JavaStreamingContext ssc;
 	}
 }
