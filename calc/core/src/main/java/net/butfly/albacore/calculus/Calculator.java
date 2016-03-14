@@ -22,8 +22,12 @@ import org.apache.commons.cli.PosixParser;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.filter.PageFilter;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
+import org.apache.hadoop.hbase.protobuf.ProtobufUtil;
+import org.apache.hadoop.hbase.util.Base64;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -31,7 +35,6 @@ import org.apache.spark.api.java.JavaRDDLike;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.storage.StorageLevel;
-import org.apache.spark.streaming.api.java.JavaDStreamLike;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaPairInputDStream;
 import org.apache.spark.streaming.kafka.KafkaUtils;
@@ -65,16 +68,17 @@ import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
 
 @SuppressWarnings({ "rawtypes", "unchecked" })
-public class SparkCalculator implements Serializable {
+public class Calculator implements Serializable {
 	private static final long serialVersionUID = 7850755405377027618L;
 
-	private static final Logger logger = LoggerFactory.getLogger(SparkCalculator.class);
+	private static final Logger logger = LoggerFactory.getLogger(Calculator.class);
 
 	private StockingContext stocker;
 	private StreamingContext streamer;
 	private int dura;
 	private Set<Class<?>> calculuses;
 	private Mode mode;
+	private boolean debug;
 
 	public static void main(String... args) throws Exception {
 		final Properties props = new Properties();
@@ -84,12 +88,13 @@ public class SparkCalculator implements Serializable {
 			if (key.startsWith("calculus.")) props.put(key, System.getProperty(key));
 		if (cmd.hasOption('m')) props.setProperty("calculus.mode", cmd.getOptionValue('m').toUpperCase());
 		if (cmd.hasOption('c')) props.setProperty("calculus.classes", cmd.getOptionValue('c'));
-
-		new SparkCalculator(props).calculate();
+		if (cmd.hasOption('d')) props.setProperty("calculus.debug", cmd.getOptionValue('d'));
+		new Calculator(props).calculate();
 	}
 
-	private SparkCalculator(Properties props) throws Exception {
+	private Calculator(Properties props) throws Exception {
 		mode = Mode.valueOf(props.getProperty("calculus.mode", "STREAMING").toUpperCase());
+		debug = Boolean.valueOf(props.getProperty("calculus.debug", "false").toLowerCase());
 		dura = Integer.parseInt(props.getProperty("calculus.spark.duration.seconds", "5"));
 		stocker = new StockingContext();
 		stocker.validate = Boolean.parseBoolean(props.getProperty("calculus.validate.table", "false"));
@@ -134,77 +139,80 @@ public class SparkCalculator implements Serializable {
 	}
 
 	private <OUT extends Functor<OUT>> void calculate() throws Exception {
-		streamer = new StreamingContext(stocker, dura);
 		for (Class<?> c : calculuses) {
 			logger.info("Calculus " + c.toString() + " starting... ");
-			Calculus<?> calc;
+			Calculus<?, ?> calc;
 			try {
-				calc = (Calculus<?>) c.newInstance();
+				calc = (Calculus<?, ?>) c.newInstance();
 			} catch (Exception e) {
 				logger.error("Calculus " + c.toString() + " constructor failure, ignored", e);
 				continue;
 			}
 			Calculating calcing = c.getAnnotation(Calculating.class);
-			Functors functors = fetch(scanStocking(calcing.stocking()), scanStreaming(calcing.streaming()));
 			FunctorConfig destConfig = FunctorConfig.parse((Class<OUT>) calcing.saving(), Mode.STOCKING);
-			if (destConfig == null) calc.calculate(stocker.sc, functors);
-			else calc.calculate(stocker.sc, functors, r -> {
-				if (null != r) for (String ds : destConfig.savingDSs.keySet())
-					((JavaRDD<OUT>) r).foreach(new WriteFunction<OUT>(stocker.datasources.get(ds), destConfig.savingDSs.get(ds)));
-				return null;
-			});
-			if (mode == Mode.STREAMING) {
+			switch (mode) {
+			case STOCKING:
+				calc.stocking(stocker.sc, fetch(scan(Mode.STOCKING, calcing.value()), scan(Mode.STREAMING, calcing.value())),
+						destConfig == null ? null : r -> {
+							if (null != r) for (String ds : destConfig.savingDSs.keySet())
+								((JavaRDD<OUT>) r)
+										.foreachAsync(new WriteFunction<OUT>(stocker.datasources.get(ds), destConfig.savingDSs.get(ds)));
+						});
+				break;
+			case STREAMING:
+				streamer = new StreamingContext(stocker, dura);
+				calc.streaming(streamer.ssc, fetch(scan(Mode.STOCKING, calcing.value()), scan(Mode.STREAMING, calcing.value())),
+						destConfig == null ? null : r -> {
+							if (null != r) for (String ds : destConfig.savingDSs.keySet())
+								((JavaRDD<OUT>) r)
+										.foreachAsync(new WriteFunction<OUT>(streamer.datasources.get(ds), destConfig.savingDSs.get(ds)));
+						});
 				streamer.ssc.start();
 				streamer.ssc.awaitTermination();
+				break;
 			}
 			logger.info("Calculus " + c.toString() + " started. ");
 		}
 	}
 
-	private Map<Class<? extends Functor<?>>, FunctorConfig> scanStocking(Class<? extends Functor<?>>... functor) throws IOException {
-		Map<Class<? extends Functor<?>>, FunctorConfig> stockingConfigs = new HashMap<>();
-		for (Class<? extends Functor> f : functor) {
-			FunctorConfig fc = FunctorConfig.parse(f, Mode.STOCKING);
-			if (null != fc) stockingConfigs.put((Class<? extends Functor<?>>) f, fc);
-		}
-		if (stocker.validate) for (FunctorConfig c : stockingConfigs.values())
-			c.confirm(stocker);
-
-		return stockingConfigs;
-	}
-
-	private Map<Class<? extends Functor<?>>, FunctorConfig> scanStreaming(Class<? extends Functor<?>>... functor) throws IOException {
-		Map<Class<? extends Functor<?>>, FunctorConfig> streamingConfigs = new HashMap<>();
+	private Map<Class<? extends Functor<?>>, FunctorConfig> scan(Mode mode, Class<? extends Functor<?>>... functor) throws IOException {
+		Map<Class<? extends Functor<?>>, FunctorConfig> configs = new HashMap<>();
 		for (Class<? extends Functor> f : functor) {
 			FunctorConfig fc = FunctorConfig.parse(f, mode);
-			if (null != fc) streamingConfigs.put((Class<? extends Functor<?>>) f, fc);
+			if (null != fc) configs.put((Class<? extends Functor<?>>) f, fc);
 		}
-		return streamingConfigs;
+		if (mode == Mode.STOCKING && stocker.validate) for (FunctorConfig c : configs.values())
+			c.confirm(stocker);
+		return configs;
 	}
 
 	private Functors fetch(Map<Class<? extends Functor<?>>, FunctorConfig> stocking,
 			Map<Class<? extends Functor<?>>, FunctorConfig> streaming) throws IOException {
 		Functors functors = new Functors();
-		for (Class<? extends Functor<?>> f : stocking.keySet()) {
-			FunctorConfig fc = stocking.get(f);
-			for (String ds : fc.stockingDSs.keySet())
-				functors.add(f, (JavaPairRDD<String, ? extends Functor<?>>) stocking((Class<? extends Functor>) f,
-						stocker.datasources.get(ds), fc.stockingDSs.get(ds)));
-		}
 		switch (mode) {
 		case STOCKING:
+			for (Class<? extends Functor<?>> f : stocking.keySet()) {
+				FunctorConfig fc = stocking.get(f);
+				for (String ds : fc.stockingDSs.keySet())
+					functors.stocking(f, stocking((Class<? extends Functor>) f, stocker.datasources.get(ds), fc.stockingDSs.get(ds)));
+			}
 			for (Class<? extends Functor<?>> f : streaming.keySet()) {
 				FunctorConfig fc = streaming.get(f);
 				for (String ds : fc.stockingDSs.keySet())
-					functors.add(f, (JavaPairRDD<String, ? extends Functor<?>>) stocking((Class<? extends Functor>) f,
-							stocker.datasources.get(ds), fc.stockingDSs.get(ds)));
+					functors.stocking(f, stocking((Class<? extends Functor>) f, stocker.datasources.get(ds), fc.stockingDSs.get(ds)));
 			}
 			break;
 		case STREAMING:
+			for (Class<? extends Functor<?>> f : stocking.keySet()) {
+				FunctorConfig fc = stocking.get(f);
+				for (String ds : fc.stockingDSs.keySet())
+					functors.streaming(f, (JavaPairRDD<String, ? extends Functor<?>>) stocking((Class<? extends Functor>) f,
+							stocker.datasources.get(ds), fc.stockingDSs.get(ds)));
+			}
 			for (Class<? extends Functor<?>> f : streaming.keySet()) {
 				FunctorConfig fc = streaming.get(f);
 				for (String ds : fc.streamingDSs.keySet())
-					functors.add(f, streaming((Class<? extends Functor>) f, stocker.datasources.get(ds), fc.streamingDSs.get(ds)));
+					functors.streaming(f, streaming((Class<? extends Functor>) f, stocker.datasources.get(ds), fc.streamingDSs.get(ds)));
 			}
 			break;
 		}
@@ -221,9 +229,19 @@ public class SparkCalculator implements Serializable {
 				throw new RuntimeException(e);
 			}
 			hconf.set(TableInputFormat.INPUT_TABLE, detail.hbaseTable);
+			if (debug) {
+				int limit = Integer.parseInt(System.getProperty("calculus.debug.hbase.limit", "10"));
+				logger.warn("Hbase debugging, limit results in " + limit + "(can be customized by -Dcalculus.debug.hbase.limit=N)");
+				try {
+					hconf.set(TableInputFormat.SCAN,
+							Base64.encodeBytes(ProtobufUtil.toScan(new Scan().setFilter(new PageFilter(limit))).toByteArray()));
+				} catch (IOException e) {
+					logger.error("Hbase debugging failure, page scan definition error", e);
+				}
+			}
+
 			// conf.hconf.set(TableInputFormat.SCAN_COLUMNS, "cf1:vc cf1:vs");
-			final Marshaller<Result, ImmutableBytesWritable> hm = (Marshaller<Result, ImmutableBytesWritable>) Marshaller
-					.parseMarshaller(functor, ds);
+			final Marshaller<Result, ImmutableBytesWritable> hm = (Marshaller<Result, ImmutableBytesWritable>) ds.getMarshaller();
 			JavaPairRDD<ImmutableBytesWritable, Result> hbase = stocker.sc.newAPIHadoopRDD(hconf, TableInputFormat.class,
 					ImmutableBytesWritable.class, Result.class);
 			traceRDD(hbase, ds, detail);
@@ -239,7 +257,7 @@ public class SparkCalculator implements Serializable {
 			if (detail.mongoFilter != null && !"".equals(detail.mongoFilter)) mconf.set("mongo.input.query", detail.mongoFilter);
 			// conf.mconf.set("mongo.input.fields
 			mconf.set("mongo.input.notimeout", "true");
-			Marshaller<BSONObject, Object> mm = (Marshaller<BSONObject, Object>) Marshaller.parseMarshaller(functor, ds);
+			Marshaller<BSONObject, Object> mm = (Marshaller<BSONObject, Object>) ds.getMarshaller();
 			JavaPairRDD<Object, BSONObject> mongo = stocker.sc.newAPIHadoopRDD(mconf, MongoInputFormat.class, Object.class,
 					BSONObject.class);
 			return mongo.mapToPair(t -> new Tuple2<String, F>(mm.unmarshallId(t._1), mm.unmarshall(t._2, functor)));
@@ -257,9 +275,8 @@ public class SparkCalculator implements Serializable {
 			throws IOException {
 		switch (ds.getType()) {
 		case KAFKA:
+			Marshaller<byte[], String> km = (Marshaller<byte[], String>) ds.getMarshaller();
 			JavaPairInputDStream<String, byte[]> kafka = this.kafka((KafkaDataSource) ds, functor.getAnnotation(Streaming.class).topics());
-			traceStream(kafka, ds, detail);
-			Marshaller<byte[], String> km = (Marshaller<byte[], String>) Marshaller.parseMarshaller(functor, ds);
 			return kafka.mapToPair(t -> new Tuple2<String, F>(km.unmarshallId(t._1), km.unmarshall(t._2, functor)));
 		default:
 			throw new UnsupportedOperationException("Unsupportted stocking mode: " + ds.getType() + " on " + functor);
@@ -308,6 +325,7 @@ public class SparkCalculator implements Serializable {
 		opts.addOption("c", "classes", true,
 				"Calculus classes list to be calculated, splitted by comma. Default scan all subclasses of Calculus, with annotation \"Calculating\".");
 		opts.addOption("m", "mode", true, "Calculating mode, STOCKING or STREAMING. Default STREAMING.");
+		opts.addOption("d", "debug", true, "Debug mode, TRUE or FALSE. Default FALSE.");
 		opts.addOption("h", "help", false, "Print help information like this.");
 
 		CommandLine cmd = parser.parse(opts, args);
@@ -318,35 +336,32 @@ public class SparkCalculator implements Serializable {
 	private void parseDatasources(String appname, Map<String, Properties> dsprops) {
 		for (String dsid : dsprops.keySet()) {
 			Properties dbprops = dsprops.get(dsid);
+			Marshaller<?, ?> m;
+			try {
+				m = (Marshaller<?, ?>) Class.forName(dbprops.getProperty("marshaller")).newInstance();
+			} catch (Exception e) {
+				m = null;
+			}
 			Type type = Type.valueOf(dbprops.getProperty("type"));
 			switch (type) {
 			case CONSTAND_TO_CONSOLE:
 				stocker.datasources.put(dsid, new ConstDataSource(dbprops.getProperty("values").split(",")));
 				break;
 			case HBASE:
-				stocker.datasources.put(dsid, new HbaseDataSource(dbprops.getProperty("config", "hbase-site.xml")));
+				stocker.datasources.put(dsid, new HbaseDataSource(dbprops.getProperty("config", "hbase-site.xml"), m));
 				break;
 			case MONGODB:
-				stocker.datasources.put(dsid, new MongoDataSource(dbprops
-						.getProperty("uri")/*
-											 * , dbprops.getProperty("authdb"),
-											 * dbprops.getProperty("authdb")
-											 */));
+				stocker.datasources.put(dsid, new MongoDataSource(dbprops.getProperty("uri"), m));
+				// , dbprops.getProperty("authdb"),dbprops.getProperty("authdb")
 				break;
 			case KAFKA:
 				stocker.datasources.put(dsid, new KafkaDataSource(dbprops.getProperty("servers"), dbprops.getProperty("root"),
-						Integer.parseInt(dbprops.getProperty("topic.partitions", "1")), appname));
+						Integer.parseInt(dbprops.getProperty("topic.partitions", "1")), appname, m));
 				break;
 			default:
 				logger.warn("Unsupportted type: " + type);
 			}
 		}
-	}
-
-	@SuppressWarnings("deprecation")
-	private void traceStream(JavaDStreamLike stream, DataSource ds, Detail detail) {
-		if (logger.isTraceEnabled()) logger.trace("{" + Functors.count(stream) + "} Raw records from " + ds.getType() + " [" + ds.toString()
-				+ "]=>" + detail.toString() + "].");
 	}
 
 	private void traceRDD(JavaRDDLike rdd, DataSource ds, Detail detail) {

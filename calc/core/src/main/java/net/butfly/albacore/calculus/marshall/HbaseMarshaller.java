@@ -32,9 +32,17 @@ import net.butfly.albacore.calculus.utils.Reflections;
 
 public class HbaseMarshaller implements Marshaller<Result, ImmutableBytesWritable> {
 	private static final long serialVersionUID = -4529825710243214685L;
+	public static final String SCAN_LIMIT = "hbase.calculus.limit";
+	public static final String SCAN_OFFSET = "hbase.calculus.limit";
 
 	@Override
 	public <T extends Functor<T>> T unmarshall(Result from, Class<T> to) {
+		if (Logger.isTraceEnabled(HbaseMarshaller.class)) {
+			StringBuilder sb = new StringBuilder("Found result with cell: ");
+			for (Cell c : from.rawCells())
+				sb.append(Bytes.toString(CellUtil.cloneQualifier(c))).append(", ");
+			Logger.trace(HbaseMarshaller.class, sb.toString());
+		}
 		String dcf = to.isAnnotationPresent(HbaseColumnFamily.class) ? to.getAnnotation(HbaseColumnFamily.class).value() : null;
 		T t;
 		try {

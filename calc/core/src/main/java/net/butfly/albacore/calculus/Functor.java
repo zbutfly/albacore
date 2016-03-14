@@ -6,9 +6,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import net.butfly.albacore.calculus.marshall.DefaultMarshaller;
-import net.butfly.albacore.calculus.marshall.Marshaller;
-
 public interface Functor<F extends Functor<F>> extends Serializable {
 	static final String NOT_DEFINED = "";
 
@@ -27,8 +24,6 @@ public interface Functor<F extends Functor<F>> extends Serializable {
 		String table() default NOT_DEFINED;
 
 		String filter() default NOT_DEFINED;
-
-		Class<? extends Marshaller<?, ?>> marshaller() default DefaultMarshaller.class;
 	}
 
 	@Retention(RetentionPolicy.RUNTIME)
@@ -39,11 +34,11 @@ public interface Functor<F extends Functor<F>> extends Serializable {
 		String source();
 
 		String[] topics() default {};
-
-		Class<? extends Marshaller<?, ?>> marshaller() default DefaultMarshaller.class;
 	}
 
-	public class VoidFunctor implements Functor<VoidFunctor> {
+	public final class VoidFunctor implements Functor<VoidFunctor> {
 		private static final long serialVersionUID = -5722216150920437482L;
+
+		private VoidFunctor() {}
 	}
 }

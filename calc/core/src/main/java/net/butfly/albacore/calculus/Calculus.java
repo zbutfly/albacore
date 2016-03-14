@@ -4,9 +4,11 @@ import java.io.Serializable;
 
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.Function;
+import org.apache.spark.api.java.function.VoidFunction;
+import org.apache.spark.streaming.api.java.JavaStreamingContext;
 
-public interface Calculus<OUT extends Functor<OUT>> extends Serializable {
-	@SuppressWarnings("unchecked")
-	void calculate(final JavaSparkContext sc, Functors functors, Function<JavaRDD<OUT>, Void>... handler) throws Exception;
+public interface Calculus<K, OUT extends Functor<OUT>> extends Serializable {
+	void stocking(final JavaSparkContext sc, final Functors<K> functors, final VoidFunction<JavaRDD<OUT>> handler);
+
+	void streaming(final JavaStreamingContext ssc, final Functors<K> functors, final VoidFunction<JavaRDD<OUT>> handler);
 }

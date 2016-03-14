@@ -44,8 +44,8 @@ public abstract class DataSource implements Serializable {
 		String group;
 		int topicPartitions;
 
-		public KafkaDataSource(String servers, String root, int topicPartitions, String group) {
-			super(Type.KAFKA, new KafkaMarshaller());
+		public KafkaDataSource(String servers, String root, int topicPartitions, String group, Marshaller<?, ?> marshaller) {
+			super(Type.KAFKA, null == marshaller ? marshaller : new KafkaMarshaller());
 			int pos = servers.indexOf('/');
 			if (root == null && pos >= 0) {
 				this.servers = servers.substring(0, pos);
@@ -56,6 +56,10 @@ public abstract class DataSource implements Serializable {
 			}
 			this.group = group;
 			this.topicPartitions = topicPartitions;
+		}
+
+		public KafkaDataSource(String servers, String root, int topicPartitions, String group) {
+			this(servers, root, topicPartitions, group, new KafkaMarshaller());
 		}
 
 		@Override
@@ -85,8 +89,8 @@ public abstract class DataSource implements Serializable {
 		String configFile;
 		Connection hconn;
 
-		public HbaseDataSource(String configFile) {
-			super(Type.HBASE, new HbaseMarshaller());
+		public HbaseDataSource(String configFile, Marshaller<?, ?> marshaller) {
+			super(Type.HBASE, null == marshaller ? marshaller : new HbaseMarshaller());
 			this.configFile = configFile;
 			// XXX
 			// this.hconn = ConnectionFactory.createConnection(conf)
@@ -111,9 +115,13 @@ public abstract class DataSource implements Serializable {
 		String uri;
 		// String db;
 
-		public MongoDataSource(String uri) {
-			super(Type.MONGODB, new MongoMarshaller());
+		public MongoDataSource(String uri, Marshaller<?, ?> marshaller) {
+			super(Type.MONGODB, null == marshaller ? marshaller : new MongoMarshaller());
 			this.uri = uri;
+		}
+
+		public MongoDataSource(String uri) {
+			this(uri, new MongoMarshaller());
 		}
 
 		@Override
