@@ -58,7 +58,6 @@ import net.butfly.albacore.calculus.Calculating.Mode;
 import net.butfly.albacore.calculus.Functor.Stocking;
 import net.butfly.albacore.calculus.Functor.Streaming;
 import net.butfly.albacore.calculus.Functor.Type;
-import net.butfly.albacore.calculus.datasource.DataContext;
 import net.butfly.albacore.calculus.datasource.DataContext.MongoContext;
 import net.butfly.albacore.calculus.datasource.DataSource;
 import net.butfly.albacore.calculus.datasource.DataSource.ConstDataSource;
@@ -75,11 +74,11 @@ public class Calculator implements Serializable {
 	private static final long serialVersionUID = 7850755405377027618L;
 
 	private static final Logger logger = LoggerFactory.getLogger(Calculator.class);
+	private static SparkConf sconf;
+	private static JavaSparkContext sc;
+	private static JavaStreamingContext ssc;
+	private static Map<String, DataSource> datasources = new HashMap<>();
 
-	private SparkConf sconf;
-	private JavaSparkContext sc;
-	private JavaStreamingContext ssc;
-	private Map<String, DataSource> datasources = new HashMap<>();
 	public boolean validate;
 	private int dura;
 	private Set<Class<?>> calculuses;
@@ -159,32 +158,48 @@ public class Calculator implements Serializable {
 	private <OUT extends Functor<OUT>> Calculator calculate() throws Exception {
 		for (Class<?> c : calculuses) {
 			logger.info("Calculus " + c.toString() + " starting... ");
-			Calculus<?, ?> calc;
+			Calculus<?, OUT> calc;
 			try {
-				calc = (Calculus<?, ?>) c.newInstance();
+				calc = (Calculus<?, OUT>) c.newInstance();
 			} catch (Exception e) {
 				logger.error("Calculus " + c.toString() + " constructor failure, ignored", e);
 				continue;
 			}
 			Calculating calcing = c.getAnnotation(Calculating.class);
 
-			FunctorConfig<?> save = scan(Mode.STOCKING, (Class) calcing.saving());
 			FunctorConfig[] configs = scan(mode, calcing.value());
+			VoidFunction<JavaRDD<OUT>> handler = handle(calc, calcing, scan(Mode.STOCKING, (Class) calcing.saving()));
 			switch (mode) {
 			case STOCKING:
-				calc.stocking(sc, read(configs), save == null ? null : r -> {
-					if (null != r) ((JavaRDD<OUT>) r).foreachAsync(new WriteFunction<OUT>(datasources.get(save.dbid), save.detail));
-				});
+				calc.stocking(sc, read(configs), handler);
 				break;
 			case STREAMING:
-				calc.streaming(ssc, read(configs), save == null ? null : r -> {
-					if (null != r) ((JavaRDD<OUT>) r).foreachAsync(new WriteFunction<OUT>(datasources.get(save.dbid), save.detail));
-				});
+				calc.streaming(ssc, read(configs), handler);
 				break;
 			}
 			logger.info("Calculus " + c.toString() + " started. ");
 		}
 		return this;
+	}
+
+	private static <OUT extends Functor<OUT>> VoidFunction<JavaRDD<OUT>> handle(Calculus<?, OUT> calc, Calculating calcing,
+			FunctorConfig<OUT> save) {
+		return calc == null ? null : r -> {
+			if (calc.saving(r) && null != r) r.foreachAsync(o -> {
+				switch (datasources.get(save.dbid).getType()) {
+				case MONGODB:
+					MongoContext dc = new MongoContext(datasources.get(save.dbid));
+					MongoCollection col = dc.getJongo().getCollection(save.detail.mongoTable);
+					col.save(o);
+					break;
+				case CONSTAND_TO_CONSOLE:
+					logger.info("Result: " + o.toString());
+					break;
+				default:
+					throw new UnsupportedOperationException("Write to " + datasources.get(save.dbid).getType() + " is not supported.");
+				}
+			});
+		};
 	}
 
 	private FunctorConfig<? extends Functor<?>>[] scan(Mode mode, Class<? extends Functor<?>>[] functors) throws IOException {
@@ -372,7 +387,7 @@ public class Calculator implements Serializable {
 		return cmd;
 	}
 
-	private void parseDatasources(String appname, Map<String, Properties> dsprops) {
+	private static void parseDatasources(String appname, Map<String, Properties> dsprops) {
 		for (String dsid : dsprops.keySet()) {
 			Properties dbprops = dsprops.get(dsid);
 			Marshaller<?, ?> m;
@@ -406,43 +421,6 @@ public class Calculator implements Serializable {
 	private void traceRDD(JavaRDDLike rdd, DataSource ds, Detail detail) {
 		if (logger.isTraceEnabled()) logger
 				.trace("{" + rdd.count() + "} Raw records from " + ds.getType() + " [" + ds.toString() + "]=>" + detail.toString() + "]. ");
-	}
-
-	private static class WriteFunction<F extends Functor<F>> implements VoidFunction<F> {
-		private static final long serialVersionUID = -3114062446562954303L;
-		private DataSource datasource;
-		private DataContext datacontext;
-		private Detail detail;
-
-		public WriteFunction(DataSource ds, Detail detail) {
-			this.datasource = ds;
-			this.detail = detail;
-			switch (ds.getType()) {
-			case MONGODB:
-				this.datacontext = new MongoContext(ds);
-				break;
-			case CONSTAND_TO_CONSOLE:
-				break;
-			default:
-				throw new UnsupportedOperationException("Write to " + datasource.getType() + " is not supported.");
-			}
-		}
-
-		@Override
-		public void call(F result) throws Exception {
-			switch (datasource.getType()) {
-			case MONGODB:
-				MongoContext dc = (MongoContext) this.datacontext;
-				MongoCollection col = dc.getJongo().getCollection(detail.mongoTable);
-				col.save(result);
-				break;
-			case CONSTAND_TO_CONSOLE:
-				logger.info("Result: " + result.toString());
-				break;
-			default:
-				throw new UnsupportedOperationException("Write to " + datasource.getType() + " is not supported.");
-			}
-		}
 	}
 
 	public static final InputStream scanInputStream(String file) throws FileNotFoundException, IOException {

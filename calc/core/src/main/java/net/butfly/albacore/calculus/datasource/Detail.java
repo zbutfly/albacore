@@ -1,8 +1,11 @@
 package net.butfly.albacore.calculus.datasource;
 
+import java.io.Serializable;
+
 import net.butfly.albacore.calculus.Functor.Type;
 
-public class Detail {
+public class Detail implements Serializable {
+	private static final long serialVersionUID = 1900035964021610093L;
 	public Type type;
 	// hbase conf
 	public String hbaseTable;

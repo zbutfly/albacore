@@ -12,7 +12,7 @@ public interface Calculus<K, OUT extends Functor<OUT>> extends Serializable {
 
 	void streaming(final JavaStreamingContext ssc, final Functors<K> functors, final VoidFunction<JavaRDD<OUT>> handler);
 
-	default boolean saving(OUT out) {
+	default boolean saving(JavaRDD<OUT> r) {
 		return true;
 	}
 }
