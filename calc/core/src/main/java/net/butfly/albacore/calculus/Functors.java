@@ -3,9 +3,15 @@ package net.butfly.albacore.calculus;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
 
 import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
+import org.apache.spark.streaming.api.java.JavaStreamingContext;
+
+import scala.Tuple2;
 
 @SuppressWarnings("unchecked")
 public final class Functors<K> implements Serializable {
@@ -15,10 +21,6 @@ public final class Functors<K> implements Serializable {
 
 	public <F extends Functor<F>> void streaming(Class<F> functor, JavaPairDStream<K, F> ds) {
 		this.streamings.put(functor, ds);
-	}
-
-	public <F extends Functor<F>> void streaming(Class<F> functor, JavaPairRDD<K, F> rdd) {
-		this.streamings.put(functor, streamize(rdd));
 	}
 
 	public <F extends Functor<F>> void stocking(Class<F> functor, JavaPairRDD<K, F> rdd) {
@@ -33,8 +35,10 @@ public final class Functors<K> implements Serializable {
 		return (JavaPairRDD<K, F>) stocking.get(functor);
 	}
 
-	// TODO
-	public static <K, F extends Functor<F>> JavaPairDStream<K, F> streamize(JavaPairRDD<K, F> rdd) {
-		return null;
+	public static <K, F extends Functor<F>> JavaPairDStream<K, F> streamize(JavaStreamingContext ssc, JavaPairRDD<K, F> rdd) {
+		Queue<JavaRDD<Tuple2<K, F>>> q = new ArrayBlockingQueue<>(1);
+		q.add(rdd.map(t -> t));
+		return ssc.queueStream(q).mapToPair(t -> t).cache();
 	}
+
 }

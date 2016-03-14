@@ -11,4 +11,8 @@ public interface Calculus<K, OUT extends Functor<OUT>> extends Serializable {
 	void stocking(final JavaSparkContext sc, final Functors<K> functors, final VoidFunction<JavaRDD<OUT>> handler);
 
 	void streaming(final JavaStreamingContext ssc, final Functors<K> functors, final VoidFunction<JavaRDD<OUT>> handler);
+
+	default boolean saving(OUT out) {
+		return true;
+	}
 }

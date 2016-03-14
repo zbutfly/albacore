@@ -1,5 +1,7 @@
 package net.butfly.albacore.calculus.datasource;
 
+import java.io.Serializable;
+
 import org.jongo.Jongo;
 
 import com.mongodb.DB;
@@ -8,7 +10,8 @@ import com.mongodb.MongoClientURI;
 
 import net.butfly.albacore.calculus.datasource.DataSource.MongoDataSource;
 
-public abstract class DataContext {
+public abstract class DataContext implements Serializable {
+	private static final long serialVersionUID = -3613424612855174529L;
 	DataSource datasource;
 
 	public DataContext(DataSource ds) {
@@ -16,6 +19,7 @@ public abstract class DataContext {
 	}
 
 	public static class MongoContext extends DataContext {
+		private static final long serialVersionUID = -3760899842144713901L;
 		MongoClientURI uri;
 		MongoClient client;
 		DB mongo;

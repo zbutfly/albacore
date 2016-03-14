@@ -12,9 +12,9 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 
 import net.butfly.albacore.calculus.Functor;
-import net.butfly.albacore.calculus.FunctorConfig.Detail;
 import net.butfly.albacore.calculus.datasource.DataContext.MongoContext;
 import net.butfly.albacore.calculus.datasource.DataSource;
+import net.butfly.albacore.calculus.datasource.Detail;
 import net.butfly.albacore.calculus.datasource.Index;
 import net.butfly.albacore.calculus.utils.Reflections;
 

@@ -24,9 +24,9 @@ import com.google.common.base.Defaults;
 import com.jcabi.log.Logger;
 
 import net.butfly.albacore.calculus.Functor;
-import net.butfly.albacore.calculus.FunctorConfig.Detail;
 import net.butfly.albacore.calculus.datasource.DataSource;
 import net.butfly.albacore.calculus.datasource.DataSource.HbaseDataSource;
+import net.butfly.albacore.calculus.datasource.Detail;
 import net.butfly.albacore.calculus.datasource.HbaseColumnFamily;
 import net.butfly.albacore.calculus.utils.Reflections;
 
