@@ -27,11 +27,13 @@ public class MongoMarshaller extends BsonMarshaller<BSONObject, ObjectId> {
 
 	@Override
 	public String unmarshallId(ObjectId id) {
+		if (null == id) return null;
 		return id.toString();
 	}
 
 	@Override
 	public ObjectId marshallId(String id) {
+		if (null == id) return null;
 		return new ObjectId(id);
 	}
 

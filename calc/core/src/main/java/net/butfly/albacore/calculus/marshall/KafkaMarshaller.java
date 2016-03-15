@@ -20,7 +20,7 @@ public class KafkaMarshaller extends BsonMarshaller<byte[], String> {
 
 	@Override
 	protected BSONObject encode(byte[] value) {
-		return BSON.decode(value);
+		return (BSONObject) BSON.decode(value).get("value");
 	}
 
 	@Override

@@ -37,6 +37,7 @@ public class HbaseMarshaller implements Marshaller<Result, ImmutableBytesWritabl
 
 	@Override
 	public <T extends Functor<T>> T unmarshall(Result from, Class<T> to) {
+		if (null == from) return null;
 		if (Logger.isTraceEnabled(HbaseMarshaller.class)) {
 			StringBuilder sb = new StringBuilder("Found result with cell: ");
 			for (Cell c : from.rawCells())
@@ -83,11 +84,13 @@ public class HbaseMarshaller implements Marshaller<Result, ImmutableBytesWritabl
 
 	@Override
 	public String unmarshallId(ImmutableBytesWritable id) {
+		if (null == id) return null;
 		return Bytes.toString(id.get());
 	}
 
 	@Override
 	public ImmutableBytesWritable marshallId(String id) {
+		if (null == id) return null;
 		return new ImmutableBytesWritable(Bytes.toBytes(id));
 	}
 
