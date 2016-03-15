@@ -1,4 +1,4 @@
-package net.butfly.albacore.calculus;
+package net.butfly.albacore.calculus.functor;
 
 import java.io.Serializable;
 import java.lang.annotation.ElementType;
@@ -34,11 +34,5 @@ public interface Functor<F extends Functor<F>> extends Serializable {
 		String source();
 
 		String[] topics() default {};
-	}
-
-	public final class VoidFunctor implements Functor<VoidFunctor> {
-		private static final long serialVersionUID = -5722216150920437482L;
-
-		private VoidFunctor() {}
 	}
 }

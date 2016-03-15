@@ -51,21 +51,6 @@
 			</exclusions>
 		</dependency>
 		<dependency>
-			<groupId>org.jongo</groupId>
-			<artifactId>jongo</artifactId>
-			<version>1.2</version>
-		</dependency>
-		<dependency>
-			<groupId>org.mongodb</groupId>
-			<artifactId>mongodb-driver-async</artifactId>
-			<version>3.2.2</version>
-		</dependency>
-		<dependency>
-			<groupId>org.mongodb</groupId>
-			<artifactId>mongodb-driver</artifactId>
-			<version>3.2.2</version>
-		</dependency>
-		<dependency>
 			<groupId>org.mongodb.mongo-hadoop</groupId>
 			<artifactId>mongo-hadoop-core</artifactId>
 			<version>1.5.0</version>
@@ -99,6 +84,21 @@
 					<groupId>org.apache.hadoop</groupId>
 				</exclusion>
 			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.mongodb</groupId>
+			<artifactId>mongodb-driver-async</artifactId>
+			<version>3.2.2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.mongodb</groupId>
+			<artifactId>mongodb-driver</artifactId>
+			<version>3.2.2</version>
+		</dependency>
+		<dependency>
+			<groupId>de.undercouch</groupId>
+			<artifactId>bson4jackson</artifactId>
+			<version>2.4.0</version>
 		</dependency>
 		<dependency>
 			<groupId>commons-cli</groupId>

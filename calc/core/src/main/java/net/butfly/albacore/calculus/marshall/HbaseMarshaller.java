@@ -23,9 +23,9 @@ import com.google.common.base.CaseFormat;
 import com.google.common.base.Defaults;
 import com.jcabi.log.Logger;
 
-import net.butfly.albacore.calculus.Functor;
 import net.butfly.albacore.calculus.datasource.DataSource;
 import net.butfly.albacore.calculus.datasource.DataSource.HbaseDataSource;
+import net.butfly.albacore.calculus.functor.Functor;
 import net.butfly.albacore.calculus.datasource.Detail;
 import net.butfly.albacore.calculus.datasource.HbaseColumnFamily;
 import net.butfly.albacore.calculus.utils.Reflections;
@@ -92,11 +92,11 @@ public class HbaseMarshaller implements Marshaller<Result, ImmutableBytesWritabl
 	}
 
 	@Override
-	public <F extends Functor<F>> void confirm(Class<F> functor, DataSource ds, Detail detail) {
+	public <F extends Functor<F>> boolean confirm(Class<F> functor, DataSource ds, Detail detail) {
 		try {
 			TableName ht = TableName.valueOf(detail.hbaseTable);
 			Admin a = ((HbaseDataSource) ds).getHconn().getAdmin();
-			if (a.tableExists(ht)) return;
+			if (a.tableExists(ht)) return true;
 			Set<String> families = new HashSet<>();
 			Set<String> columns = new HashSet<>();
 			String dcf = functor.isAnnotationPresent(HbaseColumnFamily.class) ? functor.getAnnotation(HbaseColumnFamily.class).value()
@@ -119,8 +119,11 @@ public class HbaseMarshaller implements Marshaller<Result, ImmutableBytesWritabl
 			for (String col : columns)
 				a.addColumn(ht, new HColumnDescriptor(col));
 			a.enableTable(ht);
+			return true;
 		} catch (IOException e) {
-			throw new IllegalArgumentException("Hbase verify failure on server: " + ds.toString() + ", class: " + functor.toString());
+			Logger.error(HbaseMarshaller.class,
+					"Failure confirm data source: " + functor.getName() + " => " + ds.toString() + " => " + detail.toString());
+			return false;
 		}
 	}
 

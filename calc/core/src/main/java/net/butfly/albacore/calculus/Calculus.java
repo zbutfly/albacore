@@ -2,17 +2,20 @@ package net.butfly.albacore.calculus;
 
 import java.io.Serializable;
 
-import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 
-public interface Calculus<K, OUT extends Functor<OUT>> extends Serializable {
-	void stocking(final JavaSparkContext sc, final Functors<K> functors, final VoidFunction<JavaRDD<OUT>> handler);
+import net.butfly.albacore.calculus.functor.Functor;
+import net.butfly.albacore.calculus.functor.Functors;
 
-	void streaming(final JavaStreamingContext ssc, final Functors<K> functors, final VoidFunction<JavaRDD<OUT>> handler);
+public interface Calculus<OUTK, OUTV extends Functor<OUTV>> extends Serializable {
+	void stocking(final JavaSparkContext sc, final Functors<OUTK> functors, final VoidFunction<JavaPairRDD<OUTK, OUTV>> handler);
 
-	default boolean saving(JavaRDD<OUT> r) {
+	void streaming(final JavaStreamingContext ssc, final Functors<OUTK> functors, final VoidFunction<JavaPairRDD<OUTK, OUTV>> handler);
+
+	default boolean saving(JavaPairRDD<OUTK, OUTV> r) {
 		return true;
 	}
 }

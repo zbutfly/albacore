@@ -6,8 +6,8 @@ import org.apache.hadoop.hbase.client.Connection;
 
 import com.google.common.base.Joiner;
 
-import net.butfly.albacore.calculus.Functor;
-import net.butfly.albacore.calculus.Functor.Type;
+import net.butfly.albacore.calculus.functor.Functor;
+import net.butfly.albacore.calculus.functor.Functor.Type;
 import net.butfly.albacore.calculus.marshall.HbaseMarshaller;
 import net.butfly.albacore.calculus.marshall.KafkaMarshaller;
 import net.butfly.albacore.calculus.marshall.Marshaller;
@@ -113,7 +113,6 @@ public abstract class DataSource implements Serializable {
 	public static class MongoDataSource extends DataSource {
 		private static final long serialVersionUID = -2617369621178264387L;
 		String uri;
-		// String db;
 
 		public MongoDataSource(String uri, Marshaller<?, ?> marshaller) {
 			super(Type.MONGODB, null == marshaller ? marshaller : new MongoMarshaller());

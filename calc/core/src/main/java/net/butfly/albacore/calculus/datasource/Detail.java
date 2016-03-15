@@ -2,7 +2,7 @@ package net.butfly.albacore.calculus.datasource;
 
 import java.io.Serializable;
 
-import net.butfly.albacore.calculus.Functor.Type;
+import net.butfly.albacore.calculus.functor.Functor.Type;
 
 public class Detail implements Serializable {
 	private static final long serialVersionUID = 1900035964021610093L;

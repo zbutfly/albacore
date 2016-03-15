@@ -1,4 +1,4 @@
-package net.butfly.albacore.calculus.marshall;
+package net.butfly.albacore.calculus.marshall.bson;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -7,7 +7,6 @@ import org.bson.BSONObject;
 import org.bson.LazyBSONCallback;
 import org.bson.io.BasicOutputBuffer;
 import org.bson.io.OutputBuffer;
-import org.jongo.marshall.jackson.bson4jackson.MongoBsonFactory;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -20,10 +19,15 @@ import com.mongodb.DBObject;
 import com.mongodb.DefaultDBEncoder;
 import com.mongodb.LazyDBObject;
 
-import net.butfly.albacore.calculus.Functor;
+import de.undercouch.bson4jackson.BsonFactory;
+import de.undercouch.bson4jackson.BsonParser;
+import net.butfly.albacore.calculus.functor.Functor;
+import net.butfly.albacore.calculus.marshall.Marshaller;
+import net.butfly.albacore.calculus.marshall.MongoMarshaller;
 
 public abstract class BsonMarshaller<V, K> implements Marshaller<V, K> {
 	private static final long serialVersionUID = -7385678674433019238L;
+	protected static BsonFactory factory = new BsonFactory().enable(BsonParser.Feature.HONOR_DOCUMENT_LENGTH);
 	protected static ObjectMapper mapper = new ObjectMapper(new MongoBsonFactory())
 			.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 

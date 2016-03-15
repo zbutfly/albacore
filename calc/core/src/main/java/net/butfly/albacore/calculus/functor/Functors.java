@@ -1,4 +1,4 @@
-package net.butfly.albacore.calculus;
+package net.butfly.albacore.calculus.functor;
 
 import java.io.Serializable;
 import java.util.HashMap;

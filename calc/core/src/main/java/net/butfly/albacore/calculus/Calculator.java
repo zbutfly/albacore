@@ -28,11 +28,11 @@ import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.filter.PageFilter;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
+import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
 import org.apache.hadoop.hbase.protobuf.ProtobufUtil;
 import org.apache.hadoop.hbase.util.Base64;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaRDDLike;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.VoidFunction;
@@ -43,27 +43,29 @@ import org.apache.spark.streaming.api.java.JavaPairInputDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.spark.streaming.kafka.KafkaUtils;
 import org.bson.BSONObject;
-import org.jongo.MongoCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.mongodb.MongoClientURI;
 import com.mongodb.hadoop.MongoInputFormat;
+import com.mongodb.hadoop.MongoOutputFormat;
 import com.mongodb.hadoop.util.MongoClientURIBuilder;
 
 import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
 import kafka.serializer.DefaultDecoder;
 import kafka.serializer.StringDecoder;
 import net.butfly.albacore.calculus.Calculating.Mode;
-import net.butfly.albacore.calculus.Functor.Stocking;
-import net.butfly.albacore.calculus.Functor.Streaming;
-import net.butfly.albacore.calculus.Functor.Type;
-import net.butfly.albacore.calculus.datasource.DataContext.MongoContext;
 import net.butfly.albacore.calculus.datasource.DataSource;
 import net.butfly.albacore.calculus.datasource.DataSource.ConstDataSource;
 import net.butfly.albacore.calculus.datasource.DataSource.HbaseDataSource;
 import net.butfly.albacore.calculus.datasource.DataSource.KafkaDataSource;
 import net.butfly.albacore.calculus.datasource.DataSource.MongoDataSource;
+import net.butfly.albacore.calculus.functor.Functor;
+import net.butfly.albacore.calculus.functor.FunctorConfig;
+import net.butfly.albacore.calculus.functor.Functors;
+import net.butfly.albacore.calculus.functor.Functor.Stocking;
+import net.butfly.albacore.calculus.functor.Functor.Streaming;
+import net.butfly.albacore.calculus.functor.Functor.Type;
 import net.butfly.albacore.calculus.datasource.Detail;
 import net.butfly.albacore.calculus.marshall.Marshaller;
 import net.butfly.albacore.calculus.utils.Reflections;
@@ -158,17 +160,55 @@ public class Calculator implements Serializable {
 	private <OUT extends Functor<OUT>> Calculator calculate() throws Exception {
 		for (Class<?> c : calculuses) {
 			logger.info("Calculus " + c.toString() + " starting... ");
-			Calculus<?, OUT> calc;
+			Calculus<String, OUT> calc;
 			try {
-				calc = (Calculus<?, OUT>) c.newInstance();
+				calc = (Calculus<String, OUT>) c.newInstance();
 			} catch (Exception e) {
 				logger.error("Calculus " + c.toString() + " constructor failure, ignored", e);
 				continue;
 			}
 			Calculating calcing = c.getAnnotation(Calculating.class);
-
 			FunctorConfig[] configs = scan(mode, calcing.value());
-			VoidFunction<JavaRDD<OUT>> handler = handle(calc, calcing, scan(Mode.STOCKING, (Class) calcing.saving()));
+			Class<OUT> out = Reflections.resolveGenericParameter(c, Calculus.class, "OUTV");
+			FunctorConfig<OUT> save = scan(Mode.STOCKING, out);
+
+			VoidFunction<JavaPairRDD<String, OUT>> handler = null;
+			if (calc != null) {
+				DataSource ds = datasources.get(save.dbid);
+				Configuration conf = HBaseConfiguration.create();
+				final Marshaller<?, ?> m = ds.getMarshaller();
+				switch (ds.getType()) {
+				case HBASE:
+					try {
+						conf.addResource(scanInputStream(((HbaseDataSource) ds).getConfigFile()));
+					} catch (IOException e) {
+						throw new RuntimeException("HBase configuration invalid.", e);
+					}
+					conf.set(TableOutputFormat.OUTPUT_TABLE, save.detail.hbaseTable);
+					handler = r -> r.mapToPair(t -> new Tuple2<>(m.marshallId(t._1), m.marshall(t._2))).saveAsNewAPIHadoopFile(null,
+							ImmutableBytesWritable.class, Result.class, TableOutputFormat.class, conf);
+					break;
+				case MONGODB:
+					MongoDataSource mds = (MongoDataSource) ds;
+					conf.set("mongo.job.output.format", MongoOutputFormat.class.getName());
+					MongoClientURI uri = new MongoClientURI(mds.getUri());
+					conf.set("mongo.output.uri",
+							new MongoClientURIBuilder(uri).collection(uri.getDatabase(), save.detail.mongoTable).build().toString());
+					handler = r -> r.mapToPair(t -> new Tuple2<>(m.marshallId(t._1), m.marshall(t._2))).saveAsNewAPIHadoopFile(null,
+							Object.class, BSONObject.class, MongoOutputFormat.class, conf);
+					break;
+				case CONSTAND_TO_CONSOLE:
+					String[] values = ((ConstDataSource) ds).getValues();
+					if (values == null) values = new String[0];
+					handler = r -> {
+						for (Tuple2<?, OUT> o : r.collect())
+							logger.info("Calculated, result => " + o._2.toString());
+					};
+				default:
+					throw new UnsupportedOperationException("Unsupportted stocking mode: " + ds.getType());
+				}
+			}
+
 			switch (mode) {
 			case STOCKING:
 				calc.stocking(sc, read(configs), handler);
@@ -180,26 +220,6 @@ public class Calculator implements Serializable {
 			logger.info("Calculus " + c.toString() + " started. ");
 		}
 		return this;
-	}
-
-	private static <OUT extends Functor<OUT>> VoidFunction<JavaRDD<OUT>> handle(Calculus<?, OUT> calc, Calculating calcing,
-			FunctorConfig<OUT> save) {
-		return calc == null ? null : r -> {
-			if (calc.saving(r) && null != r) r.foreachAsync(o -> {
-				switch (datasources.get(save.dbid).getType()) {
-				case MONGODB:
-					MongoContext dc = new MongoContext(datasources.get(save.dbid));
-					MongoCollection col = dc.getJongo().getCollection(save.detail.mongoTable);
-					col.save(o);
-					break;
-				case CONSTAND_TO_CONSOLE:
-					logger.info("Result: " + o.toString());
-					break;
-				default:
-					throw new UnsupportedOperationException("Write to " + datasources.get(save.dbid).getType() + " is not supported.");
-				}
-			});
-		};
 	}
 
 	private FunctorConfig<? extends Functor<?>>[] scan(Mode mode, Class<? extends Functor<?>>[] functors) throws IOException {
@@ -282,7 +302,7 @@ public class Calculator implements Serializable {
 			try {
 				hconf.addResource(scanInputStream(((HbaseDataSource) ds).getConfigFile()));
 			} catch (IOException e) {
-				throw new RuntimeException(e);
+				throw new RuntimeException("HBase configuration invalid.", e);
 			}
 			hconf.set(TableInputFormat.INPUT_TABLE, detail.hbaseTable);
 			if (debug) {
@@ -387,7 +407,7 @@ public class Calculator implements Serializable {
 		return cmd;
 	}
 
-	private static void parseDatasources(String appname, Map<String, Properties> dsprops) {
+	private void parseDatasources(String appname, Map<String, Properties> dsprops) {
 		for (String dsid : dsprops.keySet()) {
 			Properties dbprops = dsprops.get(dsid);
 			Marshaller<?, ?> m;
@@ -409,8 +429,11 @@ public class Calculator implements Serializable {
 				// , dbprops.getProperty("authdb"),dbprops.getProperty("authdb")
 				break;
 			case KAFKA:
-				datasources.put(dsid, new KafkaDataSource(dbprops.getProperty("servers"), dbprops.getProperty("root"),
-						Integer.parseInt(dbprops.getProperty("topic.partitions", "1")), appname, m));
+
+				datasources.put(dsid,
+						new KafkaDataSource(dbprops.getProperty("servers"), dbprops.getProperty("root"),
+								Integer.parseInt(dbprops.getProperty("topic.partitions", "1")),
+								debug ? appname + UUID.randomUUID().toString() : appname, m));
 				break;
 			default:
 				logger.warn("Unsupportted type: " + type);

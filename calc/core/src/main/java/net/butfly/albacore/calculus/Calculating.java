@@ -5,7 +5,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import net.butfly.albacore.calculus.Functor.VoidFunctor;
+import net.butfly.albacore.calculus.functor.Functor;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.TYPE })
@@ -15,6 +15,4 @@ public @interface Calculating {
 	}
 
 	Class<? extends Functor<?>>[] value() default {};
-
-	Class<? extends Functor<?>> saving() default VoidFunctor.class;
 }
