@@ -3,6 +3,7 @@ package net.butfly.albacore.calculus.marshall;
 import java.lang.reflect.Field;
 
 import org.bson.BSONObject;
+import org.bson.types.ObjectId;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.CaseFormat;
@@ -21,17 +22,17 @@ import net.butfly.albacore.calculus.datasource.Detail;
 import net.butfly.albacore.calculus.datasource.Index;
 import net.butfly.albacore.calculus.utils.Reflections;
 
-public class MongoMarshaller extends BsonMarshaller<BSONObject, Object> {
+public class MongoMarshaller extends BsonMarshaller<BSONObject, ObjectId> {
 	private static final long serialVersionUID = 8467183278278572295L;
 
 	@Override
-	public String unmarshallId(Object id) {
+	public String unmarshallId(ObjectId id) {
 		return id.toString();
 	}
 
 	@Override
-	public Object marshallId(String id) {
-		return id;
+	public ObjectId marshallId(String id) {
+		return new ObjectId(id);
 	}
 
 	@Override

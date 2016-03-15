@@ -2,7 +2,6 @@ package net.butfly.albacore.calculus.functor;
 
 import java.io.Serializable;
 
-import net.butfly.albacore.calculus.Calculating;
 import net.butfly.albacore.calculus.Calculating.Mode;
 import net.butfly.albacore.calculus.datasource.Detail;
 

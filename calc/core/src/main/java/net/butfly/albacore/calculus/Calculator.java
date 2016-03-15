@@ -33,7 +33,6 @@ import org.apache.hadoop.hbase.protobuf.ProtobufUtil;
 import org.apache.hadoop.hbase.util.Base64;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.api.java.JavaRDDLike;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.storage.StorageLevel;
@@ -60,13 +59,13 @@ import net.butfly.albacore.calculus.datasource.DataSource.ConstDataSource;
 import net.butfly.albacore.calculus.datasource.DataSource.HbaseDataSource;
 import net.butfly.albacore.calculus.datasource.DataSource.KafkaDataSource;
 import net.butfly.albacore.calculus.datasource.DataSource.MongoDataSource;
+import net.butfly.albacore.calculus.datasource.Detail;
 import net.butfly.albacore.calculus.functor.Functor;
-import net.butfly.albacore.calculus.functor.FunctorConfig;
-import net.butfly.albacore.calculus.functor.Functors;
 import net.butfly.albacore.calculus.functor.Functor.Stocking;
 import net.butfly.albacore.calculus.functor.Functor.Streaming;
 import net.butfly.albacore.calculus.functor.Functor.Type;
-import net.butfly.albacore.calculus.datasource.Detail;
+import net.butfly.albacore.calculus.functor.FunctorConfig;
+import net.butfly.albacore.calculus.functor.Functors;
 import net.butfly.albacore.calculus.marshall.Marshaller;
 import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
@@ -185,8 +184,8 @@ public class Calculator implements Serializable {
 						throw new RuntimeException("HBase configuration invalid.", e);
 					}
 					conf.set(TableOutputFormat.OUTPUT_TABLE, save.detail.hbaseTable);
-					handler = r -> r.mapToPair(t -> new Tuple2<>(m.marshallId(t._1), m.marshall(t._2))).saveAsNewAPIHadoopFile(null,
-							ImmutableBytesWritable.class, Result.class, TableOutputFormat.class, conf);
+					handler = r -> r.mapToPair(t -> null == t ? null : new Tuple2<>(m.marshallId(t._1), m.marshall(t._2)))
+							.saveAsNewAPIHadoopFile(null, ImmutableBytesWritable.class, Result.class, TableOutputFormat.class, conf);
 					break;
 				case MONGODB:
 					MongoDataSource mds = (MongoDataSource) ds;
@@ -194,14 +193,14 @@ public class Calculator implements Serializable {
 					MongoClientURI uri = new MongoClientURI(mds.getUri());
 					conf.set("mongo.output.uri",
 							new MongoClientURIBuilder(uri).collection(uri.getDatabase(), save.detail.mongoTable).build().toString());
-					handler = r -> r.mapToPair(t -> new Tuple2<>(m.marshallId(t._1), m.marshall(t._2))).saveAsNewAPIHadoopFile(null,
-							Object.class, BSONObject.class, MongoOutputFormat.class, conf);
+					handler = r -> r.mapToPair(t -> null == t ? null : new Tuple2<>(m.marshallId(t._1), m.marshall(t._2)))
+							.saveAsNewAPIHadoopFile("", Object.class, BSONObject.class, MongoOutputFormat.class, conf);
 					break;
 				case CONSTAND_TO_CONSOLE:
 					String[] values = ((ConstDataSource) ds).getValues();
 					if (values == null) values = new String[0];
 					handler = r -> {
-						for (Tuple2<?, OUT> o : r.collect())
+						if (null != r) for (Tuple2<?, OUT> o : r.collect())
 							logger.info("Calculated, result => " + o._2.toString());
 					};
 				default:
@@ -318,10 +317,8 @@ public class Calculator implements Serializable {
 
 			// conf.hconf.set(TableInputFormat.SCAN_COLUMNS, "cf1:vc cf1:vs");
 			final Marshaller<Result, ImmutableBytesWritable> hm = (Marshaller<Result, ImmutableBytesWritable>) ds.getMarshaller();
-			JavaPairRDD<ImmutableBytesWritable, Result> hbase = sc.newAPIHadoopRDD(hconf, TableInputFormat.class,
-					ImmutableBytesWritable.class, Result.class);
-			traceRDD(hbase, ds, detail);
-			return hbase.mapToPair(t -> new Tuple2<String, F>(hm.unmarshallId(t._1), hm.unmarshall(t._2, functor)));
+			return sc.newAPIHadoopRDD(hconf, TableInputFormat.class, ImmutableBytesWritable.class, Result.class)
+					.mapToPair(t -> null == t ? null : new Tuple2<>(hm.unmarshallId(t._1), hm.unmarshall(t._2, functor)));
 		case MONGODB:
 			Configuration mconf = new Configuration();
 			MongoDataSource mds = (MongoDataSource) ds;
@@ -333,14 +330,14 @@ public class Calculator implements Serializable {
 			if (detail.mongoFilter != null && !"".equals(detail.mongoFilter)) mconf.set("mongo.input.query", detail.mongoFilter);
 			// conf.mconf.set("mongo.input.fields
 			mconf.set("mongo.input.notimeout", "true");
-			Marshaller<BSONObject, Object> mm = (Marshaller<BSONObject, Object>) ds.getMarshaller();
-			JavaPairRDD<Object, BSONObject> mongo = sc.newAPIHadoopRDD(mconf, MongoInputFormat.class, Object.class, BSONObject.class);
-			return mongo.mapToPair(t -> new Tuple2<String, F>(mm.unmarshallId(t._1), mm.unmarshall(t._2, functor)));
+			final Marshaller<BSONObject, Object> mm = (Marshaller<BSONObject, Object>) ds.getMarshaller();
+			return sc.newAPIHadoopRDD(mconf, MongoInputFormat.class, Object.class, BSONObject.class)
+					.mapToPair(t -> null == t ? null : new Tuple2<String, F>(mm.unmarshallId(t._1), mm.unmarshall(t._2, functor)));
 		case CONSTAND_TO_CONSOLE:
 			String[] values = ((ConstDataSource) ds).getValues();
 			if (values == null) values = new String[0];
 			return sc.parallelize(Arrays.asList(values))
-					.mapToPair(t -> new Tuple2<String, F>(UUID.randomUUID().toString(), (F) Reflections.construct(functor, t)));
+					.mapToPair(t -> null == t ? null : new Tuple2<>(UUID.randomUUID().toString(), (F) Reflections.construct(functor, t)));
 		default:
 			throw new UnsupportedOperationException("Unsupportted stocking mode: " + ds.getType());
 		}
@@ -351,7 +348,7 @@ public class Calculator implements Serializable {
 		case KAFKA:
 			Marshaller<byte[], String> km = (Marshaller<byte[], String>) ds.getMarshaller();
 			JavaPairInputDStream<String, byte[]> kafka = this.kafka((KafkaDataSource) ds, functor.getAnnotation(Streaming.class).topics());
-			return kafka.mapToPair(t -> new Tuple2<String, F>(km.unmarshallId(t._1), km.unmarshall(t._2, functor)));
+			return kafka.mapToPair(t -> null == t ? null : new Tuple2<>(km.unmarshallId(t._1), km.unmarshall(t._2, functor)));
 		default:
 			throw new UnsupportedOperationException("Unsupportted stocking mode: " + ds.getType() + " on " + functor);
 		}
@@ -429,7 +426,6 @@ public class Calculator implements Serializable {
 				// , dbprops.getProperty("authdb"),dbprops.getProperty("authdb")
 				break;
 			case KAFKA:
-
 				datasources.put(dsid,
 						new KafkaDataSource(dbprops.getProperty("servers"), dbprops.getProperty("root"),
 								Integer.parseInt(dbprops.getProperty("topic.partitions", "1")),
@@ -439,11 +435,6 @@ public class Calculator implements Serializable {
 				logger.warn("Unsupportted type: " + type);
 			}
 		}
-	}
-
-	private void traceRDD(JavaRDDLike rdd, DataSource ds, Detail detail) {
-		if (logger.isTraceEnabled()) logger
-				.trace("{" + rdd.count() + "} Raw records from " + ds.getType() + " [" + ds.toString() + "]=>" + detail.toString() + "]. ");
 	}
 
 	public static final InputStream scanInputStream(String file) throws FileNotFoundException, IOException {

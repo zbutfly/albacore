@@ -6,14 +6,23 @@ import net.butfly.albacore.calculus.datasource.DataSource;
 import net.butfly.albacore.calculus.datasource.Detail;
 import net.butfly.albacore.calculus.functor.Functor;
 
+@SuppressWarnings("unchecked")
 public interface Marshaller<V, K> extends Serializable {
-	String unmarshallId(K id);
+	default String unmarshallId(K id) {
+		return null == id ? null : id.toString();
+	}
 
-	<T extends Functor<T>> T unmarshall(V from, Class<T> to);
+	default <T extends Functor<T>> T unmarshall(V from, Class<T> to) {
+		return (T) from;
+	}
 
-	K marshallId(String id);
+	default K marshallId(String id) {
+		return (K) id;
+	}
 
-	<T extends Functor<T>> V marshall(T from);
+	default <T extends Functor<T>> V marshall(T from) {
+		return (V) from;
+	}
 
 	default <F extends Functor<F>> boolean confirm(Class<F> functorClass, DataSource ds, Detail detail) {
 		return true;
