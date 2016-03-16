@@ -2,23 +2,54 @@ package net.butfly.albacore.calculus;
 
 import java.io.Serializable;
 
-import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.Function;
-import org.apache.spark.streaming.api.java.JavaDStreamLike;
+import org.apache.spark.api.java.function.Function2;
+import org.apache.spark.api.java.function.VoidFunction;
+import org.apache.spark.streaming.api.java.JavaPairDStream;
+import org.apache.spark.streaming.api.java.JavaStreamingContext;
 
-public interface Calculus<OUT extends Functor<OUT>> extends Serializable {
-	@SuppressWarnings("unchecked")
-	void calculate(final JavaSparkContext sc, Functors functors, Function<JavaRDD<OUT>, Void>... handler) throws Exception;
+import com.jcabi.log.Logger;
 
-	// deprecation for spark 1.5.x
+import net.butfly.albacore.calculus.functor.Functor;
+import net.butfly.albacore.calculus.functor.Functors;
+
+public interface Calculus<OUTK, OUTV extends Functor<OUTV>> extends Serializable {
+	void stocking(final JavaSparkContext sc, final Functors<OUTK> functors, final VoidFunction<JavaPairRDD<OUTK, OUTV>> handler);
+
+	void streaming(final JavaStreamingContext ssc, final Functors<OUTK> functors, final VoidFunction<JavaPairRDD<OUTK, OUTV>> handler);
+
+	default boolean saving(JavaPairRDD<OUTK, OUTV> r) {
+		return true;
+	}
+
+	default void traceCount(JavaPairRDD<?, ?> rdd, String prefix) {
+		if (Logger.isTraceEnabled(this.getClass())) Logger.trace(this.getClass(), prefix + rdd.count());
+	}
+
+	default void traceCount(JavaPairRDD<?, ?> rdd, String prefix, double sd) {
+		if (Logger.isTraceEnabled(this.getClass())) Logger.trace(this.getClass(), prefix + rdd.countApproxDistinct(sd));
+	}
+
 	@SuppressWarnings("deprecation")
-	static long count(JavaDStreamLike<?, ?, ?> streaming) {
-		long[] i = new long[] { 0 };
-		streaming.count().foreachRDD(rdd -> {
-			i[0] += rdd.reduce((v1, v2) -> v1 + v2);
+	default void traceCount(JavaPairDStream<?, ?> stream, String prefix) {
+		if (Logger.isTraceEnabled(this.getClass())) stream.count().foreachRDD(rdd -> {
+			Logger.trace(this.getClass(), prefix + rdd.reduce((c1, c2) -> c1 + c2));
 			return null;
 		});
-		return i[0];
+	}
+
+	default <K, V> void traceInfo(JavaPairRDD<K, V> rdd, Function2<K, V, String> func) {
+		if (Logger.isTraceEnabled(this.getClass())) rdd.foreach(t -> {
+			Logger.trace(this.getClass(), func.call(t._1, t._2));
+		});
+	}
+
+	@SuppressWarnings("deprecation")
+	default <K, V> void traceInfo(JavaPairDStream<K, V> stream, Function2<K, V, String> func) {
+		if (Logger.isTraceEnabled(this.getClass())) stream.foreachRDD(rdd -> {
+			traceInfo(rdd, func);
+			return null;
+		});
 	}
 }

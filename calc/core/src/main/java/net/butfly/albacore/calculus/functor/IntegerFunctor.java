@@ -1,8 +1,7 @@
 package net.butfly.albacore.calculus.functor;
 
-import net.butfly.albacore.calculus.Functor;
-import net.butfly.albacore.calculus.Functor.Stocking;
-import net.butfly.albacore.calculus.Functor.Type;
+import net.butfly.albacore.calculus.functor.Functor.Stocking;
+import net.butfly.albacore.calculus.functor.Functor.Type;
 
 @Stocking(type = Type.CONSTAND_TO_CONSOLE)
 public class IntegerFunctor implements Functor<IntegerFunctor> {
