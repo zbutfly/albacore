@@ -8,7 +8,6 @@ public class UpperCaseWithUnderscoresStrategy extends PropertyNamingStrategyBase
 
 	@Override
 	public String translate(String input) {
-		// TODO
 		if (input.toLowerCase().equals("_id")) return "_id";
 		return CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, input);
 	}

@@ -12,7 +12,6 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jcabi.log.Logger;
 import com.mongodb.BasicDBObject;
-import com.mongodb.DBEncoder;
 import com.mongodb.DBObject;
 import com.mongodb.DefaultDBEncoder;
 import com.mongodb.LazyDBObject;
@@ -25,7 +24,6 @@ public abstract class BsonMarshaller<V, K> implements Marshaller<V, K> {
 	private static final long serialVersionUID = -7385678674433019238L;
 	private static ObjectMapper bsoner = new ObjectMapper(MongoBsonFactory.createFactory())
 			.setPropertyNamingStrategy(new UpperCaseWithUnderscoresStrategy()).disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-	protected static DBEncoder e = DefaultDBEncoder.FACTORY.create();
 
 	@Override
 	public final <T extends Functor<T>> T unmarshall(V from, Class<T> to) {
@@ -48,14 +46,13 @@ public abstract class BsonMarshaller<V, K> implements Marshaller<V, K> {
 		OutputBuffer buf = new BasicOutputBuffer();
 		try {
 			try {
-				// TODO: e
 				DefaultDBEncoder.FACTORY.create().writeObject(buf, bson);
 			} catch (Exception ex) {
 				Logger.error(MongoMarshaller.class, "BSON unmarshall failure from " + to.toString(), ex);
 				return null;
 			}
 			try {
-				return bsoner.reader(to).readValue(buf.toByteArray());
+				return bsoner.readerFor(to).readValue(buf.toByteArray());
 			} catch (IOException ex) {
 				Logger.error(MongoMarshaller.class, "BSON unmarshall failure from " + to.toString(), ex);
 				return null;
