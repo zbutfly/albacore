@@ -86,10 +86,15 @@ public class Calculator implements Serializable {
 	private Mode mode;
 	private boolean debug;
 
-	public static void main(String... args) throws Exception {
+	public static void main(String... args) {
 		final Properties props = new Properties();
-		CommandLine cmd = commandline(args);
-		props.load(scanInputStream(cmd.getOptionValue('f', "calculus.properties")));
+		CommandLine cmd;
+		try {
+			cmd = commandline(args);
+			props.load(scanInputStream(cmd.getOptionValue('f', "calculus.properties")));
+		} catch (IOException | ParseException e) {
+			throw new RuntimeException(e);
+		}
 		for (String key : System.getProperties().stringPropertyNames())
 			if (key.startsWith("calculus.")) props.put(key, System.getProperty(key));
 		if (cmd.hasOption('m')) props.setProperty("calculus.mode", cmd.getOptionValue('m').toUpperCase());
@@ -108,11 +113,13 @@ public class Calculator implements Serializable {
 		if (mode == Mode.STREAMING) {
 			ssc.start();
 			ssc.awaitTermination();
+			ssc.close();
 		}
+		sc.close();
 		return this;
 	}
 
-	private Calculator(Properties props) throws Exception {
+	private Calculator(Properties props) {
 		mode = Mode.valueOf(props.getProperty("calculus.mode", "STREAMING").toUpperCase());
 		debug = Boolean.valueOf(props.getProperty("calculus.debug", "false").toLowerCase());
 		dura = Integer.parseInt(props.getProperty("calculus.spark.duration.seconds", "5"));
@@ -138,7 +145,13 @@ public class Calculator implements Serializable {
 		// scan and run calculuses
 		if (props.containsKey("calculus.classes")) {
 			for (String cn : props.getProperty("calculus.classes").split(",")) {
-				Class<?> c = Class.forName(cn);
+				Class<?> c;
+				try {
+					c = Class.forName(cn);
+				} catch (ClassNotFoundException e) {
+					logger.warn("Class not found: " + e.toString() + ", ignored.");
+					continue;
+				}
 				if (Calculus.class.isAssignableFrom(c) && c.isAnnotationPresent(Calculating.class)) {
 					calculuses.add(c);
 					logger.debug("Found: " + c.toString());
@@ -156,7 +169,7 @@ public class Calculator implements Serializable {
 		logger.debug("Running calculuses: " + calculuses.toString());
 	}
 
-	private <OUT extends Functor<OUT>> Calculator calculate() throws Exception {
+	private <OUT extends Functor<OUT>> Calculator calculate() {
 		for (Class<?> c : calculuses) {
 			logger.info("Calculus " + c.toString() + " starting... ");
 			Calculus<String, OUT> calc;
@@ -221,14 +234,14 @@ public class Calculator implements Serializable {
 		return this;
 	}
 
-	private FunctorConfig<? extends Functor<?>>[] scan(Mode mode, Class<? extends Functor<?>>[] functors) throws IOException {
+	private FunctorConfig<? extends Functor<?>>[] scan(Mode mode, Class<? extends Functor<?>>[] functors) {
 		List<FunctorConfig<?>> configs = new ArrayList<>();
 		for (Class c : functors)
 			configs.add(scan(mode, c));
 		return configs.toArray(new FunctorConfig[configs.size()]);
 	}
 
-	private <F extends Functor<F>> FunctorConfig<F> scan(Mode mode, Class<F> functor) throws IOException {
+	private <F extends Functor<F>> FunctorConfig<F> scan(Mode mode, Class<F> functor) {
 		FunctorConfig<F> c = new FunctorConfig<F>();
 		c.functorClass = functor;
 		if (mode == Mode.STREAMING && functor.isAnnotationPresent(Streaming.class)) {
@@ -243,8 +256,9 @@ public class Calculator implements Serializable {
 				throw new UnsupportedOperationException("Unsupportted streaming mode: " + s.type());
 			}
 		} else {
-			c.mode = Mode.STOCKING;
 			Stocking s = functor.getAnnotation(Stocking.class);
+			if (s == null || (mode == Mode.STREAMING && !s.streaming())) return null;
+			c.mode = Mode.STOCKING;
 			c.dbid = s.source();
 			switch (s.type()) {
 			case HBASE:
@@ -270,10 +284,10 @@ public class Calculator implements Serializable {
 		return c;
 	}
 
-	private Functors read(FunctorConfig<?>[] configs) throws IOException {
+	private Functors read(FunctorConfig<?>[] configs) {
 		Functors functors = new Functors();
 		for (FunctorConfig<?> c : configs) {
-			switch (mode) {
+			if (c != null) switch (mode) {
 			case STOCKING:
 				functors.stocking(c.functorClass, stocking((Class<? extends Functor>) c.functorClass, datasources.get(c.dbid), c.detail));
 				break;
@@ -343,7 +357,7 @@ public class Calculator implements Serializable {
 		}
 	}
 
-	private <F extends Functor<F>> JavaPairDStream<String, F> streaming(Class<F> functor, DataSource ds, Detail detail) throws IOException {
+	private <F extends Functor<F>> JavaPairDStream<String, F> streaming(Class<F> functor, DataSource ds, Detail detail) {
 		switch (ds.getType()) {
 		case KAFKA:
 			Marshaller<byte[], String> km = (Marshaller<byte[], String>) ds.getMarshaller();

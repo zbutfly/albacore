@@ -42,7 +42,6 @@ public class HbaseMarshaller implements Marshaller<Result, ImmutableBytesWritabl
 			StringBuilder sb = new StringBuilder("Found result with cell: ");
 			for (Cell c : from.rawCells())
 				sb.append(Bytes.toString(CellUtil.cloneQualifier(c))).append(", ");
-			Logger.trace(HbaseMarshaller.class, sb.toString());
 		}
 		String dcf = to.isAnnotationPresent(HbaseColumnFamily.class) ? to.getAnnotation(HbaseColumnFamily.class).value() : null;
 		T t;
@@ -61,12 +60,7 @@ public class HbaseMarshaller implements Marshaller<Result, ImmutableBytesWritabl
 				Cell cell = from.getColumnLatestCell(Text.encode(colfamily).array(), Text.encode(colname).array());
 				if (cell != null) {
 					byte[] value = CellUtil.cloneValue(cell);
-					Logger.trace(HbaseMarshaller.class,
-							"Read hbase value: " + colfamily + ":" + colname + " ==> " + value.length + " bytes.");
 					Reflections.set(t, f, fromBytes(f.getType(), value));
-				} else {
-					Logger.warn(HbaseMarshaller.class, "Cell not found on class " + to.toString() + ", field " + f.getName() + ", column "
-							+ colfamily + ":" + colname);
 				}
 			} catch (Exception e) {
 				Logger.error(HbaseMarshaller.class, "Parse of hbase result failure on class " + to.toString() + ", field " + f.getName(),

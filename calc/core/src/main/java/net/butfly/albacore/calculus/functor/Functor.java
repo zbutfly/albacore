@@ -24,6 +24,8 @@ public interface Functor<F extends Functor<F>> extends Serializable {
 		String table() default NOT_DEFINED;
 
 		String filter() default NOT_DEFINED;
+
+		boolean streaming() default true;
 	}
 
 	@Retention(RetentionPolicy.RUNTIME)
