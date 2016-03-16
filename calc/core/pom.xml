@@ -42,6 +42,17 @@
 			<version>${deps.version.jackson}</version>
 		</dependency>
 		<dependency>
+			<groupId>com.fasterxml.jackson.module</groupId>
+			<artifactId>jackson-module-scala_${deps.version.scala}</artifactId>
+			<version>${deps.version.jackson}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.json4s</groupId>
+			<artifactId>json4s-jackson_${deps.version.scala}</artifactId>
+			<version>3.3.0</version>
+		</dependency>
+		<!-- end jackson -->
+		<dependency>
 			<groupId>org.apache.spark</groupId>
 			<artifactId>spark-core_${deps.version.scala}</artifactId>
 			<version>${deps.version.spark}</version>
@@ -53,6 +64,10 @@
 				<exclusion>
 					<groupId>org.codehaus.jackson</groupId>
 					<artifactId>jackson-mapper-asl</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.fasterxml.jackson.module</groupId>
+					<artifactId>jackson-module-scala_${deps.version.scala}</artifactId>
 				</exclusion>
 			</exclusions>
 		</dependency>
