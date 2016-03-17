@@ -10,7 +10,6 @@ import org.bson.io.OutputBuffer;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jcabi.log.Logger;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.DefaultDBEncoder;
@@ -18,7 +17,6 @@ import com.mongodb.LazyDBObject;
 
 import net.butfly.albacore.calculus.functor.Functor;
 import net.butfly.albacore.calculus.marshall.Marshaller;
-import net.butfly.albacore.calculus.marshall.MongoMarshaller;
 
 public abstract class BsonMarshaller<V, K> extends Marshaller<V, K> {
 	private static final long serialVersionUID = -7385678674433019238L;
@@ -48,13 +46,13 @@ public abstract class BsonMarshaller<V, K> extends Marshaller<V, K> {
 			try {
 				DefaultDBEncoder.FACTORY.create().writeObject(buf, bson);
 			} catch (Exception ex) {
-				Logger.error(MongoMarshaller.class, "BSON unmarshall failure from " + to.toString(), ex);
+				logger.error("BSON unmarshall failure from " + to.toString(), ex);
 				return null;
 			}
 			try {
 				return bsoner.readerFor(to).readValue(buf.toByteArray());
 			} catch (IOException ex) {
-				Logger.error(MongoMarshaller.class, "BSON unmarshall failure from " + to.toString(), ex);
+				logger.error("BSON unmarshall failure from " + to.toString(), ex);
 				return null;
 			}
 		} finally {
@@ -67,7 +65,7 @@ public abstract class BsonMarshaller<V, K> extends Marshaller<V, K> {
 		try {
 			bsoner.writer().writeValue(baos, from);
 		} catch (IOException e) {
-			Logger.error(MongoMarshaller.class, "BSON marshall failure from " + from.getClass().toString(), e);
+			logger.error("BSON marshall failure from " + from.getClass().toString(), e);
 			return null;
 		}
 		DBObject r = new BasicDBObject();

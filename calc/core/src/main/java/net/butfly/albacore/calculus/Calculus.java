@@ -16,7 +16,7 @@ import net.butfly.albacore.calculus.functor.Functors;
 
 public abstract class Calculus<OUTK, OUTV extends Functor<OUTV>> implements Serializable {
 	private static final long serialVersionUID = 6432707546470042520L;
-	protected Logger logger;
+	protected final Logger logger;
 
 	public Calculus() {
 		this.logger = LoggerFactory.getLogger(this.getClass());

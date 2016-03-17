@@ -24,7 +24,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Defaults;
 import com.google.common.base.Joiner;
-import com.jcabi.log.Logger;
 
 import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.datasource.DataSource;
@@ -65,10 +64,10 @@ public class HbaseMarshaller extends Marshaller<Result, ImmutableBytesWritable> 
 			try {
 				Cell cell = from.getColumnLatestCell(Text.encode(colfamily).array(), Text.encode(colname).array());
 				if (cell != null) Reflections.set(t, f, fromBytes(f.getType(), CellUtil.cloneValue(cell)));
-				else if (Calculator.debug && Logger.isTraceEnabled(HbaseMarshaller.class))
-					Logger.trace(HbaseMarshaller.class, "Rows of table for [" + to.toString() + "]: " + Joiner.on(',').join(rows(from)));
+				else if (Calculator.debug && logger.isTraceEnabled())
+					logger.trace("Rows of table for [" + to.toString() + "]: " + Joiner.on(',').join(rows(from)));
 			} catch (Exception e) {
-				Logger.error(HbaseMarshaller.class, "Parse of hbase result failure on " + to.toString() + ", field " + f.getName(), e);
+				logger.error("Parse of hbase result failure on " + to.toString() + ", field " + f.getName(), e);
 			}
 		}
 		return t;
@@ -122,8 +121,7 @@ public class HbaseMarshaller extends Marshaller<Result, ImmutableBytesWritable> 
 			a.enableTable(ht);
 			return true;
 		} catch (IOException e) {
-			Logger.error(HbaseMarshaller.class,
-					"Failure confirm data source: " + functor.getName() + " => " + ds.toString() + " => " + detail.toString());
+			logger.error("Failure confirm data source: " + functor.getName() + " => " + ds.toString() + " => " + detail.toString());
 			return false;
 		}
 	}
