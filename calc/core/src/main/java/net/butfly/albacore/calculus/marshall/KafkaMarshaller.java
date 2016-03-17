@@ -19,12 +19,12 @@ public class KafkaMarshaller extends BsonMarshaller<byte[], String> {
 	}
 
 	@Override
-	protected BSONObject encode(byte[] value) {
+	protected BSONObject decode(byte[] value) {
 		return (BSONObject) BSON.decode(value).get("value");
 	}
 
 	@Override
-	protected byte[] decode(BSONObject value) {
+	protected byte[] encode(BSONObject value) {
 		return BSON.encode(value);
 	}
 }

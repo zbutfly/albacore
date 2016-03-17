@@ -35,12 +35,12 @@ public class MongoMarshaller extends BsonMarshaller<BSONObject, Object> {
 	}
 
 	@Override
-	protected BSONObject encode(BSONObject value) {
+	protected BSONObject decode(BSONObject value) {
 		return value;
 	}
 
 	@Override
-	protected BSONObject decode(BSONObject value) {
+	protected BSONObject encode(BSONObject value) {
 		return value;
 	}
 

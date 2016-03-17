@@ -9,10 +9,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 
+/**
+ * Deserialize {"$oid": "......."} into MongoDB {@code ObjectId}
+ * 
+ * @author zx
+ */
 public class MongoObjectIdDeserializer extends JsonDeserializer<ObjectId> {
 	@Override
 	public ObjectId deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
-		// TODO Auto-generated method stub
-		return null;
+		return (ObjectId) p.getEmbeddedObject();
 	}
 }
