@@ -5,10 +5,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.streaming.api.java.JavaInputDStream;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
+import org.apache.spark.streaming.dstream.ConstantInputDStream;
 
-import net.butfly.albacore.calculus.streaming.JavaConstantPairDStream;
+import scala.Tuple2;
 
 @SuppressWarnings("unchecked")
 public final class Functors<K> implements Serializable {
@@ -32,10 +34,16 @@ public final class Functors<K> implements Serializable {
 		return (JavaPairRDD<K, F>) stocking.get(functor);
 	}
 
+	/**
+	 * @param ssc
+	 * @param rdd
+	 * @return
+	 * @deprecated by {@code JavaConstantPairDStream} or
+	 *             {@code JavaRefreshablePairDStream}
+	 */
+	@Deprecated
 	public static <K, F extends Functor<F>> JavaPairDStream<K, F> streamize(JavaStreamingContext ssc, JavaPairRDD<K, F> rdd) {
-		return new JavaConstantPairDStream<>(ssc, rdd);
-		// return new JavaInputDStream<>(new ConstantInputDStream<Tuple2<K,
-		// F>>(ssc.ssc(), rdd.map(t -> t).rdd(), rdd.classTag()),
-		// rdd.classTag()).mapToPair(t -> t);
+		return new JavaInputDStream<>(new ConstantInputDStream<Tuple2<K, F>>(ssc.ssc(), rdd.map(t -> t).rdd(), rdd.classTag()),
+				rdd.classTag()).mapToPair(t -> t);
 	}
 }
