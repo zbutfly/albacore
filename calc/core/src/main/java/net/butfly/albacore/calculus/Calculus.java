@@ -80,14 +80,16 @@ public abstract class Calculus<OUTK, OUTV extends Functor<OUTV>> implements Seri
 		});
 	}
 
-	protected boolean check(JavaRDDLike<?, ?>... rdd) {
-		for (JavaRDDLike<?, ?> r : rdd)
+	@SuppressWarnings("rawtypes")
+	protected boolean check(JavaRDDLike... rdd) {
+		for (JavaRDDLike r : rdd)
 			if (null == r || r.isEmpty()) return false;
 		return true;
 	}
 
-	protected boolean check(JavaDStreamLike<?, ?, ?>... rdd) {
-		for (JavaDStreamLike<?, ?, ?> r : rdd)
+	@SuppressWarnings("rawtypes")
+	protected boolean check(JavaDStreamLike... rdd) {
+		for (JavaDStreamLike r : rdd)
 			if (null == r) return false;
 		return true;
 	}
