@@ -3,21 +3,22 @@ package net.butfly.albacore.calculus.functor;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.ArrayBlockingQueue;
 
 import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.streaming.api.java.JavaInputDStream;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
+import org.apache.spark.streaming.dstream.ConstantInputDStream;
 
 import scala.Tuple2;
+import scala.reflect.ClassTag;
+import scala.reflect.ManifestFactory;
 
 @SuppressWarnings("unchecked")
 public final class Functors<K> implements Serializable {
 	private static final long serialVersionUID = -3712903710207597570L;
-	private Map<Class<? extends Functor<?>>, JavaPairDStream<K, ? extends Functor<?>>> streamings = new HashMap<>();
 	private Map<Class<? extends Functor<?>>, JavaPairRDD<K, ? extends Functor<?>>> stocking = new HashMap<>();
+	private Map<Class<? extends Functor<?>>, JavaPairDStream<K, ? extends Functor<?>>> streamings = new HashMap<>();
 
 	public <F extends Functor<F>> void streaming(Class<F> functor, JavaPairDStream<K, F> ds) {
 		this.streamings.put(functor, ds);
@@ -36,9 +37,7 @@ public final class Functors<K> implements Serializable {
 	}
 
 	public static <K, F extends Functor<F>> JavaPairDStream<K, F> streamize(JavaStreamingContext ssc, JavaPairRDD<K, F> rdd) {
-		Queue<JavaRDD<Tuple2<K, F>>> q = new ArrayBlockingQueue<>(1);
-		q.add(rdd.map(t -> t));
-		return ssc.queueStream(q).mapToPair(t -> t).cache();
+		ClassTag<Tuple2<K, F>> tag = ManifestFactory.classType(Tuple2.class);
+		return new JavaInputDStream<>(new ConstantInputDStream<Tuple2<K, F>>(ssc.ssc(), rdd.map(t -> t).rdd(), tag), tag).mapToPair(t -> t);
 	}
-
 }

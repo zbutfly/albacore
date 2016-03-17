@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import net.butfly.albacore.calculus.functor.Functor;
 import net.butfly.albacore.calculus.functor.Functors;
+import net.butfly.albacore.calculus.stage.Stage;
 
 public abstract class Calculus<OUTK, OUTV extends Functor<OUTV>> implements Serializable {
 	private static final long serialVersionUID = 6432707546470042520L;
@@ -20,6 +21,10 @@ public abstract class Calculus<OUTK, OUTV extends Functor<OUTV>> implements Seri
 
 	public Calculus() {
 		this.logger = LoggerFactory.getLogger(this.getClass());
+	}
+
+	public Stage[] stages() {
+		return new Stage[0];
 	}
 
 	abstract public void stocking(final JavaSparkContext sc, final Functors<OUTK> functors,
