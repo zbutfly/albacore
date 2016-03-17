@@ -3,9 +3,11 @@ package net.butfly.albacore.calculus;
 import java.io.Serializable;
 
 import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaRDDLike;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.VoidFunction;
+import org.apache.spark.streaming.api.java.JavaDStreamLike;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.slf4j.Logger;
@@ -76,5 +78,17 @@ public abstract class Calculus<OUTK, OUTV extends Functor<OUTV>> implements Seri
 			traceInfo(rdd, func);
 			return null;
 		});
+	}
+
+	protected boolean check(JavaRDDLike<?, ?>... rdd) {
+		for (JavaRDDLike<?, ?> r : rdd)
+			if (null == r || r.isEmpty()) return false;
+		return true;
+	}
+
+	protected boolean check(JavaDStreamLike<?, ?, ?>... rdd) {
+		for (JavaDStreamLike<?, ?, ?> r : rdd)
+			if (null == r) return false;
+		return true;
 	}
 }

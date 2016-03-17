@@ -67,6 +67,7 @@ import net.butfly.albacore.calculus.functor.Functor.Type;
 import net.butfly.albacore.calculus.functor.FunctorConfig;
 import net.butfly.albacore.calculus.functor.Functors;
 import net.butfly.albacore.calculus.marshall.Marshaller;
+import net.butfly.albacore.calculus.streaming.JavaConstantPairDStream;
 import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
 
@@ -294,7 +295,7 @@ public class Calculator implements Serializable {
 			case STREAMING:
 				switch (c.mode) {
 				case STOCKING:
-					functors.streaming(c.functorClass, Functors.streamize(ssc,
+					functors.streaming(c.functorClass, new JavaConstantPairDStream<>(ssc,
 							stocking((Class<? extends Functor>) c.functorClass, datasources.get(c.dbid), c.detail)));
 					break;
 				case STREAMING:
