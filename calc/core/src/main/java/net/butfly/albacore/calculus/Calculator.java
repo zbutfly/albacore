@@ -84,7 +84,7 @@ public class Calculator implements Serializable {
 	private int dura;
 	private Set<Class<?>> calculuses;
 	private Mode mode;
-	private boolean debug;
+	public static boolean debug;
 
 	public static void main(String... args) {
 		final Properties props = new Properties();
@@ -319,7 +319,7 @@ public class Calculator implements Serializable {
 			}
 			hconf.set(TableInputFormat.INPUT_TABLE, detail.hbaseTable);
 			if (debug) {
-				int limit = Integer.parseInt(System.getProperty("calculus.debug.hbase.limit", "10"));
+				int limit = Integer.parseInt(System.getProperty("calculus.debug.hbase.limit", "1000"));
 				logger.warn("Hbase debugging, limit results in " + limit + "(can be customized by -Dcalculus.debug.hbase.limit=N)");
 				try {
 					hconf.set(TableInputFormat.SCAN,

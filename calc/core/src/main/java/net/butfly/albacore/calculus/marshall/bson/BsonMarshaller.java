@@ -20,7 +20,7 @@ import net.butfly.albacore.calculus.functor.Functor;
 import net.butfly.albacore.calculus.marshall.Marshaller;
 import net.butfly.albacore.calculus.marshall.MongoMarshaller;
 
-public abstract class BsonMarshaller<V, K> implements Marshaller<V, K> {
+public abstract class BsonMarshaller<V, K> extends Marshaller<V, K> {
 	private static final long serialVersionUID = -7385678674433019238L;
 	private static ObjectMapper bsoner = new ObjectMapper(MongoBsonFactory.createFactory())
 			.setPropertyNamingStrategy(new UpperCaseWithUnderscoresStrategy()).disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
