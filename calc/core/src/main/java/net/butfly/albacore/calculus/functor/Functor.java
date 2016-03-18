@@ -1,11 +1,11 @@
-package net.butfly.albacore.calculus.stage;
+package net.butfly.albacore.calculus.functor;
 
 import java.io.Serializable;
 
 import scala.Tuple2;
 
-public interface Stage extends Serializable {
-	interface Pair extends Stage {
+public interface Functor extends Serializable {
+	interface Pair extends Functor {
 		@FunctionalInterface
 		interface PairMap<K, V, T> extends Pair {
 			public Tuple2<K, V> call(T t) throws Exception;
