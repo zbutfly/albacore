@@ -28,9 +28,9 @@ import com.google.common.base.Joiner;
 import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.datasource.DataSource;
 import net.butfly.albacore.calculus.datasource.DataSource.HbaseDataSource;
+import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.datasource.Detail;
 import net.butfly.albacore.calculus.datasource.HbaseColumnFamily;
-import net.butfly.albacore.calculus.functor.Functor;
 import net.butfly.albacore.calculus.utils.Reflections;
 
 public class HbaseMarshaller extends Marshaller<Result, ImmutableBytesWritable> {
@@ -46,7 +46,7 @@ public class HbaseMarshaller extends Marshaller<Result, ImmutableBytesWritable> 
 	}
 
 	@Override
-	public <T extends Functor<T>> T unmarshall(Result from, Class<T> to) {
+	public <T extends Factor<T>> T unmarshall(Result from, Class<T> to) {
 		if (null == from) return null;
 		String dcf = to.isAnnotationPresent(HbaseColumnFamily.class) ? to.getAnnotation(HbaseColumnFamily.class).value() : null;
 		T t;
@@ -75,7 +75,7 @@ public class HbaseMarshaller extends Marshaller<Result, ImmutableBytesWritable> 
 	}
 
 	@Override
-	public <T extends Functor<T>> Result marshall(T from) {
+	public <T extends Factor<T>> Result marshall(T from) {
 		throw new UnsupportedOperationException("Hbase marshall / write not supported.");
 	}
 
@@ -92,17 +92,17 @@ public class HbaseMarshaller extends Marshaller<Result, ImmutableBytesWritable> 
 	}
 
 	@Override
-	public <F extends Functor<F>> boolean confirm(Class<F> functor, DataSource ds, Detail detail) {
+	public <F extends Factor<F>> boolean confirm(Class<F> factor, DataSource ds, Detail detail) {
 		try {
 			TableName ht = TableName.valueOf(detail.hbaseTable);
 			Admin a = ((HbaseDataSource) ds).getHconn().getAdmin();
 			if (a.tableExists(ht)) return true;
 			Set<String> families = new HashSet<>();
 			Set<String> columns = new HashSet<>();
-			String dcf = functor.isAnnotationPresent(HbaseColumnFamily.class) ? functor.getAnnotation(HbaseColumnFamily.class).value()
+			String dcf = factor.isAnnotationPresent(HbaseColumnFamily.class) ? factor.getAnnotation(HbaseColumnFamily.class).value()
 					: null;
 			families.add(dcf);
-			for (Field f : Reflections.getDeclaredFields(functor)) {
+			for (Field f : Reflections.getDeclaredFields(factor)) {
 				String colname = f.isAnnotationPresent(JsonProperty.class) ? f.getAnnotation(JsonProperty.class).value()
 						: CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, f.getName());
 				String colfamily = f.isAnnotationPresent(HbaseColumnFamily.class) ? f.getAnnotation(HbaseColumnFamily.class).value() : dcf;
@@ -121,7 +121,7 @@ public class HbaseMarshaller extends Marshaller<Result, ImmutableBytesWritable> 
 			a.enableTable(ht);
 			return true;
 		} catch (IOException e) {
-			logger.error("Failure confirm data source: " + functor.getName() + " => " + ds.toString() + " => " + detail.toString());
+			logger.error("Failure confirm data source: " + factor.getName() + " => " + ds.toString() + " => " + detail.toString());
 			return false;
 		}
 	}

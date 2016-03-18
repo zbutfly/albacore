@@ -13,11 +13,11 @@ import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.butfly.albacore.calculus.functor.Functor;
-import net.butfly.albacore.calculus.functor.Functors;
+import net.butfly.albacore.calculus.factor.Factor;
+import net.butfly.albacore.calculus.factor.Factors;
 import net.butfly.albacore.calculus.stage.Stage;
 
-public abstract class Calculus<OUTK, OUTV extends Functor<OUTV>> implements Serializable {
+public abstract class Calculus<OUTK, OUTV extends Factor<OUTV>> implements Serializable {
 	private static final long serialVersionUID = 6432707546470042520L;
 	protected final Logger logger;
 
@@ -29,10 +29,10 @@ public abstract class Calculus<OUTK, OUTV extends Functor<OUTV>> implements Seri
 		return new Stage[0];
 	}
 
-	abstract public void stocking(final JavaSparkContext sc, final Functors<OUTK> functors,
+	abstract public void stocking(final JavaSparkContext sc, final Factors<OUTK> factors,
 			final VoidFunction<JavaPairRDD<OUTK, OUTV>> handler);
 
-	abstract public void streaming(final JavaStreamingContext ssc, final Functors<OUTK> functors,
+	abstract public void streaming(final JavaStreamingContext ssc, final Factors<OUTK> factors,
 			final VoidFunction<JavaPairRDD<OUTK, OUTV>> handler);
 
 	protected boolean saving(JavaPairRDD<OUTK, OUTV> r) {
@@ -40,14 +40,14 @@ public abstract class Calculus<OUTK, OUTV extends Functor<OUTV>> implements Seri
 	}
 
 	protected void traceCount(JavaPairRDD<?, ?> rdd, String prefix) {
-		if (Calculator.debug && logger.isTraceEnabled()) {
+		if (Calculator.debug && logger.isTraceEnabled() && !rdd.isEmpty()) {
 			logger.trace("Count RDD............................");
 			logger.trace(prefix + rdd.count());
 		}
 	}
 
 	protected void traceCount(JavaPairRDD<?, ?> rdd, String prefix, double sd) {
-		if (Calculator.debug && logger.isTraceEnabled()) {
+		if (Calculator.debug && logger.isTraceEnabled() && !rdd.isEmpty()) {
 			logger.trace("Count RDD............................");
 			logger.trace(prefix + rdd.countApproxDistinct(sd));
 		}
@@ -58,14 +58,14 @@ public abstract class Calculus<OUTK, OUTV extends Functor<OUTV>> implements Seri
 		if (Calculator.debug && logger.isTraceEnabled()) {
 			logger.trace("Count STREAM............................");
 			stream.count().foreachRDD(rdd -> {
-				logger.trace(prefix + rdd.reduce((c1, c2) -> c1 + c2));
+				if (!rdd.isEmpty()) logger.trace(prefix + rdd.reduce((c1, c2) -> c1 + c2));
 				return null;
 			});
 		};
 	}
 
 	protected <K, V> void traceInfo(JavaPairRDD<K, V> rdd, Function2<K, V, String> func) {
-		if (Calculator.debug && logger.isTraceEnabled()) rdd.foreach(t -> {
+		if (Calculator.debug && logger.isTraceEnabled() && !rdd.isEmpty()) rdd.foreach(t -> {
 			logger.trace("Info RDD............................");
 			logger.trace(func.call(t._1, t._2));
 		});
@@ -88,8 +88,8 @@ public abstract class Calculus<OUTK, OUTV extends Functor<OUTV>> implements Seri
 	}
 
 	@SuppressWarnings("rawtypes")
-	protected boolean check(JavaDStreamLike... rdd) {
-		for (JavaDStreamLike r : rdd)
+	protected boolean check(JavaDStreamLike... s) {
+		for (JavaDStreamLike r : s)
 			if (null == r) return false;
 		return true;
 	}

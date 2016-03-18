@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory;
 
 import net.butfly.albacore.calculus.datasource.DataSource;
 import net.butfly.albacore.calculus.datasource.Detail;
-import net.butfly.albacore.calculus.functor.Functor;
+import net.butfly.albacore.calculus.factor.Factor;
 
 @SuppressWarnings("unchecked")
 public abstract class Marshaller<V, K> implements Serializable {
@@ -18,7 +18,7 @@ public abstract class Marshaller<V, K> implements Serializable {
 		return null == id ? null : id.toString();
 	}
 
-	public <T extends Functor<T>> T unmarshall(V from, Class<T> to) {
+	public <T extends Factor<T>> T unmarshall(V from, Class<T> to) {
 		return (T) from;
 	}
 
@@ -26,11 +26,11 @@ public abstract class Marshaller<V, K> implements Serializable {
 		return (K) id;
 	}
 
-	public <T extends Functor<T>> V marshall(T from) {
+	public <T extends Factor<T>> V marshall(T from) {
 		return (V) from;
 	}
 
-	public <F extends Functor<F>> boolean confirm(Class<F> functorClass, DataSource ds, Detail detail) {
+	public <F extends Factor<F>> boolean confirm(Class<F> factorClass, DataSource ds, Detail detail) {
 		return true;
 	}
 }

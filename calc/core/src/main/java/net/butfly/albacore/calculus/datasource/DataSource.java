@@ -6,8 +6,8 @@ import org.apache.hadoop.hbase.client.Connection;
 
 import com.google.common.base.Joiner;
 
-import net.butfly.albacore.calculus.functor.Functor;
-import net.butfly.albacore.calculus.functor.Functor.Type;
+import net.butfly.albacore.calculus.factor.Factor;
+import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.marshall.HbaseMarshaller;
 import net.butfly.albacore.calculus.marshall.KafkaMarshaller;
 import net.butfly.albacore.calculus.marshall.Marshaller;
@@ -15,10 +15,10 @@ import net.butfly.albacore.calculus.marshall.MongoMarshaller;
 
 public abstract class DataSource implements Serializable {
 	private static final long serialVersionUID = 1L;
-	Functor.Type type;
+	Factor.Type type;
 	Marshaller<?, ?> marshaller;
 
-	public Functor.Type getType() {
+	public Factor.Type getType() {
 		return type;
 	}
 

@@ -17,7 +17,7 @@ import com.mongodb.DBObject;
 import com.mongodb.DefaultDBEncoder;
 import com.mongodb.LazyDBObject;
 
-import net.butfly.albacore.calculus.functor.Functor;
+import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.marshall.Marshaller;
 
 public abstract class BsonMarshaller<V, K> extends Marshaller<V, K> {
@@ -27,14 +27,14 @@ public abstract class BsonMarshaller<V, K> extends Marshaller<V, K> {
 			.disable(MapperFeature.USE_GETTERS_AS_SETTERS).enable(Feature.WRITE_BIGDECIMAL_AS_PLAIN);
 
 	@Override
-	public final <T extends Functor<T>> T unmarshall(V from, Class<T> to) {
+	public final <T extends Factor<T>> T unmarshall(V from, Class<T> to) {
 		if (null == from) return null;
 		return unmarshallFromBSON(decode(from), to);
 
 	}
 
 	@Override
-	public final <T extends Functor<T>> V marshall(T from) {
+	public final <T extends Factor<T>> V marshall(T from) {
 		if (null == from) return null;
 		return encode(marshallToBSON(from));
 	}
@@ -43,7 +43,7 @@ public abstract class BsonMarshaller<V, K> extends Marshaller<V, K> {
 
 	abstract protected V encode(BSONObject value);
 
-	private <T extends Functor<T>> T unmarshallFromBSON(BSONObject bson, Class<T> to) {
+	private <T extends Factor<T>> T unmarshallFromBSON(BSONObject bson, Class<T> to) {
 		OutputBuffer buf = new BasicOutputBuffer();
 		try {
 			try {
@@ -63,7 +63,7 @@ public abstract class BsonMarshaller<V, K> extends Marshaller<V, K> {
 		}
 	}
 
-	private <T extends Functor<T>> BSONObject marshallToBSON(T from) {
+	private <T extends Factor<T>> BSONObject marshallToBSON(T from) {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		try {
 			bsoner.writer().writeValue(baos, from);

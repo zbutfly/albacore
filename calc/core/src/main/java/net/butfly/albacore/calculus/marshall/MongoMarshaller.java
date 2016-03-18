@@ -15,9 +15,9 @@ import com.mongodb.MongoClientURI;
 
 import net.butfly.albacore.calculus.datasource.DataSource;
 import net.butfly.albacore.calculus.datasource.DataSource.MongoDataSource;
+import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.datasource.Detail;
 import net.butfly.albacore.calculus.datasource.Index;
-import net.butfly.albacore.calculus.functor.Functor;
 import net.butfly.albacore.calculus.marshall.bson.BsonMarshaller;
 import net.butfly.albacore.calculus.utils.Reflections;
 
@@ -45,7 +45,7 @@ public class MongoMarshaller extends BsonMarshaller<BSONObject, Object> {
 	}
 
 	@Override
-	public <F extends Functor<F>> boolean confirm(Class<F> functor, DataSource ds, Detail detail) {
+	public <F extends Factor<F>> boolean confirm(Class<F> factor, DataSource ds, Detail detail) {
 		// TODO Auto-generated method stub
 		MongoDataSource mds = (MongoDataSource) ds;
 		MongoClientURI muri = new MongoClientURI(mds.getUri());
@@ -57,7 +57,7 @@ public class MongoMarshaller extends BsonMarshaller<BSONObject, Object> {
 			if (mdb.collectionExists(detail.mongoTable)) return true;
 			DBCollection col = mdb.createCollection(detail.mongoTable, new BasicDBObject());
 
-			for (Field f : Reflections.getDeclaredFields(functor))
+			for (Field f : Reflections.getDeclaredFields(factor))
 				if (f.isAnnotationPresent(Index.class)) {
 					String colname = f.isAnnotationPresent(JsonProperty.class) ? f.getAnnotation(JsonProperty.class).value()
 							: CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, f.getName());
