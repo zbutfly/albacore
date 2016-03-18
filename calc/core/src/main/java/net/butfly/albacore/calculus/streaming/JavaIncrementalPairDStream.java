@@ -3,6 +3,7 @@ package net.butfly.albacore.calculus.streaming;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function0;
+import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.streaming.StreamingContext;
 import org.apache.spark.streaming.Time;
@@ -19,22 +20,26 @@ import scala.Tuple2;
 import scala.reflect.ClassTag;
 import scala.reflect.ManifestFactory;
 
-public class JavaRefreshablePairDStream<K, V> extends JavaPairInputDStream<K, V> {
+public class JavaIncrementalPairDStream<K, V> extends JavaPairInputDStream<K, V> {
 	private static final long serialVersionUID = -7741510780623981966L;
 
-	public JavaRefreshablePairDStream(JavaStreamingContext ssc, Function0<JavaPairRDD<K, V>> refresher) {
-		super(new RefreshableInputDStream<Tuple2<K, V>>(ssc.ssc(), () -> refresher.call().rdd(), ManifestFactory.classType(Tuple2.class)),
+	public JavaIncrementalPairDStream(JavaStreamingContext ssc, Function0<JavaPairRDD<K, V>> refresher) {
+		super(new IncrementalInputDStream<Tuple2<K, V>, K>(ssc.ssc(), () -> refresher.call().rdd(),
+				ManifestFactory.classType(Tuple2.class)),
 				ManifestFactory.classType(Reflections.resolveGenericParameter(
 						Reflections.resolveGenericParameter(refresher.getClass(), Function.class, "R"), JavaPairRDD.class, "K")),
 				ManifestFactory.classType(Reflections.resolveGenericParameter(
 						Reflections.resolveGenericParameter(refresher.getClass(), Function.class, "R"), JavaPairRDD.class, "V")));
 	}
 
-	private static class RefreshableInputDStream<T> extends InputDStream<T> {
+	private static class IncrementalInputDStream<T, K> extends InputDStream<T> {
+		private K position;
+		private VoidFunction<K> saver;
+		private Function0<K> loader;
 		private Function0<RDD<T>> refresher;
-		private Logger logger = LoggerFactory.getLogger(RefreshableInputDStream.class);
+		private Logger logger = LoggerFactory.getLogger(IncrementalInputDStream.class);
 
-		public RefreshableInputDStream(StreamingContext ssc, Function0<RDD<T>> refresher, ClassTag<T> classTag) {
+		public IncrementalInputDStream(StreamingContext ssc, Function0<RDD<T>> refresher, ClassTag<T> classTag) {
 			super(ssc, classTag);
 			this.refresher = refresher;
 		}

@@ -30,7 +30,7 @@ public abstract class Marshaller<V, K> implements Serializable {
 		return (V) from;
 	}
 
-	public <F extends Factor<F>> boolean confirm(Class<F> factorClass, DataSource ds, Detail detail) {
+	public <F extends Factor<F>> boolean confirm(Class<F> factorClass, DataSource<K, V> ds, Detail detail) {
 		return true;
 	}
 }

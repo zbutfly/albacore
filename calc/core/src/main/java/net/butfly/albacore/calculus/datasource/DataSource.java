@@ -3,6 +3,9 @@ package net.butfly.albacore.calculus.datasource;
 import java.io.Serializable;
 
 import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
+import org.bson.BSONObject;
 
 import com.google.common.base.Joiner;
 
@@ -13,20 +16,20 @@ import net.butfly.albacore.calculus.marshall.KafkaMarshaller;
 import net.butfly.albacore.calculus.marshall.Marshaller;
 import net.butfly.albacore.calculus.marshall.MongoMarshaller;
 
-public abstract class DataSource implements Serializable {
+public abstract class DataSource<K, V> implements Serializable {
 	private static final long serialVersionUID = 1L;
 	Factor.Type type;
-	Marshaller<?, ?> marshaller;
+	Marshaller<V, K> marshaller;
 
 	public Factor.Type getType() {
 		return type;
 	}
 
-	public Marshaller<?, ?> getMarshaller() {
+	public Marshaller<V, K> getMarshaller() {
 		return marshaller;
 	}
 
-	public DataSource(Type type, Marshaller<?, ?> marshaller) {
+	public DataSource(Type type, Marshaller<V, K> marshaller) {
 		super();
 		this.type = type;
 		this.marshaller = marshaller;
@@ -37,14 +40,14 @@ public abstract class DataSource implements Serializable {
 		return "CalculatorDataSource:" + this.type;
 	}
 
-	public static class KafkaDataSource extends DataSource {
+	public static class KafkaDataSource extends DataSource<String, byte[]> {
 		private static final long serialVersionUID = 7500441385655250814L;
 		String servers;
 		String root;
 		String group;
 		int topicPartitions;
 
-		public KafkaDataSource(String servers, String root, int topicPartitions, String group, Marshaller<?, ?> marshaller) {
+		public KafkaDataSource(String servers, String root, int topicPartitions, String group, Marshaller<byte[], String> marshaller) {
 			super(Type.KAFKA, null == marshaller ? new KafkaMarshaller() : marshaller);
 			int pos = servers.indexOf('/');
 			if (root == null && pos >= 0) {
@@ -84,12 +87,12 @@ public abstract class DataSource implements Serializable {
 		}
 	}
 
-	public static class HbaseDataSource extends DataSource {
+	public static class HbaseDataSource extends DataSource<ImmutableBytesWritable, Result> {
 		private static final long serialVersionUID = 3367501286179801635L;
 		String configFile;
 		Connection hconn;
 
-		public HbaseDataSource(String configFile, Marshaller<?, ?> marshaller) {
+		public HbaseDataSource(String configFile, Marshaller<Result, ImmutableBytesWritable> marshaller) {
 			super(Type.HBASE, null == marshaller ? new HbaseMarshaller() : marshaller);
 			this.configFile = configFile;
 			// XXX
@@ -110,11 +113,11 @@ public abstract class DataSource implements Serializable {
 		}
 	}
 
-	public static class MongoDataSource extends DataSource {
+	public static class MongoDataSource extends DataSource<Object, BSONObject> {
 		private static final long serialVersionUID = -2617369621178264387L;
 		String uri;
 
-		public MongoDataSource(String uri, Marshaller<?, ?> marshaller) {
+		public MongoDataSource(String uri, Marshaller<BSONObject, Object> marshaller) {
 			super(Type.MONGODB, null == marshaller ? new MongoMarshaller() : marshaller);
 			this.uri = uri;
 		}
@@ -133,7 +136,7 @@ public abstract class DataSource implements Serializable {
 		}
 	}
 
-	public static class ConstDataSource extends DataSource {
+	public static class ConstDataSource extends DataSource<Void, Void> {
 		private static final long serialVersionUID = -673387208224779163L;
 		private String[] values;
 

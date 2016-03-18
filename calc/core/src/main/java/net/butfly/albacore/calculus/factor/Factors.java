@@ -13,24 +13,24 @@ import org.apache.spark.streaming.dstream.ConstantInputDStream;
 import scala.Tuple2;
 
 @SuppressWarnings("unchecked")
-public final class Factors<K> implements Serializable {
+public final class Factors implements Serializable {
 	private static final long serialVersionUID = -3712903710207597570L;
-	private Map<Class<? extends Factor<?>>, JavaPairRDD<K, ? extends Factor<?>>> stocking = new HashMap<>();
-	private Map<Class<? extends Factor<?>>, JavaPairDStream<K, ? extends Factor<?>>> streamings = new HashMap<>();
+	private Map<Class<? extends Factor<?>>, JavaPairRDD<?, ? extends Factor<?>>> stocking = new HashMap<>();
+	private Map<Class<? extends Factor<?>>, JavaPairDStream<?, ? extends Factor<?>>> streamings = new HashMap<>();
 
-	public <F extends Factor<F>> void streaming(Class<F> factor, JavaPairDStream<K, F> ds) {
+	public <K, F extends Factor<F>> void streaming(Class<F> factor, JavaPairDStream<K, F> ds) {
 		this.streamings.put(factor, ds);
 	}
 
-	public <F extends Factor<F>> void stocking(Class<F> factor, JavaPairRDD<K, F> rdd) {
+	public <K, F extends Factor<F>> void stocking(Class<F> factor, JavaPairRDD<K, F> rdd) {
 		this.stocking.put(factor, rdd);
 	}
 
-	public <F extends Factor<F>> JavaPairDStream<K, F> streaming(Class<F> factor) {
+	public <K, F extends Factor<F>> JavaPairDStream<K, F> streaming(Class<F> factor) {
 		return (JavaPairDStream<K, F>) streamings.get(factor);
 	}
 
-	public <F extends Factor<F>> JavaPairRDD<K, F> stocking(Class<F> factor) {
+	public <K, F extends Factor<F>> JavaPairRDD<K, F> stocking(Class<F> factor) {
 		return (JavaPairRDD<K, F>) stocking.get(factor);
 	}
 

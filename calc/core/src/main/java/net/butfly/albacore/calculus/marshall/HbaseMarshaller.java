@@ -92,7 +92,7 @@ public class HbaseMarshaller extends Marshaller<Result, ImmutableBytesWritable> 
 	}
 
 	@Override
-	public <F extends Factor<F>> boolean confirm(Class<F> factor, DataSource ds, Detail detail) {
+	public <F extends Factor<F>> boolean confirm(Class<F> factor, DataSource<ImmutableBytesWritable, Result> ds, Detail detail) {
 		try {
 			TableName ht = TableName.valueOf(detail.hbaseTable);
 			Admin a = ((HbaseDataSource) ds).getHconn().getAdmin();

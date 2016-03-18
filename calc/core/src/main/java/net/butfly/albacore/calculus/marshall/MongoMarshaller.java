@@ -45,7 +45,7 @@ public class MongoMarshaller extends BsonMarshaller<BSONObject, Object> {
 	}
 
 	@Override
-	public <F extends Factor<F>> boolean confirm(Class<F> factor, DataSource ds, Detail detail) {
+	public <F extends Factor<F>> boolean confirm(Class<F> factor, DataSource<Object, BSONObject> ds, Detail detail) {
 		// TODO Auto-generated method stub
 		MongoDataSource mds = (MongoDataSource) ds;
 		MongoClientURI muri = new MongoClientURI(mds.getUri());
