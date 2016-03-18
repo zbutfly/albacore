@@ -248,15 +248,15 @@ public class Calculator implements Serializable {
 	}
 
 	private <K, F extends Factor<F>> FactorConfig<K, F> scan(Mode mode, Class<F> factor) {
-		FactorConfig<K, F> c = new FactorConfig<K, F>();
-		c.factorClass = factor;
+		FactorConfig<K, F> config = new FactorConfig<K, F>();
+		config.factorClass = factor;
 		if (mode == Mode.STREAMING && factor.isAnnotationPresent(Streaming.class)) {
-			c.mode = Mode.STREAMING;
+			config.mode = Mode.STREAMING;
 			Streaming s = factor.getAnnotation(Streaming.class);
-			c.dbid = s.source();
+			config.dbid = s.source();
 			switch (s.type()) {
 			case KAFKA:
-				c.detail = new Detail(s.topics());
+				config.detail = new Detail(s.topics());
 				break;
 			default:
 				throw new UnsupportedOperationException("Unsupportted streaming mode: " + s.type());
@@ -265,18 +265,19 @@ public class Calculator implements Serializable {
 			if (!factor.isAnnotationPresent(Stocking.class)) return null;
 			Stocking s = factor.getAnnotation(Stocking.class);
 			if (mode == Mode.STREAMING && s.streaming() == OnStreaming.NONE) return null;
-			c.mode = Mode.STOCKING;
-			c.dbid = s.source();
+			config.mode = Mode.STOCKING;
+			config.dbid = s.source();
+			config.paging = s.paging();
 			switch (s.type()) {
 			case HBASE:
 				if (Factor.NOT_DEFINED.equals(s.table()))
 					throw new IllegalArgumentException("Table not defined for factor " + factor.toString());
-				c.detail = new Detail(s.table());
+				config.detail = new Detail(s.table());
 				break;
 			case MONGODB:
 				if (Factor.NOT_DEFINED.equals(s.table()))
 					throw new IllegalArgumentException("Table not defined for factor " + factor.toString());
-				c.detail = new Detail(s.table(), Factor.NOT_DEFINED.equals(s.filter()) ? null : s.filter());
+				config.detail = new Detail(s.table(), Factor.NOT_DEFINED.equals(s.filter()) ? null : s.filter());
 				break;
 			case CONSTAND_TO_CONSOLE:
 				break;
@@ -285,10 +286,10 @@ public class Calculator implements Serializable {
 			}
 			if (validate) {
 				DataSource ds = datasources.get(s.source());
-				ds.getMarshaller().confirm(factor, ds, c.detail);
+				ds.getMarshaller().confirm(factor, ds, config.detail);
 			}
 		}
-		return c;
+		return config;
 	}
 
 	private Factors read(FactorConfig<?, ?>[] configs) {
@@ -301,7 +302,9 @@ public class Calculator implements Serializable {
 	private <K, F extends Factor<F>> void read(FactorConfig<K, F> config, Factors factors) {
 		switch (mode) {
 		case STOCKING:
-			factors.stocking(config.factorClass,
+			if (config.paging <= 0) factors.stocking(config.factorClass,
+					stocking(config.factorClass, datasources.get(config.dbid, config.keyClass, config.factorClass), config.detail));
+			else factors.streaming(config.factorClass,
 					stocking(config.factorClass, datasources.get(config.dbid, config.keyClass, config.factorClass), config.detail));
 			break;
 		case STREAMING:

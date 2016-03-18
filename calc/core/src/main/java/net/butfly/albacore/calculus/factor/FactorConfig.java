@@ -12,4 +12,5 @@ public class FactorConfig<K, F extends Factor<F>> implements Serializable {
 	public Mode mode;
 	public String dbid;
 	public Detail detail;
+	public long paging = -1;
 }
