@@ -10,7 +10,7 @@ import net.butfly.albacore.calculus.datasource.Detail;
 import net.butfly.albacore.calculus.factor.Factor;
 
 @SuppressWarnings("unchecked")
-public abstract class Marshaller<V, K> implements Serializable {
+public abstract class Marshaller<K, V> implements Serializable {
 	private static final long serialVersionUID = 6678021328832491260L;
 	protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 

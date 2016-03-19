@@ -5,7 +5,7 @@ import org.bson.BSONObject;
 
 import net.butfly.albacore.calculus.marshall.bson.BsonMarshaller;
 
-public class KafkaMarshaller extends BsonMarshaller<byte[], String> {
+public class KafkaMarshaller extends BsonMarshaller<String, byte[]> {
 	private static final long serialVersionUID = -4471098188111221100L;
 
 	@Override

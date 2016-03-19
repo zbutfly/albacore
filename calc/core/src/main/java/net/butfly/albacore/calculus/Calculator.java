@@ -71,6 +71,7 @@ import net.butfly.albacore.calculus.factor.FactorConfig;
 import net.butfly.albacore.calculus.factor.Factors;
 import net.butfly.albacore.calculus.marshall.Marshaller;
 import net.butfly.albacore.calculus.streaming.JavaConstantPairDStream;
+import net.butfly.albacore.calculus.streaming.JavaIncrementalPairDStream;
 import net.butfly.albacore.calculus.streaming.JavaRefreshablePairDStream;
 import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
@@ -304,8 +305,8 @@ public class Calculator implements Serializable {
 		case STOCKING:
 			if (config.paging <= 0) factors.stocking(config.factorClass,
 					stocking(config.factorClass, datasources.get(config.dbid, config.keyClass, config.factorClass), config.detail));
-			else factors.streaming(config.factorClass,
-					stocking(config.factorClass, datasources.get(config.dbid, config.keyClass, config.factorClass), config.detail));
+			else factors.streaming(config.factorClass, new JavaIncrementalPairDStream<>(ssc,
+					() -> stocking(config.factorClass, datasources.get(config.dbid, config.keyClass, config.factorClass), config.detail)));
 			break;
 		case STREAMING:
 			switch (config.mode) {
@@ -314,8 +315,9 @@ public class Calculator implements Serializable {
 				case NONE:
 					break;
 				case ONCE:
-					factors.streaming(config.factorClass, new JavaConstantPairDStream<>(ssc, stocking(config.factorClass,
-							datasources.get(config.dbid, config.keyClass, config.factorClass), config.detail)));
+					factors.streaming(config.factorClass, new JavaConstantPairDStream<>(ssc,
+							stocking(config.factorClass, datasources.get(config.dbid, config.keyClass, config.factorClass), config.detail))
+									.persist());
 					break;
 				case EACH:
 					factors.streaming(config.factorClass, new JavaRefreshablePairDStream<>(ssc, () -> stocking(config.factorClass,
@@ -356,7 +358,7 @@ public class Calculator implements Serializable {
 			}
 
 			// conf.hconf.set(TableInputFormat.SCAN_COLUMNS, "cf1:vc cf1:vs");
-			final Marshaller<Result, ImmutableBytesWritable> hm = (Marshaller<Result, ImmutableBytesWritable>) ds.getMarshaller();
+			final Marshaller<ImmutableBytesWritable, Result> hm = (Marshaller<ImmutableBytesWritable, Result>) ds.getMarshaller();
 			return (JavaPairRDD<K, F>) sc.newAPIHadoopRDD(hconf, TableInputFormat.class, ImmutableBytesWritable.class, Result.class)
 					.mapToPair(t -> null == t ? null : new Tuple2<>(hm.unmarshallId(t._1), hm.unmarshall(t._2, factor)));
 		case MONGODB:
@@ -370,7 +372,7 @@ public class Calculator implements Serializable {
 			if (detail.mongoFilter != null && !"".equals(detail.mongoFilter)) mconf.set("mongo.input.query", detail.mongoFilter);
 			// conf.mconf.set("mongo.input.fields
 			mconf.set("mongo.input.notimeout", "true");
-			final Marshaller<BSONObject, Object> mm = (Marshaller<BSONObject, Object>) ds.getMarshaller();
+			final Marshaller<Object, BSONObject> mm = (Marshaller<Object, BSONObject>) ds.getMarshaller();
 			return (JavaPairRDD<K, F>) sc.newAPIHadoopRDD(mconf, MongoInputFormat.class, Object.class, BSONObject.class)
 					.mapToPair(t -> null == t ? null : new Tuple2<String, F>(mm.unmarshallId(t._1), mm.unmarshall(t._2, factor)));
 		case CONSTAND_TO_CONSOLE:
@@ -387,7 +389,7 @@ public class Calculator implements Serializable {
 		logger.debug("Fetch streaming " + factor.toString() + " on " + ds.toString() + ", " + detail.toString());
 		switch (ds.getType()) {
 		case KAFKA:
-			Marshaller<byte[], String> km = (Marshaller<byte[], String>) ds.getMarshaller();
+			Marshaller<String, byte[]> km = (Marshaller<String, byte[]>) ds.getMarshaller();
 			JavaPairInputDStream<String, byte[]> kafka = this.kafka((KafkaDataSource) ds, factor.getAnnotation(Streaming.class).topics());
 			return kafka.mapToPair(t -> null == t ? null : new Tuple2<>(km.unmarshallId(t._1), km.unmarshall(t._2, factor)));
 		default:
@@ -461,17 +463,17 @@ public class Calculator implements Serializable {
 				break;
 			case HBASE:
 				datasources.put(dsid, new HbaseDataSource(dbprops.getProperty("config", "hbase-site.xml"),
-						(Marshaller<Result, ImmutableBytesWritable>) m));
+						(Marshaller<ImmutableBytesWritable, Result>) m));
 				break;
 			case MONGODB:
-				datasources.put(dsid, new MongoDataSource(dbprops.getProperty("uri"), (Marshaller<BSONObject, Object>) m));
+				datasources.put(dsid, new MongoDataSource(dbprops.getProperty("uri"), (Marshaller<Object, BSONObject>) m));
 				// , dbprops.getProperty("authdb"),dbprops.getProperty("authdb")
 				break;
 			case KAFKA:
 				datasources.put(dsid,
 						new KafkaDataSource(dbprops.getProperty("servers"), dbprops.getProperty("root"),
 								Integer.parseInt(dbprops.getProperty("topic.partitions", "1")),
-								debug ? appname + UUID.randomUUID().toString() : appname, (Marshaller<byte[], String>) m));
+								debug ? appname + UUID.randomUUID().toString() : appname, (Marshaller<String, byte[]>) m));
 				break;
 			default:
 				logger.warn("Unsupportted type: " + type);

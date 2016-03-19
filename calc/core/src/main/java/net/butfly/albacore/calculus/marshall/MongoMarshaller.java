@@ -21,7 +21,7 @@ import net.butfly.albacore.calculus.datasource.Index;
 import net.butfly.albacore.calculus.marshall.bson.BsonMarshaller;
 import net.butfly.albacore.calculus.utils.Reflections;
 
-public class MongoMarshaller extends BsonMarshaller<BSONObject, Object> {
+public class MongoMarshaller extends BsonMarshaller<Object, BSONObject> {
 	private static final long serialVersionUID = 8467183278278572295L;
 
 	@Override
