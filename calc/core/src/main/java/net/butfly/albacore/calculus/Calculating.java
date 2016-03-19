@@ -5,7 +5,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import net.butfly.albacore.calculus.functor.Functor;
+import net.butfly.albacore.calculus.factor.Factor;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.TYPE })
@@ -14,5 +14,5 @@ public @interface Calculating {
 		STOCKING, STREAMING
 	}
 
-	Class<? extends Functor<?>>[] value() default {};
+	Class<? extends Factor<?>>[] value() default {};
 }

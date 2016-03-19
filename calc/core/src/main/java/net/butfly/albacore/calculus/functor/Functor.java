@@ -1,38 +1,29 @@
 package net.butfly.albacore.calculus.functor;
 
 import java.io.Serializable;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
 
-public interface Functor<F extends Functor<F>> extends Serializable {
-	static final String NOT_DEFINED = "";
+import scala.Tuple2;
 
-	public enum Type {
-		CONSTAND_TO_CONSOLE, HBASE, MONGODB, KAFKA
-	}
+public interface Functor extends Serializable {
+	interface Pair extends Functor {
+		@FunctionalInterface
+		interface PairMap<K, V, T> extends Pair {
+			public Tuple2<K, V> call(T t) throws Exception;
+		}
 
-	@Retention(RetentionPolicy.RUNTIME)
-	@Target({ ElementType.TYPE })
-	public @interface Stocking {
+		@FunctionalInterface
+		interface Join extends Pair {
+			public void call() throws Exception;
+		}
 
-		Type type();
+		@FunctionalInterface
+		interface KeyReduce<T1, T2, R> extends Pair {
+			public R call(T1 v1, T2 v2) throws Exception;
+		}
 
-		String source() default NOT_DEFINED;
-
-		String table() default NOT_DEFINED;
-
-		String filter() default NOT_DEFINED;
-	}
-
-	@Retention(RetentionPolicy.RUNTIME)
-	@Target({ ElementType.TYPE })
-	public @interface Streaming {
-		Type type();
-
-		String source();
-
-		String[] topics() default {};
+		@FunctionalInterface
+		interface Finalize<D> extends Pair {
+			public void call(D d) throws Exception;
+		}
 	}
 }

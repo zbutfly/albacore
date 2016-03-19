@@ -2,29 +2,35 @@ package net.butfly.albacore.calculus.marshall;
 
 import java.io.Serializable;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.butfly.albacore.calculus.datasource.DataSource;
 import net.butfly.albacore.calculus.datasource.Detail;
-import net.butfly.albacore.calculus.functor.Functor;
+import net.butfly.albacore.calculus.factor.Factor;
 
 @SuppressWarnings("unchecked")
-public interface Marshaller<V, K> extends Serializable {
-	default String unmarshallId(K id) {
+public abstract class Marshaller<V, K> implements Serializable {
+	private static final long serialVersionUID = 6678021328832491260L;
+	protected final Logger logger = LoggerFactory.getLogger(this.getClass());
+
+	public String unmarshallId(K id) {
 		return null == id ? null : id.toString();
 	}
 
-	default <T extends Functor<T>> T unmarshall(V from, Class<T> to) {
+	public <T extends Factor<T>> T unmarshall(V from, Class<T> to) {
 		return (T) from;
 	}
 
-	default K marshallId(String id) {
+	public K marshallId(String id) {
 		return (K) id;
 	}
 
-	default <T extends Functor<T>> V marshall(T from) {
+	public <T extends Factor<T>> V marshall(T from) {
 		return (V) from;
 	}
 
-	default <F extends Functor<F>> boolean confirm(Class<F> functorClass, DataSource ds, Detail detail) {
+	public <F extends Factor<F>> boolean confirm(Class<F> factorClass, DataSource<K, V> ds, Detail detail) {
 		return true;
 	}
 }
