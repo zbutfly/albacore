@@ -20,7 +20,7 @@ import com.mongodb.LazyDBObject;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.marshall.Marshaller;
 
-public abstract class BsonMarshaller<V, K> extends Marshaller<V, K> {
+public abstract class BsonMarshaller<K, V> extends Marshaller<K, V> {
 	private static final long serialVersionUID = -7385678674433019238L;
 	private static ObjectMapper bsoner = new ObjectMapper(MongoBsonFactory.createFactory())
 			.setPropertyNamingStrategy(new UpperCaseWithUnderscoresStrategy()).disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)

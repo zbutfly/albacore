@@ -19,17 +19,17 @@ import net.butfly.albacore.calculus.marshall.MongoMarshaller;
 public abstract class DataSource<K, V> implements Serializable {
 	private static final long serialVersionUID = 1L;
 	Factor.Type type;
-	Marshaller<V, K> marshaller;
+	Marshaller<K, V> marshaller;
 
 	public Factor.Type getType() {
 		return type;
 	}
 
-	public Marshaller<V, K> getMarshaller() {
+	public Marshaller<K, V> getMarshaller() {
 		return marshaller;
 	}
 
-	public DataSource(Type type, Marshaller<V, K> marshaller) {
+	public DataSource(Type type, Marshaller<K, V> marshaller) {
 		super();
 		this.type = type;
 		this.marshaller = marshaller;
@@ -47,7 +47,7 @@ public abstract class DataSource<K, V> implements Serializable {
 		String group;
 		int topicPartitions;
 
-		public KafkaDataSource(String servers, String root, int topicPartitions, String group, Marshaller<byte[], String> marshaller) {
+		public KafkaDataSource(String servers, String root, int topicPartitions, String group, Marshaller<String, byte[]> marshaller) {
 			super(Type.KAFKA, null == marshaller ? new KafkaMarshaller() : marshaller);
 			int pos = servers.indexOf('/');
 			if (root == null && pos >= 0) {
@@ -92,7 +92,7 @@ public abstract class DataSource<K, V> implements Serializable {
 		String configFile;
 		Connection hconn;
 
-		public HbaseDataSource(String configFile, Marshaller<Result, ImmutableBytesWritable> marshaller) {
+		public HbaseDataSource(String configFile, Marshaller<ImmutableBytesWritable, Result> marshaller) {
 			super(Type.HBASE, null == marshaller ? new HbaseMarshaller() : marshaller);
 			this.configFile = configFile;
 			// XXX
@@ -117,7 +117,7 @@ public abstract class DataSource<K, V> implements Serializable {
 		private static final long serialVersionUID = -2617369621178264387L;
 		String uri;
 
-		public MongoDataSource(String uri, Marshaller<BSONObject, Object> marshaller) {
+		public MongoDataSource(String uri, Marshaller<Object, BSONObject> marshaller) {
 			super(Type.MONGODB, null == marshaller ? new MongoMarshaller() : marshaller);
 			this.uri = uri;
 		}

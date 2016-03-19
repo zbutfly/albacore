@@ -33,7 +33,7 @@ import net.butfly.albacore.calculus.datasource.Detail;
 import net.butfly.albacore.calculus.datasource.HbaseColumnFamily;
 import net.butfly.albacore.calculus.utils.Reflections;
 
-public class HbaseMarshaller extends Marshaller<Result, ImmutableBytesWritable> {
+public class HbaseMarshaller extends Marshaller<ImmutableBytesWritable, Result> {
 	private static final long serialVersionUID = -4529825710243214685L;
 	public static final String SCAN_LIMIT = "hbase.calculus.limit";
 	public static final String SCAN_OFFSET = "hbase.calculus.limit";
@@ -99,8 +99,7 @@ public class HbaseMarshaller extends Marshaller<Result, ImmutableBytesWritable> 
 			if (a.tableExists(ht)) return true;
 			Set<String> families = new HashSet<>();
 			Set<String> columns = new HashSet<>();
-			String dcf = factor.isAnnotationPresent(HbaseColumnFamily.class) ? factor.getAnnotation(HbaseColumnFamily.class).value()
-					: null;
+			String dcf = factor.isAnnotationPresent(HbaseColumnFamily.class) ? factor.getAnnotation(HbaseColumnFamily.class).value() : null;
 			families.add(dcf);
 			for (Field f : Reflections.getDeclaredFields(factor)) {
 				String colname = f.isAnnotationPresent(JsonProperty.class) ? f.getAnnotation(JsonProperty.class).value()
