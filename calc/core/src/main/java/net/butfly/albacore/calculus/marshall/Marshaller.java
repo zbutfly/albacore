@@ -5,8 +5,6 @@ import java.io.Serializable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.butfly.albacore.calculus.datasource.DataSource;
-import net.butfly.albacore.calculus.datasource.Detail;
 import net.butfly.albacore.calculus.factor.Factor;
 
 @SuppressWarnings("unchecked")
@@ -28,9 +26,5 @@ public abstract class Marshaller<K, V> implements Serializable {
 
 	public <T extends Factor<T>> V marshall(T from) {
 		return (V) from;
-	}
-
-	public <F extends Factor<F>> boolean confirm(Class<F> factorClass, DataSource<K, V> ds, Detail detail) {
-		return true;
 	}
 }

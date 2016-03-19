@@ -1,25 +1,25 @@
 package net.butfly.albacore.calculus.datasource;
 
 import java.io.Serializable;
+import java.util.HashMap;
 
-import org.apache.hadoop.hbase.client.Connection;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
-import org.bson.BSONObject;
-
-import com.google.common.base.Joiner;
+import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.VoidFunction;
+import org.apache.spark.streaming.api.java.JavaPairDStream;
+import org.apache.spark.streaming.api.java.JavaStreamingContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
-import net.butfly.albacore.calculus.marshall.HbaseMarshaller;
-import net.butfly.albacore.calculus.marshall.KafkaMarshaller;
 import net.butfly.albacore.calculus.marshall.Marshaller;
-import net.butfly.albacore.calculus.marshall.MongoMarshaller;
 
 public abstract class DataSource<K, V> implements Serializable {
 	private static final long serialVersionUID = 1L;
 	Factor.Type type;
 	Marshaller<K, V> marshaller;
+	protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	public Factor.Type getType() {
 		return type;
@@ -40,118 +40,33 @@ public abstract class DataSource<K, V> implements Serializable {
 		return "CalculatorDataSource:" + this.type;
 	}
 
-	public static class KafkaDataSource extends DataSource<String, byte[]> {
-		private static final long serialVersionUID = 7500441385655250814L;
-		String servers;
-		String root;
-		String group;
-		int topicPartitions;
-
-		public KafkaDataSource(String servers, String root, int topicPartitions, String group, Marshaller<String, byte[]> marshaller) {
-			super(Type.KAFKA, null == marshaller ? new KafkaMarshaller() : marshaller);
-			int pos = servers.indexOf('/');
-			if (root == null && pos >= 0) {
-				this.servers = servers.substring(0, pos);
-				this.root = servers.substring(pos + 1);
-			} else {
-				this.root = root;
-				this.servers = servers;
-			}
-			this.group = group;
-			this.topicPartitions = topicPartitions;
-		}
-
-		public KafkaDataSource(String servers, String root, int topicPartitions, String group) {
-			this(servers, root, topicPartitions, group, new KafkaMarshaller());
-		}
-
-		@Override
-		public String toString() {
-			return super.toString() + ":" + this.getServers() + "(" + group + ")";
-		}
-
-		public String getGroup() {
-			return group;
-		}
-
-		public String getRoot() {
-			return root;
-		}
-
-		public String getServers() {
-			return this.servers + (null == this.root ? "" : "/" + this.root);
-		}
-
-		public int getTopicPartitions() {
-			return topicPartitions;
-		}
+	public <KK, F extends Factor<F>> JavaPairRDD<KK, F> stocking(JavaSparkContext sc, Class<F> factor, Detail detail) {
+		throw new UnsupportedOperationException("Unsupportted stocking mode: " + type + " on " + factor.toString());
 	}
 
-	public static class HbaseDataSource extends DataSource<ImmutableBytesWritable, Result> {
-		private static final long serialVersionUID = 3367501286179801635L;
-		String configFile;
-		Connection hconn;
-
-		public HbaseDataSource(String configFile, Marshaller<ImmutableBytesWritable, Result> marshaller) {
-			super(Type.HBASE, null == marshaller ? new HbaseMarshaller() : marshaller);
-			this.configFile = configFile;
-			// XXX
-			// this.hconn = ConnectionFactory.createConnection(conf)
-		}
-
-		@Override
-		public String toString() {
-			return super.toString() + ":" + this.configFile;
-		}
-
-		public String getConfigFile() {
-			return configFile;
-		}
-
-		public Connection getHconn() {
-			return hconn;
-		}
+	public <KK, F extends Factor<F>> JavaPairDStream<KK, F> batching(JavaStreamingContext ssc, Class<F> factor, int batching,
+			Detail detail, Class<KK> kClass, Class<F> vClass) {
+		throw new UnsupportedOperationException("Unsupportted stocking mode with batching: " + type + " on " + factor.toString());
 	}
 
-	public static class MongoDataSource extends DataSource<Object, BSONObject> {
-		private static final long serialVersionUID = -2617369621178264387L;
-		String uri;
-
-		public MongoDataSource(String uri, Marshaller<Object, BSONObject> marshaller) {
-			super(Type.MONGODB, null == marshaller ? new MongoMarshaller() : marshaller);
-			this.uri = uri;
-		}
-
-		public MongoDataSource(String uri) {
-			this(uri, new MongoMarshaller());
-		}
-
-		@Override
-		public String toString() {
-			return super.toString() + ":" + this.uri;
-		}
-
-		public String getUri() {
-			return uri;
-		}
+	public <KK, F extends Factor<F>> JavaPairDStream<KK, F> streaming(JavaStreamingContext ssc, Class<F> factor, Detail detail) {
+		throw new UnsupportedOperationException("Unsupportted streaming mode: " + type + " on " + factor.toString());
 	}
 
-	public static class ConstDataSource extends DataSource<Void, Void> {
-		private static final long serialVersionUID = -673387208224779163L;
-		private String[] values;
+	public <KK, F extends Factor<F>> VoidFunction<JavaPairRDD<KK, F>> saving(JavaSparkContext sc, Detail detail) {
+		throw new UnsupportedOperationException("Unsupportted saving: " + type);
+	}
 
-		public ConstDataSource(String[] values) {
-			super(Type.CONSTAND_TO_CONSOLE, null);
-			this.values = values;
-		}
+	public boolean confirm(Class<? extends Factor<?>> factorClass, Detail detail) {
+		return true;
+	}
 
-		@Override
-		public String toString() {
-			return super.toString() + ":" + Joiner.on(',').join(values);
-		}
+	public static class DataSources extends HashMap<String, DataSource<?, ?>> {
+		private static final long serialVersionUID = -7809799411800022817L;
 
-		public String[] getValues() {
-			return values;
+		@SuppressWarnings("unchecked")
+		public <K, V> DataSource<K, V> get(String dbid) {
+			return (DataSource<K, V>) super.get(dbid);
 		}
 	}
 }

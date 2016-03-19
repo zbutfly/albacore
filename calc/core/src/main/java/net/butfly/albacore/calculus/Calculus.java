@@ -4,7 +4,6 @@ import java.io.Serializable;
 
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDDLike;
-import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.streaming.api.java.JavaDStreamLike;
@@ -28,8 +27,6 @@ public abstract class Calculus<OUTK, OUTV extends Factor<OUTV>> implements Seria
 	public Functor[] stages() {
 		return new Functor[0];
 	}
-
-	abstract public void stocking(final JavaSparkContext sc, final Factors factors, final VoidFunction<JavaPairRDD<OUTK, OUTV>> handler);
 
 	abstract public void streaming(final JavaStreamingContext ssc, final Factors factors,
 			final VoidFunction<JavaPairRDD<OUTK, OUTV>> handler);

@@ -7,7 +7,6 @@ import java.io.InputStream;
 import java.io.Serializable;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -22,46 +21,25 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 import org.apache.commons.lang.NotImplementedException;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.Scan;
-import org.apache.hadoop.hbase.filter.PageFilter;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
-import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
-import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
-import org.apache.hadoop.hbase.protobuf.ProtobufUtil;
-import org.apache.hadoop.hbase.util.Base64;
 import org.apache.spark.SparkConf;
-import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.VoidFunction;
-import org.apache.spark.storage.StorageLevel;
 import org.apache.spark.streaming.Durations;
-import org.apache.spark.streaming.api.java.JavaPairDStream;
-import org.apache.spark.streaming.api.java.JavaPairInputDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
-import org.apache.spark.streaming.kafka.KafkaUtils;
 import org.bson.BSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.mongodb.MongoClientURI;
-import com.mongodb.hadoop.MongoInputFormat;
-import com.mongodb.hadoop.MongoOutputFormat;
-import com.mongodb.hadoop.util.MongoClientURIBuilder;
-
 import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
-import kafka.serializer.DefaultDecoder;
-import kafka.serializer.StringDecoder;
 import net.butfly.albacore.calculus.Calculating.Mode;
+import net.butfly.albacore.calculus.datasource.ConstDataSource;
 import net.butfly.albacore.calculus.datasource.DataSource;
-import net.butfly.albacore.calculus.datasource.DataSource.ConstDataSource;
-import net.butfly.albacore.calculus.datasource.DataSource.HbaseDataSource;
-import net.butfly.albacore.calculus.datasource.DataSource.KafkaDataSource;
-import net.butfly.albacore.calculus.datasource.DataSource.MongoDataSource;
-import net.butfly.albacore.calculus.datasource.DataSources;
+import net.butfly.albacore.calculus.datasource.DataSource.DataSources;
 import net.butfly.albacore.calculus.datasource.Detail;
+import net.butfly.albacore.calculus.datasource.HbaseDataSource;
+import net.butfly.albacore.calculus.datasource.KafkaDataSource;
+import net.butfly.albacore.calculus.datasource.MongoDataSource;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Stocking;
 import net.butfly.albacore.calculus.factor.Factor.Stocking.OnStreaming;
@@ -70,13 +48,10 @@ import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.factor.FactorConfig;
 import net.butfly.albacore.calculus.factor.Factors;
 import net.butfly.albacore.calculus.marshall.Marshaller;
-import net.butfly.albacore.calculus.streaming.JavaConstantPairDStream;
-import net.butfly.albacore.calculus.streaming.JavaIncrementalPairDStream;
-import net.butfly.albacore.calculus.streaming.JavaRefreshablePairDStream;
+import net.butfly.albacore.calculus.streaming.JavaConstPairDStream;
+import net.butfly.albacore.calculus.streaming.JavaReloadPairDStream;
 import net.butfly.albacore.calculus.utils.Reflections;
-import scala.Tuple2;
 
-@SuppressWarnings({ "unchecked", "rawtypes" })
 public class Calculator implements Serializable {
 	private static final long serialVersionUID = 7850755405377027618L;
 
@@ -111,7 +86,7 @@ public class Calculator implements Serializable {
 
 	private Calculator start() {
 		sc = new JavaSparkContext(sconf);
-		if (mode == Mode.STREAMING) ssc = new JavaStreamingContext(sc, Durations.seconds(dura));
+		ssc = new JavaStreamingContext(sc, Durations.seconds(dura));
 		return this;
 	}
 
@@ -128,7 +103,9 @@ public class Calculator implements Serializable {
 	private Calculator(Properties props) {
 		mode = Mode.valueOf(props.getProperty("calculus.mode", "STREAMING").toUpperCase());
 		debug = Boolean.valueOf(props.getProperty("calculus.debug", "false").toLowerCase());
-		dura = Integer.parseInt(props.getProperty("calculus.spark.duration.seconds", "5"));
+		if (mode == Mode.STOCKING && props.containsKey("calculus.spark.duration.seconds"))
+			logger.warn("Stocking does not support duration, but calculator may set default duration for batching streaming.");
+		dura = mode == Mode.STREAMING ? Integer.parseInt(props.getProperty("calculus.spark.duration.seconds", "5")) : 0;
 		validate = Boolean.parseBoolean(props.getProperty("calculus.validate.table", "false"));
 		final String appname = props.getProperty("calculus.app.name", "Calculuses");
 		// dadatabse configurations parsing
@@ -161,9 +138,8 @@ public class Calculator implements Serializable {
 				if (Calculus.class.isAssignableFrom(c) && c.isAnnotationPresent(Calculating.class)) {
 					calculuses.add(c);
 					logger.debug("Found: " + c.toString());
-				} else {
-					logger.warn("Ignore: " + c.toString() + ", either not Calculus or not annotated by @Calculating.");
-				}
+				} else logger.warn("Ignore: " + c.toString() + ", either not Calculus or not annotated by @Calculating.");
+
 			}
 		} else {
 			FastClasspathScanner scaner = props.containsKey("calculus.package") ? new FastClasspathScanner()
@@ -175,77 +151,41 @@ public class Calculator implements Serializable {
 		logger.debug("Running calculuses: " + calculuses.toString());
 	}
 
-	private <K, OUT extends Factor<OUT>> Calculator calculate() {
-		for (Class<?> c : calculuses) {
-			logger.info("Calculus " + c.toString() + " starting... ");
-			Calculus<String, OUT> calc;
+	@SuppressWarnings("unchecked")
+	private <OUTK, OUTV extends Factor<OUTV>> Calculator calculate() {
+		for (Class<?> klass : calculuses) {
+			Calculating calcing = klass.getAnnotation(Calculating.class);
+			Calculus<OUTK, OUTV> calc;
 			try {
-				calc = (Calculus<String, OUT>) c.newInstance();
+				calc = (Calculus<OUTK, OUTV>) klass.newInstance();
 			} catch (Exception e) {
-				logger.error("Calculus " + c.toString() + " constructor failure, ignored", e);
+				logger.error("Calculus " + klass.toString() + " constructor failure, ignored", e);
 				continue;
 			}
-			Calculating calcing = c.getAnnotation(Calculating.class);
-			FactorConfig[] configs = scans(mode, calcing.value());
-			Class<OUT> out = Reflections.resolveGenericParameter(c, Calculus.class, "OUTV");
-			FactorConfig<K, OUT> save = scan(Mode.STOCKING, out);
-
-			VoidFunction<JavaPairRDD<String, OUT>> handler = null;
-			if (calc != null) {
-				DataSource ds = datasources.get(save.dbid);
-				Configuration conf = HBaseConfiguration.create();
-				final Marshaller<?, ?> m = ds.getMarshaller();
-				switch (ds.getType()) {
-				case HBASE:
-					try {
-						conf.addResource(scanInputStream(((HbaseDataSource) ds).getConfigFile()));
-					} catch (IOException e) {
-						throw new RuntimeException("HBase configuration invalid.", e);
-					}
-					conf.set(TableOutputFormat.OUTPUT_TABLE, save.detail.hbaseTable);
-					handler = r -> r.mapToPair(t -> null == t ? null : new Tuple2<>(m.marshallId(t._1), m.marshall(t._2)))
-							.saveAsNewAPIHadoopFile(null, ImmutableBytesWritable.class, Result.class, TableOutputFormat.class, conf);
-					break;
-				case MONGODB:
-					MongoDataSource mds = (MongoDataSource) ds;
-					conf.set("mongo.job.output.format", MongoOutputFormat.class.getName());
-					MongoClientURI uri = new MongoClientURI(mds.getUri());
-					conf.set("mongo.output.uri",
-							new MongoClientURIBuilder(uri).collection(uri.getDatabase(), save.detail.mongoTable).build().toString());
-					handler = r -> r.mapToPair(t -> null == t ? null : new Tuple2<>(m.marshallId(t._1), m.marshall(t._2)))
-							.saveAsNewAPIHadoopFile("", Object.class, BSONObject.class, MongoOutputFormat.class, conf);
-					break;
-				case CONSTAND_TO_CONSOLE:
-					String[] values = ((ConstDataSource) ds).getValues();
-					if (values == null) values = new String[0];
-					handler = r -> {
-						if (null != r) for (Tuple2<?, OUT> o : r.collect())
-							logger.info("Calculated, result => " + o._2.toString());
-					};
-				default:
-					throw new UnsupportedOperationException("Unsupportted stocking mode: " + ds.getType());
+			List<FactorConfig<?, ?>> configs = new ArrayList<>();
+			FactorConfig<?, ?> batch = null;
+			for (@SuppressWarnings("rawtypes")
+			Class ccc : calcing.value()) {
+				FactorConfig<?, ?> c = scan(mode, ccc);
+				if (null == c) continue;
+				if (c.batching > 0) {
+					if (batch != null) throw new IllegalArgumentException("Only one batch stocking source supported, now found second: "
+							+ batch.factorClass.toString() + " and " + c.factorClass.toString());
+					else batch = c;
 				}
+				configs.add(c);
 			}
 
-			switch (mode) {
-			case STOCKING:
-				calc.stocking(sc, read(configs), handler);
-				break;
-			case STREAMING:
-				calc.streaming(ssc, read(configs), handler);
-				break;
-			}
-			logger.info("Calculus " + c.toString() + " started. ");
+			Factors factors = new Factors();
+			for (FactorConfig<?, ?> c : configs)
+				if (c != null) read(factors, c);
+			logger.info("Calculus " + klass.toString() + " starting... ");
+			FactorConfig<OUTK, OUTV> saving = scan(Mode.STOCKING,
+					Reflections.resolveGenericParameter(calc.getClass(), Calculus.class, "OUTV"));
+			calc.streaming(ssc, factors, datasources.get(saving.dbid).saving(sc, saving.detail));
+			logger.info("Calculus " + klass.toString() + " started. ");
 		}
 		return this;
-	}
-
-	private FactorConfig<?, ? extends Factor<?>>[] scans(Mode mode, Class<? extends Factor<?>>[] factors) {
-		List<FactorConfig<?, ? extends Factor<?>>> configs = new ArrayList<>();
-		for (Class c : factors)
-			configs.add(scan(mode, c));
-
-		return configs.toArray(new FactorConfig[configs.size()]);
 	}
 
 	private <K, F extends Factor<F>> FactorConfig<K, F> scan(Mode mode, Class<F> factor) {
@@ -260,7 +200,7 @@ public class Calculator implements Serializable {
 				config.detail = new Detail(s.topics());
 				break;
 			default:
-				throw new UnsupportedOperationException("Unsupportted streaming mode: " + s.type());
+				throw new UnsupportedOperationException("Unsupportted streaming mode: " + s.type() + " on " + factor.toString());
 			}
 		} else {
 			if (!factor.isAnnotationPresent(Stocking.class)) return null;
@@ -268,7 +208,8 @@ public class Calculator implements Serializable {
 			if (mode == Mode.STREAMING && s.streaming() == OnStreaming.NONE) return null;
 			config.mode = Mode.STOCKING;
 			config.dbid = s.source();
-			config.paging = s.paging();
+			config.batching = s.batching();
+			config.streaming = s.streaming();
 			switch (s.type()) {
 			case HBASE:
 				if (Factor.NOT_DEFINED.equals(s.table()))
@@ -283,138 +224,50 @@ public class Calculator implements Serializable {
 			case CONSTAND_TO_CONSOLE:
 				break;
 			default:
-				throw new UnsupportedOperationException("Unsupportted stocking mode: " + s.type());
+				throw new UnsupportedOperationException("Unsupportted stocking mode: " + s.type() + " on " + factor.toString());
 			}
 			if (validate) {
-				DataSource ds = datasources.get(s.source());
-				ds.getMarshaller().confirm(factor, ds, config.detail);
+				DataSource<?, ?> ds = datasources.get(s.source());
+				ds.confirm(factor, config.detail);
 			}
 		}
 		return config;
 	}
 
-	private Factors read(FactorConfig<?, ?>[] configs) {
-		Factors factors = new Factors();
-		for (FactorConfig<?, ?> c : configs)
-			if (c != null) read(c, factors);
-		return factors;
-	}
-
-	private <K, F extends Factor<F>> void read(FactorConfig<K, F> config, Factors factors) {
+	private <K, F extends Factor<F>> void read(Factors factors, FactorConfig<K, F> config) {
 		switch (mode) {
 		case STOCKING:
-			if (config.paging <= 0) factors.stocking(config.factorClass,
-					stocking(config.factorClass, datasources.get(config.dbid, config.keyClass, config.factorClass), config.detail));
-			else factors.streaming(config.factorClass, new JavaIncrementalPairDStream<>(ssc,
-					() -> stocking(config.factorClass, datasources.get(config.dbid, config.keyClass, config.factorClass), config.detail)));
+			if (config.batching <= 0)
+				factors.stocking(config.factorClass, datasources.get(config.dbid).stocking(sc, config.factorClass, config.detail), ssc);
+			else factors.streaming(config.factorClass, datasources.get(config.dbid).batching(ssc, config.factorClass, config.batching,
+					config.detail, config.keyClass, config.factorClass));
 			break;
 		case STREAMING:
 			switch (config.mode) {
 			case STOCKING:
-				switch (config.factorClass.getAnnotation(Stocking.class).streaming()) {
+				switch (config.streaming) {
 				case NONE:
 					break;
 				case ONCE:
-					factors.streaming(config.factorClass, new JavaConstantPairDStream<>(ssc,
-							stocking(config.factorClass, datasources.get(config.dbid, config.keyClass, config.factorClass), config.detail))
+					factors.streaming(config.factorClass,
+							new JavaConstPairDStream<>(ssc, datasources.get(config.dbid).stocking(sc, config.factorClass, config.detail))
 									.persist());
 					break;
 				case EACH:
-					factors.streaming(config.factorClass, new JavaRefreshablePairDStream<>(ssc, () -> stocking(config.factorClass,
-							datasources.get(config.dbid, config.keyClass, config.factorClass), config.detail)));
+					factors.streaming(config.factorClass,
+							new JavaReloadPairDStream<>(ssc,
+									() -> datasources.get(config.dbid).stocking(sc, config.factorClass, config.detail), config.keyClass,
+									config.factorClass));
 					break;
 				case CACHE:
 					throw new NotImplementedException();
 				}
 				break;
 			case STREAMING:
-				factors.streaming(config.factorClass, streaming(config.factorClass, datasources.get(config.dbid), config.detail));
+				factors.streaming(config.factorClass, datasources.get(config.dbid).streaming(ssc, config.factorClass, config.detail));
 				break;
 			}
 			break;
-		}
-	}
-
-	private <K, F extends Factor<F>> JavaPairRDD<K, F> stocking(Class<F> factor, DataSource ds, Detail detail) {
-		logger.debug("Fetch stocking " + factor.toString() + " on " + ds.toString() + ", " + detail.toString());
-		switch (ds.getType()) {
-		case HBASE: // TODO: adaptor to hbase data frame
-			Configuration hconf = HBaseConfiguration.create();
-			try {
-				hconf.addResource(scanInputStream(((HbaseDataSource) ds).getConfigFile()));
-			} catch (IOException e) {
-				throw new RuntimeException("HBase configuration invalid.", e);
-			}
-			hconf.set(TableInputFormat.INPUT_TABLE, detail.hbaseTable);
-			if (debug) {
-				int limit = Integer.parseInt(System.getProperty("calculus.debug.hbase.limit", "1000"));
-				logger.warn("Hbase debugging, limit results in " + limit + "(can be customized by -Dcalculus.debug.hbase.limit=N)");
-				try {
-					hconf.set(TableInputFormat.SCAN,
-							Base64.encodeBytes(ProtobufUtil.toScan(new Scan().setFilter(new PageFilter(limit))).toByteArray()));
-				} catch (IOException e) {
-					logger.error("Hbase debugging failure, page scan definition error", e);
-				}
-			}
-
-			// conf.hconf.set(TableInputFormat.SCAN_COLUMNS, "cf1:vc cf1:vs");
-			final Marshaller<ImmutableBytesWritable, Result> hm = (Marshaller<ImmutableBytesWritable, Result>) ds.getMarshaller();
-			return (JavaPairRDD<K, F>) sc.newAPIHadoopRDD(hconf, TableInputFormat.class, ImmutableBytesWritable.class, Result.class)
-					.mapToPair(t -> null == t ? null : new Tuple2<>(hm.unmarshallId(t._1), hm.unmarshall(t._2, factor)));
-		case MONGODB:
-			Configuration mconf = new Configuration();
-			MongoDataSource mds = (MongoDataSource) ds;
-			mconf.set("mongo.job.input.format", "com.mongodb.hadoop.MongoInputFormat");
-			MongoClientURI uri = new MongoClientURI(mds.getUri());
-			// mconf.set("mongo.auth.uri", uri.toString());
-			mconf.set("mongo.input.uri",
-					new MongoClientURIBuilder(uri).collection(uri.getDatabase(), detail.mongoTable).build().toString());
-			if (detail.mongoFilter != null && !"".equals(detail.mongoFilter)) mconf.set("mongo.input.query", detail.mongoFilter);
-			// conf.mconf.set("mongo.input.fields
-			mconf.set("mongo.input.notimeout", "true");
-			final Marshaller<Object, BSONObject> mm = (Marshaller<Object, BSONObject>) ds.getMarshaller();
-			return (JavaPairRDD<K, F>) sc.newAPIHadoopRDD(mconf, MongoInputFormat.class, Object.class, BSONObject.class)
-					.mapToPair(t -> null == t ? null : new Tuple2<String, F>(mm.unmarshallId(t._1), mm.unmarshall(t._2, factor)));
-		case CONSTAND_TO_CONSOLE:
-			String[] values = ((ConstDataSource) ds).getValues();
-			if (values == null) values = new String[0];
-			return (JavaPairRDD<K, F>) sc.parallelize(Arrays.asList(values))
-					.mapToPair(t -> null == t ? null : new Tuple2<>(UUID.randomUUID().toString(), (F) Reflections.construct(factor, t)));
-		default:
-			throw new UnsupportedOperationException("Unsupportted stocking mode: " + ds.getType());
-		}
-	}
-
-	private <F extends Factor<F>> JavaPairDStream<String, F> streaming(Class<F> factor, DataSource ds, Detail detail) {
-		logger.debug("Fetch streaming " + factor.toString() + " on " + ds.toString() + ", " + detail.toString());
-		switch (ds.getType()) {
-		case KAFKA:
-			Marshaller<String, byte[]> km = (Marshaller<String, byte[]>) ds.getMarshaller();
-			JavaPairInputDStream<String, byte[]> kafka = this.kafka((KafkaDataSource) ds, factor.getAnnotation(Streaming.class).topics());
-			return kafka.mapToPair(t -> null == t ? null : new Tuple2<>(km.unmarshallId(t._1), km.unmarshall(t._2, factor)));
-		default:
-			throw new UnsupportedOperationException("Unsupportted stocking mode: " + ds.getType() + " on " + factor);
-		}
-	}
-
-	private JavaPairInputDStream<String, byte[]> kafka(KafkaDataSource ds, String[] topics) {
-		Map<String, String> params = new HashMap<>();
-		if (ds.getRoot() == null) { // direct mode
-			params.put("metadata.broker.list", ds.getServers());
-			// params.put("bootstrap.servers", ds.getServers());
-			// params.put("auto.commit.enable", "false");
-			params.put("group.id", ds.getGroup());
-			return KafkaUtils.createDirectStream(ssc, String.class, byte[].class, StringDecoder.class, DefaultDecoder.class, params,
-					new HashSet<String>(Arrays.asList(topics)));
-		} else {
-			params.put("bootstrap.servers", ds.getServers());
-			params.put("auto.commit.enable", "false");
-			params.put("group.id", ds.getGroup());
-			Map<String, Integer> topicsMap = new HashMap<>();
-			for (String t : topics)
-				topicsMap.put(t, ds.getTopicPartitions());
-			return KafkaUtils.createStream(ssc, String.class, byte[].class, StringDecoder.class, DefaultDecoder.class, params, topicsMap,
-					StorageLevel.MEMORY_ONLY());
 		}
 	}
 
@@ -447,6 +300,7 @@ public class Calculator implements Serializable {
 		return cmd;
 	}
 
+	@SuppressWarnings("unchecked")
 	private void parseDatasources(String appname, Map<String, Properties> dsprops) {
 		for (String dsid : dsprops.keySet()) {
 			Properties dbprops = dsprops.get(dsid);
