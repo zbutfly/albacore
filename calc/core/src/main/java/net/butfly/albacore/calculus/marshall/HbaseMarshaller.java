@@ -1,20 +1,13 @@
 package net.butfly.albacore.calculus.marshall;
 
-import java.io.IOException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
-import org.apache.hadoop.hbase.HColumnDescriptor;
-import org.apache.hadoop.hbase.HTableDescriptor;
-import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -26,11 +19,8 @@ import com.google.common.base.Defaults;
 import com.google.common.base.Joiner;
 
 import net.butfly.albacore.calculus.Calculator;
-import net.butfly.albacore.calculus.datasource.DataSource;
-import net.butfly.albacore.calculus.datasource.DataSource.HbaseDataSource;
-import net.butfly.albacore.calculus.factor.Factor;
-import net.butfly.albacore.calculus.datasource.Detail;
 import net.butfly.albacore.calculus.datasource.HbaseColumnFamily;
+import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.utils.Reflections;
 
 public class HbaseMarshaller extends Marshaller<ImmutableBytesWritable, Result> {
@@ -91,39 +81,6 @@ public class HbaseMarshaller extends Marshaller<ImmutableBytesWritable, Result> 
 		return new ImmutableBytesWritable(Bytes.toBytes(id));
 	}
 
-	@Override
-	public <F extends Factor<F>> boolean confirm(Class<F> factor, DataSource<ImmutableBytesWritable, Result> ds, Detail detail) {
-		try {
-			TableName ht = TableName.valueOf(detail.hbaseTable);
-			Admin a = ((HbaseDataSource) ds).getHconn().getAdmin();
-			if (a.tableExists(ht)) return true;
-			Set<String> families = new HashSet<>();
-			Set<String> columns = new HashSet<>();
-			String dcf = factor.isAnnotationPresent(HbaseColumnFamily.class) ? factor.getAnnotation(HbaseColumnFamily.class).value() : null;
-			families.add(dcf);
-			for (Field f : Reflections.getDeclaredFields(factor)) {
-				String colname = f.isAnnotationPresent(JsonProperty.class) ? f.getAnnotation(JsonProperty.class).value()
-						: CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, f.getName());
-				String colfamily = f.isAnnotationPresent(HbaseColumnFamily.class) ? f.getAnnotation(HbaseColumnFamily.class).value() : dcf;
-				families.add(colfamily);
-				columns.add(colfamily + ":" + colname);
-			}
-			HTableDescriptor td = new HTableDescriptor(ht);
-			for (String fn : families) {
-				HColumnDescriptor fd = new HColumnDescriptor(fn);
-				td.addFamily(fd);
-			}
-			a.createTable(td);
-			a.disableTable(ht);
-			for (String col : columns)
-				a.addColumn(ht, new HColumnDescriptor(col));
-			a.enableTable(ht);
-			return true;
-		} catch (IOException e) {
-			logger.error("Failure confirm data source: " + factor.getName() + " => " + ds.toString() + " => " + detail.toString());
-			return false;
-		}
-	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <R> R fromBytes(Class<R> type, byte[] value) {

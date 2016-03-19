@@ -29,7 +29,7 @@ public abstract class Factor<F extends Factor<F>> implements Serializable {
 
 		String filter() default NOT_DEFINED;
 
-		long paging() default -1;
+		int batching() default 0;
 
 		OnStreaming streaming() default OnStreaming.EACH;
 	}
