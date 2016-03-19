@@ -15,7 +15,7 @@ import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.filter.ColumnPaginationFilter;
-import org.apache.hadoop.hbase.filter.PageFilter;
+import org.apache.hadoop.hbase.filter.RandomRowFilter;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
 import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
@@ -110,11 +110,12 @@ public class HbaseDataSource extends DataSource<ImmutableBytesWritable, Result> 
 		}
 		hconf.set(TableInputFormat.INPUT_TABLE, detail.hbaseTable);
 		if (Calculator.debug) {
-			int limit = Integer.parseInt(System.getProperty("calculus.debug.hbase.limit", "1000"));
-			logger.warn("Hbase debugging, limit results in " + limit + "(can be customized by -Dcalculus.debug.hbase.limit=N)");
+			float ratio = Float.parseFloat(System.getProperty("calculus.debug.hbase.random.ratio", "0.01"));
+			logger.error("Hbase debugging, random sampling results of " + (ratio * 100)
+					+ "% (can be customized by -Dcalculus.debug.hbase.random.ratio=" + ratio + ")");
 			try {
 				hconf.set(TableInputFormat.SCAN,
-						Base64.encodeBytes(ProtobufUtil.toScan(new Scan().setFilter(new PageFilter(limit))).toByteArray()));
+						Base64.encodeBytes(ProtobufUtil.toScan(new Scan().setFilter(new RandomRowFilter(ratio))).toByteArray()));
 			} catch (IOException e) {
 				logger.error("Hbase debugging failure, page scan definition error", e);
 			}
