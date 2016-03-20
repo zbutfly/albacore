@@ -182,7 +182,7 @@ public class Calculator implements Serializable {
 			logger.info("Calculus " + klass.toString() + " starting... ");
 			Class<OUTV> csave = Reflections.resolveGenericParameter(calc.getClass(), Calculus.class, "OUTV");
 			FactorConfig<OUTK, OUTV> saving = scan(Mode.STOCKING, csave);
-			calc.streaming(ssc, factors, dss.ds(saving.dbid).saving(sc, saving.detail));
+			calc.calculate(ssc, factors, dss.ds(saving.dbid).saving(sc, saving.detail));
 			logger.info("Calculus " + klass.toString() + " started. ");
 		}
 		return this;
