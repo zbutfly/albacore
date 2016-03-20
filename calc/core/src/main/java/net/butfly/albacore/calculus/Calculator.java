@@ -24,8 +24,13 @@ import org.apache.commons.lang.NotImplementedException;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.Function;
+import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.streaming.Durations;
+import org.apache.spark.streaming.api.java.JavaPairDStream;
+import org.apache.spark.streaming.api.java.JavaPairInputDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.bson.BSONObject;
 import org.slf4j.Logger;
@@ -36,12 +41,12 @@ import net.butfly.albacore.calculus.Calculating.Mode;
 import net.butfly.albacore.calculus.datasource.ConstDataSource;
 import net.butfly.albacore.calculus.datasource.DataSource;
 import net.butfly.albacore.calculus.datasource.DataSource.DataSources;
+import net.butfly.albacore.calculus.datasource.HbaseDataDetail;
 import net.butfly.albacore.calculus.datasource.HbaseDataSource;
-import net.butfly.albacore.calculus.datasource.HbaseDetail;
+import net.butfly.albacore.calculus.datasource.KafkaDataDetail;
 import net.butfly.albacore.calculus.datasource.KafkaDataSource;
-import net.butfly.albacore.calculus.datasource.KafkaDetail;
+import net.butfly.albacore.calculus.datasource.MongoDataDetail;
 import net.butfly.albacore.calculus.datasource.MongoDataSource;
-import net.butfly.albacore.calculus.datasource.MongoDetail;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Stocking;
 import net.butfly.albacore.calculus.factor.Factor.Stocking.OnStreaming;
@@ -56,18 +61,22 @@ import net.butfly.albacore.calculus.utils.Reflections;
 
 public class Calculator implements Serializable {
 	private static final long serialVersionUID = 7850755405377027618L;
-
 	private static final Logger logger = LoggerFactory.getLogger(Calculator.class);
+
+	// devel configurations
+	public static boolean debug;
+
+	// spark configurations
 	private static SparkConf sconf;
 	private static JavaSparkContext sc;
 	private static JavaStreamingContext ssc;
 	private static DataSources dss = new DataSources();
-
-	public boolean validate;
 	private int dura;
+
+	// calculus configurations
 	private Set<Class<?>> calculuses;
 	private Mode mode;
-	public static boolean debug;
+	private boolean validate;
 
 	public static void main(String... args) {
 		final Properties props = new Properties();
@@ -103,16 +112,17 @@ public class Calculator implements Serializable {
 	private Calculator(Properties props) {
 		mode = Mode.valueOf(props.getProperty("calculus.mode", "STREAMING").toUpperCase());
 		debug = Boolean.valueOf(props.getProperty("calculus.debug", "false").toLowerCase());
-		if (mode == Mode.STOCKING && props.containsKey("calculus.spark.duration.seconds"))
-			logger.warn("Stocking does not support duration, but calculator may set default duration for batching streaming.");
-		dura = mode == Mode.STREAMING ? Integer.parseInt(props.getProperty("calculus.spark.duration.seconds", "30")) : 1;
+		if (mode == Mode.STOCKING && props.containsKey("calculus.spark.duration.seconds")) logger.warn(
+				"Stocking does not support duration, but duration may be set by calculator for batching.");
+		dura = mode == Mode.STREAMING ? Integer.parseInt(props.getProperty("calculus.spark.duration.seconds", "30"))
+				: Integer.parseInt(props.getProperty("calculus.spark.duration.seconds", "1"));
 		validate = Boolean.parseBoolean(props.getProperty("calculus.validate.table", "false"));
 		final String appname = props.getProperty("calculus.app.name", "Calculuses");
 		// dadatabse configurations parsing
 		parseDatasources(appname, subprops(props, "calculus.ds."));
 		// spark configurations parsing
-		if (props.containsKey("calculus.spark.executor.instances"))
-			System.setProperty("SPARK_EXECUTOR_INSTANCES", props.getProperty("calculus.spark.executor.instances"));
+		if (props.containsKey("calculus.spark.executor.instances")) System.setProperty("SPARK_EXECUTOR_INSTANCES", props.getProperty(
+				"calculus.spark.executor.instances"));
 		sconf = new SparkConf();
 		sconf.setMaster(props.getProperty("calculus.spark.url"));
 		sconf.setAppName(appname + "-Spark");
@@ -120,8 +130,8 @@ public class Calculator implements Serializable {
 		if (props.containsKey("calculus.spark.jars")) sconf.setJars(props.getProperty("calculus.spark.jars").split(","));
 		if (props.containsKey("calculus.spark.home")) sconf.setSparkHome(props.getProperty("calculus.spark.home"));
 		if (props.containsKey("calculus.spark.files")) sconf.set("spark.files", props.getProperty("calculus.spark.files"));
-		if (props.containsKey("calculus.spark.executor.memory.mb"))
-			sconf.set("spark.executor.memory", props.getProperty("calculus.spark.executor.memory.mb"));
+		if (props.containsKey("calculus.spark.executor.memory.mb")) sconf.set("spark.executor.memory", props.getProperty(
+				"calculus.spark.executor.memory.mb"));
 		if (props.containsKey("calculus.spark.testing")) sconf.set("spark.testing", props.getProperty("calculus.spark.testing"));
 
 		calculuses = new HashSet<>();
@@ -151,7 +161,7 @@ public class Calculator implements Serializable {
 		logger.debug("Running calculuses: " + calculuses.toString());
 	}
 
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "deprecation", "rawtypes" })
 	private <OUTK, OUTV extends Factor<OUTV>> Calculator calculate() {
 		for (Class<?> klass : calculuses) {
 			Calculating calcing = klass.getAnnotation(Calculating.class);
@@ -164,8 +174,7 @@ public class Calculator implements Serializable {
 			}
 			List<FactorConfig<?, ?>> configs = new ArrayList<>();
 			FactorConfig<?, ?> batch = null;
-			for (@SuppressWarnings("rawtypes")
-			Class ccc : calcing.value()) {
+			for (Class ccc : calcing.value()) {
 				FactorConfig<?, ?> c = scan(mode, ccc);
 				if (null == c) continue;
 				if (c.batching > 0) {
@@ -182,7 +191,12 @@ public class Calculator implements Serializable {
 			logger.info("Calculus " + klass.toString() + " starting... ");
 			Class<OUTV> csave = Reflections.resolveGenericParameter(calc.getClass(), Calculus.class, "OUTV");
 			FactorConfig<OUTK, OUTV> saving = scan(Mode.STOCKING, csave);
-			calc.calculate(ssc, factors, dss.ds(saving.dbid).saving(sc, saving.detail));
+			VoidFunction<JavaPairRDD<OUTK, OUTV>> hh = dss.ds(saving.dbid).saving(sc, saving.detail);
+			JavaPairDStream<OUTK, OUTV> r = calc.calculate(ssc, factors);
+			r.foreachRDD((Function<JavaPairRDD<OUTK, OUTV>, Void>) rdd -> {
+				hh.call(rdd);
+				return null;
+			});
 			logger.info("Calculus " + klass.toString() + " started. ");
 		}
 		return this;
@@ -198,7 +212,7 @@ public class Calculator implements Serializable {
 			config.dbid = s.source();
 			switch (s.type()) {
 			case KAFKA:
-				config.detail = new KafkaDetail(s.topics());
+				config.detail = new KafkaDataDetail(s.topics());
 				break;
 			default:
 				throw new UnsupportedOperationException("Unsupportted streaming mode: " + s.type() + " on " + factor.toString());
@@ -213,14 +227,14 @@ public class Calculator implements Serializable {
 			config.streaming = s.streaming();
 			switch (s.type()) {
 			case HBASE:
-				if (Factor.NOT_DEFINED.equals(s.table()))
-					throw new IllegalArgumentException("Table not defined for factor " + factor.toString());
-				config.detail = new HbaseDetail(s.table());
+				if (Factor.NOT_DEFINED.equals(s.table())) throw new IllegalArgumentException("Table not defined for factor " + factor
+						.toString());
+				config.detail = new HbaseDataDetail(s.table());
 				break;
 			case MONGODB:
-				if (Factor.NOT_DEFINED.equals(s.table()))
-					throw new IllegalArgumentException("Table not defined for factor " + factor.toString());
-				config.detail = new MongoDetail(s.table(), Factor.NOT_DEFINED.equals(s.filter()) ? null : s.filter());
+				if (Factor.NOT_DEFINED.equals(s.table())) throw new IllegalArgumentException("Table not defined for factor " + factor
+						.toString());
+				config.detail = new MongoDataDetail(s.table(), Factor.NOT_DEFINED.equals(s.filter()) ? null : s.filter());
 				break;
 			case CONSTAND_TO_CONSOLE:
 				break;
@@ -238,8 +252,8 @@ public class Calculator implements Serializable {
 	private <K, F extends Factor<F>> void read(Factors factors, FactorConfig<K, F> config) {
 		switch (mode) {
 		case STOCKING:
-			if (config.batching <= 0)
-				factors.stocking(config.factorClass, dss.ds(config.dbid).stocking(sc, config.factorClass, config.detail), ssc);
+			if (config.batching <= 0) factors.stocking(config.factorClass, dss.ds(config.dbid).stocking(sc, config.factorClass,
+					config.detail), ssc);
 			else factors.streaming(config.factorClass, dss.ds(config.dbid).batching(ssc, config.factorClass, config.batching, config.detail,
 					config.keyClass, config.factorClass));
 			break;
@@ -250,13 +264,12 @@ public class Calculator implements Serializable {
 				case NONE:
 					break;
 				case ONCE:
-					factors.streaming(config.factorClass,
-							new JavaConstPairDStream<>(ssc, dss.ds(config.dbid).stocking(sc, config.factorClass, config.detail)).persist());
+					factors.streaming(config.factorClass, (JavaPairInputDStream<K, F>) new JavaConstPairDStream<K, F>(ssc, dss.ds(
+							config.dbid).stocking(sc, config.factorClass, config.detail)).persist());
 					break;
 				case EACH:
-					factors.streaming(config.factorClass,
-							new JavaReloadPairDStream<>(ssc, () -> dss.ds(config.dbid).stocking(sc, config.factorClass, config.detail),
-									config.keyClass, config.factorClass));
+					factors.streaming(config.factorClass, new JavaReloadPairDStream<>(ssc, () -> dss.ds(config.dbid).stocking(sc,
+							config.factorClass, config.detail), config.keyClass, config.factorClass));
 					break;
 				case CACHE:
 					throw new NotImplementedException();
@@ -323,10 +336,9 @@ public class Calculator implements Serializable {
 				// , dbprops.getProperty("authdb"),dbprops.getProperty("authdb")
 				break;
 			case KAFKA:
-				dss.put(dsid,
-						new KafkaDataSource(dbprops.getProperty("servers"), dbprops.getProperty("root"),
-								Integer.parseInt(dbprops.getProperty("topic.partitions", "1")),
-								debug ? appname + UUID.randomUUID().toString() : appname, (Marshaller<String, byte[]>) m));
+				dss.put(dsid, new KafkaDataSource(dbprops.getProperty("servers"), dbprops.getProperty("root"), Integer.parseInt(dbprops
+						.getProperty("topic.partitions", "1")), debug ? appname + UUID.randomUUID().toString() : appname,
+						(Marshaller<String, byte[]>) m));
 				break;
 			default:
 				logger.warn("Unsupportted type: " + type);

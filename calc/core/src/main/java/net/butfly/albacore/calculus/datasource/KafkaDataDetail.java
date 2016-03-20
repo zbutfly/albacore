@@ -2,12 +2,12 @@ package net.butfly.albacore.calculus.datasource;
 
 import net.butfly.albacore.calculus.factor.Factor.Type;
 
-public class KafkaDetail extends Detail {
+public class KafkaDataDetail extends DataDetail {
 	private static final long serialVersionUID = -3136910829803418814L;
 	// kafka
 	public String[] kafkaTopics;
 
-	public KafkaDetail(String... kafkaTopics) {
+	public KafkaDataDetail(String... kafkaTopics) {
 		super(Type.KAFKA);
 		this.kafkaTopics = kafkaTopics;
 	}

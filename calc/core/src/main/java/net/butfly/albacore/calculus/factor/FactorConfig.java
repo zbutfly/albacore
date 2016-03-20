@@ -3,7 +3,7 @@ package net.butfly.albacore.calculus.factor;
 import java.io.Serializable;
 
 import net.butfly.albacore.calculus.Calculating.Mode;
-import net.butfly.albacore.calculus.datasource.Detail;
+import net.butfly.albacore.calculus.datasource.DataDetail;
 import net.butfly.albacore.calculus.factor.Factor.Stocking.OnStreaming;
 
 public class FactorConfig<K, F extends Factor<F>> implements Serializable {
@@ -12,7 +12,7 @@ public class FactorConfig<K, F extends Factor<F>> implements Serializable {
 	public Class<F> factorClass;
 	public Mode mode;
 	public String dbid;
-	public Detail detail;
+	public DataDetail detail;
 	public long batching = 0;
 	public OnStreaming streaming;
 }

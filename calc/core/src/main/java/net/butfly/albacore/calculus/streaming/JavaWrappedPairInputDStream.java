@@ -15,6 +15,6 @@ public abstract class JavaWrappedPairInputDStream<K, V, S extends InputDStream<T
 
 	@SuppressWarnings("unchecked")
 	public long counts() {
-		return ((WrappedPairInputDStream<K, V>) dstream()).current.count();
+		return ((WrappedPairInputDStream<K, V>) super.dstream()).current.count();
 	}
 }

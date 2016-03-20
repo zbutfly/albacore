@@ -14,7 +14,7 @@ import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
 
-public class ConstDataSource extends DataSource<Void, Void, Detail> {
+public class ConstDataSource extends DataSource<Void, Void, DataDetail> {
 	private static final long serialVersionUID = -673387208224779163L;
 	private String[] values;
 
@@ -34,7 +34,7 @@ public class ConstDataSource extends DataSource<Void, Void, Detail> {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <K, F extends Factor<F>> JavaPairRDD<K, F> stocking(JavaSparkContext sc, Class<F> factor, Detail detail) {
+	public <K, F extends Factor<F>> JavaPairRDD<K, F> stocking(JavaSparkContext sc, Class<F> factor, DataDetail detail) {
 		String[] values = this.values;
 		if (values == null) values = new String[0];
 		return (JavaPairRDD<K, F>) sc.parallelize(Arrays.asList(values))
@@ -42,7 +42,7 @@ public class ConstDataSource extends DataSource<Void, Void, Detail> {
 	}
 
 	@Override
-	public <K, F extends Factor<F>> VoidFunction<JavaPairRDD<K, F>> saving(JavaSparkContext sc, Detail detail) {
+	public <K, F extends Factor<F>> VoidFunction<JavaPairRDD<K, F>> saving(JavaSparkContext sc, DataDetail detail) {
 		if (values == null) values = new String[0];
 		return r -> {
 			if (null != r) for (Tuple2<?, F> o : r.collect())
