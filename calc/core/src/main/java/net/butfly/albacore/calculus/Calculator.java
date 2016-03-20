@@ -61,7 +61,7 @@ public class Calculator implements Serializable {
 	private static SparkConf sconf;
 	private static JavaSparkContext sc;
 	private static JavaStreamingContext ssc;
-	private static DataSources datasources = new DataSources();
+	private static DataSources dss = new DataSources();
 
 	public boolean validate;
 	private int dura;
@@ -93,11 +93,9 @@ public class Calculator implements Serializable {
 	}
 
 	private Calculator finish() {
-		if (mode == Mode.STREAMING) {
-			ssc.start();
-			ssc.awaitTermination();
-			ssc.close();
-		}
+		ssc.start();
+		ssc.awaitTermination();
+		ssc.close();
 		sc.close();
 		return this;
 	}
@@ -107,7 +105,7 @@ public class Calculator implements Serializable {
 		debug = Boolean.valueOf(props.getProperty("calculus.debug", "false").toLowerCase());
 		if (mode == Mode.STOCKING && props.containsKey("calculus.spark.duration.seconds"))
 			logger.warn("Stocking does not support duration, but calculator may set default duration for batching streaming.");
-		dura = mode == Mode.STREAMING ? Integer.parseInt(props.getProperty("calculus.spark.duration.seconds", "5")) : 0;
+		dura = mode == Mode.STREAMING ? Integer.parseInt(props.getProperty("calculus.spark.duration.seconds", "30")) : 1;
 		validate = Boolean.parseBoolean(props.getProperty("calculus.validate.table", "false"));
 		final String appname = props.getProperty("calculus.app.name", "Calculuses");
 		// dadatabse configurations parsing
@@ -184,7 +182,7 @@ public class Calculator implements Serializable {
 			logger.info("Calculus " + klass.toString() + " starting... ");
 			Class<OUTV> csave = Reflections.resolveGenericParameter(calc.getClass(), Calculus.class, "OUTV");
 			FactorConfig<OUTK, OUTV> saving = scan(Mode.STOCKING, csave);
-			calc.streaming(ssc, factors, datasources.get(saving.dbid).saving(sc, saving.detail));
+			calc.streaming(ssc, factors, dss.ds(saving.dbid).saving(sc, saving.detail));
 			logger.info("Calculus " + klass.toString() + " started. ");
 		}
 		return this;
@@ -230,7 +228,7 @@ public class Calculator implements Serializable {
 				throw new UnsupportedOperationException("Unsupportted stocking mode: " + s.type() + " on " + factor.toString());
 			}
 			if (validate) {
-				DataSource ds = datasources.get(s.source());
+				DataSource ds = dss.ds(s.source());
 				ds.confirm(factor, config.detail);
 			}
 		}
@@ -241,9 +239,9 @@ public class Calculator implements Serializable {
 		switch (mode) {
 		case STOCKING:
 			if (config.batching <= 0)
-				factors.stocking(config.factorClass, datasources.get(config.dbid).stocking(sc, config.factorClass, config.detail), ssc);
-			else factors.streaming(config.factorClass, datasources.get(config.dbid).batching(ssc, config.factorClass, config.batching,
-					config.detail, config.keyClass, config.factorClass));
+				factors.stocking(config.factorClass, dss.ds(config.dbid).stocking(sc, config.factorClass, config.detail), ssc);
+			else factors.streaming(config.factorClass, dss.ds(config.dbid).batching(ssc, config.factorClass, config.batching, config.detail,
+					config.keyClass, config.factorClass));
 			break;
 		case STREAMING:
 			switch (config.mode) {
@@ -253,21 +251,19 @@ public class Calculator implements Serializable {
 					break;
 				case ONCE:
 					factors.streaming(config.factorClass,
-							new JavaConstPairDStream<>(ssc, datasources.get(config.dbid).stocking(sc, config.factorClass, config.detail))
-									.persist());
+							new JavaConstPairDStream<>(ssc, dss.ds(config.dbid).stocking(sc, config.factorClass, config.detail)).persist());
 					break;
 				case EACH:
 					factors.streaming(config.factorClass,
-							new JavaReloadPairDStream<>(ssc,
-									() -> datasources.get(config.dbid).stocking(sc, config.factorClass, config.detail), config.keyClass,
-									config.factorClass));
+							new JavaReloadPairDStream<>(ssc, () -> dss.ds(config.dbid).stocking(sc, config.factorClass, config.detail),
+									config.keyClass, config.factorClass));
 					break;
 				case CACHE:
 					throw new NotImplementedException();
 				}
 				break;
 			case STREAMING:
-				factors.streaming(config.factorClass, datasources.get(config.dbid).streaming(ssc, config.factorClass, config.detail));
+				factors.streaming(config.factorClass, dss.ds(config.dbid).streaming(ssc, config.factorClass, config.detail));
 				break;
 			}
 			break;
@@ -316,18 +312,18 @@ public class Calculator implements Serializable {
 			Type type = Type.valueOf(dbprops.getProperty("type"));
 			switch (type) {
 			case CONSTAND_TO_CONSOLE:
-				datasources.put(dsid, new ConstDataSource(dbprops.getProperty("values").split(",")));
+				dss.put(dsid, new ConstDataSource(dbprops.getProperty("values").split(",")));
 				break;
 			case HBASE:
-				datasources.put(dsid, new HbaseDataSource(dbprops.getProperty("config", "hbase-site.xml"),
+				dss.put(dsid, new HbaseDataSource(dbprops.getProperty("config", "hbase-site.xml"),
 						(Marshaller<ImmutableBytesWritable, Result>) m));
 				break;
 			case MONGODB:
-				datasources.put(dsid, new MongoDataSource(dbprops.getProperty("uri"), (Marshaller<Object, BSONObject>) m));
+				dss.put(dsid, new MongoDataSource(dbprops.getProperty("uri"), (Marshaller<Object, BSONObject>) m));
 				// , dbprops.getProperty("authdb"),dbprops.getProperty("authdb")
 				break;
 			case KAFKA:
-				datasources.put(dsid,
+				dss.put(dsid,
 						new KafkaDataSource(dbprops.getProperty("servers"), dbprops.getProperty("root"),
 								Integer.parseInt(dbprops.getProperty("topic.partitions", "1")),
 								debug ? appname + UUID.randomUUID().toString() : appname, (Marshaller<String, byte[]>) m));

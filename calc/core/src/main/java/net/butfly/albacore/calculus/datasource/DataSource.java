@@ -44,7 +44,7 @@ public abstract class DataSource<K, V, D extends Detail> implements Serializable
 		throw new UnsupportedOperationException("Unsupportted stocking mode: " + type + " on " + factor.toString());
 	}
 
-	public <KK, F extends Factor<F>> JavaPairDStream<KK, F> batching(JavaStreamingContext ssc, Class<F> factor, int batching, D detail,
+	public <KK, F extends Factor<F>> JavaPairDStream<KK, F> batching(JavaStreamingContext ssc, Class<F> factor, long batching, D detail,
 			Class<KK> kClass, Class<F> vClass) {
 		throw new UnsupportedOperationException("Unsupportted stocking mode with batching: " + type + " on " + factor.toString());
 	}
@@ -65,7 +65,7 @@ public abstract class DataSource<K, V, D extends Detail> implements Serializable
 		private static final long serialVersionUID = -7809799411800022817L;
 
 		@SuppressWarnings("unchecked")
-		public <K, V, D extends Detail> DataSource<K, V, D> get(String dbid) {
+		public <K, V, D extends Detail> DataSource<K, V, D> ds(String dbid) {
 			return (DataSource<K, V, D>) super.get(dbid);
 		}
 	}

@@ -18,13 +18,10 @@ import org.apache.hadoop.hbase.filter.PageFilter;
 import org.apache.hadoop.hbase.filter.RandomRowFilter;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
-import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
 import org.apache.hadoop.hbase.protobuf.ProtobufUtil;
 import org.apache.hadoop.hbase.util.Base64;
-import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 
@@ -127,6 +124,7 @@ public class HbaseDataSource extends DataSource<ImmutableBytesWritable, Result, 
 	}
 
 	@SuppressWarnings("unchecked")
+	@Override
 	public <K, F extends Factor<F>> JavaPairDStream<K, F> batching(JavaStreamingContext ssc, Class<F> factor, long batching,
 			HbaseDetail detail, Class<K> kClass, Class<F> vClass) {
 		return new JavaBatchPairDStream<K, F>(ssc, (limit, offset) -> {
@@ -137,7 +135,10 @@ public class HbaseDataSource extends DataSource<ImmutableBytesWritable, Result, 
 				throw new RuntimeException("HBase configuration invalid.", e);
 			}
 			hconf.set(TableInputFormat.INPUT_TABLE, detail.hbaseTable);
-			Scan sc = new Scan().setStartRow(Bytes.toBytes(offset.toString())).setFilter(new PageFilter(limit));
+
+			Scan sc = new Scan();
+			if (null != offset) sc = sc.setStartRow(marshaller.marshallId(offset.toString()).copyBytes());
+			sc = sc.setFilter(new PageFilter(limit));
 			String scstr = Base64.encodeBytes(ProtobufUtil.toScan(sc).toByteArray());
 			hconf.set(TableInputFormat.SCAN, scstr);
 			// conf.hconf.set(TableInputFormat.SCAN_COLUMNS, "cf1:vc
@@ -146,21 +147,5 @@ public class HbaseDataSource extends DataSource<ImmutableBytesWritable, Result, 
 					.newAPIHadoopRDD(hconf, TableInputFormat.class, ImmutableBytesWritable.class, Result.class)
 					.mapToPair(t -> null == t ? null : new Tuple2<>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor)));
 		} , batching, kClass, vClass);
-	}
-
-	@Override
-	public <K, F extends Factor<F>> VoidFunction<JavaPairRDD<K, F>> saving(JavaSparkContext sc, HbaseDetail detail) {
-		Configuration conf = HBaseConfiguration.create();
-		try {
-			conf.addResource(Calculator.scanInputStream(configFile));
-		} catch (IOException e) {
-			throw new RuntimeException("HBase configuration invalid.", e);
-		}
-		conf.set(TableOutputFormat.OUTPUT_TABLE, detail.hbaseTable);
-		return r -> {
-			r.mapToPair(t -> null == t ? null
-					: new Tuple2<ImmutableBytesWritable, Result>(marshaller.marshallId((String) t._1), marshaller.marshall(t._2)))
-					.saveAsNewAPIHadoopFile(null, ImmutableBytesWritable.class, Result.class, TableOutputFormat.class, conf);
-		};
 	}
 }

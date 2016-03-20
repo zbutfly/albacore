@@ -13,6 +13,6 @@ public class FactorConfig<K, F extends Factor<F>> implements Serializable {
 	public Mode mode;
 	public String dbid;
 	public Detail detail;
-	public int batching = 0;
+	public long batching = 0;
 	public OnStreaming streaming;
 }
