@@ -15,7 +15,7 @@ import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.marshall.Marshaller;
 
-public abstract class DataSource<K, V> implements Serializable {
+public abstract class DataSource<K, V, D extends Detail> implements Serializable {
 	private static final long serialVersionUID = 1L;
 	Factor.Type type;
 	Marshaller<K, V> marshaller;
@@ -40,33 +40,33 @@ public abstract class DataSource<K, V> implements Serializable {
 		return "CalculatorDataSource:" + this.type;
 	}
 
-	public <KK, F extends Factor<F>> JavaPairRDD<KK, F> stocking(JavaSparkContext sc, Class<F> factor, Detail detail) {
+	public <KK, F extends Factor<F>> JavaPairRDD<KK, F> stocking(JavaSparkContext sc, Class<F> factor, D detail) {
 		throw new UnsupportedOperationException("Unsupportted stocking mode: " + type + " on " + factor.toString());
 	}
 
-	public <KK, F extends Factor<F>> JavaPairDStream<KK, F> batching(JavaStreamingContext ssc, Class<F> factor, int batching,
-			Detail detail, Class<KK> kClass, Class<F> vClass) {
+	public <KK, F extends Factor<F>> JavaPairDStream<KK, F> batching(JavaStreamingContext ssc, Class<F> factor, int batching, D detail,
+			Class<KK> kClass, Class<F> vClass) {
 		throw new UnsupportedOperationException("Unsupportted stocking mode with batching: " + type + " on " + factor.toString());
 	}
 
-	public <KK, F extends Factor<F>> JavaPairDStream<KK, F> streaming(JavaStreamingContext ssc, Class<F> factor, Detail detail) {
+	public <KK, F extends Factor<F>> JavaPairDStream<KK, F> streaming(JavaStreamingContext ssc, Class<F> factor, D detail) {
 		throw new UnsupportedOperationException("Unsupportted streaming mode: " + type + " on " + factor.toString());
 	}
 
-	public <KK, F extends Factor<F>> VoidFunction<JavaPairRDD<KK, F>> saving(JavaSparkContext sc, Detail detail) {
+	public <KK, F extends Factor<F>> VoidFunction<JavaPairRDD<KK, F>> saving(JavaSparkContext sc, D detail) {
 		throw new UnsupportedOperationException("Unsupportted saving: " + type);
 	}
 
-	public boolean confirm(Class<? extends Factor<?>> factorClass, Detail detail) {
+	public boolean confirm(Class<? extends Factor<?>> factor, D detail) {
 		return true;
 	}
 
-	public static class DataSources extends HashMap<String, DataSource<?, ?>> {
+	public static class DataSources extends HashMap<String, DataSource<?, ?, ?>> {
 		private static final long serialVersionUID = -7809799411800022817L;
 
 		@SuppressWarnings("unchecked")
-		public <K, V> DataSource<K, V> get(String dbid) {
-			return (DataSource<K, V>) super.get(dbid);
+		public <K, V, D extends Detail> DataSource<K, V, D> get(String dbid) {
+			return (DataSource<K, V, D>) super.get(dbid);
 		}
 	}
 }

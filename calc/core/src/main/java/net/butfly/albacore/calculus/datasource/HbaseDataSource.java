@@ -40,7 +40,7 @@ import net.butfly.albacore.calculus.streaming.JavaBatchPairDStream;
 import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
 
-public class HbaseDataSource extends DataSource<ImmutableBytesWritable, Result> {
+public class HbaseDataSource extends DataSource<ImmutableBytesWritable, Result, HbaseDetail> {
 	private static final long serialVersionUID = 3367501286179801635L;
 	String configFile;
 	Connection hconn;
@@ -66,7 +66,7 @@ public class HbaseDataSource extends DataSource<ImmutableBytesWritable, Result> 
 	}
 
 	@Override
-	public boolean confirm(Class<? extends Factor<?>> factor, Detail detail) {
+	public boolean confirm(Class<? extends Factor<?>> factor, HbaseDetail detail) {
 		try {
 			TableName ht = TableName.valueOf(detail.hbaseTable);
 			Admin a = getHconn().getAdmin();
@@ -101,7 +101,7 @@ public class HbaseDataSource extends DataSource<ImmutableBytesWritable, Result> 
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <K, F extends Factor<F>> JavaPairRDD<K, F> stocking(JavaSparkContext sc, Class<F> factor, Detail detail) {
+	public <K, F extends Factor<F>> JavaPairRDD<K, F> stocking(JavaSparkContext sc, Class<F> factor, HbaseDetail detail) {
 		Configuration hconf = HBaseConfiguration.create();
 		try {
 			hconf.addResource(Calculator.scanInputStream(this.configFile));
@@ -127,8 +127,8 @@ public class HbaseDataSource extends DataSource<ImmutableBytesWritable, Result> 
 	}
 
 	@SuppressWarnings("unchecked")
-	public <K, F extends Factor<F>> JavaPairDStream<K, F> batching(JavaStreamingContext ssc, Class<F> factor, int batching, Detail detail,
-			Class<K> kClass, Class<F> vClass) {
+	public <K, F extends Factor<F>> JavaPairDStream<K, F> batching(JavaStreamingContext ssc, Class<F> factor, int batching,
+			HbaseDetail detail, Class<K> kClass, Class<F> vClass) {
 		Function2<Integer, Integer, JavaPairRDD<K, F>> batcher = (limit, offset) -> {
 			Configuration hconf = HBaseConfiguration.create();
 			try {
@@ -154,7 +154,7 @@ public class HbaseDataSource extends DataSource<ImmutableBytesWritable, Result> 
 	}
 
 	@Override
-	public <K, F extends Factor<F>> VoidFunction<JavaPairRDD<K, F>> saving(JavaSparkContext sc, Detail detail) {
+	public <K, F extends Factor<F>> VoidFunction<JavaPairRDD<K, F>> saving(JavaSparkContext sc, HbaseDetail detail) {
 		Configuration conf = HBaseConfiguration.create();
 		try {
 			conf.addResource(Calculator.scanInputStream(configFile));

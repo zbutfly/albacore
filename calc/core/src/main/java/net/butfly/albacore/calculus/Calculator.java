@@ -36,10 +36,12 @@ import net.butfly.albacore.calculus.Calculating.Mode;
 import net.butfly.albacore.calculus.datasource.ConstDataSource;
 import net.butfly.albacore.calculus.datasource.DataSource;
 import net.butfly.albacore.calculus.datasource.DataSource.DataSources;
-import net.butfly.albacore.calculus.datasource.Detail;
 import net.butfly.albacore.calculus.datasource.HbaseDataSource;
+import net.butfly.albacore.calculus.datasource.HbaseDetail;
 import net.butfly.albacore.calculus.datasource.KafkaDataSource;
+import net.butfly.albacore.calculus.datasource.KafkaDetail;
 import net.butfly.albacore.calculus.datasource.MongoDataSource;
+import net.butfly.albacore.calculus.datasource.MongoDetail;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Stocking;
 import net.butfly.albacore.calculus.factor.Factor.Stocking.OnStreaming;
@@ -188,6 +190,7 @@ public class Calculator implements Serializable {
 		return this;
 	}
 
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private <K, F extends Factor<F>> FactorConfig<K, F> scan(Mode mode, Class<F> factor) {
 		FactorConfig<K, F> config = new FactorConfig<K, F>();
 		config.factorClass = factor;
@@ -197,7 +200,7 @@ public class Calculator implements Serializable {
 			config.dbid = s.source();
 			switch (s.type()) {
 			case KAFKA:
-				config.detail = new Detail(s.topics());
+				config.detail = new KafkaDetail(s.topics());
 				break;
 			default:
 				throw new UnsupportedOperationException("Unsupportted streaming mode: " + s.type() + " on " + factor.toString());
@@ -214,12 +217,12 @@ public class Calculator implements Serializable {
 			case HBASE:
 				if (Factor.NOT_DEFINED.equals(s.table()))
 					throw new IllegalArgumentException("Table not defined for factor " + factor.toString());
-				config.detail = new Detail(s.table());
+				config.detail = new HbaseDetail(s.table());
 				break;
 			case MONGODB:
 				if (Factor.NOT_DEFINED.equals(s.table()))
 					throw new IllegalArgumentException("Table not defined for factor " + factor.toString());
-				config.detail = new Detail(s.table(), Factor.NOT_DEFINED.equals(s.filter()) ? null : s.filter());
+				config.detail = new MongoDetail(s.table(), Factor.NOT_DEFINED.equals(s.filter()) ? null : s.filter());
 				break;
 			case CONSTAND_TO_CONSOLE:
 				break;
@@ -227,7 +230,7 @@ public class Calculator implements Serializable {
 				throw new UnsupportedOperationException("Unsupportted stocking mode: " + s.type() + " on " + factor.toString());
 			}
 			if (validate) {
-				DataSource<?, ?> ds = datasources.get(s.source());
+				DataSource ds = datasources.get(s.source());
 				ds.confirm(factor, config.detail);
 			}
 		}

@@ -14,7 +14,7 @@ import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
 
-public class ConstDataSource extends DataSource<Void, Void> {
+public class ConstDataSource extends DataSource<Void, Void, Detail> {
 	private static final long serialVersionUID = -673387208224779163L;
 	private String[] values;
 

@@ -245,8 +245,7 @@ public class ProxiedSocketChannel extends SocketChannel {
 	 * @return returns number of bytes read
 	 * @throws IOException
 	 */
-	private long readBlocking(final InputStream input, final ByteBuffer[] dsts, final int offset, final int length)
-			throws IOException {
+	private long readBlocking(final InputStream input, final ByteBuffer[] dsts, final int offset, final int length) throws IOException {
 		int total = 0;
 		for (int i = offset; i < offset + length; i++) {
 			final int size = readBlocking(input, dsts[i]);
@@ -320,8 +319,7 @@ public class ProxiedSocketChannel extends SocketChannel {
 	 * @throws IOException
 	 *             in case of exceptions
 	 */
-	private long writeBlocking(final OutputStream output, final ByteBuffer[] srcs, final int offset, final int length)
-			throws IOException {
+	private long writeBlocking(final OutputStream output, final ByteBuffer[] srcs, final int offset, final int length) throws IOException {
 		int total = 0;
 		for (int i = offset; i < offset + length; i++) {
 			total += writeBlocking(output, srcs[i]);

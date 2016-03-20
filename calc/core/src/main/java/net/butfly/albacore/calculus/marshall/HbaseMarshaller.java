@@ -81,7 +81,6 @@ public class HbaseMarshaller extends Marshaller<ImmutableBytesWritable, Result> 
 		return new ImmutableBytesWritable(Bytes.toBytes(id));
 	}
 
-
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <R> R fromBytes(Class<R> type, byte[] value) {
 		if (null == value || value.length == 0) return null;
