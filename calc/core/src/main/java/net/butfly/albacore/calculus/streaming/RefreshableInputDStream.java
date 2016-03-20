@@ -31,13 +31,11 @@ class RefreshableInputDStream<K, V> extends WrappedPairInputDStream<K, V> {
 	@Override
 	public Option<RDD<Tuple2<K, V>>> compute(Time arg0) {
 		try {
-			this.current = loader.call();
-			if (logger.isTraceEnabled())
-				logger.trace("RDD reloaded from data source on streaming computing, " + current.count() + " fetched.");
-			else if (logger.isDebugEnabled()) logger.debug("RDD reloaded from data source on streaming computing.");
+			current = loader.call();
+			trace();
 			return new Some<RDD<Tuple2<K, V>>>(current.rdd());
 		} catch (Exception e) {
-			logger.error("Failure refresh dstream from rdd", e);
+			logger.error("RDD reloaded failure", e);
 			jssc.sparkContext().emptyRDD();
 			return super.compute(arg0);
 		}

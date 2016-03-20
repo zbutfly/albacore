@@ -22,7 +22,7 @@ import org.apache.hadoop.hbase.protobuf.ProtobufUtil;
 import org.apache.hadoop.hbase.util.Base64;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.streaming.api.java.JavaPairDStream;
+import org.apache.spark.streaming.api.java.JavaPairInputDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -37,7 +37,7 @@ import net.butfly.albacore.calculus.streaming.JavaBatchPairDStream;
 import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
 
-public class HbaseDataSource extends DataSource<ImmutableBytesWritable, Result, HbaseDetail> {
+public class HbaseDataSource extends DataSource<ImmutableBytesWritable, Result, HbaseDataDetail> {
 	private static final long serialVersionUID = 3367501286179801635L;
 	String configFile;
 	Connection hconn;
@@ -63,7 +63,7 @@ public class HbaseDataSource extends DataSource<ImmutableBytesWritable, Result, 
 	}
 
 	@Override
-	public boolean confirm(Class<? extends Factor<?>> factor, HbaseDetail detail) {
+	public boolean confirm(Class<? extends Factor<?>> factor, HbaseDataDetail detail) {
 		try {
 			TableName ht = TableName.valueOf(detail.hbaseTable);
 			Admin a = getHconn().getAdmin();
@@ -98,7 +98,7 @@ public class HbaseDataSource extends DataSource<ImmutableBytesWritable, Result, 
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <K, F extends Factor<F>> JavaPairRDD<K, F> stocking(JavaSparkContext sc, Class<F> factor, HbaseDetail detail) {
+	public <K, F extends Factor<F>> JavaPairRDD<K, F> stocking(JavaSparkContext sc, Class<F> factor, HbaseDataDetail detail) {
 		Configuration hconf = HBaseConfiguration.create();
 		try {
 			hconf.addResource(Calculator.scanInputStream(this.configFile));
@@ -111,8 +111,8 @@ public class HbaseDataSource extends DataSource<ImmutableBytesWritable, Result, 
 			logger.error("Hbase debugging, random sampling results of " + (ratio * 100)
 					+ "% (can be customized by -Dcalculus.debug.hbase.random.ratio=" + ratio + ")");
 			try {
-				hconf.set(TableInputFormat.SCAN,
-						Base64.encodeBytes(ProtobufUtil.toScan(new Scan().setFilter(new RandomRowFilter(ratio))).toByteArray()));
+				hconf.set(TableInputFormat.SCAN, Base64.encodeBytes(ProtobufUtil.toScan(new Scan().setFilter(new RandomRowFilter(ratio)))
+						.toByteArray()));
 			} catch (IOException e) {
 				logger.error("Hbase debugging failure, page scan definition error", e);
 			}
@@ -125,8 +125,8 @@ public class HbaseDataSource extends DataSource<ImmutableBytesWritable, Result, 
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <K, F extends Factor<F>> JavaPairDStream<K, F> batching(JavaStreamingContext ssc, Class<F> factor, long batching,
-			HbaseDetail detail, Class<K> kClass, Class<F> vClass) {
+	public <K, F extends Factor<F>> JavaPairInputDStream<K, F> batching(JavaStreamingContext ssc, Class<F> factor, long batching,
+			HbaseDataDetail detail, Class<K> kClass, Class<F> vClass) {
 		return new JavaBatchPairDStream<K, F>(ssc, (limit, offset) -> {
 			Configuration hconf = HBaseConfiguration.create();
 			try {
@@ -143,9 +143,9 @@ public class HbaseDataSource extends DataSource<ImmutableBytesWritable, Result, 
 			hconf.set(TableInputFormat.SCAN, scstr);
 			// conf.hconf.set(TableInputFormat.SCAN_COLUMNS, "cf1:vc
 			// cf1:vs");
-			return (JavaPairRDD<K, F>) ssc.sparkContext()
-					.newAPIHadoopRDD(hconf, TableInputFormat.class, ImmutableBytesWritable.class, Result.class)
-					.mapToPair(t -> null == t ? null : new Tuple2<>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor)));
+			return (JavaPairRDD<K, F>) ssc.sparkContext().newAPIHadoopRDD(hconf, TableInputFormat.class, ImmutableBytesWritable.class,
+					Result.class).mapToPair(t -> null == t ? null
+							: new Tuple2<>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor)));
 		} , batching, kClass, vClass);
 	}
 }

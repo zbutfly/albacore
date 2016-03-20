@@ -6,7 +6,6 @@ import java.util.HashSet;
 import java.util.Map;
 
 import org.apache.spark.storage.StorageLevel;
-import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaPairInputDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.spark.streaming.kafka.KafkaUtils;
@@ -19,7 +18,7 @@ import net.butfly.albacore.calculus.marshall.KafkaMarshaller;
 import net.butfly.albacore.calculus.marshall.Marshaller;
 import scala.Tuple2;
 
-public class KafkaDataSource extends DataSource<String, byte[], KafkaDetail> {
+public class KafkaDataSource extends DataSource<String, byte[], KafkaDataDetail> {
 	private static final long serialVersionUID = 7500441385655250814L;
 	String servers;
 	String root;
@@ -67,7 +66,8 @@ public class KafkaDataSource extends DataSource<String, byte[], KafkaDetail> {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <K, F extends Factor<F>> JavaPairDStream<K, F> streaming(JavaStreamingContext ssc, Class<F> factor, KafkaDetail detail) {
+	public <K, F extends Factor<F>> JavaPairInputDStream<K, F> streaming(JavaStreamingContext ssc, Class<F> factor,
+			KafkaDataDetail detail) {
 		JavaPairInputDStream<String, byte[]> kafka;
 		Map<String, String> params = new HashMap<>();
 		if (root == null) { // direct mode
@@ -87,7 +87,7 @@ public class KafkaDataSource extends DataSource<String, byte[], KafkaDetail> {
 			kafka = KafkaUtils.createStream(ssc, String.class, byte[].class, StringDecoder.class, DefaultDecoder.class, params, topicsMap,
 					StorageLevel.MEMORY_ONLY());
 		}
-		return (JavaPairDStream<K, F>) kafka.mapToPair(
-				t -> null == t ? null : new Tuple2<String, F>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor)));
+		return (JavaPairInputDStream<K, F>) kafka.mapToPair(t -> null == t ? null
+				: new Tuple2<String, F>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor)));
 	}
 }
