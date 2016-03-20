@@ -28,7 +28,7 @@ public abstract class Calculus<OUTK, OUTV extends Factor<OUTV>> implements Seria
 		return new Functor[0];
 	}
 
-	abstract public void streaming(final JavaStreamingContext ssc, final Factors factors,
+	abstract public void calculate(final JavaStreamingContext ssc, final Factors factors,
 			final VoidFunction<JavaPairRDD<OUTK, OUTV>> handler);
 
 	protected boolean saving(JavaPairRDD<OUTK, OUTV> r) {

@@ -19,7 +19,7 @@ import net.butfly.albacore.calculus.marshall.KafkaMarshaller;
 import net.butfly.albacore.calculus.marshall.Marshaller;
 import scala.Tuple2;
 
-public class KafkaDataSource extends DataSource<String, byte[]> {
+public class KafkaDataSource extends DataSource<String, byte[], KafkaDetail> {
 	private static final long serialVersionUID = 7500441385655250814L;
 	String servers;
 	String root;
@@ -67,7 +67,7 @@ public class KafkaDataSource extends DataSource<String, byte[]> {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <K, F extends Factor<F>> JavaPairDStream<K, F> streaming(JavaStreamingContext ssc, Class<F> factor, Detail detail) {
+	public <K, F extends Factor<F>> JavaPairDStream<K, F> streaming(JavaStreamingContext ssc, Class<F> factor, KafkaDetail detail) {
 		JavaPairInputDStream<String, byte[]> kafka;
 		Map<String, String> params = new HashMap<>();
 		if (root == null) { // direct mode

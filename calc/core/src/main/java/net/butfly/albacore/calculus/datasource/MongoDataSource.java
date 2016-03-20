@@ -28,7 +28,7 @@ import net.butfly.albacore.calculus.marshall.MongoMarshaller;
 import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
 
-public class MongoDataSource extends DataSource<Object, BSONObject> {
+public class MongoDataSource extends DataSource<Object, BSONObject, MongoDetail> {
 	private static final long serialVersionUID = -2617369621178264387L;
 	String uri;
 
@@ -51,8 +51,7 @@ public class MongoDataSource extends DataSource<Object, BSONObject> {
 	}
 
 	@Override
-	public boolean confirm(Class<? extends Factor<?>> factor, Detail detail) {
-
+	public boolean confirm(Class<? extends Factor<?>> factor, MongoDetail detail) {
 		MongoClientURI muri = new MongoClientURI(getUri());
 		MongoClient mclient = new MongoClient(muri);
 		try {
@@ -78,7 +77,7 @@ public class MongoDataSource extends DataSource<Object, BSONObject> {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <K, F extends Factor<F>> JavaPairRDD<K, F> stocking(JavaSparkContext sc, Class<F> factor, Detail detail) {
+	public <K, F extends Factor<F>> JavaPairRDD<K, F> stocking(JavaSparkContext sc, Class<F> factor, MongoDetail detail) {
 		Configuration mconf = new Configuration();
 		mconf.set("mongo.job.input.format", "com.mongodb.hadoop.MongoInputFormat");
 		MongoClientURI uri = new MongoClientURI(this.uri);
@@ -93,7 +92,7 @@ public class MongoDataSource extends DataSource<Object, BSONObject> {
 	}
 
 	@Override
-	public <K, F extends Factor<F>> VoidFunction<JavaPairRDD<K, F>> saving(JavaSparkContext sc, Detail detail) {
+	public <K, F extends Factor<F>> VoidFunction<JavaPairRDD<K, F>> saving(JavaSparkContext sc, MongoDetail detail) {
 		Configuration conf = HBaseConfiguration.create();
 		conf.set("mongo.job.output.format", MongoOutputFormat.class.getName());
 		MongoClientURI uri = new MongoClientURI(this.uri);
