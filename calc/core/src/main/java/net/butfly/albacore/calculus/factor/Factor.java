@@ -43,4 +43,25 @@ public abstract class Factor<F extends Factor<F>> implements Serializable {
 
 		String[] topics() default {};
 	}
+
+	public final static class VoidFactor extends Factor<VoidFactor> {
+		private static final long serialVersionUID = -5722216150920437482L;
+
+		private VoidFactor() {}
+	}
+
+	@Stocking(type = Type.CONSTAND_TO_CONSOLE)
+	public final static class Const<V> extends Factor<Const<V>> {
+		private static final long serialVersionUID = 9100426079561362807L;
+		public V value;
+
+		public Const(V value) {
+			this.value = value;
+		}
+
+		@Override
+		public String toString() {
+			return value == null ? null : value.toString();
+		}
+	}
 }

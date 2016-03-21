@@ -27,29 +27,25 @@ class BatchInputDStream<K, V> extends WrappedPairInputDStream<K, V> {
 	}
 
 	@Override
-	public void start() {}
-
-	@Override
-	public void stop() {}
-
-	@Override
 	public Option<RDD<Tuple2<K, V>>> compute(Time arg0) {
 		try {
 			current = batcher.call(offset == null ? limit : limit + 1, offset);
 		} catch (Exception e) {
-			logger.error("RDD batched failure", e);
+			error(() -> "RDD batched failure", e);
 			return super.compute(arg0);
 		}
 		// results exclude last item on prev batch
-		if (null != offset) current = current.subtractByKey(jssc.sparkContext().parallelize(Arrays.asList(new Tuple2<K, Object>(offset,
-				null))).mapToPair(t -> t));
-		trace();
+		if (null != offset) current = current
+				.subtractByKey(jssc.sparkContext().parallelize(Arrays.asList(new Tuple2<K, Object>(offset, null))).mapToPair(t -> t));
+		K last = current.reduce((t1, t2) -> t1._1.toString().compareTo(t2._1.toString()) > 0 ? t1 : t2)._1;
+		trace(() -> "RDD [" + name() + "] computed: " + current.count() + ", key from [" + null == offset ? "null"
+				: offset.toString() + "](excluded) to [" + last.toString() + "](include).");
 		if (current.isEmpty()) {
-			logger.info("RDD batched empty, batching finished.");
+			info(() -> "RDD batched empty, batching finished.");
 			jssc.stop(true, true);
 		}
 		// next offset is last item this time
-		offset = current.reduce((t1, t2) -> t1._1.toString().compareTo(t2._1.toString()) > 0 ? t1 : t2)._1;
+		offset = last;
 		return new Some<RDD<Tuple2<K, V>>>(current.rdd());
 	}
 }

@@ -56,7 +56,7 @@ import net.butfly.albacore.calculus.factor.FactorConfig;
 import net.butfly.albacore.calculus.factor.Factors;
 import net.butfly.albacore.calculus.marshall.Marshaller;
 import net.butfly.albacore.calculus.streaming.JavaConstPairDStream;
-import net.butfly.albacore.calculus.streaming.JavaReloadPairDStream;
+import net.butfly.albacore.calculus.streaming.JavaFreshPairDStream;
 import net.butfly.albacore.calculus.utils.Reflections;
 
 public class Calculator implements Serializable {
@@ -268,7 +268,7 @@ public class Calculator implements Serializable {
 							config.dbid).stocking(sc, config.factorClass, config.detail)).persist());
 					break;
 				case EACH:
-					factors.streaming(config.factorClass, new JavaReloadPairDStream<>(ssc, () -> dss.ds(config.dbid).stocking(sc,
+					factors.streaming(config.factorClass, new JavaFreshPairDStream<>(ssc, () -> dss.ds(config.dbid).stocking(sc,
 							config.factorClass, config.detail), config.keyClass, config.factorClass));
 					break;
 				case CACHE:
