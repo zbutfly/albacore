@@ -7,9 +7,9 @@ public class HbaseDataDetail extends DataDetail {
 	// hbase conf
 	public String hbaseTable;
 
-	public HbaseDataDetail(String hbaseTable) {
+	public HbaseDataDetail(String[] hbaseTables) {
 		super(Type.HBASE);
-		this.hbaseTable = hbaseTable;
+		this.hbaseTable = hbaseTables[0];
 	}
 
 	@Override

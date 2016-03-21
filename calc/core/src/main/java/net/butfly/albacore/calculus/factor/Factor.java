@@ -25,7 +25,7 @@ public abstract class Factor<F extends Factor<F>> implements Serializable {
 
 		String source() default NOT_DEFINED;
 
-		String table() default NOT_DEFINED;
+		String[] table() default {};
 
 		String filter() default NOT_DEFINED;
 
@@ -41,7 +41,7 @@ public abstract class Factor<F extends Factor<F>> implements Serializable {
 
 		String source();
 
-		String[] topics() default {};
+		String[] table() default {};
 	}
 
 	public final static class VoidFactor extends Factor<VoidFactor> {

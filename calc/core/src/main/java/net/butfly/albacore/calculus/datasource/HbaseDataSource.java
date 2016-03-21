@@ -111,14 +111,14 @@ public class HbaseDataSource extends DataSource<ImmutableBytesWritable, Result, 
 			logger.error("Hbase debugging, random sampling results of " + (ratio * 100)
 					+ "% (can be customized by -Dcalculus.debug.hbase.random.ratio=" + ratio + ")");
 			try {
-				hconf.set(TableInputFormat.SCAN, Base64.encodeBytes(ProtobufUtil.toScan(new Scan().setFilter(new RandomRowFilter(ratio)))
-						.toByteArray()));
+				hconf.set(TableInputFormat.SCAN,
+						Base64.encodeBytes(ProtobufUtil.toScan(new Scan().setFilter(new RandomRowFilter(ratio))).toByteArray()));
 			} catch (IOException e) {
 				logger.error("Hbase debugging failure, page scan definition error", e);
 			}
 		}
-
 		// conf.hconf.set(TableInputFormat.SCAN_COLUMNS, "cf1:vc cf1:vs");
+
 		return (JavaPairRDD<K, F>) sc.newAPIHadoopRDD(hconf, TableInputFormat.class, ImmutableBytesWritable.class, Result.class).mapToPair(
 				t -> null == t ? null : new Tuple2<>(this.marshaller.unmarshallId(t._1), this.marshaller.unmarshall(t._2, factor)));
 	}
@@ -143,9 +143,9 @@ public class HbaseDataSource extends DataSource<ImmutableBytesWritable, Result, 
 			hconf.set(TableInputFormat.SCAN, scstr);
 			// conf.hconf.set(TableInputFormat.SCAN_COLUMNS, "cf1:vc
 			// cf1:vs");
-			return (JavaPairRDD<K, F>) ssc.sparkContext().newAPIHadoopRDD(hconf, TableInputFormat.class, ImmutableBytesWritable.class,
-					Result.class).mapToPair(t -> null == t ? null
-							: new Tuple2<>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor)));
+			return (JavaPairRDD<K, F>) ssc.sparkContext()
+					.newAPIHadoopRDD(hconf, TableInputFormat.class, ImmutableBytesWritable.class, Result.class)
+					.mapToPair(t -> null == t ? null : new Tuple2<>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor)));
 		} , batching, kClass, vClass);
 	}
 }

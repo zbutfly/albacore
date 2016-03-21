@@ -9,15 +9,16 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.bson.BSONObject;
 import org.bson.BasicBSONObject;
+import org.bson.Document;
+import org.bson.conversions.Bson;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.CaseFormat;
 import com.mongodb.BasicDBObject;
-import com.mongodb.DB;
-import com.mongodb.DBCollection;
-import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
 import com.mongodb.hadoop.MongoInputFormat;
 import com.mongodb.hadoop.MongoOutputFormat;
 import com.mongodb.hadoop.io.MongoUpdateWritable;
@@ -57,19 +58,19 @@ public class MongoDataSource extends DataSource<Object, BSONObject, MongoDataDet
 		MongoClientURI muri = new MongoClientURI(getUri());
 		MongoClient mclient = new MongoClient(muri);
 		try {
-			@SuppressWarnings("deprecation")
-			DB mdb = mclient.getDB(muri.getDatabase());
-
-			if (mdb.collectionExists(detail.mongoTable)) return true;
-			DBCollection col = mdb.createCollection(detail.mongoTable, new BasicDBObject());
-
+			MongoDatabase db = mclient.getDatabase(muri.getDatabase());
+			MongoCollection<Document> col = db.getCollection(detail.mongoTable);
+			if (col == null) {
+				db.createCollection(detail.mongoTable);
+				col = db.getCollection(detail.mongoTable);
+			}
 			for (Field f : Reflections.getDeclaredFields(factor))
 				if (f.isAnnotationPresent(Index.class)) {
 					String colname = f.isAnnotationPresent(JsonProperty.class) ? f.getAnnotation(JsonProperty.class).value()
 							: CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, f.getName());
-					DBObject dbi = new BasicDBObject();
+					BSONObject dbi = new BasicDBObject();
 					dbi.put(colname, 1);
-					col.createIndex(dbi);
+					col.createIndex((Bson) dbi);
 				}
 			return true;
 		} finally {
