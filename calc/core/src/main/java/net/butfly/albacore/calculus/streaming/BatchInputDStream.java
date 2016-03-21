@@ -17,6 +17,7 @@ class BatchInputDStream<K, V> extends WrappedPairInputDStream<K, V> {
 	private Function2<Long, K, JavaPairRDD<K, V>> batcher;
 	private K offset;
 	private long limit;
+	private long total = 0;
 
 	public BatchInputDStream(JavaStreamingContext ssc, Function2<Long, K, JavaPairRDD<K, V>> batcher, long batching, Class<K> kClass,
 			Class<V> vClass) {
@@ -38,8 +39,12 @@ class BatchInputDStream<K, V> extends WrappedPairInputDStream<K, V> {
 		if (null != offset) current = current
 				.subtractByKey(jssc.sparkContext().parallelize(Arrays.asList(new Tuple2<K, Object>(offset, null))).mapToPair(t -> t));
 		K last = current.reduce((t1, t2) -> t1._1.toString().compareTo(t2._1.toString()) > 0 ? t1 : t2)._1;
-		trace(() -> "RDD [" + name() + "] computed: " + current.count() + ", key from [" + null == offset ? "null"
-				: offset.toString() + "](excluded) to [" + last.toString() + "](include).");
+		trace(() -> {
+			long c = current.count();
+			total += c;
+			return "RDD [" + name() + "] computed: " + c + ", key from [" + (null == offset ? "null" : offset.toString())
+					+ "](excluded) to [" + last.toString() + "](include), total traced: " + total + ".";
+		});
 		if (current.isEmpty()) {
 			info(() -> "RDD batched empty, batching finished.");
 			jssc.stop(true, true);

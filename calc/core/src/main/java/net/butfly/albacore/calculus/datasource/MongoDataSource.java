@@ -8,6 +8,7 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.bson.BSONObject;
+import org.bson.BasicBSONObject;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.CaseFormat;
@@ -19,6 +20,7 @@ import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import com.mongodb.hadoop.MongoInputFormat;
 import com.mongodb.hadoop.MongoOutputFormat;
+import com.mongodb.hadoop.io.MongoUpdateWritable;
 import com.mongodb.hadoop.util.MongoClientURIBuilder;
 
 import net.butfly.albacore.calculus.factor.Factor;
@@ -97,8 +99,14 @@ public class MongoDataSource extends DataSource<Object, BSONObject, MongoDataDet
 		conf.set("mongo.job.output.format", MongoOutputFormat.class.getName());
 		MongoClientURI uri = new MongoClientURI(this.uri);
 		conf.set("mongo.output.uri", new MongoClientURIBuilder(uri).collection(uri.getDatabase(), detail.mongoTable).build().toString());
-		return r -> r
-				.mapToPair(t -> null == t ? null : new Tuple2<>(this.marshaller.marshallId((String) t._1), this.marshaller.marshall(t._2)))
-				.saveAsNewAPIHadoopFile("", Object.class, BSONObject.class, MongoOutputFormat.class, conf);
+		return r -> {
+			r.mapToPair(t -> {
+				BasicBSONObject q = new BasicBSONObject();
+				q.append("_id", this.marshaller.marshallId((String) t._1));
+				BasicBSONObject u = new BasicBSONObject();
+				u.append("$set", this.marshaller.marshall(t._2));
+				return new Tuple2<Object, MongoUpdateWritable>(null, new MongoUpdateWritable(q, u, true, true));
+			}).saveAsNewAPIHadoopFile("", Object.class, BSONObject.class, MongoOutputFormat.class, conf);
+		};
 	}
 }
