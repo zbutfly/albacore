@@ -12,9 +12,15 @@ import java.lang.annotation.Target;
 public @interface Factoring {
 	Class<? extends Factor<?>> factor();
 
-	String id();
+	String key();
+
+	long batching() default 0L;
+
+	OnStreaming streaming() default OnStreaming.EACH;
 
 	String foreignKey() default Factor.NOT_DEFINED;
+
+	Join join() default Join.RIGHT;
 
 	String primaryFactor() default Factor.NOT_DEFINED;
 
@@ -24,7 +30,9 @@ public @interface Factoring {
 		INNER, LEFT, RIGHT
 	}
 
-	Join join() default Join.RIGHT;
+	public enum OnStreaming {
+		NONE, ONCE, EACH, CACHE
+	}
 
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target(ElementType.TYPE)

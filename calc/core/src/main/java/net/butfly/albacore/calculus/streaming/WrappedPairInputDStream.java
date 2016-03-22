@@ -10,7 +10,6 @@ import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.spark.streaming.dstream.InputDStream;
 
 import scala.Option;
-import scala.Some;
 import scala.Tuple2;
 import scala.reflect.ClassTag;
 import scala.runtime.AbstractFunction0;
@@ -22,20 +21,12 @@ public abstract class WrappedPairInputDStream<K, V> extends InputDStream<Tuple2<
 	public WrappedPairInputDStream(JavaStreamingContext ssc, Class<K> kClass, Class<V> vClass) {
 		super(ssc.ssc(), classTag(ssc.sparkContext(), kClass, vClass));
 		this.jssc = ssc;
-		this.current = emptyPairRDD();
-	}
-
-	private JavaPairRDD<K, V> emptyPairRDD() {
-		return emptyRDD().mapToPair(t -> t);
-	}
-
-	private JavaRDD<Tuple2<K, V>> emptyRDD() {
-		return jssc.sparkContext().emptyRDD();
+		this.current = null;
 	}
 
 	@Override
 	public Option<RDD<Tuple2<K, V>>> compute(Time arg0) {
-		return new Some<RDD<Tuple2<K, V>>>(emptyRDD().rdd());
+		return Option.empty();
 	}
 
 	private static <K, V> ClassTag<Tuple2<K, V>> classTag(JavaSparkContext sc, Class<K> kClass, Class<V> vClass) {

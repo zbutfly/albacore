@@ -9,7 +9,6 @@ import org.apache.spark.streaming.Time;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 
 import scala.Option;
-import scala.Some;
 import scala.Tuple2;
 
 class BatchInputDStream<K, V> extends WrappedPairInputDStream<K, V> {
@@ -35,13 +34,19 @@ class BatchInputDStream<K, V> extends WrappedPairInputDStream<K, V> {
 			error(() -> "RDD batched failure", e);
 			return super.compute(arg0);
 		}
-		if (current.isEmpty()) {
+		if (null == current || current.isEmpty()) {
 			info(() -> "RDD batched empty, batching finished.");
 			jssc.stop(true, true);
+			return Option.empty();
 		} else {
 			// results exclude last item on prev batch
 			if (null != offset) current = current
 					.subtractByKey(jssc.sparkContext().parallelize(Arrays.asList(new Tuple2<K, Object>(offset, null))).mapToPair(t -> t));
+			if (null == current || current.isEmpty()) {
+				info(() -> "RDD batched empty, batching finished.");
+				jssc.stop(true, true);
+				return Option.empty();
+			}
 			K last = current.reduce((t1, t2) -> t1._1.toString().compareTo(t2._1.toString()) > 0 ? t1 : t2)._1;
 			trace(() -> {
 				long c = current.count();
@@ -49,13 +54,9 @@ class BatchInputDStream<K, V> extends WrappedPairInputDStream<K, V> {
 				return "RDD [" + name() + "] computed: " + c + ", key from [" + (null == offset ? "null" : offset.toString())
 						+ "](excluded) to [" + last.toString() + "](include), total traced: " + total + ".";
 			});
-			if (current.isEmpty()) {
-				info(() -> "RDD batched empty, batching finished.");
-				jssc.stop(true, true);
-			}
 			// next offset is last item this time
 			offset = last;
+			return Option.apply(current.rdd());
 		}
-		return new Some<RDD<Tuple2<K, V>>>(current.rdd());
 	}
 }

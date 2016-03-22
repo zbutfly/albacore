@@ -17,8 +17,8 @@ import net.butfly.albacore.calculus.datasource.HbaseDataDetail;
 import net.butfly.albacore.calculus.datasource.KafkaDataDetail;
 import net.butfly.albacore.calculus.datasource.MongoDataDetail;
 import net.butfly.albacore.calculus.factor.Factor.Stocking;
-import net.butfly.albacore.calculus.factor.Factor.Stocking.OnStreaming;
 import net.butfly.albacore.calculus.factor.Factor.Streaming;
+import net.butfly.albacore.calculus.factor.Factoring.OnStreaming;
 import net.butfly.albacore.calculus.streaming.JavaConstPairDStream;
 import net.butfly.albacore.calculus.streaming.JavaFreshPairDStream;
 
@@ -35,16 +35,19 @@ public final class Factors extends HashMap<String, JavaPairInputDStream<?, ? ext
 
 		FactorConfig<?, ?> batch = null;
 		for (Factoring f : factoring) {
+			if (mode == Mode.STREAMING && f.streaming() == OnStreaming.NONE) continue;
 			@SuppressWarnings("rawtypes")
 			Class fc = f.factor();
+			if (!fc.isAnnotationPresent(Stocking.class) && !fc.isAnnotationPresent(Streaming.class)) continue;
 			FactorConfig<?, ?> c = scan(mode, fc, dss, validate);
-			if (null == c) continue;
-			if (c.batching > 0) {
+			c.batching = f.batching();
+			c.streaming = f.streaming();
+			if (f.batching() > 0) {
 				if (batch != null) throw new IllegalArgumentException("Only one batch stocking source supported, now found second: "
 						+ batch.factorClass.toString() + " and " + c.factorClass.toString());
 				else batch = c;
 			}
-			read(mode, f.id(), c);
+			read(mode, f.key(), c);
 		}
 	}
 
@@ -67,12 +70,12 @@ public final class Factors extends HashMap<String, JavaPairInputDStream<?, ? ext
 		return (JavaPairInputDStream<K, F>) get(factoring);
 	}
 
-	private <K, F extends Factor<F>> void read(Mode mode, String id, FactorConfig<K, F> config) {
+	private <K, F extends Factor<F>> void read(Mode mode, String key, FactorConfig<K, F> config) {
 		switch (mode) {
 		case STOCKING:
 			if (config.batching <= 0)
-				this.stocking(id, dss.ds(config.dbid).stocking(ssc.sparkContext(), config.factorClass, config.detail), ssc);
-			else this.streaming(id, dss.ds(config.dbid).batching(ssc, config.factorClass, config.batching, config.detail, config.keyClass,
+				this.stocking(key, dss.ds(config.dbid).stocking(ssc.sparkContext(), config.factorClass, config.detail), ssc);
+			else this.streaming(key, dss.ds(config.dbid).batching(ssc, config.factorClass, config.batching, config.detail, config.keyClass,
 					config.factorClass));
 			break;
 		case STREAMING:
@@ -82,11 +85,11 @@ public final class Factors extends HashMap<String, JavaPairInputDStream<?, ? ext
 				case NONE:
 					break;
 				case ONCE:
-					this.streaming(id, (JavaPairInputDStream<K, F>) new JavaConstPairDStream<K, F>(ssc,
+					this.streaming(key, (JavaPairInputDStream<K, F>) new JavaConstPairDStream<K, F>(ssc,
 							dss.ds(config.dbid).stocking(ssc.sparkContext(), config.factorClass, config.detail)).persist());
 					break;
 				case EACH:
-					this.streaming(id,
+					this.streaming(key,
 							new JavaFreshPairDStream<K, F>(ssc,
 									() -> dss.ds(config.dbid).stocking(ssc.sparkContext(), config.factorClass, config.detail),
 									config.keyClass, config.factorClass));
@@ -96,7 +99,7 @@ public final class Factors extends HashMap<String, JavaPairInputDStream<?, ? ext
 				}
 				break;
 			case STREAMING:
-				this.streaming(id, dss.ds(config.dbid).streaming(ssc, config.factorClass, config.detail));
+				this.streaming(key, dss.ds(config.dbid).streaming(ssc, config.factorClass, config.detail));
 				break;
 			}
 			break;
@@ -118,13 +121,9 @@ public final class Factors extends HashMap<String, JavaPairInputDStream<?, ? ext
 				throw new UnsupportedOperationException("Unsupportted streaming mode: " + s.type() + " on " + factor.toString());
 			}
 		} else {
-			if (!factor.isAnnotationPresent(Stocking.class)) return null;
 			Stocking s = factor.getAnnotation(Stocking.class);
-			if (mode == Mode.STREAMING && s.streaming() == OnStreaming.NONE) return null;
 			config.mode = Mode.STOCKING;
 			config.dbid = s.source();
-			config.batching = s.batching();
-			config.streaming = s.streaming();
 			switch (s.type()) {
 			case HBASE:
 				if (Factor.NOT_DEFINED.equals(s.table()))

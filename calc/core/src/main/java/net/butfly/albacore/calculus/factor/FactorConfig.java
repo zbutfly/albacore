@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 import net.butfly.albacore.calculus.Mode;
 import net.butfly.albacore.calculus.datasource.DataDetail;
-import net.butfly.albacore.calculus.factor.Factor.Stocking.OnStreaming;
+import net.butfly.albacore.calculus.factor.Factoring.OnStreaming;
 
 public class FactorConfig<K, F extends Factor<F>> implements Serializable {
 	private static final long serialVersionUID = 5323846657146326084L;

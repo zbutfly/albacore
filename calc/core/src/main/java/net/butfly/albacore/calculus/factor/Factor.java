@@ -17,9 +17,6 @@ public abstract class Factor<F extends Factor<F>> implements Serializable {
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target({ ElementType.TYPE })
 	public @interface Stocking {
-		public enum OnStreaming {
-			NONE, ONCE, EACH, CACHE
-		}
 
 		Type type();
 
@@ -28,10 +25,6 @@ public abstract class Factor<F extends Factor<F>> implements Serializable {
 		String[] table() default {};
 
 		String filter() default NOT_DEFINED;
-
-		long batching() default 0L;
-
-		OnStreaming streaming() default OnStreaming.EACH;
 	}
 
 	@Retention(RetentionPolicy.RUNTIME)

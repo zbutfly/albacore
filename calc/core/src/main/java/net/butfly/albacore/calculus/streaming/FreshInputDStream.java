@@ -9,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import scala.Option;
-import scala.Some;
 import scala.Tuple2;
 
 class FreshInputDStream<K, V> extends WrappedPairInputDStream<K, V> {
@@ -27,7 +26,7 @@ class FreshInputDStream<K, V> extends WrappedPairInputDStream<K, V> {
 		try {
 			current = loader.call();
 			trace(() -> "RDD [" + name() + "] computed: " + current.count() + ".");
-			return new Some<RDD<Tuple2<K, V>>>(current.rdd());
+			return Option.apply(current.rdd());
 		} catch (Exception e) {
 			logger.error("RDD reloaded failure", e);
 			jssc.sparkContext().emptyRDD();
