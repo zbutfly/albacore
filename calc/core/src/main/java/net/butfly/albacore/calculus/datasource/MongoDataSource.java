@@ -8,17 +8,20 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.bson.BSONObject;
+import org.bson.BasicBSONObject;
+import org.bson.Document;
+import org.bson.conversions.Bson;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.CaseFormat;
 import com.mongodb.BasicDBObject;
-import com.mongodb.DB;
-import com.mongodb.DBCollection;
-import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
 import com.mongodb.hadoop.MongoInputFormat;
 import com.mongodb.hadoop.MongoOutputFormat;
+import com.mongodb.hadoop.io.MongoUpdateWritable;
 import com.mongodb.hadoop.util.MongoClientURIBuilder;
 
 import net.butfly.albacore.calculus.factor.Factor;
@@ -55,19 +58,19 @@ public class MongoDataSource extends DataSource<Object, BSONObject, MongoDataDet
 		MongoClientURI muri = new MongoClientURI(getUri());
 		MongoClient mclient = new MongoClient(muri);
 		try {
-			@SuppressWarnings("deprecation")
-			DB mdb = mclient.getDB(muri.getDatabase());
-
-			if (mdb.collectionExists(detail.mongoTable)) return true;
-			DBCollection col = mdb.createCollection(detail.mongoTable, new BasicDBObject());
-
+			MongoDatabase db = mclient.getDatabase(muri.getDatabase());
+			MongoCollection<Document> col = db.getCollection(detail.mongoTable);
+			if (col == null) {
+				db.createCollection(detail.mongoTable);
+				col = db.getCollection(detail.mongoTable);
+			}
 			for (Field f : Reflections.getDeclaredFields(factor))
 				if (f.isAnnotationPresent(Index.class)) {
 					String colname = f.isAnnotationPresent(JsonProperty.class) ? f.getAnnotation(JsonProperty.class).value()
 							: CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, f.getName());
-					DBObject dbi = new BasicDBObject();
+					BSONObject dbi = new BasicDBObject();
 					dbi.put(colname, 1);
-					col.createIndex(dbi);
+					col.createIndex((Bson) dbi);
 				}
 			return true;
 		} finally {
@@ -97,8 +100,14 @@ public class MongoDataSource extends DataSource<Object, BSONObject, MongoDataDet
 		conf.set("mongo.job.output.format", MongoOutputFormat.class.getName());
 		MongoClientURI uri = new MongoClientURI(this.uri);
 		conf.set("mongo.output.uri", new MongoClientURIBuilder(uri).collection(uri.getDatabase(), detail.mongoTable).build().toString());
-		return r -> r
-				.mapToPair(t -> null == t ? null : new Tuple2<>(this.marshaller.marshallId((String) t._1), this.marshaller.marshall(t._2)))
-				.saveAsNewAPIHadoopFile("", Object.class, BSONObject.class, MongoOutputFormat.class, conf);
+		return r -> {
+			r.mapToPair(t -> {
+				BasicBSONObject q = new BasicBSONObject();
+				q.append("_id", this.marshaller.marshallId((String) t._1));
+				BasicBSONObject u = new BasicBSONObject();
+				u.append("$set", this.marshaller.marshall(t._2));
+				return new Tuple2<Object, MongoUpdateWritable>(null, new MongoUpdateWritable(q, u, true, true));
+			}).saveAsNewAPIHadoopFile("", Object.class, BSONObject.class, MongoOutputFormat.class, conf);
+		};
 	}
 }

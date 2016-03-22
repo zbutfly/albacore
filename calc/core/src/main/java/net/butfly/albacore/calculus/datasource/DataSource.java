@@ -6,6 +6,7 @@ import java.util.HashMap;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.VoidFunction;
+import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaPairInputDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.slf4j.Logger;
@@ -44,8 +45,8 @@ public abstract class DataSource<K, V, D extends DataDetail> implements Serializ
 		throw new UnsupportedOperationException("Unsupportted stocking mode: " + type + " on " + factor.toString());
 	}
 
-	public <KK, F extends Factor<F>> JavaPairInputDStream<KK, F> batching(JavaStreamingContext ssc, Class<F> factor, long batching, D detail,
-			Class<KK> kClass, Class<F> vClass) {
+	public <KK, F extends Factor<F>> JavaPairInputDStream<KK, F> batching(JavaStreamingContext ssc, Class<F> factor, long batching,
+			D detail, Class<KK> kClass, Class<F> vClass) {
 		throw new UnsupportedOperationException("Unsupportted stocking mode with batching: " + type + " on " + factor.toString());
 	}
 
@@ -68,5 +69,14 @@ public abstract class DataSource<K, V, D extends DataDetail> implements Serializ
 		public <K, V, D extends DataDetail> DataSource<K, V, D> ds(String dbid) {
 			return (DataSource<K, V, D>) super.get(dbid);
 		}
+	}
+
+	@SuppressWarnings("deprecation")
+	public <OK, OF extends Factor<OF>> void save(JavaSparkContext sc, JavaPairDStream<OK, OF> calculate, D detail) {
+		VoidFunction<JavaPairRDD<OK, OF>> hh = saving(sc, detail);
+		calculate.foreachRDD(rdd -> {
+			hh.call(rdd);
+			return null;
+		});
 	}
 }

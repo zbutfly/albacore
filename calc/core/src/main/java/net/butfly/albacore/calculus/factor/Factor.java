@@ -17,21 +17,14 @@ public abstract class Factor<F extends Factor<F>> implements Serializable {
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target({ ElementType.TYPE })
 	public @interface Stocking {
-		public enum OnStreaming {
-			NONE, ONCE, EACH, CACHE
-		}
 
 		Type type();
 
 		String source() default NOT_DEFINED;
 
-		String table() default NOT_DEFINED;
+		String[] table() default {};
 
 		String filter() default NOT_DEFINED;
-
-		long batching() default 0L;
-
-		OnStreaming streaming() default OnStreaming.EACH;
 	}
 
 	@Retention(RetentionPolicy.RUNTIME)
@@ -41,6 +34,27 @@ public abstract class Factor<F extends Factor<F>> implements Serializable {
 
 		String source();
 
-		String[] topics() default {};
+		String[] table() default {};
+	}
+
+	public final static class VoidFactor extends Factor<VoidFactor> {
+		private static final long serialVersionUID = -5722216150920437482L;
+
+		private VoidFactor() {}
+	}
+
+	@Stocking(type = Type.CONSTAND_TO_CONSOLE)
+	public final static class Const<V> extends Factor<Const<V>> {
+		private static final long serialVersionUID = 9100426079561362807L;
+		public V value;
+
+		public Const(V value) {
+			this.value = value;
+		}
+
+		@Override
+		public String toString() {
+			return value == null ? null : value.toString();
+		}
 	}
 }

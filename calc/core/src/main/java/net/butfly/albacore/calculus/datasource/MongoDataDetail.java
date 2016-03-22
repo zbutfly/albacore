@@ -8,9 +8,10 @@ public class MongoDataDetail extends DataDetail {
 	public String mongoTable;
 	public String mongoFilter;
 
-	public MongoDataDetail(String mongoTable, String mongoFilter) {
+	public MongoDataDetail(String[] mongoTables, String mongoFilter) {
 		super(Type.MONGODB);
-		this.mongoTable = mongoTable;
+		// TODO: support multeple tables
+		this.mongoTable = mongoTables[0];
 		this.mongoFilter = mongoFilter;
 	}
 
