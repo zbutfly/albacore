@@ -18,7 +18,6 @@ import net.butfly.albacore.calculus.datasource.KafkaDataDetail;
 import net.butfly.albacore.calculus.datasource.MongoDataDetail;
 import net.butfly.albacore.calculus.factor.Factor.Stocking;
 import net.butfly.albacore.calculus.factor.Factor.Streaming;
-import net.butfly.albacore.calculus.factor.Factoring.OnStreaming;
 import net.butfly.albacore.calculus.streaming.JavaConstPairDStream;
 import net.butfly.albacore.calculus.streaming.JavaFreshPairDStream;
 
@@ -35,10 +34,14 @@ public final class Factors extends HashMap<String, JavaPairInputDStream<?, ? ext
 
 		FactorConfig<?, ?> batch = null;
 		for (Factoring f : factoring) {
-			if (mode == Mode.STREAMING && f.streaming() == OnStreaming.NONE) continue;
 			@SuppressWarnings("rawtypes")
 			Class fc = f.factor();
-			if (!fc.isAnnotationPresent(Stocking.class) && !fc.isAnnotationPresent(Streaming.class)) continue;
+			if (!fc.isAnnotationPresent(Streaming.class)) {
+				if (!fc.isAnnotationPresent(Stocking.class)) throw new IllegalArgumentException("Calculus [" + fc.toString()
+						+ "] is annotated as neither @Streaming nor @Stocking, can't calculate it!");
+				if (mode == Mode.STREAMING) throw new IllegalArgumentException("Calculus [" + fc.toString()
+						+ "] is annotated as @Streaming, can't calculate it in streaming mode!");
+			}
 			FactorConfig<?, ?> c = scan(mode, fc, dss, validate);
 			c.batching = f.batching();
 			c.streaming = f.streaming();
@@ -73,8 +76,8 @@ public final class Factors extends HashMap<String, JavaPairInputDStream<?, ? ext
 	private <K, F extends Factor<F>> void read(Mode mode, String key, FactorConfig<K, F> config) {
 		switch (mode) {
 		case STOCKING:
-			if (config.batching <= 0)
-				this.stocking(key, dss.ds(config.dbid).stocking(ssc.sparkContext(), config.factorClass, config.detail), ssc);
+			if (config.batching <= 0) this.stocking(key, dss.ds(config.dbid).stocking(ssc.sparkContext(), config.factorClass,
+					config.detail), ssc);
 			else this.streaming(key, dss.ds(config.dbid).batching(ssc, config.factorClass, config.batching, config.detail, config.keyClass,
 					config.factorClass));
 			break;
@@ -82,17 +85,13 @@ public final class Factors extends HashMap<String, JavaPairInputDStream<?, ? ext
 			switch (config.mode) {
 			case STOCKING:
 				switch (config.streaming) {
-				case NONE:
-					break;
 				case ONCE:
-					this.streaming(key, (JavaPairInputDStream<K, F>) new JavaConstPairDStream<K, F>(ssc,
-							dss.ds(config.dbid).stocking(ssc.sparkContext(), config.factorClass, config.detail)).persist());
+					this.streaming(key, (JavaPairInputDStream<K, F>) new JavaConstPairDStream<K, F>(ssc, dss.ds(config.dbid).stocking(ssc
+							.sparkContext(), config.factorClass, config.detail)).persist());
 					break;
 				case EACH:
-					this.streaming(key,
-							new JavaFreshPairDStream<K, F>(ssc,
-									() -> dss.ds(config.dbid).stocking(ssc.sparkContext(), config.factorClass, config.detail),
-									config.keyClass, config.factorClass));
+					this.streaming(key, new JavaFreshPairDStream<K, F>(ssc, () -> dss.ds(config.dbid).stocking(ssc.sparkContext(),
+							config.factorClass, config.detail), config.keyClass, config.factorClass));
 					break;
 				case CACHE:
 					throw new NotImplementedException();
@@ -126,8 +125,8 @@ public final class Factors extends HashMap<String, JavaPairInputDStream<?, ? ext
 			config.dbid = s.source();
 			switch (s.type()) {
 			case HBASE:
-				if (Factor.NOT_DEFINED.equals(s.table()))
-					throw new IllegalArgumentException("Table not defined for factor " + factor.toString());
+				if (Factor.NOT_DEFINED.equals(s.table())) throw new IllegalArgumentException("Table not defined for factor " + factor
+						.toString());
 				config.detail = new HbaseDataDetail(s.table());
 				if (validate) {
 					DataSource<ImmutableBytesWritable, Result, HbaseDataDetail> hds = dss.ds(s.source());
@@ -135,8 +134,8 @@ public final class Factors extends HashMap<String, JavaPairInputDStream<?, ? ext
 				}
 				break;
 			case MONGODB:
-				if (Factor.NOT_DEFINED.equals(s.table()))
-					throw new IllegalArgumentException("Table not defined for factor " + factor.toString());
+				if (Factor.NOT_DEFINED.equals(s.table())) throw new IllegalArgumentException("Table not defined for factor " + factor
+						.toString());
 				config.detail = new MongoDataDetail(s.table(), Factor.NOT_DEFINED.equals(s.filter()) ? null : s.filter());
 				if (validate) {
 					DataSource<Object, BSONObject, MongoDataDetail> hds = dss.ds(s.source());

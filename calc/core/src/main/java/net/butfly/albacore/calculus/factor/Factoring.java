@@ -16,7 +16,7 @@ public @interface Factoring {
 
 	long batching() default 0L;
 
-	OnStreaming streaming() default OnStreaming.EACH;
+	OnStreaming streaming() default OnStreaming.ONCE;
 
 	String foreignKey() default Factor.NOT_DEFINED;
 
@@ -31,7 +31,7 @@ public @interface Factoring {
 	}
 
 	public enum OnStreaming {
-		NONE, ONCE, EACH, CACHE
+		ONCE, EACH, CACHE
 	}
 
 	@Retention(RetentionPolicy.RUNTIME)
