@@ -17,7 +17,6 @@ public abstract class Factor<F extends Factor<F>> implements Serializable {
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target({ ElementType.TYPE })
 	public @interface Stocking {
-
 		Type type();
 
 		String source() default NOT_DEFINED;

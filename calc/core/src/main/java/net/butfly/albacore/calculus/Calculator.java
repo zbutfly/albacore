@@ -202,14 +202,14 @@ public class Calculator implements Serializable {
 		PosixParser parser = new PosixParser();
 		Options opts = new Options();
 		opts.addOption("f", "config", true, "Calculus configuration file location. Defalt calculus.properties in classpath root.");
-		opts.addOption("c", "classes", true,
-				"Calculus classes list to be calculated, splitted by comma. Default scan all subclasses of Calculus, with annotation \"Calculating\".");
+		opts.addOption("c", "class", true, "Calculus class to be calculated.");
 		opts.addOption("m", "mode", true, "Calculating mode, STOCKING or STREAMING. Default STREAMING.");
 		opts.addOption("d", "debug", true, "Debug mode, TRUE or FALSE. Default FALSE.");
 		opts.addOption("h", "help", false, "Print help information like this.");
 
 		CommandLine cmd = parser.parse(opts, args);
-		if (cmd.hasOption('h')) new HelpFormatter().printHelp("java net.butfly.albacore.calculus.SparkCalculator [option]...", opts);
+		if (cmd.hasOption('h'))
+			new HelpFormatter().printHelp("java net.butfly.albacore.calculus.Calculator xxx.xxx.XxxCalculus [option]...", opts);
 		return cmd;
 	}
 
