@@ -16,7 +16,7 @@ public @interface Factoring {
 
 	long batching() default 0L;
 
-	OnStreaming streaming() default OnStreaming.ONCE;
+	OnStreaming stockOnStreaming() default OnStreaming.ONCE;
 
 	String foreignKey() default Factor.NOT_DEFINED;
 

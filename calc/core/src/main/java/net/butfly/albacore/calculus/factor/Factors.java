@@ -44,7 +44,7 @@ public final class Factors extends HashMap<String, JavaPairInputDStream<?, ? ext
 			}
 			FactorConfig<?, ?> c = scan(mode, fc, dss, validate);
 			c.batching = f.batching();
-			c.streaming = f.streaming();
+			c.streaming = f.stockOnStreaming();
 			if (f.batching() > 0) {
 				if (batch != null) throw new IllegalArgumentException("Only one batch stocking source supported, now found second: "
 						+ batch.factorClass.toString() + " and " + c.factorClass.toString());
