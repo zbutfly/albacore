@@ -107,7 +107,7 @@ public class Calculator implements Serializable {
 		if (props.containsKey("calculus.spark.executor.instances"))
 			System.setProperty("SPARK_EXECUTOR_INSTANCES", props.getProperty("calculus.spark.executor.instances"));
 		sconf = new SparkConf();
-		sconf.setMaster(props.getProperty("calculus.spark.url"));
+		if (props.containsKey("calculus.spark.url")) sconf.setMaster(props.getProperty("calculus.spark.url"));
 		sconf.setAppName(appname + "-Spark");
 		sconf.set("spark.app.id", appname + "Spark-App");
 		if (props.containsKey("calculus.spark.jars")) sconf.setJars(props.getProperty("calculus.spark.jars").split(","));

@@ -8,10 +8,11 @@ import org.bson.LazyBSONCallback;
 import org.bson.io.BasicOutputBuffer;
 import org.bson.io.OutputBuffer;
 
-import com.fasterxml.jackson.core.JsonGenerator.Feature;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.DefaultDBEncoder;
@@ -24,7 +25,9 @@ public abstract class BsonMarshaller<K, V> extends Marshaller<K, V> {
 	private static final long serialVersionUID = -7385678674433019238L;
 	private static ObjectMapper bsoner = new ObjectMapper(MongoBsonFactory.createFactory())
 			.setPropertyNamingStrategy(new UpperCaseWithUnderscoresStrategy()).disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-			.disable(MapperFeature.USE_GETTERS_AS_SETTERS).enable(Feature.WRITE_BIGDECIMAL_AS_PLAIN);
+			.disable(MapperFeature.USE_GETTERS_AS_SETTERS).disable(SerializationFeature.WRITE_NULL_MAP_VALUES)
+			.setSerializationInclusion(Include.NON_NULL);
+	// .enable(Feature.WRITE_BIGDECIMAL_AS_PLAIN)
 
 	@Override
 	public final <T extends Factor<T>> T unmarshall(V from, Class<T> to) {

@@ -22,7 +22,7 @@ import org.apache.hadoop.hbase.protobuf.ProtobufUtil;
 import org.apache.hadoop.hbase.util.Base64;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.streaming.api.java.JavaPairInputDStream;
+import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -125,7 +125,7 @@ public class HbaseDataSource extends DataSource<ImmutableBytesWritable, Result, 
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <K, F extends Factor<F>> JavaPairInputDStream<K, F> batching(JavaStreamingContext ssc, Class<F> factor, long batching,
+	public <K, F extends Factor<F>> JavaPairDStream<K, F> batching(JavaStreamingContext ssc, Class<F> factor, long batching,
 			HbaseDataDetail detail, Class<K> kClass, Class<F> vClass) {
 		return new JavaBatchPairDStream<K, F>(ssc, (limit, offset) -> {
 			Configuration hconf = HBaseConfiguration.create();

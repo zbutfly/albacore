@@ -7,7 +7,6 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
-import org.apache.spark.streaming.api.java.JavaPairInputDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,12 +44,12 @@ public abstract class DataSource<K, V, D extends DataDetail> implements Serializ
 		throw new UnsupportedOperationException("Unsupportted stocking mode: " + type + " on " + factor.toString());
 	}
 
-	public <KK, F extends Factor<F>> JavaPairInputDStream<KK, F> batching(JavaStreamingContext ssc, Class<F> factor, long batching,
+	public <KK, F extends Factor<F>> JavaPairDStream<KK, F> batching(JavaStreamingContext ssc, Class<F> factor, long batching,
 			D detail, Class<KK> kClass, Class<F> vClass) {
 		throw new UnsupportedOperationException("Unsupportted stocking mode with batching: " + type + " on " + factor.toString());
 	}
 
-	public <KK, F extends Factor<F>> JavaPairInputDStream<KK, F> streaming(JavaStreamingContext ssc, Class<F> factor, D detail) {
+	public <KK, F extends Factor<F>> JavaPairDStream<KK, F> streaming(JavaStreamingContext ssc, Class<F> factor, D detail) {
 		throw new UnsupportedOperationException("Unsupportted streaming mode: " + type + " on " + factor.toString());
 	}
 

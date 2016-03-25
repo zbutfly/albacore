@@ -6,7 +6,7 @@ import java.util.HashSet;
 import java.util.Map;
 
 import org.apache.spark.storage.StorageLevel;
-import org.apache.spark.streaming.api.java.JavaPairInputDStream;
+import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.spark.streaming.kafka.KafkaUtils;
 
@@ -66,9 +66,8 @@ public class KafkaDataSource extends DataSource<String, byte[], KafkaDataDetail>
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <K, F extends Factor<F>> JavaPairInputDStream<K, F> streaming(JavaStreamingContext ssc, Class<F> factor,
-			KafkaDataDetail detail) {
-		JavaPairInputDStream<String, byte[]> kafka;
+	public <K, F extends Factor<F>> JavaPairDStream<K, F> streaming(JavaStreamingContext ssc, Class<F> factor, KafkaDataDetail detail) {
+		JavaPairDStream<String, byte[]> kafka;
 		Map<String, String> params = new HashMap<>();
 		if (root == null) { // direct mode
 			params.put("metadata.broker.list", servers);
@@ -87,7 +86,7 @@ public class KafkaDataSource extends DataSource<String, byte[], KafkaDataDetail>
 			kafka = KafkaUtils.createStream(ssc, String.class, byte[].class, StringDecoder.class, DefaultDecoder.class, params, topicsMap,
 					StorageLevel.MEMORY_ONLY());
 		}
-		return (JavaPairInputDStream<K, F>) kafka.mapToPair(t -> null == t ? null
-				: new Tuple2<String, F>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor)));
+		return (JavaPairDStream<K, F>) kafka.mapToPair(
+				t -> null == t ? null : new Tuple2<String, F>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor)));
 	}
 }
