@@ -119,8 +119,11 @@ public class HbaseDataSource extends DataSource<ImmutableBytesWritable, Result, 
 		}
 		// conf.hconf.set(TableInputFormat.SCAN_COLUMNS, "cf1:vc cf1:vs");
 
-		return (JavaPairRDD<K, F>) sc.newAPIHadoopRDD(hconf, TableInputFormat.class, ImmutableBytesWritable.class, Result.class).mapToPair(
-				t -> null == t ? null : new Tuple2<>(this.marshaller.unmarshallId(t._1), this.marshaller.unmarshall(t._2, factor)));
+		JavaPairRDD<K, F> r = (JavaPairRDD<K, F>) sc
+				.newAPIHadoopRDD(hconf, TableInputFormat.class, ImmutableBytesWritable.class, Result.class).mapToPair(
+						t -> null == t ? null : new Tuple2<>(this.marshaller.unmarshallId(t._1), this.marshaller.unmarshall(t._2, factor)));
+		if (logger.isTraceEnabled()) logger.trace("Stocking from hbase: " + r.count());
+		return r;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -143,9 +146,11 @@ public class HbaseDataSource extends DataSource<ImmutableBytesWritable, Result, 
 			hconf.set(TableInputFormat.SCAN, scstr);
 			// conf.hconf.set(TableInputFormat.SCAN_COLUMNS, "cf1:vc
 			// cf1:vs");
-			return (JavaPairRDD<K, F>) ssc.sparkContext()
+			JavaPairRDD<K, F> r = (JavaPairRDD<K, F>) ssc.sparkContext()
 					.newAPIHadoopRDD(hconf, TableInputFormat.class, ImmutableBytesWritable.class, Result.class)
 					.mapToPair(t -> null == t ? null : new Tuple2<>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor)));
+			if (logger.isTraceEnabled()) logger.trace("Batching from hbase: " + r.count());
+			return r;
 		} , batching, kClass, vClass);
 	}
 }

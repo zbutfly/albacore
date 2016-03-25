@@ -89,9 +89,11 @@ public class MongoDataSource extends DataSource<Object, BSONObject, MongoDataDet
 		if (detail.mongoFilter != null && !"".equals(detail.mongoFilter)) mconf.set("mongo.input.query", detail.mongoFilter);
 		// conf.mconf.set("mongo.input.fields
 		mconf.set("mongo.input.notimeout", "true");
-		return (JavaPairRDD<K, F>) sc.newAPIHadoopRDD(mconf, MongoInputFormat.class, Object.class, BSONObject.class)
+		JavaPairRDD<K, F> r = (JavaPairRDD<K, F>) sc.newAPIHadoopRDD(mconf, MongoInputFormat.class, Object.class, BSONObject.class)
 				.mapToPair(t -> null == t ? null
 						: new Tuple2<String, F>(this.marshaller.unmarshallId(t._1), this.marshaller.unmarshall(t._2, factor)));
+		if (logger.isTraceEnabled()) logger.trace("Stocking from mongo: " + r.count());
+		return r;
 	}
 
 	@Override

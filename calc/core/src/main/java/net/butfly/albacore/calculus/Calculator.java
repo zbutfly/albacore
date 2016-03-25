@@ -85,8 +85,6 @@ public class Calculator implements Serializable {
 	}
 
 	private Calculator finish() {
-		ssc.start();
-		ssc.awaitTermination();
 		ssc.close();
 		sc.close();
 		return this;
@@ -145,7 +143,9 @@ public class Calculator implements Serializable {
 		logger.info(calculus.name + " will output as: " + c.toString());
 		FactorConfig<OK, OF> s = Factors.scan(Mode.STOCKING, c, dss, validate);
 		dss.ds(s.dbid).save(sc, calculus.calculate(ssc, new Factors(ssc, mode, dss, validate, factorings)), s.detail);
+		ssc.start();
 		logger.info(calculus.name + " started. ");
+		ssc.awaitTermination();
 		return this;
 	}
 
