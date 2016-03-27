@@ -21,7 +21,7 @@ import com.mongodb.LazyDBObject;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.marshall.Marshaller;
 
-public abstract class BsonMarshaller<K, V> extends Marshaller<K, V> {
+public abstract class BsonMarshaller<FK, VK, VV> extends Marshaller<FK, VK, VV> {
 	private static final long serialVersionUID = -7385678674433019238L;
 	private static ObjectMapper bsoner = new ObjectMapper(MongoBsonFactory.createFactory())
 			.setPropertyNamingStrategy(new UpperCaseWithUnderscoresStrategy()).disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
@@ -30,22 +30,23 @@ public abstract class BsonMarshaller<K, V> extends Marshaller<K, V> {
 	// .enable(Feature.WRITE_BIGDECIMAL_AS_PLAIN)
 
 	@Override
-	public final <T extends Factor<T>> T unmarshall(V from, Class<T> to) {
+	public final <T extends Factor<T>> T unmarshall(VV from, Class<T> to) {
 		if (null == from) return null;
 		return unmarshallFromBSON(decode(from), to);
 
 	}
 
 	@Override
-	public final <T extends Factor<T>> V marshall(T from) {
+	public final <T extends Factor<T>> VV marshall(T from) {
 		if (null == from) return null;
 		return encode(marshallToBSON(from));
 	}
 
-	abstract protected BSONObject decode(V value);
+	abstract protected BSONObject decode(VV value);
 
-	abstract protected V encode(BSONObject value);
+	abstract protected VV encode(BSONObject value);
 
+	@SuppressWarnings("deprecation")
 	private <T extends Factor<T>> T unmarshallFromBSON(BSONObject bson, Class<T> to) {
 		OutputBuffer buf = new BasicOutputBuffer();
 		try {
@@ -56,7 +57,7 @@ public abstract class BsonMarshaller<K, V> extends Marshaller<K, V> {
 				return null;
 			}
 			try {
-				return bsoner.readerFor(to).readValue(buf.toByteArray());
+				return bsoner.reader(to).readValue(buf.toByteArray());
 			} catch (IOException ex) {
 				logger.error("BSON unmarshall failure from " + to.toString(), ex);
 				return null;

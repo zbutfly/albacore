@@ -2,6 +2,7 @@ package net.butfly.albacore.calculus.datasource;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -22,6 +23,7 @@ import org.apache.hadoop.hbase.protobuf.ProtobufUtil;
 import org.apache.hadoop.hbase.util.Base64;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 
@@ -32,21 +34,18 @@ import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.marshall.HbaseMarshaller;
-import net.butfly.albacore.calculus.marshall.Marshaller;
 import net.butfly.albacore.calculus.streaming.JavaBatchPairDStream;
 import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
 
-public class HbaseDataSource extends DataSource<ImmutableBytesWritable, Result, HbaseDataDetail> {
+public class HbaseDataSource extends DataSource<String, ImmutableBytesWritable, Result, HbaseDataDetail> {
 	private static final long serialVersionUID = 3367501286179801635L;
 	String configFile;
 	Connection hconn;
 
-	public HbaseDataSource(String configFile, Marshaller<ImmutableBytesWritable, Result> marshaller) {
+	public HbaseDataSource(String configFile, HbaseMarshaller marshaller) {
 		super(Type.HBASE, null == marshaller ? new HbaseMarshaller() : marshaller);
 		this.configFile = configFile;
-		// XXX
-		// this.hconn = ConnectionFactory.createConnection(conf)
 	}
 
 	@Override
@@ -96,17 +95,36 @@ public class HbaseDataSource extends DataSource<ImmutableBytesWritable, Result, 
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
-	public <K, F extends Factor<F>> JavaPairRDD<K, F> stocking(JavaSparkContext sc, Class<F> factor, HbaseDataDetail detail) {
+	public <F extends Factor<F>> JavaPairRDD<String, F> stocking(JavaSparkContext sc, Class<F> factor, HbaseDataDetail detail) {
+		return this.scan(sc, detail.hbaseTable, factor, null);
+	}
+
+	@Override
+	public <F extends Factor<F>> JavaPairDStream<String, F> batching(JavaStreamingContext ssc, Class<F> factor, long batching,
+			HbaseDataDetail detail, Class<String> kClass, Class<F> vClass) {
+		Function2<Long, String, JavaPairRDD<String, F>> batcher = (limit, offset) -> {
+			Scan scan = createScan().setFilter(new PageFilter(limit));
+			if (null != scan) scan.setStartRow(marshaller.marshallId((String) offset).copyBytes());
+			return scan(ssc.sparkContext(), detail.hbaseTable, factor, scan);
+		};
+		return new JavaBatchPairDStream<String, F>(ssc, batcher, batching, kClass, vClass);
+	}
+
+	private <F extends Factor<F>> JavaPairRDD<String, F> scan(JavaSparkContext sc, String table, Class<F> factor, Scan scan) {
 		Configuration hconf = HBaseConfiguration.create();
 		try {
 			hconf.addResource(Calculator.scanInputStream(this.configFile));
 		} catch (IOException e) {
 			throw new RuntimeException("HBase configuration invalid.", e);
 		}
-		hconf.set(TableInputFormat.INPUT_TABLE, detail.hbaseTable);
-		if (Calculator.debug) {
+		hconf.set(TableInputFormat.INPUT_TABLE, table);
+		if (null != scan) try {
+			hconf.set(TableInputFormat.SCAN, Base64.encodeBytes(ProtobufUtil.toScan(scan).toByteArray()));
+		} catch (IOException e) {
+			throw new RuntimeException("HBase scan generating failure", e);
+		}
+		else if (Calculator.debug) {
 			float ratio = Float.parseFloat(System.getProperty("calculus.debug.hbase.random.ratio", "0.01"));
 			logger.error("Hbase debugging, random sampling results of " + (ratio * 100)
 					+ "% (can be customized by -Dcalculus.debug.hbase.random.ratio=" + ratio + ")");
@@ -117,40 +135,31 @@ public class HbaseDataSource extends DataSource<ImmutableBytesWritable, Result, 
 				logger.error("Hbase debugging failure, page scan definition error", e);
 			}
 		}
-		// conf.hconf.set(TableInputFormat.SCAN_COLUMNS, "cf1:vc cf1:vs");
-
-		JavaPairRDD<K, F> r = (JavaPairRDD<K, F>) sc
-				.newAPIHadoopRDD(hconf, TableInputFormat.class, ImmutableBytesWritable.class, Result.class).mapToPair(
-						t -> null == t ? null : new Tuple2<>(this.marshaller.unmarshallId(t._1), this.marshaller.unmarshall(t._2, factor)));
-		if (logger.isTraceEnabled()) logger.trace("Stocking from hbase: " + r.count());
-		return r;
+		JavaPairRDD<ImmutableBytesWritable, Result> rr = sc.newAPIHadoopRDD(hconf, TableInputFormat.class, ImmutableBytesWritable.class,
+				Result.class);
+		if (logger.isTraceEnabled()) logger.trace("HBase scaned: " + rr.count());
+		// TODO: Confirm String key
+		return rr.mapToPair(t -> null == t ? null
+				: new Tuple2<String, F>(this.marshaller.unmarshallId(t._1), this.marshaller.unmarshall(t._2, factor)));
 	}
 
-	@SuppressWarnings("unchecked")
-	@Override
-	public <K, F extends Factor<F>> JavaPairDStream<K, F> batching(JavaStreamingContext ssc, Class<F> factor, long batching,
-			HbaseDataDetail detail, Class<K> kClass, Class<F> vClass) {
-		return new JavaBatchPairDStream<K, F>(ssc, (limit, offset) -> {
-			Configuration hconf = HBaseConfiguration.create();
+	private Scan createScan() {
+		Scan sc = new Scan();
+		try {
+			sc.setCaching(-1);
+			sc.setCacheBlocks(false);
+			sc.setSmall(true);
+		} catch (Throwable th) {
+			// XXX
 			try {
-				hconf.addResource(Calculator.scanInputStream(configFile));
-			} catch (IOException e) {
-				throw new RuntimeException("HBase configuration invalid.", e);
-			}
-			hconf.set(TableInputFormat.INPUT_TABLE, detail.hbaseTable);
+				sc.getClass().getMethod("setCacheBlocks", boolean.class).invoke(sc, false);
+				sc.getClass().getMethod("setSmall", boolean.class).invoke(sc, false);
+				sc.getClass().getMethod("setCaching", int.class).invoke(sc, -1);
+			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
+					| SecurityException e) {}
+		}
+		return sc;
 
-			Scan sc = new Scan();
-			if (null != offset) sc = sc.setStartRow(marshaller.marshallId(offset.toString()).copyBytes());
-			sc = sc.setFilter(new PageFilter(limit));
-			String scstr = Base64.encodeBytes(ProtobufUtil.toScan(sc).toByteArray());
-			hconf.set(TableInputFormat.SCAN, scstr);
-			// conf.hconf.set(TableInputFormat.SCAN_COLUMNS, "cf1:vc
-			// cf1:vs");
-			JavaPairRDD<K, F> r = (JavaPairRDD<K, F>) ssc.sparkContext()
-					.newAPIHadoopRDD(hconf, TableInputFormat.class, ImmutableBytesWritable.class, Result.class)
-					.mapToPair(t -> null == t ? null : new Tuple2<>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor)));
-			if (logger.isTraceEnabled()) logger.trace("Batching from hbase: " + r.count());
-			return r;
-		} , batching, kClass, vClass);
 	}
+
 }

@@ -8,23 +8,23 @@ import org.slf4j.LoggerFactory;
 import net.butfly.albacore.calculus.factor.Factor;
 
 @SuppressWarnings("unchecked")
-public abstract class Marshaller<K, V> implements Serializable {
+public abstract class Marshaller<FK, VK, VV> implements Serializable {
 	private static final long serialVersionUID = 6678021328832491260L;
 	protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-	public String unmarshallId(K id) {
-		return null == id ? null : id.toString();
+	public FK unmarshallId(VK id) {
+		return null == id ? null : (FK) id;
 	}
 
-	public <T extends Factor<T>> T unmarshall(V from, Class<T> to) {
+	public <T extends Factor<T>> T unmarshall(VV from, Class<T> to) {
 		return (T) from;
 	}
 
-	public K marshallId(String id) {
-		return (K) id;
+	public VK marshallId(FK id) {
+		return (VK) id;
 	}
 
-	public <T extends Factor<T>> V marshall(T from) {
-		return (V) from;
+	public <T extends Factor<T>> VV marshall(T from) {
+		return (VV) from;
 	}
 }

@@ -23,7 +23,7 @@ import net.butfly.albacore.calculus.datasource.HbaseColumnFamily;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.utils.Reflections;
 
-public class HbaseMarshaller extends Marshaller<ImmutableBytesWritable, Result> {
+public class HbaseMarshaller extends Marshaller<String, ImmutableBytesWritable, Result> {
 	private static final long serialVersionUID = -4529825710243214685L;
 	public static final String SCAN_LIMIT = "hbase.calculus.limit";
 	public static final String SCAN_OFFSET = "hbase.calculus.limit";
@@ -61,7 +61,6 @@ public class HbaseMarshaller extends Marshaller<ImmutableBytesWritable, Result> 
 			}
 		}
 		return t;
-
 	}
 
 	@Override
@@ -71,14 +70,12 @@ public class HbaseMarshaller extends Marshaller<ImmutableBytesWritable, Result> 
 
 	@Override
 	public String unmarshallId(ImmutableBytesWritable id) {
-		if (null == id) return null;
-		return Bytes.toString(id.get());
+		return null == id ? null : Bytes.toString(id.get());
 	}
 
 	@Override
 	public ImmutableBytesWritable marshallId(String id) {
-		if (null == id) return null;
-		return new ImmutableBytesWritable(Bytes.toBytes(id));
+		return null == id ? null : new ImmutableBytesWritable(Bytes.toBytes(id));
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })

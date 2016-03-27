@@ -15,17 +15,16 @@ import kafka.serializer.StringDecoder;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.marshall.KafkaMarshaller;
-import net.butfly.albacore.calculus.marshall.Marshaller;
 import scala.Tuple2;
 
-public class KafkaDataSource extends DataSource<String, byte[], KafkaDataDetail> {
+public class KafkaDataSource extends DataSource<String, String, byte[], KafkaDataDetail> {
 	private static final long serialVersionUID = 7500441385655250814L;
 	String servers;
 	String root;
 	String group;
 	int topicPartitions;
 
-	public KafkaDataSource(String servers, String root, int topicPartitions, String group, Marshaller<String, byte[]> marshaller) {
+	public KafkaDataSource(String servers, String root, int topicPartitions, String group, KafkaMarshaller marshaller) {
 		super(Type.KAFKA, null == marshaller ? new KafkaMarshaller() : marshaller);
 		int pos = servers.indexOf('/');
 		if (root == null && pos >= 0) {
@@ -64,9 +63,8 @@ public class KafkaDataSource extends DataSource<String, byte[], KafkaDataDetail>
 		return topicPartitions;
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
-	public <K, F extends Factor<F>> JavaPairDStream<K, F> streaming(JavaStreamingContext ssc, Class<F> factor, KafkaDataDetail detail) {
+	public <F extends Factor<F>> JavaPairDStream<String, F> streaming(JavaStreamingContext ssc, Class<F> factor, KafkaDataDetail detail) {
 		JavaPairDStream<String, byte[]> kafka;
 		Map<String, String> params = new HashMap<>();
 		if (root == null) { // direct mode
@@ -86,7 +84,7 @@ public class KafkaDataSource extends DataSource<String, byte[], KafkaDataDetail>
 			kafka = KafkaUtils.createStream(ssc, String.class, byte[].class, StringDecoder.class, DefaultDecoder.class, params, topicsMap,
 					StorageLevel.MEMORY_ONLY());
 		}
-		JavaPairDStream<K, F> r = (JavaPairDStream<K, F>) kafka.mapToPair(
+		JavaPairDStream<String, F> r = (JavaPairDStream<String, F>) kafka.mapToPair(
 				t -> null == t ? null : new Tuple2<String, F>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor)));
 		if (logger.isTraceEnabled()) logger.trace("Stocking from hbase: " + r.count().reduce((v1, v2) -> v1 + v2));
 		return r;

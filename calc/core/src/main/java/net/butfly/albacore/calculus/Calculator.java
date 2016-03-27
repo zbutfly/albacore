@@ -16,17 +16,16 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.streaming.Durations;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
-import org.bson.BSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.butfly.albacore.calculus.datasource.ConstDataSource;
+import net.butfly.albacore.calculus.datasource.DataDetail;
+import net.butfly.albacore.calculus.datasource.DataSource;
 import net.butfly.albacore.calculus.datasource.DataSource.DataSources;
 import net.butfly.albacore.calculus.datasource.HbaseDataSource;
 import net.butfly.albacore.calculus.datasource.KafkaDataSource;
@@ -37,7 +36,10 @@ import net.butfly.albacore.calculus.factor.FactorConfig;
 import net.butfly.albacore.calculus.factor.Factoring;
 import net.butfly.albacore.calculus.factor.Factoring.Factorings;
 import net.butfly.albacore.calculus.factor.Factors;
+import net.butfly.albacore.calculus.marshall.HbaseMarshaller;
+import net.butfly.albacore.calculus.marshall.KafkaMarshaller;
 import net.butfly.albacore.calculus.marshall.Marshaller;
+import net.butfly.albacore.calculus.marshall.MongoMarshaller;
 import net.butfly.albacore.calculus.utils.Reflections;
 
 public class Calculator implements Serializable {
@@ -142,7 +144,8 @@ public class Calculator implements Serializable {
 		Class<OF> c = Reflections.resolveGenericParameter(calculus.getClass(), Calculus.class, "OF");
 		logger.info(calculus.name + " will output as: " + c.toString());
 		FactorConfig<OK, OF> s = Factors.scan(Mode.STOCKING, c, dss, validate);
-		dss.ds(s.dbid).save(sc, calculus.calculate(ssc, new Factors(ssc, mode, dss, validate, factorings)), s.detail);
+		DataSource<OK, ?, ?, DataDetail> ds = dss.ds(s.dbid);
+		ds.save(sc, calculus.calculate(ssc, new Factors(ssc, mode, dss, validate, factorings)), s.detail);
 		ssc.start();
 		logger.info(calculus.name + " started. ");
 		ssc.awaitTermination();
@@ -163,13 +166,12 @@ public class Calculator implements Serializable {
 		return r;
 	}
 
-	@SuppressWarnings("unchecked")
 	private void parseDatasources(String appname, Map<String, Properties> dsprops) {
 		for (String dsid : dsprops.keySet()) {
 			Properties dbprops = dsprops.get(dsid);
-			Marshaller<?, ?> m;
+			Marshaller<?, ?, ?> m;
 			try {
-				m = (Marshaller<?, ?>) Class.forName(dbprops.getProperty("marshaller")).newInstance();
+				m = (Marshaller<?, ?, ?>) Class.forName(dbprops.getProperty("marshaller")).newInstance();
 			} catch (Exception e) {
 				m = null;
 			}
@@ -179,18 +181,17 @@ public class Calculator implements Serializable {
 				dss.put(dsid, new ConstDataSource(dbprops.getProperty("values").split(",")));
 				break;
 			case HBASE:
-				dss.put(dsid, new HbaseDataSource(dbprops.getProperty("config", "hbase-site.xml"),
-						(Marshaller<ImmutableBytesWritable, Result>) m));
+				dss.put(dsid, new HbaseDataSource(dbprops.getProperty("config", "hbase-site.xml"), (HbaseMarshaller) m));
 				break;
 			case MONGODB:
-				dss.put(dsid, new MongoDataSource(dbprops.getProperty("uri"), (Marshaller<Object, BSONObject>) m));
+				dss.put(dsid, new MongoDataSource(dbprops.getProperty("uri"), (MongoMarshaller) m));
 				// , dbprops.getProperty("authdb"),dbprops.getProperty("authdb")
 				break;
 			case KAFKA:
 				dss.put(dsid,
 						new KafkaDataSource(dbprops.getProperty("servers"), dbprops.getProperty("root"),
 								Integer.parseInt(dbprops.getProperty("topic.partitions", "1")),
-								debug ? appname + UUID.randomUUID().toString() : appname, (Marshaller<String, byte[]>) m));
+								debug ? appname + UUID.randomUUID().toString() : appname, (KafkaMarshaller) m));
 				break;
 			default:
 				logger.warn("Unsupportted type: " + type);

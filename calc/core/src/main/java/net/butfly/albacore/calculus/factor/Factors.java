@@ -11,6 +11,7 @@ import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.bson.BSONObject;
 
 import net.butfly.albacore.calculus.Mode;
+import net.butfly.albacore.calculus.datasource.DataDetail;
 import net.butfly.albacore.calculus.datasource.DataSource;
 import net.butfly.albacore.calculus.datasource.DataSource.DataSources;
 import net.butfly.albacore.calculus.datasource.HbaseDataDetail;
@@ -75,33 +76,32 @@ public final class Factors extends HashMap<String, JavaPairDStream<?, ? extends 
 	}
 
 	private <K, F extends Factor<F>> void read(Mode mode, String key, FactorConfig<K, F> config) {
+		DataSource<K, ?, ?, DataDetail> ds = dss.ds(config.dbid);
+		Class<F> fc = config.factorClass;
 		switch (mode) {
 		case STOCKING:
-			if (config.batching <= 0)
-				this.stocking(key, dss.ds(config.dbid).stocking(ssc.sparkContext(), config.factorClass, config.detail), ssc);
-			else this.streaming(key, dss.ds(config.dbid).batching(ssc, config.factorClass, config.batching, config.detail, config.keyClass,
-					config.factorClass));
+			if (config.batching <= 0) this.stocking(key, ds.stocking(ssc.sparkContext(), fc, config.detail), ssc);
+			else this.streaming(key, ds.batching(ssc, fc, config.batching, config.detail, config.keyClass, fc));
 			break;
 		case STREAMING:
 			switch (config.mode) {
 			case STOCKING:
 				switch (config.streaming) {
 				case ONCE:
-					this.streaming(key, (JavaPairDStream<K, F>) new JavaConstPairDStream<K, F>(ssc,
-							dss.ds(config.dbid).stocking(ssc.sparkContext(), config.factorClass, config.detail)).persist());
+					this.streaming(key,
+							(JavaPairDStream<K, F>) new JavaConstPairDStream<K, F>(ssc, ds.stocking(ssc.sparkContext(), fc, config.detail))
+									.persist());
 					break;
 				case EACH:
-					this.streaming(key,
-							new JavaFreshPairDStream<K, F>(ssc,
-									() -> dss.ds(config.dbid).stocking(ssc.sparkContext(), config.factorClass, config.detail),
-									config.keyClass, config.factorClass));
+					this.streaming(key, new JavaFreshPairDStream<K, F>(ssc, () -> ds.stocking(ssc.sparkContext(), fc, config.detail),
+							config.keyClass, fc));
 					break;
 				case CACHE:
 					throw new NotImplementedException();
 				}
 				break;
 			case STREAMING:
-				this.streaming(key, dss.ds(config.dbid).streaming(ssc, config.factorClass, config.detail));
+				this.streaming(key, ds.streaming(ssc, fc, config.detail));
 				break;
 			}
 			break;
@@ -132,7 +132,7 @@ public final class Factors extends HashMap<String, JavaPairDStream<?, ? extends 
 					throw new IllegalArgumentException("Table not defined for factor " + factor.toString());
 				config.detail = new HbaseDataDetail(s.table());
 				if (validate) {
-					DataSource<ImmutableBytesWritable, Result, HbaseDataDetail> hds = dss.ds(s.source());
+					DataSource<String, ImmutableBytesWritable, Result, HbaseDataDetail> hds = dss.ds(s.source());
 					hds.confirm(factor, (HbaseDataDetail) config.detail);
 				}
 				break;
@@ -141,7 +141,7 @@ public final class Factors extends HashMap<String, JavaPairDStream<?, ? extends 
 					throw new IllegalArgumentException("Table not defined for factor " + factor.toString());
 				config.detail = new MongoDataDetail(s.table(), Factor.NOT_DEFINED.equals(s.filter()) ? null : s.filter());
 				if (validate) {
-					DataSource<Object, BSONObject, MongoDataDetail> hds = dss.ds(s.source());
+					DataSource<Object, Object, BSONObject, MongoDataDetail> hds = dss.ds(s.source());
 					hds.confirm(factor, (MongoDataDetail) config.detail);
 				}
 				break;
