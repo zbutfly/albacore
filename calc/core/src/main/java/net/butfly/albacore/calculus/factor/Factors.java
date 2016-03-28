@@ -22,7 +22,7 @@ import net.butfly.albacore.calculus.factor.Factor.Streaming;
 import net.butfly.albacore.calculus.streaming.JavaConstPairDStream;
 import net.butfly.albacore.calculus.streaming.JavaFreshPairDStream;
 
-@SuppressWarnings("unchecked")
+@SuppressWarnings({ "unchecked", "deprecation" })
 public final class Factors extends HashMap<String, JavaPairDStream<?, ? extends Factor<?>>> {
 	private static final long serialVersionUID = -3712903710207597570L;
 	private JavaStreamingContext ssc;

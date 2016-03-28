@@ -44,6 +44,7 @@ public abstract class DataSource<FK, K, V, D extends DataDetail> implements Seri
 		throw new UnsupportedOperationException("Unsupportted stocking mode: " + type + " on " + factor.toString());
 	}
 
+	@Deprecated
 	public <F extends Factor<F>> JavaPairDStream<FK, F> batching(JavaStreamingContext ssc, Class<F> factor, long batching, D detail,
 			Class<FK> kClass, Class<F> vClass) {
 		throw new UnsupportedOperationException("Unsupportted stocking mode with batching: " + type + " on " + factor.toString());

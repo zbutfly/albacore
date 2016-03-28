@@ -3,7 +3,9 @@ package net.butfly.albacore.calculus.datasource;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
@@ -18,7 +20,6 @@ import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.filter.PageFilter;
 import org.apache.hadoop.hbase.filter.RandomRowFilter;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
-import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
 import org.apache.hadoop.hbase.protobuf.ProtobufUtil;
 import org.apache.hadoop.hbase.util.Base64;
 import org.apache.spark.api.java.JavaPairRDD;
@@ -29,6 +30,7 @@ import org.apache.spark.streaming.api.java.JavaStreamingContext;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.CaseFormat;
+import com.google.common.base.Joiner;
 
 import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
@@ -38,6 +40,7 @@ import net.butfly.albacore.calculus.streaming.JavaBatchPairDStream;
 import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
 
+@SuppressWarnings("deprecation")
 public class HbaseDataSource extends DataSource<String, ImmutableBytesWritable, Result, HbaseDataDetail> {
 	private static final long serialVersionUID = 3367501286179801635L;
 	String configFile;
@@ -101,42 +104,45 @@ public class HbaseDataSource extends DataSource<String, ImmutableBytesWritable, 
 	}
 
 	@Override
+	@Deprecated
 	public <F extends Factor<F>> JavaPairDStream<String, F> batching(JavaStreamingContext ssc, Class<F> factor, long batching,
 			HbaseDataDetail detail, Class<String> kClass, Class<F> vClass) {
-		Function2<Long, String, JavaPairRDD<String, F>> batcher = (limit, offset) -> {
-			Scan scan = createScan().setFilter(new PageFilter(limit));
-			if (null != scan) scan.setStartRow(marshaller.marshallId((String) offset).copyBytes());
-			return scan(ssc.sparkContext(), detail.hbaseTable, factor, scan);
+		logger.error("Batching mode is not supported now... BUG!!!!!");
+		Function2<Long, String[], JavaPairRDD<String, F>> batcher = (limit, offsets) -> {
+			Map<String, String> params = new HashMap<>();
+			params.put(BatchTableInputFormat.SCAN,
+					Base64.encodeBytes(ProtobufUtil.toScan(createScan().setFilter(new PageFilter(limit))).toByteArray()));
+			if (null != offsets && offsets.length > 0) params.put("hbase.mapreduce.batching.offsets", Joiner.on(',').join(offsets));
+			return scan(ssc.sparkContext(), detail.hbaseTable, factor, params);
 		};
 		return new JavaBatchPairDStream<String, F>(ssc, batcher, batching, kClass, vClass);
 	}
 
-	private <F extends Factor<F>> JavaPairRDD<String, F> scan(JavaSparkContext sc, String table, Class<F> factor, Scan scan) {
+	private <F extends Factor<F>> JavaPairRDD<String, F> scan(JavaSparkContext sc, String table, Class<F> factor,
+			Map<String, String> params) {
+		if (logger.isDebugEnabled()) logger.debug("Scaning begin: " + factor.toString() + ", from table: " + table + ".");
 		Configuration hconf = HBaseConfiguration.create();
 		try {
 			hconf.addResource(Calculator.scanInputStream(this.configFile));
 		} catch (IOException e) {
 			throw new RuntimeException("HBase configuration invalid.", e);
 		}
-		hconf.set(TableInputFormat.INPUT_TABLE, table);
-		if (null != scan) try {
-			hconf.set(TableInputFormat.SCAN, Base64.encodeBytes(ProtobufUtil.toScan(scan).toByteArray()));
-		} catch (IOException e) {
-			throw new RuntimeException("HBase scan generating failure", e);
-		}
+		hconf.set(BatchTableInputFormat.INPUT_TABLE, table);
+		if (null != params && !params.isEmpty()) for (Map.Entry<String, String> p : params.entrySet())
+			hconf.set(p.getKey(), p.getValue());
 		else if (Calculator.debug) {
 			float ratio = Float.parseFloat(System.getProperty("calculus.debug.hbase.random.ratio", "0.01"));
 			logger.error("Hbase debugging, random sampling results of " + (ratio * 100)
 					+ "% (can be customized by -Dcalculus.debug.hbase.random.ratio=" + ratio + ")");
 			try {
-				hconf.set(TableInputFormat.SCAN,
+				hconf.set(BatchTableInputFormat.SCAN,
 						Base64.encodeBytes(ProtobufUtil.toScan(new Scan().setFilter(new RandomRowFilter(ratio))).toByteArray()));
 			} catch (IOException e) {
 				logger.error("Hbase debugging failure, page scan definition error", e);
 			}
 		}
-		JavaPairRDD<ImmutableBytesWritable, Result> rr = sc.newAPIHadoopRDD(hconf, TableInputFormat.class, ImmutableBytesWritable.class,
-				Result.class);
+		JavaPairRDD<ImmutableBytesWritable, Result> rr = sc.newAPIHadoopRDD(hconf, BatchTableInputFormat.class,
+				ImmutableBytesWritable.class, Result.class);
 		if (logger.isTraceEnabled()) logger.trace("HBase scaned: " + rr.count());
 		// TODO: Confirm String key
 		return rr.mapToPair(t -> null == t ? null
@@ -161,5 +167,4 @@ public class HbaseDataSource extends DataSource<String, ImmutableBytesWritable, 
 		return sc;
 
 	}
-
 }

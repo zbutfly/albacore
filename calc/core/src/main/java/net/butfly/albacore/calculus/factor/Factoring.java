@@ -14,6 +14,7 @@ public @interface Factoring {
 
 	String key();
 
+	@Deprecated
 	long batching() default 0L;
 
 	OnStreaming stockOnStreaming() default OnStreaming.ONCE;

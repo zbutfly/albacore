@@ -79,6 +79,7 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Mong
 
 	@Override
 	public <F extends Factor<F>> JavaPairRDD<Object, F> stocking(JavaSparkContext sc, Class<F> factor, MongoDataDetail detail) {
+		if (logger.isDebugEnabled()) logger.debug("Stocking begin: " + factor.toString());
 		Configuration mconf = new Configuration();
 		mconf.set("mongo.job.input.format", "com.mongodb.hadoop.MongoInputFormat");
 		MongoClientURI uri = new MongoClientURI(this.uri);
@@ -88,7 +89,7 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Mong
 		// conf.mconf.set("mongo.input.fields
 		mconf.set("mongo.input.notimeout", "true");
 		JavaPairRDD<Object, BSONObject> rr = sc.newAPIHadoopRDD(mconf, MongoInputFormat.class, Object.class, BSONObject.class);
-		if (logger.isTraceEnabled()) logger.trace("MongoDB loaded: " + rr.count());
+		if (logger.isTraceEnabled()) logger.trace("MongoDB read: " + rr.count());
 		return rr.mapToPair(t -> null == t ? null
 				: new Tuple2<Object, F>(this.marshaller.unmarshallId(t._1), this.marshaller.unmarshall(t._2, factor)));
 	}
@@ -102,7 +103,7 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Mong
 		return r -> {
 			r.mapToPair(t -> {
 				BasicBSONObject q = new BasicBSONObject();
-				q.append("_id", this.marshaller.marshallId((String) t._1));
+				q.append("_id", this.marshaller.marshallId(t._1));
 				BasicBSONObject u = new BasicBSONObject();
 				u.append("$set", this.marshaller.marshall(t._2));
 				return new Tuple2<Object, MongoUpdateWritable>(null, new MongoUpdateWritable(q, u, true, true));
