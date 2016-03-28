@@ -75,7 +75,7 @@ public abstract class DataSource<FK, K, V, D extends DataDetail> implements Seri
 	public <F extends Factor<F>> void save(JavaSparkContext sc, JavaPairDStream<FK, F> calculate, D detail) {
 		VoidFunction<JavaPairRDD<FK, F>> hh = saving(sc, detail);
 		calculate.foreachRDD(rdd -> {
-			hh.call(rdd);
+			if (null != rdd && !rdd.isEmpty()) hh.call(rdd);
 			return null;
 		});
 	}

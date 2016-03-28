@@ -130,20 +130,26 @@ public class HbaseDataSource extends DataSource<String, ImmutableBytesWritable, 
 		hconf.set(BatchTableInputFormat.INPUT_TABLE, table);
 		if (null != params && !params.isEmpty()) for (Map.Entry<String, String> p : params.entrySet())
 			hconf.set(p.getKey(), p.getValue());
-		else if (Calculator.debug) {
-			float ratio = Float.parseFloat(System.getProperty("calculus.debug.hbase.random.ratio", "0.01"));
-			logger.error("Hbase debugging, random sampling results of " + (ratio * 100)
-					+ "% (can be customized by -Dcalculus.debug.hbase.random.ratio=" + ratio + ")");
-			try {
+		else if (Calculator.debug) try {
+			float ratio = Float.parseFloat(System.getProperty("calculus.debug.hbase.random.ratio", "0"));
+			if (ratio > 0) {
+				logger.error("Hbase debugging, random sampling results of " + ratio
+						+ " (can be customized by -Dcalculus.debug.hbase.random.ratio=0.00000X)");
 				hconf.set(BatchTableInputFormat.SCAN,
 						Base64.encodeBytes(ProtobufUtil.toScan(new Scan().setFilter(new RandomRowFilter(ratio))).toByteArray()));
-			} catch (IOException e) {
-				logger.error("Hbase debugging failure, page scan definition error", e);
+			} else {
+				long limit = Long.parseLong(System.getProperty("calculus.debug.hbase.limit", "500"));
+				if (limit <= 0) limit = 500;
+				logger.error("Hbase debugging, limit results in " + limit + " (can be customized by -Dcalculus.debug.hbase.limit=100)");
+				hconf.set(BatchTableInputFormat.SCAN,
+						Base64.encodeBytes(ProtobufUtil.toScan(new Scan().setFilter(new PageFilter(limit))).toByteArray()));
 			}
+		} catch (IOException e) {
+			logger.error("Hbase debugging failure, page scan definition error", e);
 		}
 		JavaPairRDD<ImmutableBytesWritable, Result> rr = sc.newAPIHadoopRDD(hconf, BatchTableInputFormat.class,
 				ImmutableBytesWritable.class, Result.class);
-		if (logger.isTraceEnabled()) logger.trace("HBase scaned: " + rr.count());
+		if (Calculator.debug && logger.isTraceEnabled()) logger.trace("HBase scaned: " + rr.count());
 		// TODO: Confirm String key
 		return rr.mapToPair(t -> null == t ? null
 				: new Tuple2<String, F>(this.marshaller.unmarshallId(t._1), this.marshaller.unmarshall(t._2, factor)));
