@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factors;
 import net.butfly.albacore.calculus.functor.Functor;
+import net.butfly.albacore.calculus.streaming.JavaConstPairDStream;
 
 public abstract class Calculus<OK, OF extends Factor<OF>> implements Serializable {
 	private static final long serialVersionUID = 6432707546470042520L;
@@ -83,5 +84,11 @@ public abstract class Calculus<OK, OF extends Factor<OF>> implements Serializabl
 		for (JavaDStreamLike r : s)
 			if (null == r) return false;
 		return true;
+	}
+
+	@SuppressWarnings("rawtypes")
+	protected void cleanup(JavaDStreamLike... stream) {
+		for (JavaDStreamLike s : stream)
+			if (s instanceof JavaConstPairDStream) ((JavaConstPairDStream) s).cleanup();
 	}
 }

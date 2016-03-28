@@ -21,4 +21,9 @@ public class JavaConstPairDStream<K, V> extends JavaWrappedPairInputDStream<K, V
 		Option<RDD<Tuple2<K, V>>> o = this.dstream().compute(null);
 		return o.isDefined() && !o.isEmpty() ? o.get().count() : 0;
 	}
+
+	public void cleanup() {
+		Option<RDD<Tuple2<K, V>>> o = this.dstream().compute(null);
+		if (o.isDefined()) o.get().clearDependencies();
+	}
 }
