@@ -7,7 +7,6 @@ import org.apache.spark.api.java.JavaRDDLike;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.streaming.api.java.JavaDStreamLike;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
-import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,6 +18,7 @@ import net.butfly.albacore.calculus.streaming.JavaConstPairDStream;
 public abstract class Calculus<OK, OF extends Factor<OF>> implements Serializable {
 	private static final long serialVersionUID = 6432707546470042520L;
 	public String name;
+	public Calculator calc;
 	protected final Logger logger;
 
 	public Calculus() {
@@ -29,19 +29,19 @@ public abstract class Calculus<OK, OF extends Factor<OF>> implements Serializabl
 		return new Functor[0];
 	}
 
-	abstract public JavaPairDStream<OK, OF> calculate(final JavaStreamingContext ssc, final Factors factors);
+	abstract public JavaPairDStream<OK, OF> calculate(final Factors factors);
 
 	protected boolean saving(JavaPairRDD<OK, OF> r) {
 		return true;
 	}
 
 	protected void traceCount(JavaPairRDD<?, ?> rdd) {
-		if (Calculator.debug && logger.isTraceEnabled())
+		if (calc.debug && logger.isTraceEnabled())
 			logger.trace(rdd.name() + "[for" + rdd.kClassTag().toString() + ":" + rdd.vClassTag().toString() + "] count: " + rdd.count());
 	}
 
 	protected void traceCount(JavaPairRDD<?, ?> rdd, double sd) {
-		if (Calculator.debug && logger.isTraceEnabled()) {
+		if (calc.debug && logger.isTraceEnabled()) {
 			logger.trace(rdd.name() + "[for" + rdd.kClassTag().toString() + ":" + rdd.vClassTag().toString() + "] count: "
 					+ rdd.countApproxDistinct(sd));
 		}
@@ -49,7 +49,7 @@ public abstract class Calculus<OK, OF extends Factor<OF>> implements Serializabl
 
 	@SuppressWarnings("deprecation")
 	protected void traceCount(JavaPairDStream<?, ?> stream) {
-		if (Calculator.debug && logger.isTraceEnabled()) {
+		if (calc.debug && logger.isTraceEnabled()) {
 			stream.count().foreachRDD(rdd -> {
 				logger.trace(rdd.name() + "[for" + stream.kManifest().toString() + ":" + stream.kManifest().toString() + "] count: "
 						+ rdd.reduce((c1, c2) -> c1 + c2));
@@ -59,14 +59,14 @@ public abstract class Calculus<OK, OF extends Factor<OF>> implements Serializabl
 	}
 
 	protected <K, V> void traceInfo(JavaPairRDD<K, V> rdd, Function2<K, V, String> func) {
-		if (Calculator.debug && logger.isTraceEnabled() && !rdd.isEmpty()) rdd.foreach(t -> {
+		if (calc.debug && logger.isTraceEnabled() && !rdd.isEmpty()) rdd.foreach(t -> {
 			logger.trace(func.call(t._1, t._2));
 		});
 	}
 
 	@SuppressWarnings("deprecation")
 	protected <K, V> void traceInfo(JavaPairDStream<K, V> stream, Function2<K, V, String> func) {
-		if (Calculator.debug && logger.isTraceEnabled()) stream.foreachRDD(rdd -> {
+		if (calc.debug && logger.isTraceEnabled()) stream.foreachRDD(rdd -> {
 			traceInfo(rdd, func);
 			return null;
 		});
@@ -90,5 +90,10 @@ public abstract class Calculus<OK, OF extends Factor<OF>> implements Serializabl
 	protected void cleanup(JavaDStreamLike... stream) {
 		for (JavaDStreamLike s : stream)
 			if (s instanceof JavaConstPairDStream) ((JavaConstPairDStream) s).cleanup();
+	}
+
+	final Calculus<OK, OF> calculator(Calculator calculator) {
+		this.calc = calculator;
+		return this;
 	}
 }

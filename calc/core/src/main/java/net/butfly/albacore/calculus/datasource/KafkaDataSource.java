@@ -7,11 +7,11 @@ import java.util.Map;
 
 import org.apache.spark.storage.StorageLevel;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
-import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.spark.streaming.kafka.KafkaUtils;
 
 import kafka.serializer.DefaultDecoder;
 import kafka.serializer.StringDecoder;
+import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.marshall.KafkaMarshaller;
@@ -64,7 +64,7 @@ public class KafkaDataSource extends DataSource<String, String, byte[], KafkaDat
 	}
 
 	@Override
-	public <F extends Factor<F>> JavaPairDStream<String, F> streaming(JavaStreamingContext ssc, Class<F> factor, KafkaDataDetail detail) {
+	public <F extends Factor<F>> JavaPairDStream<String, F> streaming(Calculator calc, Class<F> factor, KafkaDataDetail detail) {
 		if (logger.isDebugEnabled()) logger.debug("Streaming begin: " + factor.toString());
 		JavaPairDStream<String, byte[]> kafka;
 		Map<String, String> params = new HashMap<>();
@@ -73,7 +73,7 @@ public class KafkaDataSource extends DataSource<String, String, byte[], KafkaDat
 			// params.put("bootstrap.servers", ks.getServers());
 			// params.put("auto.commit.enable", "false");
 			params.put("group.id", group);
-			kafka = KafkaUtils.createDirectStream(ssc, String.class, byte[].class, StringDecoder.class, DefaultDecoder.class, params,
+			kafka = KafkaUtils.createDirectStream(calc.ssc, String.class, byte[].class, StringDecoder.class, DefaultDecoder.class, params,
 					new HashSet<String>(Arrays.asList(detail.kafkaTopics)));
 		} else {
 			params.put("bootstrap.servers", servers);
@@ -82,8 +82,8 @@ public class KafkaDataSource extends DataSource<String, String, byte[], KafkaDat
 			Map<String, Integer> topicsMap = new HashMap<>();
 			for (String t : detail.kafkaTopics)
 				topicsMap.put(t, topicPartitions);
-			kafka = KafkaUtils.createStream(ssc, String.class, byte[].class, StringDecoder.class, DefaultDecoder.class, params, topicsMap,
-					StorageLevel.MEMORY_ONLY());
+			kafka = KafkaUtils.createStream(calc.ssc, String.class, byte[].class, StringDecoder.class, DefaultDecoder.class, params,
+					topicsMap, StorageLevel.MEMORY_ONLY());
 		}
 		JavaPairDStream<String, F> r = (JavaPairDStream<String, F>) kafka.mapToPair(
 				t -> null == t ? null : new Tuple2<String, F>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor)));

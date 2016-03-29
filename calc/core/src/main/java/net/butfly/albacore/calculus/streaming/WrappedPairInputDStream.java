@@ -26,7 +26,8 @@ public abstract class WrappedPairInputDStream<K, V> extends InputDStream<Tuple2<
 
 	@Override
 	public Option<RDD<Tuple2<K, V>>> compute(Time arg0) {
-		return Option.empty();
+		trace(() -> "RDD [" + name() + "] computed: " + (null == current ? null : current.count()) + ".");
+		return null == current ? Option.empty() : Option.apply(current.rdd());
 	}
 
 	private static <K, V> ClassTag<Tuple2<K, V>> classTag(JavaSparkContext sc, Class<K> kClass, Class<V> vClass) {

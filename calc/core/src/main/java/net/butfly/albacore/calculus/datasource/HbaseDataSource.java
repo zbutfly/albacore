@@ -23,10 +23,8 @@ import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.protobuf.ProtobufUtil;
 import org.apache.hadoop.hbase.util.Base64;
 import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
-import org.apache.spark.streaming.api.java.JavaStreamingContext;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.CaseFormat;
@@ -99,13 +97,13 @@ public class HbaseDataSource extends DataSource<String, ImmutableBytesWritable, 
 	}
 
 	@Override
-	public <F extends Factor<F>> JavaPairRDD<String, F> stocking(JavaSparkContext sc, Class<F> factor, HbaseDataDetail detail) {
-		return this.scan(sc, detail.hbaseTable, factor, null);
+	public <F extends Factor<F>> JavaPairRDD<String, F> stocking(Calculator calc, Class<F> factor, HbaseDataDetail detail) {
+		return this.scan(calc, detail.hbaseTable, factor, null);
 	}
 
 	@Override
 	@Deprecated
-	public <F extends Factor<F>> JavaPairDStream<String, F> batching(JavaStreamingContext ssc, Class<F> factor, long batching,
+	public <F extends Factor<F>> JavaPairDStream<String, F> batching(Calculator calc, Class<F> factor, long batching,
 			HbaseDataDetail detail, Class<String> kClass, Class<F> vClass) {
 		logger.error("Batching mode is not supported now... BUG!!!!!");
 		Function2<Long, String[], JavaPairRDD<String, F>> batcher = (limit, offsets) -> {
@@ -113,13 +111,12 @@ public class HbaseDataSource extends DataSource<String, ImmutableBytesWritable, 
 			params.put(BatchTableInputFormat.SCAN,
 					Base64.encodeBytes(ProtobufUtil.toScan(createScan().setFilter(new PageFilter(limit))).toByteArray()));
 			if (null != offsets && offsets.length > 0) params.put("hbase.mapreduce.batching.offsets", Joiner.on(',').join(offsets));
-			return scan(ssc.sparkContext(), detail.hbaseTable, factor, params);
+			return scan(calc, detail.hbaseTable, factor, params);
 		};
-		return new JavaBatchPairDStream<String, F>(ssc, batcher, batching, kClass, vClass);
+		return new JavaBatchPairDStream<String, F>(calc.ssc, batcher, batching, kClass, vClass);
 	}
 
-	private <F extends Factor<F>> JavaPairRDD<String, F> scan(JavaSparkContext sc, String table, Class<F> factor,
-			Map<String, String> params) {
+	private <F extends Factor<F>> JavaPairRDD<String, F> scan(Calculator calc, String table, Class<F> factor, Map<String, String> params) {
 		if (logger.isDebugEnabled()) logger.debug("Scaning begin: " + factor.toString() + ", from table: " + table + ".");
 		Configuration hconf = HBaseConfiguration.create();
 		try {
@@ -130,7 +127,7 @@ public class HbaseDataSource extends DataSource<String, ImmutableBytesWritable, 
 		hconf.set(BatchTableInputFormat.INPUT_TABLE, table);
 		if (null != params && !params.isEmpty()) for (Map.Entry<String, String> p : params.entrySet())
 			hconf.set(p.getKey(), p.getValue());
-		else if (Calculator.debug) try {
+		else if (calc.debug) try {
 			float ratio = Float.parseFloat(System.getProperty("calculus.debug.hbase.random.ratio", "0"));
 			if (ratio > 0) {
 				logger.error("Hbase debugging, random sampling results of " + ratio
@@ -147,9 +144,9 @@ public class HbaseDataSource extends DataSource<String, ImmutableBytesWritable, 
 		} catch (IOException e) {
 			logger.error("Hbase debugging failure, page scan definition error", e);
 		}
-		JavaPairRDD<ImmutableBytesWritable, Result> rr = sc.newAPIHadoopRDD(hconf, BatchTableInputFormat.class,
+		JavaPairRDD<ImmutableBytesWritable, Result> rr = calc.sc.newAPIHadoopRDD(hconf, BatchTableInputFormat.class,
 				ImmutableBytesWritable.class, Result.class);
-		if (Calculator.debug && logger.isTraceEnabled()) logger.trace("HBase scaned: " + rr.count());
+		if (calc.debug && logger.isTraceEnabled()) logger.trace("HBase scaned: " + rr.count());
 		// TODO: Confirm String key
 		return rr.mapToPair(t -> null == t ? null
 				: new Tuple2<String, F>(this.marshaller.unmarshallId(t._1), this.marshaller.unmarshall(t._2, factor)));

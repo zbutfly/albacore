@@ -4,13 +4,12 @@ import java.io.Serializable;
 import java.util.HashMap;
 
 import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
-import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.marshall.Marshaller;
@@ -40,21 +39,21 @@ public abstract class DataSource<FK, K, V, D extends DataDetail> implements Seri
 		return "CalculatorDataSource:" + this.type;
 	}
 
-	public <F extends Factor<F>> JavaPairRDD<FK, F> stocking(JavaSparkContext sc, Class<F> factor, D detail) {
+	public <F extends Factor<F>> JavaPairRDD<FK, F> stocking(Calculator calc, Class<F> factor, D detail) {
 		throw new UnsupportedOperationException("Unsupportted stocking mode: " + type + " on " + factor.toString());
 	}
 
 	@Deprecated
-	public <F extends Factor<F>> JavaPairDStream<FK, F> batching(JavaStreamingContext ssc, Class<F> factor, long batching, D detail,
+	public <F extends Factor<F>> JavaPairDStream<FK, F> batching(Calculator calc, Class<F> factor, long batching, D detail,
 			Class<FK> kClass, Class<F> vClass) {
 		throw new UnsupportedOperationException("Unsupportted stocking mode with batching: " + type + " on " + factor.toString());
 	}
 
-	public <F extends Factor<F>> JavaPairDStream<FK, F> streaming(JavaStreamingContext ssc, Class<F> factor, D detail) {
+	public <F extends Factor<F>> JavaPairDStream<FK, F> streaming(Calculator calc, Class<F> factor, D detail) {
 		throw new UnsupportedOperationException("Unsupportted streaming mode: " + type + " on " + factor.toString());
 	}
 
-	public <F extends Factor<F>> VoidFunction<JavaPairRDD<FK, F>> saving(JavaSparkContext sc, D detail) {
+	public <F extends Factor<F>> VoidFunction<JavaPairRDD<FK, F>> saving(Calculator calc, D detail) {
 		throw new UnsupportedOperationException("Unsupportted saving: " + type);
 	}
 
@@ -72,8 +71,8 @@ public abstract class DataSource<FK, K, V, D extends DataDetail> implements Seri
 	}
 
 	@SuppressWarnings("deprecation")
-	public <F extends Factor<F>> void save(JavaSparkContext sc, JavaPairDStream<FK, F> calculate, D detail) {
-		VoidFunction<JavaPairRDD<FK, F>> hh = saving(sc, detail);
+	public <F extends Factor<F>> void save(Calculator calc, JavaPairDStream<FK, F> calculate, D detail) {
+		VoidFunction<JavaPairRDD<FK, F>> hh = saving(calc, detail);
 		if (null != calculate) calculate.foreachRDD(rdd -> {
 			if (null != rdd && !rdd.isEmpty()) hh.call(rdd);
 			return null;

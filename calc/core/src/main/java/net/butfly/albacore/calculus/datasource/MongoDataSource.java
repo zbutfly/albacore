@@ -5,7 +5,6 @@ import java.lang.reflect.Field;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.bson.BSONObject;
 import org.bson.BasicBSONObject;
@@ -24,6 +23,7 @@ import com.mongodb.hadoop.MongoOutputFormat;
 import com.mongodb.hadoop.io.MongoUpdateWritable;
 import com.mongodb.hadoop.util.MongoClientURIBuilder;
 
+import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.marshall.MongoMarshaller;
@@ -78,7 +78,7 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Mong
 	}
 
 	@Override
-	public <F extends Factor<F>> JavaPairRDD<Object, F> stocking(JavaSparkContext sc, Class<F> factor, MongoDataDetail detail) {
+	public <F extends Factor<F>> JavaPairRDD<Object, F> stocking(Calculator calc, Class<F> factor, MongoDataDetail detail) {
 		if (logger.isDebugEnabled()) logger.debug("Stocking begin: " + factor.toString());
 		Configuration mconf = new Configuration();
 		mconf.set("mongo.job.input.format", "com.mongodb.hadoop.MongoInputFormat");
@@ -88,14 +88,14 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Mong
 		if (detail.mongoFilter != null && !"".equals(detail.mongoFilter)) mconf.set("mongo.input.query", detail.mongoFilter);
 		// conf.mconf.set("mongo.input.fields
 		mconf.set("mongo.input.notimeout", "true");
-		JavaPairRDD<Object, BSONObject> rr = sc.newAPIHadoopRDD(mconf, MongoInputFormat.class, Object.class, BSONObject.class);
+		JavaPairRDD<Object, BSONObject> rr = calc.sc.newAPIHadoopRDD(mconf, MongoInputFormat.class, Object.class, BSONObject.class);
 		if (logger.isTraceEnabled()) logger.trace("MongoDB read: " + rr.count());
 		return rr.mapToPair(t -> null == t ? null
 				: new Tuple2<Object, F>(this.marshaller.unmarshallId(t._1), this.marshaller.unmarshall(t._2, factor)));
 	}
 
 	@Override
-	public <F extends Factor<F>> VoidFunction<JavaPairRDD<Object, F>> saving(JavaSparkContext sc, MongoDataDetail detail) {
+	public <F extends Factor<F>> VoidFunction<JavaPairRDD<Object, F>> saving(Calculator calc, MongoDataDetail detail) {
 		Configuration conf = HBaseConfiguration.create();
 		conf.set("mongo.job.output.format", MongoOutputFormat.class.getName());
 		MongoClientURI uri = new MongoClientURI(this.uri);

@@ -7,9 +7,9 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
-import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.bson.BSONObject;
 
+import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.Mode;
 import net.butfly.albacore.calculus.datasource.DataDetail;
 import net.butfly.albacore.calculus.datasource.DataSource;
@@ -25,13 +25,11 @@ import net.butfly.albacore.calculus.streaming.JavaFreshPairDStream;
 @SuppressWarnings({ "unchecked", "deprecation" })
 public final class Factors extends HashMap<String, JavaPairDStream<?, ? extends Factor<?>>> {
 	private static final long serialVersionUID = -3712903710207597570L;
-	private JavaStreamingContext ssc;
-	private DataSources dss;
+	protected Calculator calc;
 
-	public Factors(JavaStreamingContext ssc, Mode mode, DataSources dss, boolean validate, Factoring... factoring) {
+	public Factors(Calculator calc, Mode mode, DataSources dss, boolean validate, Factoring... factoring) {
 		super(factoring.length);
-		this.ssc = ssc;
-		this.dss = dss;
+		this.calc = calc;
 
 		FactorConfig<?, ?> batch = null;
 		for (Factoring f : factoring) {
@@ -40,13 +38,9 @@ public final class Factors extends HashMap<String, JavaPairDStream<?, ? extends 
 			if (!fc.isAnnotationPresent(Streaming.class) && !fc.isAnnotationPresent(Stocking.class)) throw new IllegalArgumentException(
 					"Factor [" + fc.toString() + "] is annotated as neither @Streaming nor @Stocking, can't calculate it!");
 
-			FactorConfig<?, ?> c = scan(mode, fc, dss, validate);
+			FactorConfig<?, ?> c = config(mode, fc, dss, validate);
 			c.batching = f.batching();
 			c.streaming = f.stockOnStreaming();
-			// if (!fc.isAnnotationPresent(Streaming.class) && mode ==
-			// Mode.STREAMING) throw new IllegalArgumentException(
-			// "Factor [" + fc.toString() + "] is annotated as @Streaming, can't
-			// calculate it in streaming mode!");
 			if (f.batching() > 0) {
 				if (batch != null) throw new IllegalArgumentException("Only one batch stocking source supported, now found second: "
 						+ batch.factorClass.toString() + " and " + c.factorClass.toString());
@@ -61,10 +55,10 @@ public final class Factors extends HashMap<String, JavaPairDStream<?, ? extends 
 		this.put(factoring, ds);
 	}
 
-	public <K, F extends Factor<F>> void stocking(String factoring, JavaPairRDD<K, F> rdd, JavaStreamingContext ssc) {
+	public <K, F extends Factor<F>> void stocking(String factoring, JavaPairRDD<K, F> rdd) {
 		if (this.containsKey(factoring)) throw new IllegalArgumentException("Conflictted factoring id: " + factoring);
 		rdd.setName("RDD [" + factoring + "]");
-		this.put(factoring, new JavaConstPairDStream<>(ssc, rdd).persist());
+		this.put(factoring, new JavaConstPairDStream<>(calc.ssc, rdd));
 	}
 
 	public <K, F extends Factor<F>> JavaPairDStream<K, F> streaming(String factoring) {
@@ -76,12 +70,12 @@ public final class Factors extends HashMap<String, JavaPairDStream<?, ? extends 
 	}
 
 	private <K, F extends Factor<F>> void read(Mode mode, String key, FactorConfig<K, F> config) {
-		DataSource<K, ?, ?, DataDetail> ds = dss.ds(config.dbid);
+		DataSource<K, ?, ?, DataDetail> ds = calc.dss.ds(config.dbid);
 		Class<F> fc = config.factorClass;
 		switch (mode) {
 		case STOCKING:
-			if (config.batching <= 0) this.stocking(key, ds.stocking(ssc.sparkContext(), fc, config.detail), ssc);
-			else this.streaming(key, ds.batching(ssc, fc, config.batching, config.detail, config.keyClass, fc));
+			if (config.batching <= 0) this.stocking(key, ds.stocking(calc, fc, config.detail));
+			else this.streaming(key, ds.batching(calc, fc, config.batching, config.detail, config.keyClass, fc));
 			break;
 		case STREAMING:
 			switch (config.mode) {
@@ -89,26 +83,25 @@ public final class Factors extends HashMap<String, JavaPairDStream<?, ? extends 
 				switch (config.streaming) {
 				case ONCE:
 					this.streaming(key,
-							(JavaPairDStream<K, F>) new JavaConstPairDStream<K, F>(ssc, ds.stocking(ssc.sparkContext(), fc, config.detail))
-									.persist());
+							(JavaPairDStream<K, F>) new JavaConstPairDStream<K, F>(calc.ssc, ds.stocking(calc, fc, config.detail)));
 					break;
 				case EACH:
-					this.streaming(key, new JavaFreshPairDStream<K, F>(ssc, () -> ds.stocking(ssc.sparkContext(), fc, config.detail),
-							config.keyClass, fc));
+					this.streaming(key,
+							new JavaFreshPairDStream<K, F>(calc.ssc, () -> ds.stocking(calc, fc, config.detail), config.keyClass, fc));
 					break;
 				case CACHE:
 					throw new NotImplementedException();
 				}
 				break;
 			case STREAMING:
-				this.streaming(key, ds.streaming(ssc, fc, config.detail));
+				this.streaming(key, ds.streaming(calc, fc, config.detail));
 				break;
 			}
 			break;
 		}
 	}
 
-	public static <K, F extends Factor<F>> FactorConfig<K, F> scan(Mode mode, Class<F> factor, DataSources dss, boolean validate) {
+	public static <K, F extends Factor<F>> FactorConfig<K, F> config(Mode mode, Class<F> factor, DataSources dss, boolean validate) {
 		FactorConfig<K, F> config = new FactorConfig<K, F>();
 		config.factorClass = factor;
 		if (mode == Mode.STREAMING && factor.isAnnotationPresent(Streaming.class)) {

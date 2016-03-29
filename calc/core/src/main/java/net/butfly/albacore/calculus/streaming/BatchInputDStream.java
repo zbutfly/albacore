@@ -38,12 +38,11 @@ class BatchInputDStream<K, V> extends WrappedPairInputDStream<K, V> {
 			current = batcher.call(offsets == null ? limit : limit + 1, offsets).cache();
 		} catch (Exception e) {
 			error(() -> "RDD batched failure", e);
-			return super.compute(time);
+			current = null;
 		}
 		if (null == current || current.isEmpty()) {
 			info(() -> "RDD batched empty, batching finished.");
 			jssc.stop(true, true);
-			return Option.empty();
 		} else {
 			// results exclude last item on prev batch
 			if (null != offsets) {
@@ -55,19 +54,19 @@ class BatchInputDStream<K, V> extends WrappedPairInputDStream<K, V> {
 			if (null == current || current.isEmpty()) {
 				info(() -> "RDD batched empty, batching finished.");
 				jssc.stop(true, true);
-				return Option.empty();
+			} else {
+				// next offset is last item this time
+				current.mapPartitionsWithIndex((i, it) -> {
+					K last = null;
+					while (it.hasNext())
+						last = it.next()._1;
+					if (logger.isTraceEnabled()) logger.trace("Batching on partition [" + i + "], found last key: " + last.toString());
+					offsets[i] = last;
+					return Arrays.asList(last).iterator();
+				} , true);
 			}
-			// next offset is last item this time
-			current.mapPartitionsWithIndex((i, it) -> {
-				K last = null;
-				while (it.hasNext())
-					last = it.next()._1;
-				if (logger.isTraceEnabled()) logger.trace("Batching on partition [" + i + "], found last key: " + last.toString());
-				offsets[i] = last;
-				return Arrays.asList(last).iterator();
-			} , true);
 			if (logger.isTraceEnabled()) logger.trace("Total batched: " + (total += current.count()));
-			return Option.apply(current.rdd());
 		}
+		return super.compute(time);
 	}
 }

@@ -18,7 +18,6 @@ import com.google.common.base.CaseFormat;
 import com.google.common.base.Defaults;
 import com.google.common.base.Joiner;
 
-import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.datasource.HbaseColumnFamily;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.utils.Reflections;
@@ -54,7 +53,7 @@ public class HbaseMarshaller extends Marshaller<String, ImmutableBytesWritable, 
 			try {
 				Cell cell = from.getColumnLatestCell(Text.encode(colfamily).array(), Text.encode(colname).array());
 				if (cell != null) Reflections.set(t, f, fromBytes(f.getType(), CellUtil.cloneValue(cell)));
-				else if (Calculator.debug && logger.isTraceEnabled())
+				else if (logger.isTraceEnabled())
 					logger.trace("Rows of table for [" + to.toString() + "]: " + Joiner.on(',').join(rows(from)));
 			} catch (Exception e) {
 				logger.error("Parse of hbase result failure on " + to.toString() + ", field " + f.getName(), e);
