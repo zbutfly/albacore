@@ -6,6 +6,7 @@ import org.apache.commons.lang.NotImplementedException;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.function.Function0;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.bson.BSONObject;
 
@@ -19,6 +20,7 @@ import net.butfly.albacore.calculus.datasource.KafkaDataDetail;
 import net.butfly.albacore.calculus.datasource.MongoDataDetail;
 import net.butfly.albacore.calculus.factor.Factor.Stocking;
 import net.butfly.albacore.calculus.factor.Factor.Streaming;
+import net.butfly.albacore.calculus.factor.Factoring.OnStreaming;
 import net.butfly.albacore.calculus.streaming.JavaConstPairDStream;
 import net.butfly.albacore.calculus.streaming.JavaFreshPairDStream;
 
@@ -50,17 +52,6 @@ public final class Factors extends HashMap<String, JavaPairDStream<?, ? extends 
 		}
 	}
 
-	public <K, F extends Factor<F>> void streaming(String factoring, JavaPairDStream<K, F> ds) {
-		if (this.containsKey(factoring)) throw new IllegalArgumentException("Conflictted factoring id: " + factoring);
-		this.put(factoring, ds);
-	}
-
-	public <K, F extends Factor<F>> void stocking(String factoring, JavaPairRDD<K, F> rdd) {
-		if (this.containsKey(factoring)) throw new IllegalArgumentException("Conflictted factoring id: " + factoring);
-		rdd.setName("RDD [" + factoring + "]");
-		this.put(factoring, new JavaConstPairDStream<>(calc.ssc, rdd));
-	}
-
 	public <K, F extends Factor<F>> JavaPairDStream<K, F> streaming(String factoring) {
 		return (JavaPairDStream<K, F>) get(factoring);
 	}
@@ -69,32 +60,45 @@ public final class Factors extends HashMap<String, JavaPairDStream<?, ? extends 
 		return (JavaPairDStream<K, F>) get(factoring);
 	}
 
+	private <K, F extends Factor<F>> void streaming(String factoring, JavaPairDStream<K, F> ds) {
+		if (this.containsKey(factoring)) throw new IllegalArgumentException("Conflictted factoring id: " + factoring);
+		this.put(factoring, ds);
+	}
+
+	private <K, F extends Factor<F>> void stocking(String factoring, Function0<JavaPairRDD<K, F>> rdd, Class<K> kClass, Class<F> vClass,
+			OnStreaming streaming) {
+		if (this.containsKey(factoring)) throw new IllegalArgumentException("Conflictted factoring id: " + factoring);
+		switch (streaming) {
+		case ONCE:
+			try {
+				this.put(factoring, new JavaConstPairDStream<>(calc.ssc, rdd.call()));
+			} catch (Exception e) {}
+			break;
+		case EACH:
+			this.put(factoring, new JavaFreshPairDStream<K, F>(calc.ssc, rdd, kClass, vClass));
+			break;
+		case CACHE:
+			throw new NotImplementedException();
+		}
+	}
+
 	private <K, F extends Factor<F>> void read(Mode mode, String key, FactorConfig<K, F> config) {
 		DataSource<K, ?, ?, DataDetail> ds = calc.dss.ds(config.dbid);
-		Class<F> fc = config.factorClass;
 		switch (mode) {
 		case STOCKING:
-			if (config.batching <= 0) this.stocking(key, ds.stocking(calc, fc, config.detail));
-			else this.streaming(key, ds.batching(calc, fc, config.batching, config.detail, config.keyClass, fc));
+			if (config.batching <= 0) this.stocking(key, () -> ds.stocking(calc, config.factorClass, config.detail), config.keyClass,
+					config.factorClass, OnStreaming.ONCE);
+			else this.streaming(key,
+					ds.batching(calc, config.factorClass, config.batching, config.detail, config.keyClass, config.factorClass));
 			break;
 		case STREAMING:
 			switch (config.mode) {
 			case STOCKING:
-				switch (config.streaming) {
-				case ONCE:
-					this.streaming(key,
-							(JavaPairDStream<K, F>) new JavaConstPairDStream<K, F>(calc.ssc, ds.stocking(calc, fc, config.detail)));
-					break;
-				case EACH:
-					this.streaming(key,
-							new JavaFreshPairDStream<K, F>(calc.ssc, () -> ds.stocking(calc, fc, config.detail), config.keyClass, fc));
-					break;
-				case CACHE:
-					throw new NotImplementedException();
-				}
+				this.stocking(key, () -> ds.stocking(calc, config.factorClass, config.detail), config.keyClass, config.factorClass,
+						config.streaming);
 				break;
 			case STREAMING:
-				this.streaming(key, ds.streaming(calc, fc, config.detail));
+				this.streaming(key, ds.streaming(calc, config.factorClass, config.detail));
 				break;
 			}
 			break;
