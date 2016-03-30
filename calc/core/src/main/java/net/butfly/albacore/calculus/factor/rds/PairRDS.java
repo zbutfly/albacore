@@ -38,10 +38,12 @@ public class PairRDS<K, V> {
 		this(sc.parallelize(new ArrayList<>(m.entrySet())).map(e -> new Tuple2<K, V>(e.getKey(), e.getValue())).mapToPair(tt -> tt));
 	}
 
-	public PairRDS<K, V> clone() {
+	public PairRDS<K, V> folk() {
+		if (null == rdd) rdd = rdd.cache();
+		else dstream = dstream.cache();
 		PairRDS<K, V> rds = new PairRDS<>();
-		rds.rdd = this.rdd;
-		rds.dstream = this.dstream;
+		rds.rdd = rdd;
+		rds.dstream = dstream;
 		return rds;
 	}
 
@@ -49,32 +51,47 @@ public class PairRDS<K, V> {
 		return null != rdd ? rdd.isEmpty() : false;
 	}
 
+	@SuppressWarnings("deprecation")
 	public void foreachRDD(VoidFunction<JavaPairRDD<K, V>> consumer) {
-		// TODO Auto-generated method stub
+		if (null == rdd) dstream.foreachRDD(rdd -> {
+			consumer.call(rdd);
+			return null;
+		});
+		else try {
+			consumer.call(rdd);
+		} catch (Exception e) {
+			throw new RuntimeException("foreachRDD callback failure", e);
+		}
 	}
 
 	public <K2, V2> PairRDS<K2, V2> mapToPair(PairFunction<Tuple2<K, V>, K2, V2> func) {
-		// TODO Auto-generated method stub
-		return null;
+		return null == rdd ? new PairRDS<K2, V2>(dstream.mapToPair(func)) : new PairRDS<K2, V2>(rdd.mapToPair(func));
 	}
 
 	public PairRDS<K, V> reduceByKey(Function2<V, V, V> func) {
-		// TODO Auto-generated method stub
-		return null;
+		return null == rdd ? new PairRDS<K, V>(dstream.reduceByKey(func)) : new PairRDS<K, V>(rdd.reduceByKey(func));
 	}
 
 	public <W> PairRDS<K, Tuple2<V, W>> join(PairRDS<K, W> other) {
-		// TODO Auto-generated method stub
-		return null;
+		return null == rdd ? new PairRDS<K, Tuple2<V, W>>(dstream.join(other.dstream)) : new PairRDS<K, Tuple2<V, W>>(rdd.join(other.rdd));
 	}
 
 	public <W> PairRDS<K, Tuple2<V, Optional<W>>> leftOuterJoin(PairRDS<K, W> other) {
-		// TODO Auto-generated method stub
-		return null;
+		return null == rdd ? new PairRDS<K, Tuple2<V, Optional<W>>>(dstream.leftOuterJoin(other.dstream))
+				: new PairRDS<K, Tuple2<V, Optional<W>>>(rdd.leftOuterJoin(other.rdd));
 	}
 
+	@SuppressWarnings("deprecation")
 	public long count() {
-		// TODO Auto-generated method stub
-		return 0;
+		if (null != rdd) return rdd.count();
+		else {
+			long[] r = new long[] { 0 };
+			dstream.count().foreach(rl -> {
+				for (long l : rl.collect())
+					r[0] += l;
+				return null;
+			});
+			return r[0];
+		}
 	}
 }
