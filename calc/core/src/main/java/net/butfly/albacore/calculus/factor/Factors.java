@@ -50,7 +50,7 @@ public final class Factors implements Serializable {
 	}
 
 	public <K, F extends Factor<F>> PairRDS<K, F> get(String factoring) {
-		return (PairRDS<K, F>) get(factoring);
+		return (PairRDS<K, F>) pool.get(factoring);
 	}
 
 	private <K, F extends Factor<F>> void read(String key, FactorConfig<K, F> config) {

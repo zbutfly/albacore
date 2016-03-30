@@ -84,12 +84,21 @@ public class Calculator implements Serializable {
 
 	private Calculator start() {
 		sc = new JavaSparkContext(sconf);
-		ssc = new JavaStreamingContext(sc, Durations.seconds(dura));
+		if (mode == Mode.STREAMING) ssc = new JavaStreamingContext(sc, Durations.seconds(dura));
 		return this;
 	}
 
 	private Calculator finish() {
-		ssc.close();
+		if (mode == Mode.STREAMING) {
+			ssc.start();
+			logger.info(calculus.name + " streaming started, warting for finish. ");
+			ssc.awaitTermination();
+			try {
+				ssc.close();
+			} catch (Throwable th) {
+				logger.error("Streaming error", th);
+			}
+		}
 		sc.close();
 		return this;
 	}
@@ -143,9 +152,6 @@ public class Calculator implements Serializable {
 		FactorConfig<OK, OF> s = factors.config(c);
 		DataSource<OK, ?, ?, DataDetail> ds = dss.ds(s.dbid);
 		ds.save(this, calculus.calculate(factors), s.detail);
-		ssc.start();
-		logger.info(calculus.name + " started. ");
-		ssc.awaitTermination();
 		return this;
 	}
 
