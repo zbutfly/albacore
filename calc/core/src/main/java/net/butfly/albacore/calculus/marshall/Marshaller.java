@@ -1,6 +1,7 @@
 package net.butfly.albacore.calculus.marshall;
 
 import java.io.Serializable;
+import java.util.Comparator;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,5 +27,9 @@ public abstract class Marshaller<FK, VK, VV> implements Serializable {
 
 	public <T extends Factor<T>> VV marshall(T from) {
 		return (VV) from;
+	}
+
+	public Comparator<FK> comparator() {
+		throw new UnsupportedOperationException();
 	}
 }

@@ -139,9 +139,10 @@ public class Calculator implements Serializable {
 		logger.info(calculus.name + " starting... ");
 		Class<OF> c = Reflections.resolveGenericParameter(calculus.getClass(), Calculus.class, "OF");
 		logger.info(calculus.name + " will output as: " + c.toString());
-		FactorConfig<OK, OF> s = Factors.config(Mode.STOCKING, c, dss, validate);
+		Factors factors = new Factors(this);
+		FactorConfig<OK, OF> s = factors.config(c);
 		DataSource<OK, ?, ?, DataDetail> ds = dss.ds(s.dbid);
-		ds.save(this, calculus.calculate(new Factors(this, mode, dss, validate, factorings)), s.detail);
+		ds.save(this, calculus.calculate(factors), s.detail);
 		ssc.start();
 		logger.info(calculus.name + " started. ");
 		ssc.awaitTermination();

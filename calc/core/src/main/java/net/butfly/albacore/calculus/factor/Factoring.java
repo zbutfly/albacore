@@ -6,6 +6,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import net.butfly.albacore.calculus.streaming.RDDDStream.Mechanism;
+
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 @Repeatable(Factoring.Factorings.class)
@@ -17,7 +19,7 @@ public @interface Factoring {
 	@Deprecated
 	long batching() default 0L;
 
-	OnStreaming stockOnStreaming() default OnStreaming.ONCE;
+	Mechanism stockOnStreaming() default Mechanism.CONST;
 
 	String foreignKey() default Factor.NOT_DEFINED;
 
@@ -29,10 +31,6 @@ public @interface Factoring {
 
 	public enum Join {
 		INNER, LEFT, RIGHT
-	}
-
-	public enum OnStreaming {
-		ONCE, EACH, CACHE
 	}
 
 	@Retention(RetentionPolicy.RUNTIME)

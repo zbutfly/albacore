@@ -1,4 +1,4 @@
-package net.butfly.albacore.calculus.streaming;
+package net.butfly.albacore.calculus.streaming.rdd;
 
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.function.Function0;

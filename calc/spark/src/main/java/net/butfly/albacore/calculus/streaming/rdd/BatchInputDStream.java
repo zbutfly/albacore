@@ -1,4 +1,4 @@
-package net.butfly.albacore.calculus.streaming;
+package net.butfly.albacore.calculus.streaming.rdd;
 
 import java.util.ArrayList;
 import java.util.Arrays;

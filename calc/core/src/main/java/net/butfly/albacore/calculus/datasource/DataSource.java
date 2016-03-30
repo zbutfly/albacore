@@ -12,19 +12,20 @@ import org.slf4j.LoggerFactory;
 import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
+import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.marshall.Marshaller;
 
 public abstract class DataSource<FK, K, V, D extends DataDetail> implements Serializable {
 	private static final long serialVersionUID = 1L;
-	Factor.Type type;
-	Marshaller<FK, K, V> marshaller;
+	protected Factor.Type type;
+	protected Marshaller<FK, K, V> marshaller;
 	protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-	public Factor.Type getType() {
+	public Factor.Type type() {
 		return type;
 	}
 
-	public Marshaller<FK, K, V> getMarshaller() {
+	public Marshaller<FK, K, V> marshaller() {
 		return marshaller;
 	}
 
@@ -44,9 +45,8 @@ public abstract class DataSource<FK, K, V, D extends DataDetail> implements Seri
 	}
 
 	@Deprecated
-	public <F extends Factor<F>> JavaPairDStream<FK, F> batching(Calculator calc, Class<F> factor, long batching, D detail,
-			Class<FK> kClass, Class<F> vClass) {
-		throw new UnsupportedOperationException("Unsupportted stocking mode with batching: " + type + " on " + factor.toString());
+	public <F extends Factor<F>> JavaPairRDD<FK, F> batching(Calculator calc, Class<F> factorClass, long batching, FK offset, D detail) {
+		throw new UnsupportedOperationException("Unsupportted stocking mode with batching: " + type + " on " + factorClass.toString());
 	}
 
 	public <F extends Factor<F>> JavaPairDStream<FK, F> streaming(Calculator calc, Class<F> factor, D detail) {
@@ -61,6 +61,17 @@ public abstract class DataSource<FK, K, V, D extends DataDetail> implements Seri
 		return true;
 	}
 
+	public <F extends Factor<F>> void save(Calculator calc, PairRDS<FK, F> result, D detail) {
+		VoidFunction<JavaPairRDD<FK, F>> hh = saving(calc, detail);
+		if (null != result) result.foreachRDD(rdd -> {
+			if (null != rdd && !rdd.isEmpty()) try {
+				hh.call(rdd);
+			} catch (Exception e) {
+				logger.error("Saving failure", e);
+			}
+		});
+	}
+
 	public static class DataSources extends HashMap<String, DataSource<?, ?, ?, ?>> {
 		private static final long serialVersionUID = -7809799411800022817L;
 
@@ -68,14 +79,5 @@ public abstract class DataSource<FK, K, V, D extends DataDetail> implements Seri
 		public <FK, K, V, D extends DataDetail> DataSource<FK, K, V, D> ds(String dbid) {
 			return (DataSource<FK, K, V, D>) super.get(dbid);
 		}
-	}
-
-	@SuppressWarnings("deprecation")
-	public <F extends Factor<F>> void save(Calculator calc, JavaPairDStream<FK, F> calculate, D detail) {
-		VoidFunction<JavaPairRDD<FK, F>> hh = saving(calc, detail);
-		if (null != calculate) calculate.foreachRDD(rdd -> {
-			if (null != rdd && !rdd.isEmpty()) hh.call(rdd);
-			return null;
-		});
 	}
 }

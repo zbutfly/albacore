@@ -23,22 +23,17 @@ import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.protobuf.ProtobufUtil;
 import org.apache.hadoop.hbase.util.Base64;
 import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.api.java.function.Function2;
-import org.apache.spark.streaming.api.java.JavaPairDStream;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.CaseFormat;
-import com.google.common.base.Joiner;
 
 import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.marshall.HbaseMarshaller;
-import net.butfly.albacore.calculus.streaming.JavaBatchPairDStream;
 import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
 
-@SuppressWarnings("deprecation")
 public class HbaseDataSource extends DataSource<String, ImmutableBytesWritable, Result, HbaseDataDetail> {
 	private static final long serialVersionUID = 3367501286179801635L;
 	String configFile;
@@ -103,17 +98,16 @@ public class HbaseDataSource extends DataSource<String, ImmutableBytesWritable, 
 
 	@Override
 	@Deprecated
-	public <F extends Factor<F>> JavaPairDStream<String, F> batching(Calculator calc, Class<F> factor, long batching,
-			HbaseDataDetail detail, Class<String> kClass, Class<F> vClass) {
+	public <F extends Factor<F>> JavaPairRDD<String, F> batching(Calculator calc, Class<F> factor, long limit, String offset,
+			HbaseDataDetail detail) {
 		logger.error("Batching mode is not supported now... BUG!!!!!");
-		Function2<Long, String[], JavaPairRDD<String, F>> batcher = (limit, offsets) -> {
-			Map<String, String> params = new HashMap<>();
+		Map<String, String> params = new HashMap<>();
+		try {
 			params.put(BatchTableInputFormat.SCAN,
 					Base64.encodeBytes(ProtobufUtil.toScan(createScan().setFilter(new PageFilter(limit))).toByteArray()));
-			if (null != offsets && offsets.length > 0) params.put("hbase.mapreduce.batching.offsets", Joiner.on(',').join(offsets));
-			return scan(calc, detail.hbaseTable, factor, params);
-		};
-		return new JavaBatchPairDStream<String, F>(calc.ssc, batcher, batching, kClass, vClass);
+		} catch (IOException e) {}
+		if (null != offset) params.put("hbase.mapreduce.batching.offsets", offset);
+		return scan(calc, detail.hbaseTable, factor, params);
 	}
 
 	private <F extends Factor<F>> JavaPairRDD<String, F> scan(Calculator calc, String table, Class<F> factor, Map<String, String> params) {

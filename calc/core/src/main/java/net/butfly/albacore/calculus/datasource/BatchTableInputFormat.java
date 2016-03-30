@@ -51,7 +51,7 @@ public class BatchTableInputFormat extends org.apache.hadoop.hbase.mapreduce.Tab
 	 * number of splits matches the number of regions in a table.
 	 *
 	 * @param context
-	 *            The current job context.
+	 *            The rdd job context.
 	 * @return The list of input splits.
 	 * @throws IOException
 	 *             When creating the list of splits fails.
