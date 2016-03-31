@@ -20,6 +20,7 @@ import net.butfly.albacore.calculus.factor.Factor.Streaming;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.streaming.RDDDStream;
 import net.butfly.albacore.calculus.streaming.RDDDStream.Mechanism;
+import net.butfly.albacore.calculus.utils.Reflections;
 
 @SuppressWarnings({ "unchecked", "deprecation" })
 public final class Factors implements Serializable {
@@ -60,19 +61,19 @@ public final class Factors implements Serializable {
 			add(key, config.batching <= 0 ? new PairRDS<K, F>(ds.stocking(calc, config.factorClass, config.detail))
 					: new PairRDS<K, F>(RDDDStream.bpstream(calc.ssc, config.batching,
 							(limit, offset) -> ds.batching(calc, config.factorClass, limit, offset, config.detail),
-							ds.marshaller().comparator())));
+							ds.marshaller().comparator(), config.keyClass, config.factorClass)));
 			break;
 		case STREAMING:
 			switch (config.mode) {
 			case STOCKING:
 				switch (config.streaming) {
 				case CONST:
-					add(key, new PairRDS<K, F>(
-							RDDDStream.pstream(calc.ssc, Mechanism.CONST, () -> ds.stocking(calc, config.factorClass, config.detail))));
+					add(key, new PairRDS<K, F>(RDDDStream.pstream(calc.ssc, Mechanism.CONST,
+							() -> ds.stocking(calc, config.factorClass, config.detail), config.keyClass, config.factorClass)));
 					break;
 				case FRESH:
-					add(key, new PairRDS<K, F>(
-							RDDDStream.pstream(calc.ssc, Mechanism.FRESH, () -> ds.stocking(calc, config.factorClass, config.detail))));
+					add(key, new PairRDS<K, F>(RDDDStream.pstream(calc.ssc, Mechanism.FRESH,
+							() -> ds.stocking(calc, config.factorClass, config.detail), config.keyClass, config.factorClass)));
 					break;
 				default:
 					throw new UnsupportedOperationException();
@@ -96,6 +97,7 @@ public final class Factors implements Serializable {
 			switch (s.type()) {
 			case KAFKA:
 				config.detail = new KafkaDataDetail(s.table());
+				config.keyClass = (Class<K>) String.class;
 				break;
 			default:
 				throw new UnsupportedOperationException("Unsupportted streaming mode: " + s.type() + " on " + factor.toString());
@@ -113,6 +115,7 @@ public final class Factors implements Serializable {
 					DataSource<String, ImmutableBytesWritable, Result, HbaseDataDetail> hds = calc.dss.ds(s.source());
 					hds.confirm(factor, (HbaseDataDetail) config.detail);
 				}
+				config.keyClass = (Class<K>) byte[].class;
 				break;
 			case MONGODB:
 				if (Factor.NOT_DEFINED.equals(s.table()))
@@ -122,6 +125,7 @@ public final class Factors implements Serializable {
 					DataSource<Object, Object, BSONObject, MongoDataDetail> hds = calc.dss.ds(s.source());
 					hds.confirm(factor, (MongoDataDetail) config.detail);
 				}
+				config.keyClass = (Class<K>) Object.class;
 				break;
 			case CONSTAND_TO_CONSOLE:
 				break;

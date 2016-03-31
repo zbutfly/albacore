@@ -15,7 +15,6 @@ class RDDInputDStream<T> extends RDDDStream<T> {
 
 	public RDDInputDStream(StreamingContext ssc, Mechanism mechanism, Function0<RDD<T>> loader, ClassTag<T> classTag) {
 		super(ssc, classTag);
-		this.sc = ssc.sc();
 		this.mechanism = mechanism;
 		this.loader = loader;
 		load();

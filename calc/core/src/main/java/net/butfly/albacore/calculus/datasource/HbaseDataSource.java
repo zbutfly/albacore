@@ -22,6 +22,7 @@ import org.apache.hadoop.hbase.filter.RandomRowFilter;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.protobuf.ProtobufUtil;
 import org.apache.hadoop.hbase.util.Base64;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.spark.api.java.JavaPairRDD;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -34,7 +35,7 @@ import net.butfly.albacore.calculus.marshall.HbaseMarshaller;
 import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
 
-public class HbaseDataSource extends DataSource<String, ImmutableBytesWritable, Result, HbaseDataDetail> {
+public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, Result, HbaseDataDetail> {
 	private static final long serialVersionUID = 3367501286179801635L;
 	String configFile;
 	Connection hconn;
@@ -92,13 +93,13 @@ public class HbaseDataSource extends DataSource<String, ImmutableBytesWritable, 
 	}
 
 	@Override
-	public <F extends Factor<F>> JavaPairRDD<String, F> stocking(Calculator calc, Class<F> factor, HbaseDataDetail detail) {
+	public <F extends Factor<F>> JavaPairRDD<byte[], F> stocking(Calculator calc, Class<F> factor, HbaseDataDetail detail) {
 		return this.scan(calc, detail.hbaseTable, factor, null);
 	}
 
 	@Override
 	@Deprecated
-	public <F extends Factor<F>> JavaPairRDD<String, F> batching(Calculator calc, Class<F> factor, long limit, String offset,
+	public <F extends Factor<F>> JavaPairRDD<byte[], F> batching(Calculator calc, Class<F> factor, long limit, byte[] offset,
 			HbaseDataDetail detail) {
 		logger.error("Batching mode is not supported now... BUG!!!!!");
 		Map<String, String> params = new HashMap<>();
@@ -106,11 +107,11 @@ public class HbaseDataSource extends DataSource<String, ImmutableBytesWritable, 
 			params.put(BatchTableInputFormat.SCAN,
 					Base64.encodeBytes(ProtobufUtil.toScan(createScan().setFilter(new PageFilter(limit))).toByteArray()));
 		} catch (IOException e) {}
-		if (null != offset) params.put("hbase.mapreduce.batching.offsets", offset);
+		if (null != offset) params.put("hbase.mapreduce.batching.offsets", Bytes.toString(offset));
 		return scan(calc, detail.hbaseTable, factor, params);
 	}
 
-	private <F extends Factor<F>> JavaPairRDD<String, F> scan(Calculator calc, String table, Class<F> factor, Map<String, String> params) {
+	private <F extends Factor<F>> JavaPairRDD<byte[], F> scan(Calculator calc, String table, Class<F> factor, Map<String, String> params) {
 		if (logger.isDebugEnabled()) logger.debug("Scaning begin: " + factor.toString() + ", from table: " + table + ".");
 		Configuration hconf = HBaseConfiguration.create();
 		try {
@@ -143,7 +144,7 @@ public class HbaseDataSource extends DataSource<String, ImmutableBytesWritable, 
 		if (calc.debug && logger.isTraceEnabled()) logger.trace("HBase scaned: " + rr.count());
 		// TODO: Confirm String key
 		return rr.mapToPair(t -> null == t ? null
-				: new Tuple2<String, F>(this.marshaller.unmarshallId(t._1), this.marshaller.unmarshall(t._2, factor)));
+				: new Tuple2<byte[], F>(this.marshaller.unmarshallId(t._1), this.marshaller.unmarshall(t._2, factor)));
 	}
 
 	private Scan createScan() {

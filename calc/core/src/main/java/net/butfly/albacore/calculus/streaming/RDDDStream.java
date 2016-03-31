@@ -18,13 +18,8 @@ import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.spark.streaming.dstream.InputDStream;
 
 import scala.Option;
-import scala.Some;
-import scala.Tuple1;
 import scala.Tuple2;
-import scala.collection.immutable.List;
 import scala.reflect.ClassTag;
-import scala.reflect.Manifest;
-import scala.reflect.ManifestFactory;
 import scala.runtime.AbstractFunction0;
 
 public abstract class RDDDStream<T> extends InputDStream<T> {
@@ -40,19 +35,18 @@ public abstract class RDDDStream<T> extends InputDStream<T> {
 		super(ssc, classTag);
 		this.sc = ssc.sc();
 		this.classTag = classTag;
-		load();
 	}
 
 	abstract protected RDD<T> load();
 
 	public Option<RDD<T>> compute(Time time) {
 		trace(() -> "RDD inputted as streaming with count: " + current.count());
-		return Some.apply(current);
+		return Option.apply(current);
 	}
 
 	@Override
 	final public String name() {
-		return super.name() + "[for " + current.toDebugString() + "]";
+		return super.name() + "[for " + (null == current ? "null" : current.toDebugString()) + "]";
 	}
 
 	@Override
@@ -74,38 +68,34 @@ public abstract class RDDDStream<T> extends InputDStream<T> {
 		});
 	}
 
-	@SuppressWarnings("unchecked")
-	public static <K, V> JavaPairDStream<K, V> pstream(JavaStreamingContext ssc, Mechanism mechanism, Function0<JavaPairRDD<K, V>> rdd) {
-		Manifest<Tuple2<K, V>> ct = ManifestFactory.classType(new Tuple2<K, V>(null, null).getClass());
-		List<Manifest<?>> ags = ct.typeArguments();
+	public static <K, V> JavaPairDStream<K, V> pstream(JavaStreamingContext ssc, Mechanism mechanism, Function0<JavaPairRDD<K, V>> rdd,
+			Class<K> kc, Class<V> vc) {
 		try {
 			return JavaPairDStream.fromPairDStream(
-					new RDDInputDStream<Tuple2<K, V>>(ssc.ssc(), mechanism, () -> rdd.call().map(t -> t).rdd(), ct),
-					(ClassTag<K>) ags.apply(0), (ClassTag<V>) ags.apply(1));
+					new RDDInputDStream<Tuple2<K, V>>(ssc.ssc(), mechanism, () -> rdd.call().map(t -> t).rdd(),
+							scala.reflect.ClassTag$.MODULE$.<Tuple2<K, V>> apply(Tuple2.class)),
+					scala.reflect.ClassTag$.MODULE$.<K> apply(kc), scala.reflect.ClassTag$.MODULE$.<V> apply(vc));
 		} catch (Exception ex) {
 			throw new RuntimeException(ex);
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	@Deprecated
 	public static <K, V> JavaPairDStream<K, V> bpstream(JavaStreamingContext ssc, long batch, Function2<Long, K, JavaPairRDD<K, V>> batcher,
-			Comparator<K> comparator) {
-		Manifest<Tuple2<K, V>> ct = ManifestFactory.classType(new Tuple2<K, V>(null, null).getClass());
-		List<Manifest<?>> ags = ct.typeArguments();
+			Comparator<K> comparator, Class<K> kc, Class<V> vc) {
 		try {
 			return JavaPairDStream.fromPairDStream(
-					new RDDBatchInputDStream<K, V>(ssc.ssc(), batch, (limit, offset) -> batcher.call(limit, offset).rdd(), comparator, ct),
-					(ClassTag<K>) ags.apply(0), (ClassTag<V>) ags.apply(1));
+					new RDDBatchInputDStream<K, V>(ssc.ssc(), batch, (limit, offset) -> batcher.call(limit, offset).rdd(), comparator,
+							scala.reflect.ClassTag$.MODULE$.<Tuple2<K, V>> apply(Tuple2.class)),
+					scala.reflect.ClassTag$.MODULE$.<K> apply(kc), scala.reflect.ClassTag$.MODULE$.<V> apply(vc));
 		} catch (Exception ex) {
 			throw new RuntimeException(ex);
 		}
 	}
 
-	public static <R> JavaDStream<R> stream(JavaStreamingContext ssc, Mechanism mechanism, Function0<JavaRDD<R>> rdd, Class<R> tClass) {
-		@SuppressWarnings("unchecked")
-		Manifest<R> ct = (Manifest<R>) ManifestFactory.classType(new Tuple1<R>(null).getClass()).typeArguments().apply(0);
-		return JavaDStream.fromDStream(new RDDInputDStream<R>(ssc.ssc(), mechanism, () -> rdd.call().rdd(), ct), ct);
+	public static <R> JavaDStream<R> stream(JavaStreamingContext ssc, Mechanism mechanism, Function0<JavaRDD<R>> rdd, Class<R> rc) {
+		ClassTag<R> r = scala.reflect.ClassTag$.MODULE$.<R> apply(rc);
+		return JavaDStream.fromDStream(new RDDInputDStream<R>(ssc.ssc(), mechanism, () -> rdd.call().rdd(), r), r);
 	}
 
 	@SafeVarargs

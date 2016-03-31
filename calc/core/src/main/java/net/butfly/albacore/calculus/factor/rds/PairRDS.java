@@ -1,97 +1,129 @@
 package net.butfly.albacore.calculus.factor.rds;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Map;
 
 import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaRDDLike;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.api.java.function.VoidFunction;
+import org.apache.spark.rdd.RDD;
+import org.apache.spark.streaming.api.java.JavaDStream;
+import org.apache.spark.streaming.api.java.JavaDStreamLike;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
+import org.apache.spark.streaming.dstream.DStream;
 
 import com.google.common.base.Optional;
 
 import scala.Tuple2;
+import scala.runtime.BoxedUnit;
 
-public class PairRDS<K, V> {
-	JavaPairRDD<K, V> rdd = null;
-	JavaPairDStream<K, V> dstream = null;
+public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
+	private static final long serialVersionUID = 2213547213519725138L;
 
-	private PairRDS() {}
+	protected PairRDS() {}
 
-	public PairRDS(JavaPairDStream<K, V> dstream) {
-		this.dstream = dstream;
+	protected PairRDS(DStream<Tuple2<K, V>> dstream) {
+		super(dstream);
 	}
 
-	public PairRDS(JavaPairRDD<K, V> rdd) {
-		this.rdd = rdd;
+	@SafeVarargs
+	protected PairRDS(RDD<Tuple2<K, V>>... rdds) {
+		super(rdds);
+	}
+
+	@SafeVarargs
+	public PairRDS(JavaRDDLike<Tuple2<K, V>, ?>... rdd) {
+		super(rdd);
+	}
+
+	public PairRDS(JavaDStreamLike<Tuple2<K, V>, ?, ?> dstream) {
+		super(dstream);
 	}
 
 	@SafeVarargs
 	public PairRDS(JavaSparkContext sc, Tuple2<K, V>... t) {
-		this(sc.parallelize(Arrays.asList(t)).mapToPair(tt -> tt));
+		super(sc, t);
 	}
 
-	public PairRDS(JavaSparkContext sc, Map<K, V> m) {
-		this(sc.parallelize(new ArrayList<>(m.entrySet())).map(e -> new Tuple2<K, V>(e.getKey(), e.getValue())).mapToPair(tt -> tt));
+	public PairRDS(JavaSparkContext sc, Map<K, V> map) {
+		this(sc.parallelize(new ArrayList<>(map.entrySet())).map(e -> new Tuple2<>(e.getKey(), e.getValue())));
 	}
 
-	public PairRDS<K, V> folk() {
-		if (null == rdd) rdd = rdd.cache();
-		else dstream = dstream.cache();
-		PairRDS<K, V> rds = new PairRDS<>();
-		rds.rdd = rdd;
-		rds.dstream = dstream;
-		return rds;
-	}
-
-	public boolean isEmpty() {
-		return null != rdd ? rdd.isEmpty() : false;
-	}
-
-	@SuppressWarnings("deprecation")
-	public void foreachRDD(VoidFunction<JavaPairRDD<K, V>> consumer) {
-		if (null == rdd) dstream.foreachRDD(rdd -> {
-			consumer.call(rdd);
-			return null;
-		});
-		else try {
-			consumer.call(rdd);
-		} catch (Exception e) {
-			throw new RuntimeException("foreachRDD callback failure", e);
+	public void eachPairRDD(VoidFunction<JavaPairRDD<K, V>> consumer) {
+		switch (type) {
+		case RDD:
+			for (RDD<Tuple2<K, V>> rdd : rdds)
+				try {
+					consumer.call(JavaPairRDD.fromRDD(rdd, tag(), tag()));
+				} catch (Exception e) {
+					throw new RuntimeException(e);
+				}
+			break;
+		case DSTREAM:
+			dstream.foreachRDD(wrap(rdd -> {
+				consumer.call(JavaPairRDD.fromRDD(rdd, tag(), tag()));
+				return BoxedUnit.UNIT;
+			}));
+			break;
 		}
 	}
 
-	public <K2, V2> PairRDS<K2, V2> mapToPair(PairFunction<Tuple2<K, V>, K2, V2> func) {
-		return null == rdd ? new PairRDS<K2, V2>(dstream.mapToPair(func)) : new PairRDS<K2, V2>(rdd.mapToPair(func));
-	}
-
 	public PairRDS<K, V> reduceByKey(Function2<V, V, V> func) {
-		return null == rdd ? new PairRDS<K, V>(dstream.reduceByKey(func)) : new PairRDS<K, V>(rdd.reduceByKey(func));
+		switch (type) {
+		case RDD:
+			return new PairRDS<K, V>(JavaPairRDD.fromRDD(union(rdds), tag(), tag()).reduceByKey(func));
+		case DSTREAM:
+			return new PairRDS<K, V>(JavaPairDStream.fromPairDStream(dstream, tag(), tag()).reduceByKey(func));
+		default:
+			throw new IllegalArgumentException();
+		}
 	}
 
 	public <W> PairRDS<K, Tuple2<V, W>> join(PairRDS<K, W> other) {
-		return null == rdd ? new PairRDS<K, Tuple2<V, W>>(dstream.join(other.dstream)) : new PairRDS<K, Tuple2<V, W>>(rdd.join(other.rdd));
+		switch (type) {
+		case RDD:
+			JavaPairRDD<K, V> r1 = JavaPairRDD.fromRDD(union(rdds), tag(), tag());
+			JavaPairRDD<K, W> r2 = JavaPairRDD.fromRDD(union(other.rdds), tag(), tag());
+			return new PairRDS<K, Tuple2<V, W>>(r1.join(r2));
+		case DSTREAM:
+			JavaPairDStream<K, V> s1 = JavaPairDStream.fromPairDStream(dstream, tag(), tag());
+			JavaPairDStream<K, W> s2 = JavaPairDStream.fromPairDStream(other.dstream, tag(), tag());
+			return new PairRDS<K, Tuple2<V, W>>(s1.join(s2));
+		default:
+			throw new IllegalArgumentException();
+		}
 	}
 
 	public <W> PairRDS<K, Tuple2<V, Optional<W>>> leftOuterJoin(PairRDS<K, W> other) {
-		return null == rdd ? new PairRDS<K, Tuple2<V, Optional<W>>>(dstream.leftOuterJoin(other.dstream))
-				: new PairRDS<K, Tuple2<V, Optional<W>>>(rdd.leftOuterJoin(other.rdd));
+		switch (type) {
+		case RDD:
+			JavaPairRDD<K, V> r1 = JavaPairRDD.fromRDD(union(rdds), tag(), tag());
+			JavaPairRDD<K, W> r2 = JavaPairRDD.fromRDD(union(other.rdds), tag(), tag());
+			return new PairRDS<K, Tuple2<V, Optional<W>>>(r1.leftOuterJoin(r2));
+		case DSTREAM:
+			JavaPairDStream<K, V> s1 = JavaPairDStream.fromPairDStream(dstream, tag(), tag());
+			JavaPairDStream<K, W> s2 = JavaPairDStream.fromPairDStream(other.dstream, tag(), tag());
+			return new PairRDS<K, Tuple2<V, Optional<W>>>(s1.leftOuterJoin(s2));
+		default:
+			throw new IllegalArgumentException();
+		}
 	}
 
-	@SuppressWarnings("deprecation")
-	public long count() {
-		if (null != rdd) return rdd.count();
-		else {
-			long[] r = new long[] { 0 };
-			dstream.count().foreach(rl -> {
-				for (long l : rl.collect())
-					r[0] += l;
-				return null;
-			});
-			return r[0];
+	public final <K2, V2> PairRDS<K2, V2> mapToPair(PairFunction<Tuple2<K, V>, K2, V2> func) {
+		switch (type) {
+		case RDD:
+			Function<RDD<Tuple2<K, V>>, RDD<Tuple2<K2, V2>>> f = rdd -> JavaRDD.fromRDD(rdd, tag()).mapToPair(func).rdd();
+			RDD<Tuple2<K2, V2>>[] r = each(rdds, f);
+			return new PairRDS<K2, V2>(r);
+		case DSTREAM:
+			return new PairRDS<K2, V2>(JavaDStream.fromDStream(dstream, tag()).mapToPair(func));
+		default:
+			throw new IllegalArgumentException();
 		}
 	}
 }

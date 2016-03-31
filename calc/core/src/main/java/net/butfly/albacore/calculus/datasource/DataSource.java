@@ -63,7 +63,7 @@ public abstract class DataSource<FK, K, V, D extends DataDetail> implements Seri
 
 	public <F extends Factor<F>> void save(Calculator calc, PairRDS<FK, F> result, D detail) {
 		VoidFunction<JavaPairRDD<FK, F>> hh = saving(calc, detail);
-		if (null != result) result.foreachRDD(rdd -> {
+		if (null != result) result.eachPairRDD((VoidFunction<JavaPairRDD<FK, F>>) rdd -> {
 			if (null != rdd && !rdd.isEmpty()) try {
 				hh.call(rdd);
 			} catch (Exception e) {
