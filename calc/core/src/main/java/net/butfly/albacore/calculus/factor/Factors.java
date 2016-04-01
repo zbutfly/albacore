@@ -6,6 +6,8 @@ import java.util.Map;
 
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
+import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.bson.BSONObject;
 
 import net.butfly.albacore.calculus.Calculator;
@@ -57,10 +59,15 @@ public final class Factors implements Serializable {
 		DataSource<K, ?, ?, DataDetail> ds = calc.dss.ds(config.dbid);
 		switch (calc.mode) {
 		case STOCKING:
-			add(key, config.batching <= 0 ? new PairRDS<K, F>(ds.stocking(calc, config.factorClass, config.detail))
-					: new PairRDS<K, F>(RDDDStream.bpstream(calc.ssc.ssc(), config.batching,
-							(limit, offset) -> ds.batching(calc, config.factorClass, limit, offset, config.detail),
-							ds.marshaller().comparator())));
+			if (config.batching <= 0) {
+				JavaPairRDD<K, F> rdd = ds.stocking(calc, config.factorClass, config.detail);
+				add(key, new PairRDS<K, F>(rdd));
+			} else {
+				JavaPairDStream<K, F> dds = RDDDStream.bpstream(calc.ssc.ssc(), config.batching,
+						(limit, offset) -> ds.batching(calc, config.factorClass, limit, offset, config.detail),
+						ds.marshaller().comparator());
+				add(key, new PairRDS<K, F>(dds));
+			}
 			break;
 		case STREAMING:
 			switch (config.mode) {

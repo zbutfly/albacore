@@ -50,15 +50,7 @@ public class RDS<T> implements Serializable {
 
 	@SafeVarargs
 	public RDS(JavaRDDLike<T, ?>... rdd) {
-		List<RDD<T>> r = each(Arrays.asList(rdd), new Function<JavaRDDLike<T, ?>, RDD<T>>() {
-			private static final long serialVersionUID = 3164267375801771218L;
-
-			@Override
-			public RDD<T> call(JavaRDDLike<T, ?> r1) throws Exception {
-				return r1.rdd();
-			}
-		});
-		init(r);
+		init(each(Arrays.asList(rdd), r1 -> r1.rdd()));
 	}
 
 	public RDS(JavaDStreamLike<T, ?, ?> dstream) {

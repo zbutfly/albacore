@@ -32,13 +32,13 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 
 	@Override
 	protected PairRDS<K, V> init(DStream<Tuple2<K, V>> dstream) {
-		init(dstream);
+		super.init(dstream);
 		return this;
 	}
 
 	@Override
 	protected PairRDS<K, V> init(List<RDD<Tuple2<K, V>>> rdds) {
-		init(rdds);
+		super.init(rdds);
 		return this;
 	}
 
