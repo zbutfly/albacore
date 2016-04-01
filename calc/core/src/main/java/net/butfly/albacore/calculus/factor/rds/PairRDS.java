@@ -1,6 +1,7 @@
 package net.butfly.albacore.calculus.factor.rds;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.spark.api.java.JavaPairRDD;
@@ -27,13 +28,15 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 
 	protected PairRDS() {}
 
-	protected PairRDS(DStream<Tuple2<K, V>> dstream) {
-		super(dstream);
+	protected PairRDS<K, V> init(DStream<Tuple2<K, V>> dstream) {
+		init(dstream);
+		return this;
 	}
 
-	@SafeVarargs
-	protected PairRDS(RDD<Tuple2<K, V>>... rdds) {
-		super(rdds);
+	@Override
+	protected PairRDS<K, V> init(List<RDD<Tuple2<K, V>>> rdds) {
+		init(rdds);
+		return this;
 	}
 
 	@SafeVarargs
@@ -118,8 +121,8 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 		switch (type) {
 		case RDD:
 			Function<RDD<Tuple2<K, V>>, RDD<Tuple2<K2, V2>>> f = rdd -> JavaRDD.fromRDD(rdd, tag()).mapToPair(func).rdd();
-			RDD<Tuple2<K2, V2>>[] r = each(rdds, f);
-			return new PairRDS<K2, V2>(r);
+			List<RDD<Tuple2<K2, V2>>> r = each(rdds, f);
+			return new PairRDS<K2, V2>().init(r);
 		case DSTREAM:
 			return new PairRDS<K2, V2>(JavaDStream.fromDStream(dstream, tag()).mapToPair(func));
 		default:

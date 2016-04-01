@@ -156,7 +156,7 @@ abstract class AbstractRDS<T, R extends JavaRDDLike<T, R>, S extends JavaDStream
 		return rr[0];
 	}
 
-	@SuppressWarnings({ "unchecked", "deprecation" })
+	@SuppressWarnings({ "unchecked" })
 	static <T, R extends JavaRDDLike<T, R>, S extends JavaDStreamLike<T, S, R>> R union(S s) {
 		List<R> l = new ArrayList<>();
 		s.foreachRDD(v1 -> {

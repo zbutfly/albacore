@@ -31,29 +31,38 @@ public class RDS<T> implements Serializable {
 	}
 
 	protected RDSType type;
-	protected RDD<T>[] rdds;
+	protected List<RDD<T>> rdds;
 	protected DStream<T> dstream;
 
 	protected RDS() {}
 
-	@SafeVarargs
-	protected RDS(RDD<T>... rdds) {
+	protected RDS<T> init(List<RDD<T>> rdds) {
 		type = RDSType.RDD;
 		this.rdds = rdds;
+		return this;
 	}
 
-	protected RDS(DStream<T> dstream) {
+	protected RDS<T> init(DStream<T> dstream) {
 		type = RDSType.DSTREAM;
 		this.dstream = dstream;
+		return this;
 	}
 
 	@SafeVarargs
 	public RDS(JavaRDDLike<T, ?>... rdd) {
-		this(each(rdd, r -> r.rdd()));
+		List<RDD<T>> r = each(Arrays.asList(rdd), new Function<JavaRDDLike<T, ?>, RDD<T>>() {
+			private static final long serialVersionUID = 3164267375801771218L;
+
+			@Override
+			public RDD<T> call(JavaRDDLike<T, ?> r1) throws Exception {
+				return r1.rdd();
+			}
+		});
+		init(r);
 	}
 
 	public RDS(JavaDStreamLike<T, ?, ?> dstream) {
-		this(dstream.dstream());
+		init(dstream.dstream());
 	}
 
 	@SafeVarargs
@@ -64,10 +73,10 @@ public class RDS<T> implements Serializable {
 	public RDS<T> folk() {
 		switch (type) {
 		case RDD:
-			RDS<T> n = new RDS<T>(each(rdds, v1 -> v1.cache()));
+			RDS<T> n = new RDS<T>().init(each(rdds, v1 -> v1.cache()));
 			return n;
 		case DSTREAM:
-			return new RDS<T>(dstream.cache());
+			return new RDS<T>().init(dstream.cache());
 		default:
 			throw new IllegalArgumentException();
 		}
@@ -108,8 +117,8 @@ public class RDS<T> implements Serializable {
 		switch (type) {
 		case RDD:
 			Function<RDD<T>, RDD<Tuple2<K2, V2>>> f = rdd -> JavaRDD.fromRDD(rdd, tag()).mapToPair(func).rdd();
-			RDD<Tuple2<K2, V2>>[] r = each(rdds, f);
-			return new RDS<Tuple2<K2, V2>>(r);
+			List<RDD<Tuple2<K2, V2>>> r = each(rdds, f);
+			return new RDS<Tuple2<K2, V2>>().init(r);
 		case DSTREAM:
 			return new RDS<Tuple2<K2, V2>>(JavaDStream.fromDStream(dstream, tag()).mapToPair(func));
 		default:
@@ -120,9 +129,9 @@ public class RDS<T> implements Serializable {
 	public final <T1> RDS<T1> map(Function<T, T1> func) {
 		switch (type) {
 		case RDD:
-			return new RDS<T1>(each(rdds, rdd -> rdd.map(wrap(func), tag())));
+			return new RDS<T1>().init(each(rdds, rdd -> rdd.map(wrap(func), tag())));
 		case DSTREAM:
-			return new RDS<T1>(dstream.map(wrap(func), tag()));
+			return new RDS<T1>().init(dstream.map(wrap(func), tag()));
 		default:
 			throw new IllegalArgumentException();
 		}
@@ -168,26 +177,24 @@ public class RDS<T> implements Serializable {
 		return r[0];
 	}
 
-	@SuppressWarnings("unchecked")
-	static <T, T1> T1[] each(T[] r, Function<T, T1> transformer) {
+	static <T, T1> List<T1> each(List<T> r, Function<T, T1> transformer) {
 		if (r == null) return null;
-		List<T1> r1 = new ArrayList<>(r.length);
+		List<T1> r1 = new ArrayList<>(r.size());
 		for (T rr : r)
 			try {
 				r1.add(transformer.call(rr));
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
-		return (T1[]) r1.toArray();
+		return r1;
 	}
 
-	@SuppressWarnings("unchecked")
-	static <T, R extends JavaRDDLike<T, R>> R union(R... r) {
-		if (r == null || r.length == 0) return null;
-		R[] rr = r;
-		for (int i = 1; i > rr.length; i++)
-			rr[0] = (R) JavaRDD.fromRDD(rr[0].rdd().union(r[i].rdd()), rr[0].classTag());
-		return rr[0];
+	static <T> RDD<T> union(List<RDD<T>> r) {
+		if (r == null || r.size() == 0) return null;
+		List<RDD<T>> rr = new ArrayList<>(r);
+		for (int i = 1; i > rr.size(); i++)
+			rr.set(0, rr.get(0).union(rr.get(i)));
+		return rr.get(0);
 	}
 
 	@SuppressWarnings({ "unchecked", "deprecation" })
