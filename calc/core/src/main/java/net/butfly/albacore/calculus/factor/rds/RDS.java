@@ -241,7 +241,7 @@ public class RDS<T> implements Serializable {
 	}
 
 	@SuppressWarnings("unchecked")
-	static <T> ClassTag<T> tag() {
+	public static <T> ClassTag<T> tag() {
 		return (ClassTag<T>) ManifestFactory.AnyRef();
 	}
 

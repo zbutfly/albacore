@@ -6,7 +6,6 @@ import java.util.Comparator;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function0;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.rdd.RDD;
@@ -14,12 +13,12 @@ import org.apache.spark.streaming.StreamingContext;
 import org.apache.spark.streaming.Time;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
-import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.spark.streaming.dstream.InputDStream;
 
+import net.butfly.albacore.calculus.factor.rds.RDS;
 import scala.Option;
 import scala.Tuple2;
-import scala.reflect.ClassTag;
+import scala.collection.JavaConversions;
 import scala.runtime.AbstractFunction0;
 
 public abstract class RDDDStream<T> extends InputDStream<T> {
@@ -29,12 +28,10 @@ public abstract class RDDDStream<T> extends InputDStream<T> {
 
 	protected SparkContext sc;
 	protected RDD<T> current;
-	protected ClassTag<T> classTag;
 
-	RDDDStream(StreamingContext ssc, ClassTag<T> classTag) {
-		super(ssc, classTag);
+	RDDDStream(StreamingContext ssc) {
+		super(ssc, RDS.tag());
 		this.sc = ssc.sc();
-		this.classTag = classTag;
 	}
 
 	abstract protected RDD<T> load();
@@ -68,44 +65,40 @@ public abstract class RDDDStream<T> extends InputDStream<T> {
 		});
 	}
 
-	public static <K, V> JavaPairDStream<K, V> pstream(JavaStreamingContext ssc, Mechanism mechanism, Function0<JavaPairRDD<K, V>> rdd,
-			Class<K> kc, Class<V> vc) {
+	public static <K, V> JavaPairDStream<K, V> pstream(StreamingContext ssc, Mechanism mechanism, Function0<JavaPairRDD<K, V>> rdd) {
 		try {
-			return JavaPairDStream.fromPairDStream(
-					new RDDInputDStream<Tuple2<K, V>>(ssc.ssc(), mechanism, () -> rdd.call().map(t -> t).rdd(),
-							scala.reflect.ClassTag$.MODULE$.<Tuple2<K, V>> apply(Tuple2.class)),
-					scala.reflect.ClassTag$.MODULE$.<K> apply(kc), scala.reflect.ClassTag$.MODULE$.<V> apply(vc));
+			return JavaPairDStream.fromPairDStream(new RDDInputDStream<Tuple2<K, V>>(ssc, mechanism, () -> rdd.call().map(t -> t).rdd()),
+					RDS.tag(), RDS.tag());
 		} catch (Exception ex) {
 			throw new RuntimeException(ex);
 		}
 	}
 
 	@Deprecated
-	public static <K, V> JavaPairDStream<K, V> bpstream(JavaStreamingContext ssc, long batch, Function2<Long, K, JavaPairRDD<K, V>> batcher,
-			Comparator<K> comparator, Class<K> kc, Class<V> vc) {
+	public static <K, V> JavaPairDStream<K, V> bpstream(StreamingContext ssc, long batch, Function2<Long, K, JavaPairRDD<K, V>> batcher,
+			Comparator<K> comparator) {
 		try {
 			return JavaPairDStream.fromPairDStream(
-					new RDDBatchInputDStream<K, V>(ssc.ssc(), batch, (limit, offset) -> batcher.call(limit, offset).rdd(), comparator,
-							scala.reflect.ClassTag$.MODULE$.<Tuple2<K, V>> apply(Tuple2.class)),
-					scala.reflect.ClassTag$.MODULE$.<K> apply(kc), scala.reflect.ClassTag$.MODULE$.<V> apply(vc));
+					new RDDBatchInputDStream<K, V>(ssc, batch, (limit, offset) -> batcher.call(limit, offset).rdd(), comparator), RDS.tag(),
+					RDS.tag());
 		} catch (Exception ex) {
 			throw new RuntimeException(ex);
 		}
 	}
 
-	public static <R> JavaDStream<R> stream(JavaStreamingContext ssc, Mechanism mechanism, Function0<JavaRDD<R>> rdd, Class<R> rc) {
-		ClassTag<R> r = scala.reflect.ClassTag$.MODULE$.<R> apply(rc);
-		return JavaDStream.fromDStream(new RDDInputDStream<R>(ssc.ssc(), mechanism, () -> rdd.call().rdd(), r), r);
+	public static <R> JavaDStream<R> stream(StreamingContext ssc, Mechanism mechanism, Function0<JavaRDD<R>> rdd) {
+		return JavaDStream.fromDStream(new RDDInputDStream<R>(ssc, mechanism, () -> rdd.call().rdd()), RDS.tag());
 	}
 
 	@SafeVarargs
-	public static <R> JavaRDD<R> rdd(JavaSparkContext sc, R... r) {
-		return sc.parallelize(Arrays.asList(r));
+	public static <R> JavaRDD<R> rdd(SparkContext sc, R... r) {
+		return JavaRDD.fromRDD(sc.parallelize(JavaConversions.asScalaBuffer(Arrays.asList(r)).seq(), sc.defaultParallelism(), RDS.tag()),
+				RDS.tag());
 	}
 
 	@SuppressWarnings("unchecked")
-	public static <R> JavaDStream<R> stream(JavaStreamingContext ssc, R... r) {
-		JavaRDD<R> rdd = rdd(ssc.sparkContext(), r);
-		return stream(ssc, Mechanism.CONST, () -> rdd, (Class<R>) rdd.classTag().runtimeClass());
+	public static <R> JavaDStream<R> stream(StreamingContext ssc, R... r) {
+		JavaRDD<R> rdd = rdd(ssc.sc(), r);
+		return stream(ssc, Mechanism.CONST, () -> rdd);
 	}
 }

@@ -87,7 +87,7 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 			a.enableTable(ht);
 			return true;
 		} catch (IOException e) {
-			logger.error("Failure confirm data source: " + factor.getName() + " => " + this.toString() + " => " + detail.toString());
+			logger.error("Failure confirm rddsOrDStream source: " + factor.getName() + " => " + this.toString() + " => " + detail.toString());
 			return false;
 		}
 	}

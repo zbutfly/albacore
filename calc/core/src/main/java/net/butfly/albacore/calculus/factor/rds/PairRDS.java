@@ -20,6 +20,8 @@ import org.apache.spark.streaming.dstream.DStream;
 
 import com.google.common.base.Optional;
 
+import net.butfly.albacore.calculus.streaming.RDDDStream;
+import net.butfly.albacore.calculus.streaming.RDDDStream.Mechanism;
 import scala.Tuple2;
 import scala.runtime.BoxedUnit;
 
@@ -28,6 +30,7 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 
 	protected PairRDS() {}
 
+	@Override
 	protected PairRDS<K, V> init(DStream<Tuple2<K, V>> dstream) {
 		init(dstream);
 		return this;
@@ -91,8 +94,15 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 		switch (type) {
 		case RDD:
 			JavaPairRDD<K, V> r1 = JavaPairRDD.fromRDD(union(rdds), tag(), tag());
-			JavaPairRDD<K, W> r2 = JavaPairRDD.fromRDD(union(other.rdds), tag(), tag());
-			return new PairRDS<K, Tuple2<V, W>>(r1.join(r2));
+			switch (other.type) {
+			case RDD:
+				JavaPairRDD<K, W> r2 = JavaPairRDD.fromRDD(union(other.rdds), tag(), tag());
+				return new PairRDS<K, Tuple2<V, W>>(r1.join(r2));
+			case DSTREAM:
+				JavaPairDStream<K, V> s1 = RDDDStream.pstream(other.dstream.ssc(), Mechanism.CONST, () -> r1);
+				JavaPairDStream<K, W> s2 = JavaPairDStream.fromPairDStream(other.dstream, tag(), tag());
+				return new PairRDS<K, Tuple2<V, W>>(s1.join(s2));
+			}
 		case DSTREAM:
 			JavaPairDStream<K, V> s1 = JavaPairDStream.fromPairDStream(dstream, tag(), tag());
 			JavaPairDStream<K, W> s2 = JavaPairDStream.fromPairDStream(other.dstream, tag(), tag());

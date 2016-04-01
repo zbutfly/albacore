@@ -1,4 +1,4 @@
-package net.butfly.albacore.calculus.factor.rds.deprecated;
+package net.butfly.albacore.calculus.factor.rds;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -8,34 +8,34 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.streaming.api.java.JavaDStream;
 
 @Deprecated
-public class RDS<T> extends AbstractRDS<T, JavaRDD<T>, JavaDStream<T>> implements Serializable {
+public class JavaRDS<T> extends JavaRDSBase<T, JavaRDD<T>, JavaDStream<T>> implements Serializable {
 	private static final long serialVersionUID = 1908771862271821691L;
 
-	protected RDS() {}
+	protected JavaRDS() {}
 
 	@SafeVarargs
-	public RDS(JavaRDD<T>... rdd) {
+	public JavaRDS(JavaRDD<T>... rdd) {
 		super(rdd);
 	}
 
-	public RDS(JavaDStream<T> dstream) {
+	public JavaRDS(JavaDStream<T> dstream) {
 		super(dstream);
 	}
 
 	@SafeVarargs
-	public RDS(JavaSparkContext sc, T... t) {
+	public JavaRDS(JavaSparkContext sc, T... t) {
 		this(sc.parallelize(Arrays.asList(t)));
 	}
 
-	public RDS<T> folk() {
+	public JavaRDS<T> folk() {
 		switch (type) {
 		case RDD:
 			for (int i = 0; i < rdds.length; i++)
 				rdds[i] = rdds[i].cache();
-			return new RDS<T>(rdds);
+			return new JavaRDS<T>(rdds);
 		case DSTREAM:
 			dstream = dstream.cache();
-			return new RDS<T>(dstream);
+			return new JavaRDS<T>(dstream);
 		}
 		return this;
 	}

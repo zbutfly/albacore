@@ -7,14 +7,13 @@ import org.apache.spark.streaming.StreamingContext;
 import org.apache.spark.streaming.Time;
 
 import scala.Option;
-import scala.reflect.ClassTag;
 
 class RDDInputDStream<T> extends RDDDStream<T> {
 	protected Mechanism mechanism;
 	protected Function0<RDD<T>> loader;
 
-	public RDDInputDStream(StreamingContext ssc, Mechanism mechanism, Function0<RDD<T>> loader, ClassTag<T> classTag) {
-		super(ssc, classTag);
+	public RDDInputDStream(StreamingContext ssc, Mechanism mechanism, Function0<RDD<T>> loader) {
+		super(ssc);
 		this.mechanism = mechanism;
 		this.loader = loader;
 		load();

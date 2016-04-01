@@ -1,4 +1,4 @@
-package net.butfly.albacore.calculus.factor.rds.deprecated;
+package net.butfly.albacore.calculus.factor.rds;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -23,7 +23,7 @@ import scala.reflect.ManifestFactory;
 import scala.runtime.BoxedUnit;
 
 @Deprecated
-abstract class AbstractRDS<T, R extends JavaRDDLike<T, R>, S extends JavaDStreamLike<T, S, R>> implements Serializable {
+abstract class JavaRDSBase<T, R extends JavaRDDLike<T, R>, S extends JavaDStreamLike<T, S, R>> implements Serializable {
 	private static final long serialVersionUID = 5884484452918532597L;
 
 	enum RDSType {
@@ -34,26 +34,26 @@ abstract class AbstractRDS<T, R extends JavaRDDLike<T, R>, S extends JavaDStream
 	protected R[] rdds;
 	protected S dstream;
 
-	protected AbstractRDS() {}
+	protected JavaRDSBase() {}
 
 	@SafeVarargs
-	public AbstractRDS(R... rdd) {
+	public JavaRDSBase(R... rdd) {
 		type = RDSType.RDD;
 		this.rdds = rdd;
 	}
 
-	public AbstractRDS(S dstream) {
+	public JavaRDSBase(S dstream) {
 		type = RDSType.DSTREAM;
 		this.dstream = dstream;
 	}
 
 	@SafeVarargs
 	@SuppressWarnings("unchecked")
-	public AbstractRDS(JavaSparkContext sc, T... t) {
+	public JavaRDSBase(JavaSparkContext sc, T... t) {
 		this((R) sc.parallelize(Arrays.asList(t)));
 	}
 
-	public abstract AbstractRDS<T, R, S> folk();
+	public abstract JavaRDSBase<T, R, S> folk();
 
 	public final boolean isEmpty() {
 		switch (type) {
@@ -82,23 +82,23 @@ abstract class AbstractRDS<T, R extends JavaRDDLike<T, R>, S extends JavaDStream
 		}
 	}
 
-	public final <K2, V2> PairRDS<K2, V2> mapToPair(PairFunction<T, K2, V2> func) {
+	public final <K2, V2> JavaPairRDS<K2, V2> mapToPair(PairFunction<T, K2, V2> func) {
 		switch (type) {
 		case RDD:
-			return new PairRDS<K2, V2>(each(rdds, rdd -> rdd.mapToPair(func)));
+			return new JavaPairRDS<K2, V2>(each(rdds, rdd -> rdd.mapToPair(func)));
 		case DSTREAM:
-			return new PairRDS<K2, V2>(dstream.mapToPair(func));
+			return new JavaPairRDS<K2, V2>(dstream.mapToPair(func));
 		default:
 			throw new IllegalArgumentException();
 		}
 	}
 
-	public final <T1> RDS<T1> map(Function<T, T1> func) {
+	public final <T1> JavaRDS<T1> map(Function<T, T1> func) {
 		switch (type) {
 		case RDD:
-			return new RDS<T1>(each(rdds, rdd -> rdd.map(func)));
+			return new JavaRDS<T1>(each(rdds, rdd -> rdd.map(func)));
 		case DSTREAM:
-			return new RDS<T1>(dstream.map(func));
+			return new JavaRDS<T1>(dstream.map(func));
 		default:
 			throw new IllegalArgumentException();
 		}

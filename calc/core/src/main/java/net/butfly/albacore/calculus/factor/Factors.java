@@ -20,7 +20,6 @@ import net.butfly.albacore.calculus.factor.Factor.Streaming;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.streaming.RDDDStream;
 import net.butfly.albacore.calculus.streaming.RDDDStream.Mechanism;
-import net.butfly.albacore.calculus.utils.Reflections;
 
 @SuppressWarnings({ "unchecked", "deprecation" })
 public final class Factors implements Serializable {
@@ -59,21 +58,21 @@ public final class Factors implements Serializable {
 		switch (calc.mode) {
 		case STOCKING:
 			add(key, config.batching <= 0 ? new PairRDS<K, F>(ds.stocking(calc, config.factorClass, config.detail))
-					: new PairRDS<K, F>(RDDDStream.bpstream(calc.ssc, config.batching,
+					: new PairRDS<K, F>(RDDDStream.bpstream(calc.ssc.ssc(), config.batching,
 							(limit, offset) -> ds.batching(calc, config.factorClass, limit, offset, config.detail),
-							ds.marshaller().comparator(), config.keyClass, config.factorClass)));
+							ds.marshaller().comparator())));
 			break;
 		case STREAMING:
 			switch (config.mode) {
 			case STOCKING:
 				switch (config.streaming) {
 				case CONST:
-					add(key, new PairRDS<K, F>(RDDDStream.pstream(calc.ssc, Mechanism.CONST,
-							() -> ds.stocking(calc, config.factorClass, config.detail), config.keyClass, config.factorClass)));
+					add(key, new PairRDS<K, F>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.CONST,
+							() -> ds.stocking(calc, config.factorClass, config.detail))));
 					break;
 				case FRESH:
-					add(key, new PairRDS<K, F>(RDDDStream.pstream(calc.ssc, Mechanism.FRESH,
-							() -> ds.stocking(calc, config.factorClass, config.detail), config.keyClass, config.factorClass)));
+					add(key, new PairRDS<K, F>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.FRESH,
+							() -> ds.stocking(calc, config.factorClass, config.detail))));
 					break;
 				default:
 					throw new UnsupportedOperationException();
