@@ -106,6 +106,7 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Mong
 				q.append("_id", this.marshaller.marshallId(t._1));
 				BasicBSONObject u = new BasicBSONObject();
 				u.append("$set", this.marshaller.marshall(t._2));
+				if (logger.isTraceEnabled()) logger.trace("MongoUpdateWritable: " + u.toString() + " from " + q.toString());
 				return new Tuple2<Object, MongoUpdateWritable>(null, new MongoUpdateWritable(q, u, true, true));
 			}).saveAsNewAPIHadoopFile("", Object.class, BSONObject.class, MongoOutputFormat.class, conf);
 		};

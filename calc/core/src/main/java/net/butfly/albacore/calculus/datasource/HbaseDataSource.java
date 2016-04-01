@@ -20,6 +20,7 @@ import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.filter.PageFilter;
 import org.apache.hadoop.hbase.filter.RandomRowFilter;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
+import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
 import org.apache.hadoop.hbase.protobuf.ProtobufUtil;
 import org.apache.hadoop.hbase.util.Base64;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -87,7 +88,8 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 			a.enableTable(ht);
 			return true;
 		} catch (IOException e) {
-			logger.error("Failure confirm rddsOrDStream source: " + factor.getName() + " => " + this.toString() + " => " + detail.toString());
+			logger.error(
+					"Failure confirm rddsOrDStream source: " + factor.getName() + " => " + this.toString() + " => " + detail.toString());
 			return false;
 		}
 	}
@@ -104,7 +106,7 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 		logger.error("Batching mode is not supported now... BUG!!!!!");
 		Map<String, String> params = new HashMap<>();
 		try {
-			params.put(BatchTableInputFormat.SCAN,
+			params.put(TableInputFormat.SCAN,
 					Base64.encodeBytes(ProtobufUtil.toScan(createScan().setFilter(new PageFilter(limit))).toByteArray()));
 		} catch (IOException e) {}
 		if (null != offset) params.put("hbase.mapreduce.batching.offsets", Bytes.toString(offset));
@@ -119,7 +121,7 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 		} catch (IOException e) {
 			throw new RuntimeException("HBase configuration invalid.", e);
 		}
-		hconf.set(BatchTableInputFormat.INPUT_TABLE, table);
+		hconf.set(TableInputFormat.INPUT_TABLE, table);
 		if (null != params && !params.isEmpty()) for (Map.Entry<String, String> p : params.entrySet())
 			hconf.set(p.getKey(), p.getValue());
 		else if (calc.debug) try {
@@ -127,19 +129,19 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 			if (ratio > 0) {
 				logger.error("Hbase debugging, random sampling results of " + ratio
 						+ " (can be customized by -Dcalculus.debug.hbase.random.ratio=0.00000X)");
-				hconf.set(BatchTableInputFormat.SCAN,
+				hconf.set(TableInputFormat.SCAN,
 						Base64.encodeBytes(ProtobufUtil.toScan(new Scan().setFilter(new RandomRowFilter(ratio))).toByteArray()));
 			} else {
 				long limit = Long.parseLong(System.getProperty("calculus.debug.hbase.limit", "500"));
 				if (limit <= 0) limit = 500;
 				logger.error("Hbase debugging, limit results in " + limit + " (can be customized by -Dcalculus.debug.hbase.limit=100)");
-				hconf.set(BatchTableInputFormat.SCAN,
+				hconf.set(TableInputFormat.SCAN,
 						Base64.encodeBytes(ProtobufUtil.toScan(new Scan().setFilter(new PageFilter(limit))).toByteArray()));
 			}
 		} catch (IOException e) {
 			logger.error("Hbase debugging failure, page scan definition error", e);
 		}
-		JavaPairRDD<ImmutableBytesWritable, Result> rr = calc.sc.newAPIHadoopRDD(hconf, BatchTableInputFormat.class,
+		JavaPairRDD<ImmutableBytesWritable, Result> rr = calc.sc.newAPIHadoopRDD(hconf, TableInputFormat.class,
 				ImmutableBytesWritable.class, Result.class);
 		if (calc.debug && logger.isTraceEnabled()) logger.trace("HBase scaned: " + rr.count());
 		// TODO: Confirm String key
