@@ -2,12 +2,12 @@ package net.butfly.albacore.calculus.factor;
 
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
-import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.bson.BSONObject;
 
 import net.butfly.albacore.calculus.Calculator;
@@ -27,7 +27,7 @@ import net.butfly.albacore.calculus.streaming.RDDDStream.Mechanism;
 public final class Factors implements Serializable {
 	private static final long serialVersionUID = -3712903710207597570L;
 	protected Calculator calc;
-	protected Map<String, PairRDS<?, ? extends Factor<?>>> pool;
+	protected Map<String, FactorConfig<?, ?>> pool;
 
 	public Factors(Calculator calc) {
 		pool = new HashMap<>(calc.factorings.length);
@@ -35,6 +35,7 @@ public final class Factors implements Serializable {
 
 		FactorConfig<?, ?> batch = null;
 		for (Factoring f : calc.factorings) {
+			if (pool.containsKey(f.key())) throw new IllegalArgumentException("Conflictted factoring id: " + f.key());
 			@SuppressWarnings("rawtypes")
 			Class fc = f.factor();
 			if (!fc.isAnnotationPresent(Streaming.class) && !fc.isAnnotationPresent(Stocking.class)) throw new IllegalArgumentException(
@@ -47,50 +48,46 @@ public final class Factors implements Serializable {
 						+ batch.factorClass.toString() + " and " + c.factorClass.toString());
 				else batch = c;
 			}
-			read(f.key(), c);
+			pool.put(f.key(), c);
 		}
 	}
 
 	public <K, F extends Factor<F>> PairRDS<K, F> get(String factoring) {
-		return (PairRDS<K, F>) pool.get(factoring);
+		return get(factoring, null, new HashSet<>());
 	}
 
-	private <K, F extends Factor<F>> void read(String key, FactorConfig<K, F> config) {
+	public <K, F extends Factor<F>, E extends Factor<E>> PairRDS<K, F> get(String factoring, String field, Set<?> other) {
+		FactorConfig<K, F> config = (FactorConfig<K, F>) pool.get(factoring);
 		DataSource<K, ?, ?, DataDetail> ds = calc.dss.ds(config.dbid);
 		switch (calc.mode) {
 		case STOCKING:
-			if (config.batching <= 0) {
-				JavaPairRDD<K, F> rdd = ds.stocking(calc, config.factorClass, config.detail);
-				add(key, new PairRDS<K, F>(rdd));
-			} else {
-				JavaPairDStream<K, F> dds = RDDDStream.bpstream(calc.ssc.ssc(), config.batching,
-						(limit, offset) -> ds.batching(calc, config.factorClass, limit, offset, config.detail),
-						ds.marshaller().comparator());
-				add(key, new PairRDS<K, F>(dds));
-			}
-			break;
+			if (config.batching <= 0) return new PairRDS<K, F>(ds.stocking(calc, config.factorClass, config.detail, field, other));
+			else return new PairRDS<K, F>(RDDDStream.bpstream(calc.ssc.ssc(), config.batching,
+					(limit, offset) -> ds.batching(calc, config.factorClass, limit, offset, config.detail), ds.marshaller().comparator()));
+			// batching, no foreign key refer.
 		case STREAMING:
 			switch (config.mode) {
 			case STOCKING:
 				switch (config.streaming) {
 				case CONST:
-					add(key, new PairRDS<K, F>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.CONST,
-							() -> ds.stocking(calc, config.factorClass, config.detail))));
-					break;
+					return new PairRDS<K, F>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.CONST,
+							() -> ds.stocking(calc, config.factorClass, config.detail, field, other)));
 				case FRESH:
-					add(key, new PairRDS<K, F>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.FRESH,
-							() -> ds.stocking(calc, config.factorClass, config.detail))));
-					break;
+					return new PairRDS<K, F>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.FRESH,
+							() -> ds.stocking(calc, config.factorClass, config.detail, field, other)));
 				default:
 					throw new UnsupportedOperationException();
 				}
-				break;
 			case STREAMING:
-				add(key, new PairRDS<K, F>(ds.streaming(calc, config.factorClass, config.detail)));
-				break;
+				return new PairRDS<K, F>(ds.streaming(calc, config.factorClass, config.detail));
 			}
-			break;
+		default:
+			throw new UnsupportedOperationException();
 		}
+	}
+
+	public <K, F extends Factor<F>> PairRDS<K, F> get(String factoring, String field, PairRDS<K, ?> other) {
+		return get(factoring, field, other.collectKeys());
 	}
 
 	public <K, F extends Factor<F>> FactorConfig<K, F> config(Class<F> factor) {
@@ -140,10 +137,5 @@ public final class Factors implements Serializable {
 			}
 		}
 		return config;
-	}
-
-	private <K, F extends Factor<F>> void add(String key, PairRDS<K, F> value) {
-		if (pool.containsKey(key)) throw new IllegalArgumentException("Conflictted factoring id: " + key);
-		pool.put(key, value);
 	}
 }

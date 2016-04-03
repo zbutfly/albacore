@@ -31,6 +31,17 @@ public final class Reflections {
 		return fields.values().toArray(new Field[fields.size()]);
 	}
 
+	public static Field getDeclaredField(Class<?> clazz, String name) {
+		while (clazz != null) {
+			try {
+				return clazz.getDeclaredField(name);
+			} catch (NoSuchFieldException e) {
+				clazz = clazz.getSuperclass();
+			}
+		}
+		return null;
+	}
+
 	public static <T> T construct(String className, Object... parameters) {
 		Class<T> clazz = forClassName(className);
 		return construct(clazz, parameters);

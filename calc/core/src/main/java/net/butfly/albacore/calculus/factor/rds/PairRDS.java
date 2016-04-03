@@ -1,8 +1,11 @@
 package net.butfly.albacore.calculus.factor.rds;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -23,6 +26,7 @@ import com.google.common.base.Optional;
 import net.butfly.albacore.calculus.streaming.RDDDStream;
 import net.butfly.albacore.calculus.streaming.RDDDStream.Mechanism;
 import scala.Tuple2;
+import scala.reflect.ClassTag;
 import scala.runtime.BoxedUnit;
 
 public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
@@ -58,6 +62,24 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 
 	public PairRDS(JavaSparkContext sc, Map<K, V> map) {
 		this(sc.parallelize(new ArrayList<>(map.entrySet())).map(e -> new Tuple2<>(e.getKey(), e.getValue())));
+	}
+
+	public Map<K, V> collectAsMap() {
+		Map<K, V> r = new HashMap<>();
+		eachRDD(rdd -> {
+			for (Tuple2<K, V> t : rdd.collect())
+				r.put(t._1, t._2);
+		});
+		return r;
+	}
+
+	public Set<K> collectKeys() {
+		Set<K> r = new HashSet<>();
+		eachRDD(rdd -> {
+			for (Tuple2<K, V> t : rdd.collect())
+				r.add(t._1);
+		});
+		return r;
 	}
 
 	public void eachPairRDD(VoidFunction<JavaPairRDD<K, V>> consumer) {
@@ -218,5 +240,9 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 		default:
 			throw new IllegalArgumentException();
 		}
+	}
+
+	public ClassTag<V> v() {
+		return tag();
 	}
 }

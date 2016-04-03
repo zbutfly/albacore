@@ -85,6 +85,12 @@ public class RDS<T> implements Serializable {
 		}
 	}
 
+	public List<T> collect() {
+		List<T> r = new ArrayList<>();
+		eachRDD(rdd -> r.addAll(rdd.collect()));
+		return r;
+	}
+
 	public RDS<T> eachRDD(VoidFunction<JavaRDD<T>> consumer) {
 		switch (type) {
 		case RDD:

@@ -37,7 +37,6 @@ public class HbaseMarshaller extends Marshaller<byte[], ImmutableBytesWritable, 
 	@Override
 	public <T extends Factor<T>> T unmarshall(Result from, Class<T> to) {
 		if (null == from) return null;
-		String dcf = to.isAnnotationPresent(HbaseColumnFamily.class) ? to.getAnnotation(HbaseColumnFamily.class).value() : null;
 		T t;
 		try {
 			t = to.newInstance();
@@ -45,13 +44,9 @@ public class HbaseMarshaller extends Marshaller<byte[], ImmutableBytesWritable, 
 			throw new RuntimeException(e);
 		}
 		for (Field f : Reflections.getDeclaredFields(to)) {
-			String colname = f.isAnnotationPresent(JsonProperty.class) ? f.getAnnotation(JsonProperty.class).value()
-					: CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, f.getName());
-			String colfamily = f.isAnnotationPresent(HbaseColumnFamily.class) ? f.getAnnotation(HbaseColumnFamily.class).value() : dcf;
-			if (colfamily == null)
-				throw new IllegalArgumentException("Column family is not defined on " + to.toString() + ", field " + f.getName());
+			String[] qulifier = parseQulifier(to, f);
 			try {
-				Cell cell = from.getColumnLatestCell(Text.encode(colfamily).array(), Text.encode(colname).array());
+				Cell cell = from.getColumnLatestCell(Text.encode(qulifier[0]).array(), Text.encode(qulifier[1]).array());
 				if (cell != null) Reflections.set(t, f, fromBytes(f.getType(), CellUtil.cloneValue(cell)));
 				else if (logger.isTraceEnabled())
 					logger.trace("Rows of table for [" + to.toString() + "]: " + Joiner.on(',').join(rows(from)));
@@ -60,6 +55,16 @@ public class HbaseMarshaller extends Marshaller<byte[], ImmutableBytesWritable, 
 			}
 		}
 		return t;
+	}
+
+	public <T> String[] parseQulifier(Class<T> to, Field f) {
+		String dcf = to.isAnnotationPresent(HbaseColumnFamily.class) ? to.getAnnotation(HbaseColumnFamily.class).value() : null;
+		String col = f.isAnnotationPresent(JsonProperty.class) ? f.getAnnotation(JsonProperty.class).value()
+				: CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, f.getName());
+		String family = f.isAnnotationPresent(HbaseColumnFamily.class) ? f.getAnnotation(HbaseColumnFamily.class).value() : dcf;
+		if (family == null)
+			throw new IllegalArgumentException("Column family is not defined on " + to.toString() + ", field " + f.getName());
+		return new String[] { family, col };
 	}
 
 	@Override
