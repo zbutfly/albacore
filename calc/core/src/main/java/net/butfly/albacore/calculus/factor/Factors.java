@@ -62,19 +62,19 @@ public final class Factors implements Serializable {
 		switch (calc.mode) {
 		case STOCKING:
 			if (config.batching <= 0) return new PairRDS<K, F>(ds.stocking(calc, config.factorClass, config.detail, field, other));
-			else return new PairRDS<K, F>(RDDDStream.bpstream(calc.ssc.ssc(), config.batching,
-					(limit, offset) -> ds.batching(calc, config.factorClass, limit, offset, config.detail), ds.marshaller().comparator()));
+			else return new PairRDS<K, F>(RDDDStream.bpstream(calc.ssc.ssc(), config.batching, (limit, offset) -> ds.batching(calc,
+					config.factorClass, limit, offset, config.detail), ds.marshaller().comparator()));
 			// batching, no foreign key refer.
 		case STREAMING:
 			switch (config.mode) {
 			case STOCKING:
 				switch (config.streaming) {
 				case CONST:
-					return new PairRDS<K, F>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.CONST,
-							() -> ds.stocking(calc, config.factorClass, config.detail, field, other)));
+					return new PairRDS<K, F>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.CONST, () -> ds.stocking(calc, config.factorClass,
+							config.detail, field, other)));
 				case FRESH:
-					return new PairRDS<K, F>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.FRESH,
-							() -> ds.stocking(calc, config.factorClass, config.detail, field, other)));
+					return new PairRDS<K, F>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.FRESH, () -> ds.stocking(calc, config.factorClass,
+							config.detail, field, other)));
 				default:
 					throw new UnsupportedOperationException();
 				}
@@ -111,8 +111,8 @@ public final class Factors implements Serializable {
 			config.dbid = s.source();
 			switch (s.type()) {
 			case HBASE:
-				if (Factor.NOT_DEFINED.equals(s.table()))
-					throw new IllegalArgumentException("Table not defined for factor " + factor.toString());
+				if (Factor.NOT_DEFINED.equals(s.table())) throw new IllegalArgumentException("Table not defined for factor " + factor
+						.toString());
 				config.detail = new HbaseDataDetail(s.table());
 				if (calc.validate) {
 					DataSource<String, ImmutableBytesWritable, Result, HbaseDataDetail> hds = calc.dss.ds(s.source());
@@ -121,9 +121,9 @@ public final class Factors implements Serializable {
 				config.keyClass = (Class<K>) byte[].class;
 				break;
 			case MONGODB:
-				if (Factor.NOT_DEFINED.equals(s.table()))
-					throw new IllegalArgumentException("Table not defined for factor " + factor.toString());
-				config.detail = new MongoDataDetail(s.table(), Factor.NOT_DEFINED.equals(s.filter()) ? null : s.filter());
+				if (Factor.NOT_DEFINED.equals(s.table())) throw new IllegalArgumentException("Table not defined for factor " + factor
+						.toString());
+				config.detail = new MongoDataDetail(Factor.NOT_DEFINED.equals(s.filter()) ? null : s.filter(), s.table());
 				if (calc.validate) {
 					DataSource<Object, Object, BSONObject, MongoDataDetail> hds = calc.dss.ds(s.source());
 					hds.confirm(factor, (MongoDataDetail) config.detail);
