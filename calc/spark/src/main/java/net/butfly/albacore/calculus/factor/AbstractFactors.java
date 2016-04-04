@@ -2,12 +2,13 @@ package net.butfly.albacore.calculus.factor;
 
 import java.io.Serializable;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
+import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaRDDLike;
+import org.apache.spark.streaming.api.java.JavaDStreamLike;
+import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.bson.BSONObject;
 
 import net.butfly.albacore.calculus.Calculator;
@@ -19,27 +20,42 @@ import net.butfly.albacore.calculus.datasource.KafkaDataDetail;
 import net.butfly.albacore.calculus.datasource.MongoDataDetail;
 import net.butfly.albacore.calculus.factor.Factor.Stocking;
 import net.butfly.albacore.calculus.factor.Factor.Streaming;
-import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.streaming.RDDDStream;
 import net.butfly.albacore.calculus.streaming.RDDDStream.Mechanism;
 
 @SuppressWarnings({ "unchecked", "deprecation" })
-public final class Factors implements Serializable {
+public abstract class AbstractFactors<D extends Serializable> extends HashMap<String, D> {
 	private static final long serialVersionUID = -3712903710207597570L;
 	protected Calculator calc;
-	protected Map<String, FactorConfig<?, ?>> pool;
 
-	public Factors(Calculator calc) {
-		pool = new HashMap<>(calc.factorings.length);
+	protected abstract <K, F extends Factor<F>> JavaPairDStream<K, F> dstream(D rds);
+
+	protected abstract <K, F extends Factor<F>> JavaPairRDD<K, F> rdd(D rds);
+
+	protected abstract <K, F extends Factor<F>> D rds(JavaPairDStream<K, F> dstream);
+
+	protected abstract <K, F extends Factor<F>> D rds(JavaPairRDD<K, F> rdd);
+
+	protected enum DMode {
+		RDD(JavaRDDLike.class), DSTREAM(JavaDStreamLike.class);
+		protected Class<?> clazz;
+
+		private DMode(Class<?> clazz) {
+			this.clazz = clazz;
+		}
+	}
+
+	protected AbstractFactors(Calculator calc) {
+		super(calc.factorings.length);
 		this.calc = calc;
 
 		FactorConfig<?, ?> batch = null;
 		for (Factoring f : calc.factorings) {
-			if (pool.containsKey(f.key())) throw new IllegalArgumentException("Conflictted factoring id: " + f.key());
 			@SuppressWarnings("rawtypes")
 			Class fc = f.factor();
 			if (!fc.isAnnotationPresent(Streaming.class) && !fc.isAnnotationPresent(Stocking.class)) throw new IllegalArgumentException(
 					"Factor [" + fc.toString() + "] is annotated as neither @Streaming nor @Stocking, can't calculate it!");
+
 			FactorConfig<?, ?> c = config(fc);
 			c.batching = f.batching();
 			c.streaming = f.stockOnStreaming();
@@ -48,46 +64,45 @@ public final class Factors implements Serializable {
 						+ batch.factorClass.toString() + " and " + c.factorClass.toString());
 				else batch = c;
 			}
-			pool.put(f.key(), c);
+			read(calc.mode, f.key(), c);
 		}
 	}
 
-	public <K, F extends Factor<F>> PairRDS<K, F> get(String factoring) {
-		return get(factoring, null, new HashSet<>());
-	}
-
-	public <K, F extends Factor<F>, E extends Factor<E>> PairRDS<K, F> get(String factoring, String field, Set<?> other) {
-		FactorConfig<K, F> config = (FactorConfig<K, F>) pool.get(factoring);
+	private <K, F extends Factor<F>> void read(Mode mode, String key, FactorConfig<K, F> config) {
 		DataSource<K, ?, ?, DataDetail> ds = calc.dss.ds(config.dbid);
-		switch (calc.mode) {
+		switch (mode) {
 		case STOCKING:
-			if (config.batching <= 0) return new PairRDS<K, F>(ds.stocking(calc, config.factorClass, config.detail, field, other));
-			else return new PairRDS<K, F>(RDDDStream.bpstream(calc.ssc.ssc(), config.batching,
-					(limit, offset) -> ds.batching(calc, config.factorClass, limit, offset, config.detail), ds.marshaller().comparator()));
-			// batching, no foreign key refer.
+			if (config.batching <= 0)
+				add(key, rds(RDDDStream.pstream(calc.ssc, Mechanism.STOCK, () -> ds.stocking(calc, config.factorClass, config.detail))));
+			else add(key, rds(ds.batching(calc, config.factorClass, config.batching, config.detail)));
+			break;
 		case STREAMING:
 			switch (config.mode) {
 			case STOCKING:
 				switch (config.streaming) {
 				case CONST:
-					return new PairRDS<K, F>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.CONST,
-							() -> ds.stocking(calc, config.factorClass, config.detail, field, other)));
+					put(key, rds(
+							RDDDStream.pstream(calc.ssc, Mechanism.CONST, () -> ds.stocking(calc, config.factorClass, config.detail))));
+					break;
 				case FRESH:
-					return new PairRDS<K, F>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.FRESH,
-							() -> ds.stocking(calc, config.factorClass, config.detail, field, other)));
+					add(key, rds(
+							RDDDStream.pstream(calc.ssc, Mechanism.FRESH, () -> ds.stocking(calc, config.factorClass, config.detail))));
+					break;
 				default:
 					throw new UnsupportedOperationException();
 				}
+				break;
 			case STREAMING:
-				return new PairRDS<K, F>(ds.streaming(calc, config.factorClass, config.detail));
+				add(key, rds(ds.streaming(calc, config.factorClass, config.detail)));
+				break;
 			}
-		default:
-			throw new UnsupportedOperationException();
+			break;
 		}
 	}
 
-	public <K, F extends Factor<F>> PairRDS<K, F> get(String factoring, String field, PairRDS<K, ?> other) {
-		return get(factoring, field, other.collectKeys());
+	private void add(String key, D value) {
+		if (this.containsKey(key)) throw new IllegalArgumentException("Conflictted factoring id: " + key);
+		super.put(key, value);
 	}
 
 	public <K, F extends Factor<F>> FactorConfig<K, F> config(Class<F> factor) {
@@ -100,7 +115,6 @@ public final class Factors implements Serializable {
 			switch (s.type()) {
 			case KAFKA:
 				config.detail = new KafkaDataDetail(s.table());
-				config.keyClass = (Class<K>) String.class;
 				break;
 			default:
 				throw new UnsupportedOperationException("Unsupportted streaming mode: " + s.type() + " on " + factor.toString());
@@ -118,7 +132,6 @@ public final class Factors implements Serializable {
 					DataSource<String, ImmutableBytesWritable, Result, HbaseDataDetail> hds = calc.dss.ds(s.source());
 					hds.confirm(factor, (HbaseDataDetail) config.detail);
 				}
-				config.keyClass = (Class<K>) byte[].class;
 				break;
 			case MONGODB:
 				if (Factor.NOT_DEFINED.equals(s.table()))
@@ -128,7 +141,6 @@ public final class Factors implements Serializable {
 					DataSource<Object, Object, BSONObject, MongoDataDetail> hds = calc.dss.ds(s.source());
 					hds.confirm(factor, (MongoDataDetail) config.detail);
 				}
-				config.keyClass = (Class<K>) Object.class;
 				break;
 			case CONSTAND_TO_CONSOLE:
 				break;
@@ -137,5 +149,15 @@ public final class Factors implements Serializable {
 			}
 		}
 		return config;
+	}
+
+	public static AbstractFactors<?> create(Calculator calc) {
+		switch (calc.mode) {
+		case STOCKING:
+			return new PairRDDFactors(calc);
+		case STREAMING:
+			return new PairDStreamFactors(calc);
+		}
+		throw new IllegalArgumentException();
 	}
 }

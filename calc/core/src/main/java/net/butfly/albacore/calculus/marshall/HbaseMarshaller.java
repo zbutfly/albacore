@@ -18,12 +18,11 @@ import com.google.common.base.CaseFormat;
 import com.google.common.base.Defaults;
 import com.google.common.base.Joiner;
 
-import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.datasource.HbaseColumnFamily;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.utils.Reflections;
 
-public class HbaseMarshaller extends Marshaller<ImmutableBytesWritable, Result> {
+public class HbaseMarshaller extends Marshaller<byte[], ImmutableBytesWritable, Result> {
 	private static final long serialVersionUID = -4529825710243214685L;
 	public static final String SCAN_LIMIT = "hbase.calculus.limit";
 	public static final String SCAN_OFFSET = "hbase.calculus.limit";
@@ -38,7 +37,6 @@ public class HbaseMarshaller extends Marshaller<ImmutableBytesWritable, Result> 
 	@Override
 	public <T extends Factor<T>> T unmarshall(Result from, Class<T> to) {
 		if (null == from) return null;
-		String dcf = to.isAnnotationPresent(HbaseColumnFamily.class) ? to.getAnnotation(HbaseColumnFamily.class).value() : null;
 		T t;
 		try {
 			t = to.newInstance();
@@ -46,22 +44,27 @@ public class HbaseMarshaller extends Marshaller<ImmutableBytesWritable, Result> 
 			throw new RuntimeException(e);
 		}
 		for (Field f : Reflections.getDeclaredFields(to)) {
-			String colname = f.isAnnotationPresent(JsonProperty.class) ? f.getAnnotation(JsonProperty.class).value()
-					: CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, f.getName());
-			String colfamily = f.isAnnotationPresent(HbaseColumnFamily.class) ? f.getAnnotation(HbaseColumnFamily.class).value() : dcf;
-			if (colfamily == null)
-				throw new IllegalArgumentException("Column family is not defined on " + to.toString() + ", field " + f.getName());
+			String[] qulifier = parseQulifier(to, f);
 			try {
-				Cell cell = from.getColumnLatestCell(Text.encode(colfamily).array(), Text.encode(colname).array());
+				Cell cell = from.getColumnLatestCell(Text.encode(qulifier[0]).array(), Text.encode(qulifier[1]).array());
 				if (cell != null) Reflections.set(t, f, fromBytes(f.getType(), CellUtil.cloneValue(cell)));
-				else if (Calculator.debug && logger.isTraceEnabled())
+				else if (logger.isTraceEnabled())
 					logger.trace("Rows of table for [" + to.toString() + "]: " + Joiner.on(',').join(rows(from)));
 			} catch (Exception e) {
 				logger.error("Parse of hbase result failure on " + to.toString() + ", field " + f.getName(), e);
 			}
 		}
 		return t;
+	}
 
+	public <T> String[] parseQulifier(Class<T> to, Field f) {
+		String dcf = to.isAnnotationPresent(HbaseColumnFamily.class) ? to.getAnnotation(HbaseColumnFamily.class).value() : null;
+		String col = f.isAnnotationPresent(JsonProperty.class) ? f.getAnnotation(JsonProperty.class).value()
+				: CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, f.getName());
+		String family = f.isAnnotationPresent(HbaseColumnFamily.class) ? f.getAnnotation(HbaseColumnFamily.class).value() : dcf;
+		if (family == null)
+			throw new IllegalArgumentException("Column family is not defined on " + to.toString() + ", field " + f.getName());
+		return new String[] { family, col };
 	}
 
 	@Override
@@ -70,15 +73,13 @@ public class HbaseMarshaller extends Marshaller<ImmutableBytesWritable, Result> 
 	}
 
 	@Override
-	public String unmarshallId(ImmutableBytesWritable id) {
-		if (null == id) return null;
-		return Bytes.toString(id.get());
+	public byte[] unmarshallId(ImmutableBytesWritable id) {
+		return null == id ? null : id.get();
 	}
 
 	@Override
-	public ImmutableBytesWritable marshallId(String id) {
-		if (null == id) return null;
-		return new ImmutableBytesWritable(Bytes.toBytes(id));
+	public ImmutableBytesWritable marshallId(byte[] id) {
+		return null == id ? null : new ImmutableBytesWritable(id);
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })

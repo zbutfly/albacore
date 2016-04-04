@@ -1,4 +1,4 @@
-package net.butfly.albacore.calculus.streaming;
+package net.butfly.albacore.calculus.streaming.rdd;
 
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.function.Function0;
@@ -25,12 +25,10 @@ class FreshInputDStream<K, V> extends WrappedPairInputDStream<K, V> {
 	public Option<RDD<Tuple2<K, V>>> compute(Time arg0) {
 		try {
 			current = loader.call();
-			trace(() -> "RDD [" + name() + "] computed: " + current.count() + ".");
-			return Option.apply(current.rdd());
 		} catch (Exception e) {
 			logger.error("RDD reloaded failure", e);
-			jssc.sparkContext().emptyRDD();
-			return super.compute(arg0);
+			current = null;
 		}
+		return super.compute(arg0);
 	}
 }

@@ -16,17 +16,16 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.streaming.Durations;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
-import org.bson.BSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.butfly.albacore.calculus.datasource.ConstDataSource;
+import net.butfly.albacore.calculus.datasource.DataDetail;
+import net.butfly.albacore.calculus.datasource.DataSource;
 import net.butfly.albacore.calculus.datasource.DataSource.DataSources;
 import net.butfly.albacore.calculus.datasource.HbaseDataSource;
 import net.butfly.albacore.calculus.datasource.KafkaDataSource;
@@ -37,7 +36,10 @@ import net.butfly.albacore.calculus.factor.FactorConfig;
 import net.butfly.albacore.calculus.factor.Factoring;
 import net.butfly.albacore.calculus.factor.Factoring.Factorings;
 import net.butfly.albacore.calculus.factor.Factors;
+import net.butfly.albacore.calculus.marshall.HbaseMarshaller;
+import net.butfly.albacore.calculus.marshall.KafkaMarshaller;
 import net.butfly.albacore.calculus.marshall.Marshaller;
+import net.butfly.albacore.calculus.marshall.MongoMarshaller;
 import net.butfly.albacore.calculus.utils.Reflections;
 
 public class Calculator implements Serializable {
@@ -45,20 +47,20 @@ public class Calculator implements Serializable {
 	private static final Logger logger = LoggerFactory.getLogger(Calculator.class);
 
 	// devel configurations
-	public static boolean debug;
+	public boolean debug;
 
 	// spark configurations
-	private SparkConf sconf;
-	private JavaSparkContext sc;
-	private JavaStreamingContext ssc;
+	public SparkConf sconf;
+	public JavaSparkContext sc;
+	public JavaStreamingContext ssc;
 	public DataSources dss = new DataSources();
 	private int dura;
 
 	// calculus configurations
 	public Mode mode;
 	public boolean validate;
+	public Factoring[] factorings;
 	private Calculus<?, ?> calculus;
-	private Factoring[] factorings;
 
 	public static void main(String... args) {
 		final Properties props = new Properties();
@@ -74,20 +76,29 @@ public class Calculator implements Serializable {
 		if (cmd.hasOption('m')) props.setProperty("calculus.mode", cmd.getOptionValue('m').toUpperCase());
 		if (cmd.hasOption('c')) props.setProperty("calculus.class", cmd.getOptionValue('c'));
 		if (cmd.hasOption('d')) props.setProperty("calculus.debug", cmd.getOptionValue('d'));
+		for (Object key : props.keySet())
+			if (key.toString().startsWith("spark.")) System.setProperty(key.toString(), props.getProperty(key.toString()));
 		Calculator c = new Calculator(props);
 		c.start().calculate(c.calculus).finish();
 	}
 
 	private Calculator start() {
 		sc = new JavaSparkContext(sconf);
-		ssc = new JavaStreamingContext(sc, Durations.seconds(dura));
+		if (mode == Mode.STREAMING) ssc = new JavaStreamingContext(sc, Durations.seconds(dura));
 		return this;
 	}
 
 	private Calculator finish() {
-		ssc.start();
-		ssc.awaitTermination();
-		ssc.close();
+		if (mode == Mode.STREAMING) {
+			ssc.start();
+			logger.info(calculus.name + " streaming started, warting for finish. ");
+			ssc.awaitTermination();
+			try {
+				ssc.close();
+			} catch (Throwable th) {
+				logger.error("Streaming error", th);
+			}
+		}
 		sc.close();
 		return this;
 	}
@@ -103,19 +114,13 @@ public class Calculator implements Serializable {
 		final String appname = props.getProperty("calculus.app.name", "Calculuses");
 		// dadatabse configurations parsing
 		parseDatasources(appname, subprops(props, "calculus.ds."));
-		// spark configurations parsing
-		if (props.containsKey("calculus.spark.executor.instances"))
-			System.setProperty("SPARK_EXECUTOR_INSTANCES", props.getProperty("calculus.spark.executor.instances"));
 		sconf = new SparkConf();
-		sconf.setMaster(props.getProperty("calculus.spark.url"));
+		if (props.containsKey("calculus.spark.url")) sconf.setMaster(props.getProperty("calculus.spark.url"));
 		sconf.setAppName(appname + "-Spark");
 		sconf.set("spark.app.id", appname + "Spark-App");
 		if (props.containsKey("calculus.spark.jars")) sconf.setJars(props.getProperty("calculus.spark.jars").split(","));
 		if (props.containsKey("calculus.spark.home")) sconf.setSparkHome(props.getProperty("calculus.spark.home"));
-		if (props.containsKey("calculus.spark.files")) sconf.set("spark.files", props.getProperty("calculus.spark.files"));
-		if (props.containsKey("calculus.spark.executor.memory.mb"))
-			sconf.set("spark.executor.memory", props.getProperty("calculus.spark.executor.memory.mb"));
-		if (props.containsKey("calculus.spark.testing")) sconf.set("spark.testing", props.getProperty("calculus.spark.testing"));
+		if (debug) sconf.set("spark.testing", "true");
 
 		if (!props.containsKey("calculus.class"))
 			throw new IllegalArgumentException("Calculus not defined (-c xxx.ClassName or -Dcalculus.class=xxx.ClassName).");
@@ -131,7 +136,7 @@ public class Calculator implements Serializable {
 		else if (c.isAnnotationPresent(Factoring.class)) factorings = new Factoring[] { c.getAnnotation(Factoring.class) };
 		else throw new IllegalArgumentException("Calculus " + c.toString() + " has no @Factoring annotated.");
 		try {
-			calculus = (Calculus<?, ?>) c.newInstance();
+			calculus = ((Calculus<?, ?>) c.newInstance()).calculator(this);
 		} catch (Exception e) {
 			throw new IllegalArgumentException("Calculus " + c.toString() + " constructor failure, ignored", e);
 		}
@@ -143,9 +148,10 @@ public class Calculator implements Serializable {
 		logger.info(calculus.name + " starting... ");
 		Class<OF> c = Reflections.resolveGenericParameter(calculus.getClass(), Calculus.class, "OF");
 		logger.info(calculus.name + " will output as: " + c.toString());
-		FactorConfig<OK, OF> s = Factors.scan(Mode.STOCKING, c, dss, validate);
-		dss.ds(s.dbid).save(sc, calculus.calculate(ssc, new Factors(ssc, mode, dss, validate, factorings)), s.detail);
-		logger.info(calculus.name + " started. ");
+		Factors factors = new Factors(this);
+		FactorConfig<OK, OF> s = factors.config(c);
+		DataSource<OK, ?, ?, DataDetail> ds = dss.ds(s.dbid);
+		ds.save(this, calculus.calculate(factors), s.detail);
 		return this;
 	}
 
@@ -163,13 +169,12 @@ public class Calculator implements Serializable {
 		return r;
 	}
 
-	@SuppressWarnings("unchecked")
 	private void parseDatasources(String appname, Map<String, Properties> dsprops) {
 		for (String dsid : dsprops.keySet()) {
 			Properties dbprops = dsprops.get(dsid);
-			Marshaller<?, ?> m;
+			Marshaller<?, ?, ?> m;
 			try {
-				m = (Marshaller<?, ?>) Class.forName(dbprops.getProperty("marshaller")).newInstance();
+				m = (Marshaller<?, ?, ?>) Class.forName(dbprops.getProperty("marshaller")).newInstance();
 			} catch (Exception e) {
 				m = null;
 			}
@@ -179,18 +184,17 @@ public class Calculator implements Serializable {
 				dss.put(dsid, new ConstDataSource(dbprops.getProperty("values").split(",")));
 				break;
 			case HBASE:
-				dss.put(dsid, new HbaseDataSource(dbprops.getProperty("config", "hbase-site.xml"),
-						(Marshaller<ImmutableBytesWritable, Result>) m));
+				dss.put(dsid, new HbaseDataSource(dbprops.getProperty("config", "hbase-site.xml"), (HbaseMarshaller) m));
 				break;
 			case MONGODB:
-				dss.put(dsid, new MongoDataSource(dbprops.getProperty("uri"), (Marshaller<Object, BSONObject>) m));
+				dss.put(dsid, new MongoDataSource(dbprops.getProperty("uri"), (MongoMarshaller) m));
 				// , dbprops.getProperty("authdb"),dbprops.getProperty("authdb")
 				break;
 			case KAFKA:
 				dss.put(dsid,
 						new KafkaDataSource(dbprops.getProperty("servers"), dbprops.getProperty("root"),
 								Integer.parseInt(dbprops.getProperty("topic.partitions", "1")),
-								debug ? appname + UUID.randomUUID().toString() : appname, (Marshaller<String, byte[]>) m));
+								debug ? appname + UUID.randomUUID().toString() : appname, (KafkaMarshaller) m));
 				break;
 			default:
 				logger.warn("Unsupportted type: " + type);

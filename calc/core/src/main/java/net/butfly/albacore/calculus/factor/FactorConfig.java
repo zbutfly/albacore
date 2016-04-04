@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 import net.butfly.albacore.calculus.Mode;
 import net.butfly.albacore.calculus.datasource.DataDetail;
-import net.butfly.albacore.calculus.factor.Factoring.OnStreaming;
+import net.butfly.albacore.calculus.streaming.RDDDStream.Mechanism;
 
 public class FactorConfig<K, F extends Factor<F>> implements Serializable {
 	private static final long serialVersionUID = 5323846657146326084L;
@@ -14,6 +14,7 @@ public class FactorConfig<K, F extends Factor<F>> implements Serializable {
 	public Mode mode;
 	public String dbid;
 	public DataDetail detail;
+	@Deprecated
 	public long batching = 0;
-	public OnStreaming streaming;
+	public Mechanism streaming;
 }
