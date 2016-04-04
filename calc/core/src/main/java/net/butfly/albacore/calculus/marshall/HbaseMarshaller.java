@@ -17,6 +17,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Defaults;
 import com.google.common.base.Joiner;
+import com.google.common.base.Preconditions;
 
 import net.butfly.albacore.calculus.datasource.HbaseColumnFamily;
 import net.butfly.albacore.calculus.factor.Factor;
@@ -58,6 +59,7 @@ public class HbaseMarshaller extends Marshaller<byte[], ImmutableBytesWritable, 
 	}
 
 	public <T> String[] parseQulifier(Class<T> to, Field f) {
+		Preconditions.checkNotNull(f);
 		String dcf = to.isAnnotationPresent(HbaseColumnFamily.class) ? to.getAnnotation(HbaseColumnFamily.class).value() : null;
 		String col = f.isAnnotationPresent(JsonProperty.class) ? f.getAnnotation(JsonProperty.class).value()
 				: CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, f.getName());
