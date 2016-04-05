@@ -275,4 +275,14 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 	public ClassTag<V> v() {
 		return tag();
 	}
+
+	public PairRDS<K, V> cache() {
+		super.cache();
+		return this;
+	}
+
+	public PairRDS<K, V> persist() {
+		super.persist();
+		return this;
+	}
 }

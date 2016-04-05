@@ -86,7 +86,7 @@ public final class Factors implements Serializable {
 		}
 	}
 
-	public <K, F extends Factor<F>> PairRDS<K, F> get(String factoring, String field, PairRDS<K, ?> other) {
+	public <K, F extends Factor<F>> PairRDS<K, F> get(String factoring, String field, PairRDS<?, ?> other) {
 		return get(factoring, field, other.collectKeys());
 	}
 

@@ -34,6 +34,7 @@ public abstract class Calculus<OK, OF extends Factor<OF>> implements Logable {
 		return true;
 	}
 
+	@Deprecated
 	protected boolean check(PairRDS<?, ?>... rds) {
 		for (PairRDS<?, ?> r : rds)
 			if (r.isEmpty()) return false;

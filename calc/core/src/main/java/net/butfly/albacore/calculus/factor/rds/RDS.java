@@ -18,6 +18,7 @@ import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaDStreamLike;
 import org.apache.spark.streaming.dstream.DStream;
 
+import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Function1;
 import scala.Tuple2;
 import scala.reflect.ClassTag;
@@ -63,16 +64,32 @@ public class RDS<T> implements Serializable {
 		this(sc.parallelize(Arrays.asList(t)));
 	}
 
-	public RDS<T> folk() {
+	public RDS<T> cache() {
 		switch (type) {
 		case RDD:
-			RDS<T> n = new RDS<T>().init(each(rdds, v1 -> v1.cache()));
-			return n;
+			rdds = new ArrayList<>(Reflections.transform(rdds, r -> r.cache()));
+			break;
 		case DSTREAM:
-			return new RDS<T>().init(dstream.cache());
+			dstream = dstream.cache();
+			break;
 		default:
 			throw new IllegalArgumentException();
 		}
+		return this;
+	}
+
+	public RDS<T> persist() {
+		switch (type) {
+		case RDD:
+			rdds = new ArrayList<>(Reflections.transform(rdds, r -> r.persist()));
+			break;
+		case DSTREAM:
+			dstream = dstream.persist();
+			break;
+		default:
+			throw new IllegalArgumentException();
+		}
+		return this;
 	}
 
 	public final boolean isEmpty() {
