@@ -2,8 +2,8 @@ package net.butfly.albacore.calculus.datasource;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
@@ -82,7 +82,7 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Mong
 
 	@Override
 	public <F extends Factor<F>> JavaPairRDD<Object, F> stocking(Calculator calc, Class<F> factor, MongoDataDetail detail,
-			String referField, Set<?> referValues) {
+			String referField, Collection<?> referValues) {
 		if (logger.isDebugEnabled()) logger.debug("Stocking begin: " + factor.toString());
 		Configuration mconf = new Configuration();
 		mconf.set("mongo.job.input.format", "com.mongodb.hadoop.MongoInputFormat");
@@ -100,7 +100,7 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Mong
 				: new Tuple2<Object, F>(this.marshaller.unmarshallId(t._1), this.marshaller.unmarshall(t._2, factor)));
 	}
 
-	private String filter(String filter, String referField, Set<?> referValues) {
+	private String filter(String filter, String referField, Collection<?> referValues) {
 		MongoMarshaller bsoner = (MongoMarshaller) this.marshaller;
 		List<BSONObject> qs = new ArrayList<>();
 		if (referField != null) {

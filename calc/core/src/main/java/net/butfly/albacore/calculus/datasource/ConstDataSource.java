@@ -1,7 +1,7 @@
 package net.butfly.albacore.calculus.datasource;
 
 import java.util.Arrays;
-import java.util.Set;
+import java.util.Collection;
 import java.util.UUID;
 
 import org.apache.spark.api.java.JavaPairRDD;
@@ -35,7 +35,7 @@ public class ConstDataSource extends DataSource<String, Void, Void, DataDetail> 
 
 	@Override
 	public <F extends Factor<F>> JavaPairRDD<String, F> stocking(Calculator calc, Class<F> factor, DataDetail detail, String referField,
-			Set<?> referValues) {
+			Collection<?> referValues) {
 		if (null != referField) throw new IllegalArgumentException("Constant data source does not support filter on reading.");
 		String[] values = this.values;
 		if (values == null) values = new String[0];

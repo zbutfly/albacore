@@ -15,6 +15,7 @@ import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.api.java.function.VoidFunction;
+import org.apache.spark.api.java.function.VoidFunction2;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaDStreamLike;
@@ -25,6 +26,7 @@ import com.google.common.base.Optional;
 
 import net.butfly.albacore.calculus.streaming.RDDDStream;
 import net.butfly.albacore.calculus.streaming.RDDDStream.Mechanism;
+import scala.Function1;
 import scala.Tuple2;
 import scala.reflect.ClassTag;
 import scala.runtime.BoxedUnit;
@@ -99,6 +101,34 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 			}));
 			break;
 		}
+	}
+
+	public PairRDS<K, V> each(VoidFunction2<K, V> consumer) {
+		Function1<Tuple2<K, V>, BoxedUnit> func = t -> {
+			try {
+				consumer.call(t._1, t._2);
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+			return BoxedUnit.UNIT;
+		};
+		switch (type) {
+		case RDD:
+			for (RDD<Tuple2<K, V>> rdd : rdds)
+				try {
+					rdd.foreach(func);
+				} catch (Exception e) {
+					throw new RuntimeException(e);
+				}
+			break;
+		case DSTREAM:
+			dstream.foreachRDD(rdd -> {
+				rdd.foreach(func);
+				return BoxedUnit.UNIT;
+			});
+			break;
+		}
+		return this;
 	}
 
 	public PairRDS<K, V> reduceByKey(Function2<V, V, V> func) {

@@ -1,8 +1,8 @@
 package net.butfly.albacore.calculus.datasource;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.HashMap;
-import java.util.Set;
 
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.function.VoidFunction;
@@ -42,7 +42,7 @@ public abstract class DataSource<FK, K, V, D extends DataDetail> implements Seri
 	}
 
 	public <F extends Factor<F>> JavaPairRDD<FK, F> stocking(Calculator calc, Class<F> factor, D detail, String referField,
-			Set<?> referValues) {
+			Collection<?> referValues) {
 		throw new UnsupportedOperationException("Unsupportted stocking mode: " + type + " on " + factor.toString());
 	}
 

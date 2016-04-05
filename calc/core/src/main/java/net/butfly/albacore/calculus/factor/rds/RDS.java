@@ -18,6 +18,7 @@ import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaDStreamLike;
 import org.apache.spark.streaming.dstream.DStream;
 
+import scala.Function1;
 import scala.Tuple2;
 import scala.reflect.ClassTag;
 import scala.reflect.ManifestFactory;
@@ -106,6 +107,34 @@ public class RDS<T> implements Serializable {
 				consumer.call(JavaRDD.fromRDD(rdd, tag()));
 				return BoxedUnit.UNIT;
 			}));
+			break;
+		}
+		return this;
+	}
+
+	public RDS<T> each(VoidFunction<T> consumer) {
+		Function1<T, BoxedUnit> func = t -> {
+			try {
+				consumer.call(t);
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+			return BoxedUnit.UNIT;
+		};
+		switch (type) {
+		case RDD:
+			for (RDD<T> rdd : rdds)
+				try {
+					rdd.foreach(func);
+				} catch (Exception e) {
+					throw new RuntimeException(e);
+				}
+			break;
+		case DSTREAM:
+			dstream.foreachRDD(rdd -> {
+				rdd.foreach(func);
+				return BoxedUnit.UNIT;
+			});
 			break;
 		}
 		return this;

@@ -1,10 +1,10 @@
 package net.butfly.albacore.calculus.factor;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
@@ -56,7 +56,7 @@ public final class Factors implements Serializable {
 		return get(factoring, null, new HashSet<>());
 	}
 
-	public <K, F extends Factor<F>, E extends Factor<E>> PairRDS<K, F> get(String factoring, String field, Set<?> other) {
+	public <K, F extends Factor<F>, E extends Factor<E>> PairRDS<K, F> get(String factoring, String field, Collection<?> other) {
 		FactorConfig<K, F> config = (FactorConfig<K, F>) pool.get(factoring);
 		DataSource<K, ?, ?, DataDetail> ds = calc.dss.ds(config.dbid);
 		switch (calc.mode) {
