@@ -4,10 +4,9 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
@@ -15,7 +14,7 @@ import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Admin;
-import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.filter.CompareFilter.CompareOp;
@@ -46,7 +45,6 @@ import scala.Tuple2;
 public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, Result, HbaseDataDetail> {
 	private static final long serialVersionUID = 3367501286179801635L;
 	String configFile;
-	Connection hconn;
 
 	public HbaseDataSource(String configFile, HbaseMarshaller marshaller) {
 		super(Type.HBASE, null == marshaller ? new HbaseMarshaller() : marshaller);
@@ -62,15 +60,13 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 		return configFile;
 	}
 
-	public Connection getHconn() {
-		return hconn;
-	}
-
 	@Override
 	public boolean confirm(Class<? extends Factor<?>> factor, HbaseDataDetail detail) {
 		try {
-			TableName ht = TableName.valueOf(detail.hbaseTable);
-			Admin a = getHconn().getAdmin();
+			TableName ht = TableName.valueOf(detail.tables[0]);
+			Configuration hconf = HBaseConfiguration.create();
+			hconf.addResource(Calculator.scanInputStream(configFile));
+			Admin a = ConnectionFactory.createConnection(hconf).getAdmin();
 			if (a.tableExists(ht)) return true;
 			Set<String> families = new HashSet<>();
 			Set<String> columns = new HashSet<>();
@@ -95,8 +91,8 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 			a.enableTable(ht);
 			return true;
 		} catch (IOException e) {
-			logger.error(
-					"Failure confirm rddsOrDStream source: " + factor.getName() + " => " + this.toString() + " => " + detail.toString());
+			logger.error("Failure confirm rddsOrDStream source: " + factor.getName() + " => " + this.toString() + " => " + detail
+					.toString());
 			return false;
 		}
 	}
@@ -104,84 +100,8 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 	@Override
 	public <F extends Factor<F>> JavaPairRDD<byte[], F> stocking(Calculator calc, Class<F> factor, HbaseDataDetail detail,
 			String referField, Set<?> referValues) {
-		if (logger.isDebugEnabled()) logger.debug("Scaning begin: " + factor.toString() + ", from table: " + detail.hbaseTable + ".");
-		Configuration hconf = create(detail.hbaseTable);
-		if (referField != null && referValues != null && referValues.size() > 0) {
-			Field f = Reflections.getDeclaredField(factor, referField);
-			if (null == f) throw new IllegalArgumentException("Field [" + referField + "] invalid in " + factor.toString());
-			String[] qulifier = ((HbaseMarshaller) this.marshaller).parseQulifier(factor, f);
-			filter(hconf, qulifier[0], qulifier[1], referValues);
-		} else if (calc.debug) debug(hconf);
-		return this.scan(calc.sc, hconf, factor, calc.debug);
-	}
-
-	private Configuration filter(Configuration hconf, String family, String col, Set<?> referValues) {
-		List<Filter> l = new ArrayList<>();
-		for (Object val : referValues) {
-			if (null == val) throw new UnsupportedOperationException("Null value refer not supported.");
-			Class<?> c = val.getClass();
-			byte[] v;
-			if (String.class.isAssignableFrom(c)) v = Bytes.toBytes((String) val);
-			else if (Integer.class.isAssignableFrom(c)) v = Bytes.toBytes((Integer) val);
-			else if (Boolean.class.isAssignableFrom(c)) v = Bytes.toBytes((Boolean) val);
-			else if (Long.class.isAssignableFrom(c)) v = Bytes.toBytes((Long) val);
-			else if (Double.class.isAssignableFrom(c)) v = Bytes.toBytes((Double) val);
-			else if (Float.class.isAssignableFrom(c)) v = Bytes.toBytes((Float) val);
-			else if (Short.class.isAssignableFrom(c)) v = Bytes.toBytes((Short) val);
-			else if (Byte.class.isAssignableFrom(c)) v = Bytes.toBytes((Byte) val);
-			else if (BigDecimal.class.isAssignableFrom(c)) v = Bytes.toBytes((BigDecimal) val);
-			else throw new UnsupportedOperationException("Class " + c.toString() + " not supported.");
-			l.add(new SingleColumnValueFilter(Bytes.toBytes(family), Bytes.toBytes(col), CompareOp.EQUAL, v));
-		}
-		try {
-			hconf.set(TableInputFormat.SCAN,
-					Base64.encodeBytes(ProtobufUtil.toScan(new Scan().setFilter(new FilterList(Operator.MUST_PASS_ONE, l))).toByteArray()));
-		} catch (IOException e) {
-			throw new RuntimeException("HBase configuration invalid.", e);
-		}
-		return hconf;
-	}
-
-	private <F extends Factor<F>> JavaPairRDD<byte[], F> scan(JavaSparkContext sc, Configuration hconf, Class<F> factor, boolean debug) {
-		JavaPairRDD<ImmutableBytesWritable, Result> rr = sc.newAPIHadoopRDD(hconf, TableInputFormat.class, ImmutableBytesWritable.class,
-				Result.class);
-		JavaPairRDD<byte[], F> r = rr.mapToPair(t -> null == t ? null
-				: new Tuple2<byte[], F>(this.marshaller.unmarshallId(t._1), this.marshaller.unmarshall(t._2, factor)));
-		if (debug && logger.isTraceEnabled()) logger.trace("HBase scaned: " + rr.count());
-		return r;
-	}
-
-	private Configuration debug(Configuration hconf) {
-		try {
-			float ratio = Float.parseFloat(System.getProperty("calculus.debug.hbase.random.ratio", "0"));
-			if (ratio > 0) {
-				logger.error("Hbase debugging, random sampling results of " + ratio
-						+ " (can be customized by -Dcalculus.debug.hbase.random.ratio=0.00000X)");
-				hconf.set(TableInputFormat.SCAN,
-						Base64.encodeBytes(ProtobufUtil.toScan(new Scan().setFilter(new RandomRowFilter(ratio))).toByteArray()));
-			} else {
-				long limit = Long.parseLong(System.getProperty("calculus.debug.hbase.limit", "-1"));
-				if (limit > 0) {
-					logger.error("Hbase debugging, limit results in " + limit + " (can be customized by -Dcalculus.debug.hbase.limit=100)");
-					hconf.set(TableInputFormat.SCAN,
-							Base64.encodeBytes(ProtobufUtil.toScan(new Scan().setFilter(new PageFilter(limit))).toByteArray()));
-				}
-			}
-		} catch (IOException e) {
-			logger.error("Hbase debugging failure, page scan definition error", e);
-		}
-		return hconf;
-	}
-
-	private Configuration create(String table) {
-		Configuration hconf = HBaseConfiguration.create();
-		try {
-			hconf.addResource(Calculator.scanInputStream(this.configFile));
-		} catch (IOException e) {
-			throw new RuntimeException("HBase configuration invalid.", e);
-		}
-		hconf.set(TableInputFormat.INPUT_TABLE, table);
-		return hconf;
+		if (logger.isDebugEnabled()) logger.debug("Scaning begin: " + factor.toString() + ", from table: " + detail.tables[0] + ".");
+		return new HConf<F>(factor, detail.tables[0], calc.debug).filter(referField, referValues).debug().scan(calc.sc);
 	}
 
 	private Scan createScan() {
@@ -206,15 +126,102 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 	@Deprecated
 	public <F extends Factor<F>> JavaPairRDD<byte[], F> batching(Calculator calc, Class<F> factor, long limit, byte[] offset,
 			HbaseDataDetail detail) {
-		if (logger.isDebugEnabled()) logger.debug("Scaning begin: " + factor.toString() + ", from table: " + detail.hbaseTable + ".");
+		if (logger.isDebugEnabled()) logger.debug("Scaning begin: " + factor.toString() + ", from table: " + detail.tables[0] + ".");
 		logger.error("Batching mode is not supported now... BUG!!!!!");
-		Configuration hconf = create(detail.hbaseTable);
-		// batching options.
-		try {
-			hconf.set(TableInputFormat.SCAN,
-					Base64.encodeBytes(ProtobufUtil.toScan(createScan().setFilter(new PageFilter(limit))).toByteArray()));
-		} catch (IOException e) {}
-		if (null != offset) hconf.set("hbase.mapreduce.batching.offsets", Bytes.toString(offset));
-		return scan(calc.sc, hconf, factor, calc.debug);
+		return new HConf<F>(factor, detail.tables[0], calc.debug).filter(offset, limit).scan(calc.sc);
+	}
+
+	private class HConf<F extends Factor<F>> {
+		Configuration hconf;
+		Class<F> factor;
+		boolean filtered = false;
+		boolean debug;
+
+		public HConf(Class<F> factor, String table, boolean debug) {
+			super();
+			this.factor = factor;
+			this.debug = debug;
+			this.hconf = HBaseConfiguration.create();
+			try {
+				hconf.addResource(Calculator.scanInputStream(configFile));
+			} catch (IOException e) {
+				throw new RuntimeException("HBase configuration invalid.", e);
+			}
+			hconf.set(TableInputFormat.INPUT_TABLE, table);
+		}
+
+		public HConf<F> filter(byte[] offset, long limit) {
+			try {
+				hconf.set(TableInputFormat.SCAN, Base64.encodeBytes(ProtobufUtil.toScan(createScan().setFilter(new PageFilter(limit)))
+						.toByteArray()));
+			} catch (IOException e) {}
+			if (null != offset) hconf.set("hbase.mapreduce.batching.offsets", Bytes.toString(offset));
+			return this;
+		}
+
+		public JavaPairRDD<byte[], F> scan(JavaSparkContext sc) {
+			JavaPairRDD<ImmutableBytesWritable, Result> rr = sc.newAPIHadoopRDD(hconf, TableInputFormat.class, ImmutableBytesWritable.class,
+					Result.class);
+			JavaPairRDD<byte[], F> r = rr.mapToPair(t -> null == t ? null
+					: new Tuple2<byte[], F>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor)));
+			if (debug && logger.isTraceEnabled()) logger.trace("HBase scaned: " + rr.count());
+			return r;
+		}
+
+		public HConf<F> debug() {
+			if (debug && !filtered) try {
+				float ratio = Float.parseFloat(System.getProperty("calculus.debug.hbase.random.ratio", "0"));
+				if (ratio > 0) {
+					logger.error("Hbase debugging, random sampling results of " + ratio
+							+ " (can be customized by -Dcalculus.debug.hbase.random.ratio=0.00000X)");
+					hconf.set(TableInputFormat.SCAN, Base64.encodeBytes(ProtobufUtil.toScan(new Scan().setFilter(new RandomRowFilter(
+							ratio))).toByteArray()));
+				} else {
+					long limit = Long.parseLong(System.getProperty("calculus.debug.hbase.limit", "-1"));
+					if (limit > 0) {
+						logger.error("Hbase debugging, limit results in " + limit
+								+ " (can be customized by -Dcalculus.debug.hbase.limit=100)");
+						hconf.set(TableInputFormat.SCAN, Base64.encodeBytes(ProtobufUtil.toScan(new Scan().setFilter(new PageFilter(limit)))
+								.toByteArray()));
+					}
+				}
+			} catch (IOException e) {
+				logger.error("Hbase debugging failure, page scan definition error", e);
+			}
+			filtered = true;
+			return this;
+		}
+
+		@SuppressWarnings("unchecked")
+		public <V> HConf<F> filter(String referField, Set<V> referValues) {
+			if (referField != null && referValues != null && referValues.size() > 0) {
+				Field f = Reflections.getDeclaredField(factor, referField);
+				String[] qulifier = ((HbaseMarshaller) marshaller).parseQulifier(factor, f);
+				try {
+					hconf.set(TableInputFormat.SCAN, Base64.encodeBytes(ProtobufUtil.toScan(new Scan().setFilter(new FilterList(
+							Operator.MUST_PASS_ONE, Reflections.transform(Reflections.transform(referValues, converter((Class<V>) f
+									.getType())), val -> new SingleColumnValueFilter(Bytes.toBytes(qulifier[0]), Bytes.toBytes(qulifier[1]),
+											CompareOp.EQUAL, val)).toArray(new Filter[0])))).toByteArray()));
+				} catch (IOException e) {
+					throw new RuntimeException("HBase configuration invalid.", e);
+				}
+				filtered = true;
+			}
+			return this;
+		}
+
+		private <V> Function<V, byte[]> converter(Class<V> c) {
+			if (null == c) return null;
+			if (String.class.isAssignableFrom(c)) return val -> Bytes.toBytes((String) val);
+			else if (Integer.class.isAssignableFrom(c)) return val -> Bytes.toBytes((Integer) val);
+			else if (Boolean.class.isAssignableFrom(c)) return val -> Bytes.toBytes((Boolean) val);
+			else if (Long.class.isAssignableFrom(c)) return val -> Bytes.toBytes((Long) val);
+			else if (Double.class.isAssignableFrom(c)) return val -> Bytes.toBytes((Double) val);
+			else if (Float.class.isAssignableFrom(c)) return val -> Bytes.toBytes((Float) val);
+			else if (Short.class.isAssignableFrom(c)) return val -> Bytes.toBytes((Short) val);
+			else if (Byte.class.isAssignableFrom(c)) return val -> Bytes.toBytes((Byte) val);
+			else if (BigDecimal.class.isAssignableFrom(c)) return val -> Bytes.toBytes((BigDecimal) val);
+			else throw new UnsupportedOperationException("Class " + c.toString() + " not supported.");
+		}
 	}
 }

@@ -4,16 +4,13 @@ import net.butfly.albacore.calculus.factor.Factor.Type;
 
 public class KafkaDataDetail extends DataDetail {
 	private static final long serialVersionUID = -3136910829803418814L;
-	// kafka
-	public String[] kafkaTopics;
 
-	public KafkaDataDetail(String... kafkaTopics) {
-		super(Type.KAFKA);
-		this.kafkaTopics = kafkaTopics;
+	public KafkaDataDetail(String... topics) {
+		super(Type.KAFKA, null, topics);
 	}
 
 	@Override
 	public String toString() {
-		return "[Table: " + String.join(",", kafkaTopics) + "]";
+		return "[Table: " + String.join(",", tables) + "]";
 	}
 }

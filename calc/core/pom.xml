@@ -10,10 +10,11 @@
 	<name>albacore-calc-core</name>
 	<properties>
 		<deps.version.scala>2.11</deps.version.scala>
-		<deps.version.scala.lib>${deps.version.scala}.7</deps.version.scala.lib>
+		<deps.version.scala.lib>2.12.0-M3-dc9effe</deps.version.scala.lib>
+		<!-- ${deps.version.scala}.8 -->
 		<deps.version.spark>1.6.1</deps.version.spark>
 		<deps.version.hbase>1.2.0</deps.version.hbase>
-		<deps.version.jackson>2.7.2</deps.version.jackson>
+		<deps.version.jackson>2.7.3</deps.version.jackson>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -70,7 +71,7 @@
 		<dependency>
 			<groupId>com.fasterxml.jackson.module</groupId>
 			<artifactId>jackson-module-scala_${deps.version.scala}</artifactId>
-			<version>${deps.version.jackson}</version>
+			<version>2.7.2</version><!-- ${deps.version.jackson} slow update -->
 		</dependency>
 		<dependency>
 			<groupId>org.json4s</groupId>

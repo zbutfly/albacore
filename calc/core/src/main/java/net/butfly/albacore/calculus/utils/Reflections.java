@@ -4,8 +4,12 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import com.google.common.reflect.TypeToken;
 
@@ -109,5 +113,12 @@ public final class Reflections {
 			types.put(v.getName(), (Class<?>) TypeToken.of(implType).resolveType(v).getRawType());
 		};
 		return types;
+	}
+
+	public static <T, R> Collection<R> transform(Collection<T> original, Function<T, R> trans) {
+		if (original == null) return null;
+		List<R> r = new ArrayList<>(original.size());
+		original.forEach(o -> r.add(trans.apply(o)));
+		return r;
 	}
 }

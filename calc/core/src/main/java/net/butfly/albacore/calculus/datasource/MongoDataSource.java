@@ -61,10 +61,10 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Mong
 		MongoClient mclient = new MongoClient(muri);
 		try {
 			MongoDatabase db = mclient.getDatabase(muri.getDatabase());
-			MongoCollection<Document> col = db.getCollection(detail.mongoTable);
+			MongoCollection<Document> col = db.getCollection(detail.tables[0]);
 			if (col == null) {
-				db.createCollection(detail.mongoTable);
-				col = db.getCollection(detail.mongoTable);
+				db.createCollection(detail.tables[0]);
+				col = db.getCollection(detail.tables[0]);
 			}
 			for (Field f : Reflections.getDeclaredFields(factor))
 				if (f.isAnnotationPresent(Index.class)) {
@@ -88,8 +88,8 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Mong
 		mconf.set("mongo.job.input.format", "com.mongodb.hadoop.MongoInputFormat");
 		MongoClientURI uri = new MongoClientURI(this.uri);
 		// mconf.set("mongo.auth.uri", uri.toString());
-		mconf.set("mongo.input.uri", new MongoClientURIBuilder(uri).collection(uri.getDatabase(), detail.mongoTable).build().toString());
-		String qstr = filter(detail.mongoFilter, referField, referValues);
+		mconf.set("mongo.input.uri", new MongoClientURIBuilder(uri).collection(uri.getDatabase(), detail.tables[0]).build().toString());
+		String qstr = filter(detail.filter, referField, referValues);
 		if (logger.isTraceEnabled()) logger.trace("Run mongodb filter: " + qstr);
 		if (null != qstr) mconf.set("mongo.input.query", qstr);
 		// conf.mconf.set("mongo.input.fields
@@ -128,7 +128,7 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Mong
 		Configuration conf = HBaseConfiguration.create();
 		conf.set("mongo.job.output.format", MongoOutputFormat.class.getName());
 		MongoClientURI uri = new MongoClientURI(this.uri);
-		conf.set("mongo.output.uri", new MongoClientURIBuilder(uri).collection(uri.getDatabase(), detail.mongoTable).build().toString());
+		conf.set("mongo.output.uri", new MongoClientURIBuilder(uri).collection(uri.getDatabase(), detail.tables[0]).build().toString());
 		return r -> {
 			r.mapToPair(t -> {
 				BasicBSONObject q = new BasicBSONObject();
