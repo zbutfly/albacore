@@ -111,13 +111,13 @@ public final class Factors implements Serializable {
 			config.dbid = s.source();
 			switch (s.type()) {
 			case HBASE:
-				if (Factor.NOT_DEFINED.equals(s.table()))
+				if (null != s.table() && s.table().length > 0)
 					throw new IllegalArgumentException("Table not defined for factor " + factor.toString());
 				config.detail = new HbaseDataDetail(s.table());
 				config.keyClass = (Class<K>) byte[].class;
 				break;
 			case MONGODB:
-				if (Factor.NOT_DEFINED.equals(s.table()))
+				if (null != s.table() && s.table().length > 0)
 					throw new IllegalArgumentException("Table not defined for factor " + factor.toString());
 				String suffix = calc.dss.ds(config.dbid).suffix;
 				if (null != suffix) {

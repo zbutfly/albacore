@@ -114,6 +114,7 @@ public class Calculator implements Serializable {
 		parseDatasources(appname, subprops(props, "calculus.ds."));
 		sconf = new SparkConf();
 		if (props.containsKey("calculus.spark.url")) sconf.setMaster(props.getProperty("calculus.spark.url"));
+		// sconf.set("spark.yarn.submit.waitAppCompletion", "false");
 		sconf.setAppName(appname + "-Spark");
 		sconf.set("spark.app.id", appname + "Spark-App");
 		if (props.containsKey("calculus.spark.jars")) sconf.setJars(props.getProperty("calculus.spark.jars").split(","));
