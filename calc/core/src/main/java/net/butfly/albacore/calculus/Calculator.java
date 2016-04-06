@@ -58,7 +58,6 @@ public class Calculator implements Serializable {
 
 	// calculus configurations
 	public Mode mode;
-	public boolean validate;
 	public Factoring[] factorings;
 	private Calculus<?, ?> calculus;
 
@@ -77,7 +76,7 @@ public class Calculator implements Serializable {
 		if (cmd.hasOption('c')) props.setProperty("calculus.class", cmd.getOptionValue('c'));
 		if (cmd.hasOption('d')) props.setProperty("calculus.debug", cmd.getOptionValue('d'));
 		for (Object key : props.keySet())
-			if (key.toString().startsWith("spark.")) System.setProperty(key.toString(), props.getProperty(key.toString()));
+			System.setProperty(key.toString(), props.getProperty(key.toString()));
 		Calculator c = new Calculator(props);
 		c.start().calculate(c.calculus).finish();
 	}
@@ -110,7 +109,6 @@ public class Calculator implements Serializable {
 			logger.warn("Stocking does not support duration, but duration may be set by calculator for batching.");
 		dura = mode == Mode.STREAMING ? Integer.parseInt(props.getProperty("calculus.spark.duration.seconds", "30"))
 				: Integer.parseInt(props.getProperty("calculus.spark.duration.seconds", "1"));
-		validate = Boolean.parseBoolean(props.getProperty("calculus.validate.table", "false"));
 		final String appname = props.getProperty("calculus.app.name", "Calculuses");
 		// dadatabse configurations parsing
 		parseDatasources(appname, subprops(props, "calculus.ds."));
@@ -187,7 +185,8 @@ public class Calculator implements Serializable {
 				dss.put(dsid, new HbaseDataSource(dbprops.getProperty("config", "hbase-site.xml"), (HbaseMarshaller) m));
 				break;
 			case MONGODB:
-				dss.put(dsid, new MongoDataSource(dbprops.getProperty("uri"), (MongoMarshaller) m));
+				dss.put(dsid, new MongoDataSource(dbprops.getProperty("uri"), (MongoMarshaller) m, dbprops.getProperty("output.suffix"),
+						Boolean.parseBoolean(dbprops.getProperty("validate", "true"))));
 				// , dbprops.getProperty("authdb"),dbprops.getProperty("authdb")
 				break;
 			case KAFKA:

@@ -25,7 +25,7 @@ public class KafkaDataSource extends DataSource<String, String, byte[], KafkaDat
 	int topicPartitions;
 
 	public KafkaDataSource(String servers, String root, int topicPartitions, String group, KafkaMarshaller marshaller) {
-		super(Type.KAFKA, null == marshaller ? new KafkaMarshaller() : marshaller);
+		super(Type.KAFKA, false, null == marshaller ? new KafkaMarshaller() : marshaller);
 		int pos = servers.indexOf('/');
 		if (root == null && pos >= 0) {
 			this.servers = servers.substring(0, pos);

@@ -1,6 +1,7 @@
 package net.butfly.albacore.calculus.datasource;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
@@ -34,6 +35,8 @@ import org.apache.hadoop.hbase.util.Base64;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.CaseFormat;
@@ -50,7 +53,7 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 	String configFile;
 
 	public HbaseDataSource(String configFile, HbaseMarshaller marshaller) {
-		super(Type.HBASE, null == marshaller ? new HbaseMarshaller() : marshaller);
+		super(Type.HBASE, false, null == marshaller ? new HbaseMarshaller() : marshaller);
 		this.configFile = configFile;
 	}
 
@@ -104,25 +107,9 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 	public <F extends Factor<F>> JavaPairRDD<byte[], F> stocking(Calculator calc, Class<F> factor, HbaseDataDetail detail,
 			String referField, Collection<?> referValues) {
 		if (logger.isDebugEnabled()) logger.debug("Scaning begin: " + factor.toString() + ", from table: " + detail.tables[0] + ".");
-		return new HConf<F>(factor, detail.tables[0], calc.debug).filter(referField, referValues).debug().scan(calc.sc);
-	}
-
-	private Scan createScan() {
-		Scan sc = new Scan();
-		try {
-			sc.setCaching(-1);
-			sc.setCacheBlocks(false);
-			sc.setSmall(true);
-		} catch (Throwable th) {
-			// XXX
-			try {
-				sc.getClass().getMethod("setCacheBlocks", boolean.class).invoke(sc, false);
-				sc.getClass().getMethod("setSmall", boolean.class).invoke(sc, false);
-				sc.getClass().getMethod("setCaching", int.class).invoke(sc, -1);
-			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
-					| SecurityException e) {}
-		}
-		return sc;
+		Configuration conf = HBaseConfiguration.create();
+		return new HConf<F>(configFile, factor, detail.tables[0], (HbaseMarshaller) marshaller, calc.debug).init(conf)
+				.filter(conf, referField, referValues).debug(conf).scan(calc.sc, conf);
 	}
 
 	@Override
@@ -131,29 +118,41 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 			HbaseDataDetail detail) {
 		if (logger.isDebugEnabled()) logger.debug("Scaning begin: " + factor.toString() + ", from table: " + detail.tables[0] + ".");
 		logger.error("Batching mode is not supported now... BUG!!!!!");
-		return new HConf<F>(factor, detail.tables[0], calc.debug).filter(offset, limit).scan(calc.sc);
+		Configuration conf = HBaseConfiguration.create();
+		return new HConf<F>(configFile, factor, detail.tables[0], (HbaseMarshaller) marshaller, calc.debug).init(conf)
+				.filter(conf, offset, limit).scan(calc.sc, conf);
 	}
 
-	private class HConf<F extends Factor<F>> {
-		Configuration hconf;
+	private static class HConf<F extends Factor<F>> implements Serializable {
+		private static final long serialVersionUID = 2314819561624610201L;
+		private final static Logger logger = LoggerFactory.getLogger(HConf.class);
 		Class<F> factor;
 		boolean filtered = false;
 		boolean debug;
+		private HbaseMarshaller marshaller;
+		private String configFile;
+		private String table;
 
-		public HConf(Class<F> factor, String table, boolean debug) {
+		public HConf(String configFile, Class<F> factor, String table, HbaseMarshaller marshaller, boolean debug) {
 			super();
+			this.configFile = configFile;
+			this.table = table;
 			this.factor = factor;
 			this.debug = debug;
-			this.hconf = HBaseConfiguration.create();
+			this.marshaller = marshaller;
+		}
+
+		public HConf<F> init(Configuration hconf) {
 			try {
 				hconf.addResource(Calculator.scanInputStream(configFile));
 			} catch (IOException e) {
 				throw new RuntimeException("HBase configuration invalid.", e);
 			}
 			hconf.set(TableInputFormat.INPUT_TABLE, table);
+			return this;
 		}
 
-		public HConf<F> filter(byte[] offset, long limit) {
+		public HConf<F> filter(Configuration hconf, byte[] offset, long limit) {
 			try {
 				hconf.set(TableInputFormat.SCAN,
 						Base64.encodeBytes(ProtobufUtil.toScan(createScan().setFilter(new PageFilter(limit))).toByteArray()));
@@ -162,7 +161,7 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 			return this;
 		}
 
-		public JavaPairRDD<byte[], F> scan(JavaSparkContext sc) {
+		public JavaPairRDD<byte[], F> scan(JavaSparkContext sc, Configuration hconf) {
 			JavaPairRDD<byte[], F> r = sc.newAPIHadoopRDD(hconf, TableInputFormat.class, ImmutableBytesWritable.class, Result.class)
 					.mapToPair(t -> null == t ? null
 							: new Tuple2<byte[], F>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor)));
@@ -170,7 +169,7 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 			return r;
 		}
 
-		public HConf<F> debug() {
+		public HConf<F> debug(final Configuration hconf) {
 			if (debug && !filtered) try {
 				float ratio = Float.parseFloat(System.getProperty("calculus.debug.hbase.random.ratio", "0"));
 				if (ratio > 0) {
@@ -195,13 +194,13 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 		}
 
 		@SuppressWarnings("unchecked")
-		public <V> HConf<F> filter(String referField, Collection<V> referValues) {
+		public <V> HConf<F> filter(Configuration hconf, String referField, Collection<V> referValues) {
 			if (referField != null && referValues != null && referValues.size() > 0) {
 				Field f = Reflections.getDeclaredField(factor, referField);
 				String[] qulifier = ((HbaseMarshaller) marshaller).parseQulifier(factor, f);
 				Function<V, byte[]> conv = (Function<V, byte[]>) CONVERTERS.get((Class<V>) f.getType());
 				if (null == conv) throw new UnsupportedOperationException("Class " + f.getType().toString() + " not supported.");
-				try {
+				try {// hconf.get(TableInputFormat.SCAN);
 					hconf.set(TableInputFormat.SCAN, Base64.encodeBytes(ProtobufUtil
 							.toScan(new Scan().setFilter(new FilterList(Operator.MUST_PASS_ONE,
 									Reflections.transform(referValues,
@@ -215,6 +214,24 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 				filtered = true;
 			}
 			return this;
+		}
+
+		private Scan createScan() {
+			Scan sc = new Scan();
+			try {
+				sc.setCaching(-1);
+				sc.setCacheBlocks(false);
+				sc.setSmall(true);
+			} catch (Throwable th) {
+				// XXX
+				try {
+					sc.getClass().getMethod("setCacheBlocks", boolean.class).invoke(sc, false);
+					sc.getClass().getMethod("setSmall", boolean.class).invoke(sc, false);
+					sc.getClass().getMethod("setCaching", int.class).invoke(sc, -1);
+				} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
+						| SecurityException e) {}
+			}
+			return sc;
 		}
 	}
 

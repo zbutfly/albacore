@@ -35,15 +35,16 @@ import scala.Tuple2;
 
 public class MongoDataSource extends DataSource<Object, Object, BSONObject, MongoDataDetail> {
 	private static final long serialVersionUID = -2617369621178264387L;
-	String uri;
+	public String uri;
 
-	public MongoDataSource(String uri, MongoMarshaller marshaller) {
-		super(Type.MONGODB, null == marshaller ? new MongoMarshaller() : marshaller);
+	public MongoDataSource(String uri, MongoMarshaller marshaller, String suffix, boolean validate) {
+		super(Type.MONGODB, validate, null == marshaller ? new MongoMarshaller() : marshaller);
+		super.suffix = suffix;
 		this.uri = uri;
 	}
 
-	public MongoDataSource(String uri) {
-		this(uri, new MongoMarshaller());
+	public MongoDataSource(String uri, String suffix, boolean validate) {
+		this(uri, new MongoMarshaller(), suffix, validate);
 	}
 
 	@Override
@@ -83,7 +84,7 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Mong
 	@Override
 	public <F extends Factor<F>> JavaPairRDD<Object, F> stocking(Calculator calc, Class<F> factor, MongoDataDetail detail,
 			String referField, Collection<?> referValues) {
-		if (logger.isDebugEnabled()) logger.debug("Stocking begin: " + factor.toString());
+		if (logger.isDebugEnabled()) logger.debug("Stocking begin: " + factor.toString() + ", from table: " + detail.tables[0] + ".");
 		Configuration mconf = new Configuration();
 		mconf.set("mongo.job.input.format", "com.mongodb.hadoop.MongoInputFormat");
 		MongoClientURI uri = new MongoClientURI(this.uri);

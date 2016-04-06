@@ -6,9 +6,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
-import org.bson.BSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.Mode;
@@ -26,6 +25,7 @@ import net.butfly.albacore.calculus.streaming.RDDDStream.Mechanism;
 @SuppressWarnings({ "unchecked", "deprecation" })
 public final class Factors implements Serializable {
 	private static final long serialVersionUID = -3712903710207597570L;
+	private static final Logger logger = LoggerFactory.getLogger(Factors.class);
 	protected Calculator calc;
 	protected Map<String, FactorConfig<?, ?>> pool;
 
@@ -62,19 +62,19 @@ public final class Factors implements Serializable {
 		switch (calc.mode) {
 		case STOCKING:
 			if (config.batching <= 0) return new PairRDS<K, F>(ds.stocking(calc, config.factorClass, config.detail, field, other));
-			else return new PairRDS<K, F>(RDDDStream.bpstream(calc.ssc.ssc(), config.batching, (limit, offset) -> ds.batching(calc,
-					config.factorClass, limit, offset, config.detail), ds.marshaller().comparator()));
+			else return new PairRDS<K, F>(RDDDStream.bpstream(calc.ssc.ssc(), config.batching,
+					(limit, offset) -> ds.batching(calc, config.factorClass, limit, offset, config.detail), ds.marshaller().comparator()));
 			// batching, no foreign key refer.
 		case STREAMING:
 			switch (config.mode) {
 			case STOCKING:
 				switch (config.streaming) {
 				case CONST:
-					return new PairRDS<K, F>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.CONST, () -> ds.stocking(calc, config.factorClass,
-							config.detail, field, other)));
+					return new PairRDS<K, F>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.CONST,
+							() -> ds.stocking(calc, config.factorClass, config.detail, field, other)));
 				case FRESH:
-					return new PairRDS<K, F>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.FRESH, () -> ds.stocking(calc, config.factorClass,
-							config.detail, field, other)));
+					return new PairRDS<K, F>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.FRESH,
+							() -> ds.stocking(calc, config.factorClass, config.detail, field, other)));
 				default:
 					throw new UnsupportedOperationException();
 				}
@@ -111,23 +111,22 @@ public final class Factors implements Serializable {
 			config.dbid = s.source();
 			switch (s.type()) {
 			case HBASE:
-				if (Factor.NOT_DEFINED.equals(s.table())) throw new IllegalArgumentException("Table not defined for factor " + factor
-						.toString());
+				if (Factor.NOT_DEFINED.equals(s.table()))
+					throw new IllegalArgumentException("Table not defined for factor " + factor.toString());
 				config.detail = new HbaseDataDetail(s.table());
-				if (calc.validate) {
-					DataSource<String, ImmutableBytesWritable, Result, HbaseDataDetail> hds = calc.dss.ds(s.source());
-					hds.confirm(factor, (HbaseDataDetail) config.detail);
-				}
 				config.keyClass = (Class<K>) byte[].class;
 				break;
 			case MONGODB:
-				if (Factor.NOT_DEFINED.equals(s.table())) throw new IllegalArgumentException("Table not defined for factor " + factor
-						.toString());
-				config.detail = new MongoDataDetail(Factor.NOT_DEFINED.equals(s.filter()) ? null : s.filter(), s.table());
-				if (calc.validate) {
-					DataSource<Object, Object, BSONObject, MongoDataDetail> hds = calc.dss.ds(s.source());
-					hds.confirm(factor, (MongoDataDetail) config.detail);
-				}
+				if (Factor.NOT_DEFINED.equals(s.table()))
+					throw new IllegalArgumentException("Table not defined for factor " + factor.toString());
+				String suffix = calc.dss.ds(config.dbid).suffix;
+				if (null != suffix) {
+					String[] nt = new String[s.table().length];
+					logger.info("All output mongodb table will be appendded suffix: " + suffix);
+					for (int i = 0; i < s.table().length; i++)
+						nt[i] = s.table()[i] + "_" + suffix;
+					config.detail = new MongoDataDetail(Factor.NOT_DEFINED.equals(s.filter()) ? null : s.filter(), nt);
+				} else config.detail = new MongoDataDetail(Factor.NOT_DEFINED.equals(s.filter()) ? null : s.filter(), s.table());
 				config.keyClass = (Class<K>) Object.class;
 				break;
 			case CONSTAND_TO_CONSOLE:
@@ -136,6 +135,7 @@ public final class Factors implements Serializable {
 				throw new UnsupportedOperationException("Unsupportted stocking mode: " + s.type() + " on " + factor.toString());
 			}
 		}
+		if (calc.dss.ds(config.dbid).validate) calc.dss.ds(config.dbid).confirm(factor, config.detail);
 		return config;
 	}
 }

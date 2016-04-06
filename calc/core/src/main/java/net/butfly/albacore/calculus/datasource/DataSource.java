@@ -21,6 +21,8 @@ public abstract class DataSource<FK, K, V, D extends DataDetail> implements Seri
 	protected Factor.Type type;
 	protected Marshaller<FK, K, V> marshaller;
 	protected final Logger logger = LoggerFactory.getLogger(this.getClass());
+	public boolean validate;
+	public String suffix;
 
 	public Factor.Type type() {
 		return type;
@@ -30,9 +32,10 @@ public abstract class DataSource<FK, K, V, D extends DataDetail> implements Seri
 		return marshaller;
 	}
 
-	public DataSource(Type type, Marshaller<FK, K, V> marshaller) {
+	public DataSource(Type type, boolean validate, Marshaller<FK, K, V> marshaller) {
 		super();
 		this.type = type;
+		this.validate = validate;
 		this.marshaller = marshaller;
 	}
 

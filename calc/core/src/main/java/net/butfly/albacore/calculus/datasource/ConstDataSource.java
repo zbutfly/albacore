@@ -20,7 +20,7 @@ public class ConstDataSource extends DataSource<String, Void, Void, DataDetail> 
 	private String[] values;
 
 	public ConstDataSource(String[] values) {
-		super(Type.CONSTAND_TO_CONSOLE, null);
+		super(Type.CONSTAND_TO_CONSOLE, false, null);
 		this.values = values;
 	}
 
