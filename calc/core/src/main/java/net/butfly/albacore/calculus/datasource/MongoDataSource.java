@@ -131,6 +131,10 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Mong
 		MongoClientURI uri = new MongoClientURI(this.uri);
 		conf.set("mongo.output.uri", new MongoClientURIBuilder(uri).collection(uri.getDatabase(), detail.tables[0]).build().toString());
 		return r -> {
+			if (logger.isTraceEnabled()) {
+				r = r.cache();
+				logger.trace("Write back to mongodb: " + r.count() + " records.");
+			}
 			r.mapToPair(t -> {
 				BasicBSONObject q = new BasicBSONObject();
 				q.append("_id", this.marshaller.marshallId(t._1));

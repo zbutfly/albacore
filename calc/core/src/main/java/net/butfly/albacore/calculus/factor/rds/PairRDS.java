@@ -11,7 +11,6 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaRDDLike;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.api.java.function.VoidFunction;
@@ -262,8 +261,7 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 	public final <K2, V2> PairRDS<K2, V2> mapToPair(PairFunction<Tuple2<K, V>, K2, V2> func) {
 		switch (type) {
 		case RDD:
-			Function<RDD<Tuple2<K, V>>, RDD<Tuple2<K2, V2>>> f = rdd -> JavaRDD.fromRDD(rdd, tag()).mapToPair(func).rdd();
-			List<RDD<Tuple2<K2, V2>>> r = each(rdds, f);
+			List<RDD<Tuple2<K2, V2>>> r = each(rdds, rdd -> JavaRDD.fromRDD(rdd, tag()).mapToPair(func).rdd());
 			return new PairRDS<K2, V2>().init(r);
 		case DSTREAM:
 			return new PairRDS<K2, V2>(JavaDStream.fromDStream(dstream, tag()).mapToPair(func));
