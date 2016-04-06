@@ -52,7 +52,7 @@ public class RDS<T> implements Serializable {
 
 	@SafeVarargs
 	public RDS(JavaRDDLike<T, ?>... rdd) {
-		init(each(Arrays.asList(rdd), r1 -> r1.rdd()));
+		init(trans(Arrays.asList(rdd), r1 -> r1.rdd()));
 	}
 
 	public RDS(JavaDStreamLike<T, ?, ?> dstream) {
@@ -161,7 +161,7 @@ public class RDS<T> implements Serializable {
 		switch (type) {
 		case RDD:
 			Function<RDD<T>, RDD<Tuple2<K2, V2>>> f = rdd -> JavaRDD.fromRDD(rdd, tag()).mapToPair(func).rdd();
-			List<RDD<Tuple2<K2, V2>>> r = each(rdds, f);
+			List<RDD<Tuple2<K2, V2>>> r = trans(rdds, f);
 			return new RDS<Tuple2<K2, V2>>().init(r);
 		case DSTREAM:
 			return new RDS<Tuple2<K2, V2>>(JavaDStream.fromDStream(dstream, tag()).mapToPair(func));
@@ -173,7 +173,7 @@ public class RDS<T> implements Serializable {
 	public final <T1> RDS<T1> map(Function<T, T1> func) {
 		switch (type) {
 		case RDD:
-			return new RDS<T1>().init(each(rdds, rdd -> rdd.map(wrap(func), tag())));
+			return new RDS<T1>().init(trans(rdds, rdd -> rdd.map(wrap(func), tag())));
 		case DSTREAM:
 			return new RDS<T1>().init(dstream.map(wrap(func), tag()));
 		default:
@@ -221,7 +221,7 @@ public class RDS<T> implements Serializable {
 		return r[0];
 	}
 
-	static <T, T1> List<T1> each(List<T> r, Function<T, T1> transformer) {
+	static <T, T1> List<T1> trans(List<T> r, Function<T, T1> transformer) {
 		if (r == null) return null;
 		List<T1> r1 = new ArrayList<>(r.size());
 		for (T rr : r)

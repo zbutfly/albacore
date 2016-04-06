@@ -14,7 +14,6 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.api.java.function.VoidFunction;
-import org.apache.spark.api.java.function.VoidFunction2;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaDStreamLike;
@@ -23,6 +22,7 @@ import org.apache.spark.streaming.dstream.DStream;
 
 import com.google.common.base.Optional;
 
+import net.butfly.albacore.calculus.lambda.VoidFunction2;
 import net.butfly.albacore.calculus.streaming.RDDDStream;
 import net.butfly.albacore.calculus.streaming.RDDDStream.Mechanism;
 import scala.Function1;
@@ -261,8 +261,7 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 	public final <K2, V2> PairRDS<K2, V2> mapToPair(PairFunction<Tuple2<K, V>, K2, V2> func) {
 		switch (type) {
 		case RDD:
-			List<RDD<Tuple2<K2, V2>>> r = each(rdds, rdd -> JavaRDD.fromRDD(rdd, tag()).mapToPair(func).rdd());
-			return new PairRDS<K2, V2>().init(r);
+			return new PairRDS<K2, V2>().init(RDS.trans(rdds, rdd -> JavaRDD.fromRDD(rdd, tag()).mapToPair(func).rdd()));
 		case DSTREAM:
 			return new PairRDS<K2, V2>(JavaDStream.fromDStream(dstream, tag()).mapToPair(func));
 		default:
