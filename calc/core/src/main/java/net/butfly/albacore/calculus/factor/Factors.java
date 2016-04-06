@@ -111,18 +111,18 @@ public final class Factors implements Serializable {
 			config.dbid = s.source();
 			switch (s.type()) {
 			case HBASE:
-				if (null != s.table() && s.table().length > 0)
+				if (null == s.table() || s.table().length == 0)
 					throw new IllegalArgumentException("Table not defined for factor " + factor.toString());
 				config.detail = new HbaseDataDetail(s.table());
 				config.keyClass = (Class<K>) byte[].class;
 				break;
 			case MONGODB:
-				if (null != s.table() && s.table().length > 0)
+				if (null == s.table() || s.table().length == 0)
 					throw new IllegalArgumentException("Table not defined for factor " + factor.toString());
 				String suffix = calc.dss.ds(config.dbid).suffix;
 				if (null != suffix) {
 					String[] nt = new String[s.table().length];
-					logger.info("All output mongodb table will be appendded suffix: " + suffix);
+					logger.info("All output mongodb table on " + s.source() + " will be appendded suffix: " + suffix);
 					for (int i = 0; i < s.table().length; i++)
 						nt[i] = s.table()[i] + "_" + suffix;
 					config.detail = new MongoDataDetail(Factor.NOT_DEFINED.equals(s.filter()) ? null : s.filter(), nt);

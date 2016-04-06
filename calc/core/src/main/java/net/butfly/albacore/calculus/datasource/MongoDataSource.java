@@ -56,25 +56,25 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Mong
 		return uri;
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	public boolean confirm(Class<? extends Factor<?>> factor, MongoDataDetail detail) {
 		MongoClientURI muri = new MongoClientURI(getUri());
 		MongoClient mclient = new MongoClient(muri);
 		try {
-			MongoDatabase db = mclient.getDatabase(muri.getDatabase());
-			MongoCollection<Document> col = db.getCollection(detail.tables[0]);
-			if (col == null) {
+			if (!mclient.getDB(muri.getDatabase()).collectionExists(detail.tables[0])) {
+				MongoDatabase db = mclient.getDatabase(muri.getDatabase());
 				db.createCollection(detail.tables[0]);
-				col = db.getCollection(detail.tables[0]);
+				MongoCollection<Document> col = db.getCollection(detail.tables[0]);
+				for (Field f : Reflections.getDeclaredFields(factor))
+					if (f.isAnnotationPresent(Index.class)) {
+						String colname = f.isAnnotationPresent(JsonProperty.class) ? f.getAnnotation(JsonProperty.class).value()
+								: CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, f.getName());
+						BSONObject dbi = new BasicDBObject();
+						dbi.put(colname, 1);
+						col.createIndex((Bson) dbi);
+					}
 			}
-			for (Field f : Reflections.getDeclaredFields(factor))
-				if (f.isAnnotationPresent(Index.class)) {
-					String colname = f.isAnnotationPresent(JsonProperty.class) ? f.getAnnotation(JsonProperty.class).value()
-							: CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, f.getName());
-					BSONObject dbi = new BasicDBObject();
-					dbi.put(colname, 1);
-					col.createIndex((Bson) dbi);
-				}
 			return true;
 		} finally {
 			mclient.close();
@@ -96,7 +96,7 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Mong
 		// conf.mconf.set("mongo.input.fields
 		mconf.set("mongo.input.notimeout", "true");
 		JavaPairRDD<Object, BSONObject> rr = calc.sc.newAPIHadoopRDD(mconf, MongoInputFormat.class, Object.class, BSONObject.class);
-		if (logger.isTraceEnabled()) logger.trace("MongoDB read: " + rr.count());
+		if (calc.debug && logger.isTraceEnabled()) logger.trace("MongoDB read: " + rr.count());
 		return rr.mapToPair(t -> null == t ? null
 				: new Tuple2<Object, F>(this.marshaller.unmarshallId(t._1), this.marshaller.unmarshall(t._2, factor)));
 	}
@@ -136,7 +136,7 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Mong
 				q.append("_id", this.marshaller.marshallId(t._1));
 				BasicBSONObject u = new BasicBSONObject();
 				u.append("$set", this.marshaller.marshall(t._2));
-				if (logger.isTraceEnabled()) logger.trace("MongoUpdateWritable: " + u.toString() + " from " + q.toString());
+				if (calc.debug && logger.isTraceEnabled()) logger.trace("MongoUpdateWritable: " + u.toString() + " from " + q.toString());
 				return new Tuple2<Object, MongoUpdateWritable>(null, new MongoUpdateWritable(q, u, true, true));
 			}).saveAsNewAPIHadoopFile("", Object.class, BSONObject.class, MongoOutputFormat.class, conf);
 		};

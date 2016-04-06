@@ -50,9 +50,9 @@ public class Calculator implements Serializable {
 	public boolean debug;
 
 	// spark configurations
-	public SparkConf sconf;
-	public JavaSparkContext sc;
-	public JavaStreamingContext ssc;
+	public transient SparkConf sconf;
+	public transient JavaSparkContext sc;
+	public transient JavaStreamingContext ssc;
 	public DataSources dss = new DataSources();
 	private int dura;
 
