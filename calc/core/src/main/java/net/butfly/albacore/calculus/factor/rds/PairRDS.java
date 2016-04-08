@@ -258,7 +258,7 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 		}
 	}
 
-	public final <K2, V2> PairRDS<K2, V2> mapToPair(PairFunction<Tuple2<K, V>, K2, V2> func) {
+	public final <K2, V2> PairRDS<K2, V2> mapPair(PairFunction<Tuple2<K, V>, K2, V2> func) {
 		switch (type) {
 		case RDD:
 			return new PairRDS<K2, V2>().init(RDS.trans(rdds, rdd -> JavaRDD.fromRDD(rdd, tag()).mapToPair(func).rdd()));
