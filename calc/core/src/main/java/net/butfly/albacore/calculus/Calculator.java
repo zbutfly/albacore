@@ -60,6 +60,7 @@ public class Calculator implements Serializable {
 	public Mode mode;
 	public Factoring[] factorings;
 	private Calculus<?, ?> calculus;
+	private String appname;
 
 	public static void main(String... args) {
 		final Properties props = new Properties();
@@ -105,30 +106,35 @@ public class Calculator implements Serializable {
 	private Calculator(Properties props) {
 		mode = Mode.valueOf(props.getProperty("calculus.mode", "STREAMING").toUpperCase());
 		debug = Boolean.valueOf(props.getProperty("calculus.debug", "false").toLowerCase());
+		if (debug) logger.error("Running in DEBUG mode, slowly!!!!!");
 		if (mode == Mode.STOCKING && props.containsKey("calculus.spark.duration.seconds"))
 			logger.warn("Stocking does not support duration, but duration may be set by calculator for batching.");
 		dura = mode == Mode.STREAMING ? Integer.parseInt(props.getProperty("calculus.spark.duration.seconds", "30"))
 				: Integer.parseInt(props.getProperty("calculus.spark.duration.seconds", "1"));
-		final String appname = props.getProperty("calculus.app.name", "Calculuses");
+		this.parseCalculus(props.getProperty("calculus.class"));
+		this.appname = props.getProperty("calculus.app.name", "Calculuses-" + calculus.getClass().getSimpleName());
 		// dadatabse configurations parsing
-		parseDatasources(appname, subprops(props, "calculus.ds."));
 		sconf = new SparkConf();
 		if (props.containsKey("calculus.spark.url")) sconf.setMaster(props.getProperty("calculus.spark.url"));
-		// sconf.set("spark.yarn.submit.waitAppCompletion", "false");
 		sconf.setAppName(appname + "-Spark");
-		sconf.set("spark.app.id", appname + "Spark-App");
+		sconf.set("spark.app.id", appname + "[Spark-App]");
 		if (props.containsKey("calculus.spark.jars")) sconf.setJars(props.getProperty("calculus.spark.jars").split(","));
 		if (props.containsKey("calculus.spark.home")) sconf.setSparkHome(props.getProperty("calculus.spark.home"));
 		if (debug) sconf.set("spark.testing", "true");
+		parseDatasources(subprops(props, "calculus.ds."));
+		calculus.name = "Calculus [" + calculus.getClass().getSimpleName() + "]";
+		logger.debug("Running " + calculus.name);
+	}
 
-		if (!props.containsKey("calculus.class"))
+	private void parseCalculus(String calclass) {
+		if (null == calclass)
 			throw new IllegalArgumentException("Calculus not defined (-c xxx.ClassName or -Dcalculus.class=xxx.ClassName).");
 		// scan and run calculuses
 		Class<?> c;
 		try {
-			c = Class.forName(props.getProperty("calculus.class"));
+			c = Class.forName(calclass);
 		} catch (ClassNotFoundException e) {
-			throw new IllegalArgumentException("Calculus " + props.getProperty("calculus.class") + "not found.", e);
+			throw new IllegalArgumentException("Calculus " + calclass + "not found.", e);
 		}
 		if (!Calculus.class.isAssignableFrom(c)) throw new IllegalArgumentException("Calculus " + c.toString() + " is not Calculus.");
 		if (c.isAnnotationPresent(Factorings.class)) factorings = c.getAnnotation(Factorings.class).value();
@@ -139,8 +145,6 @@ public class Calculator implements Serializable {
 		} catch (Exception e) {
 			throw new IllegalArgumentException("Calculus " + c.toString() + " constructor failure, ignored", e);
 		}
-		calculus.name = "Calculus [" + c.getName() + "]";
-		logger.debug("Running " + calculus.name);
 	}
 
 	private <OK, OF extends Factor<OF>> Calculator calculate(Calculus<OK, OF> calculus) {
@@ -168,7 +172,7 @@ public class Calculator implements Serializable {
 		return r;
 	}
 
-	private void parseDatasources(String appname, Map<String, Properties> dsprops) {
+	private void parseDatasources(Map<String, Properties> dsprops) {
 		for (String dsid : dsprops.keySet()) {
 			Properties dbprops = dsprops.get(dsid);
 			Marshaller<?, ?, ?> m;

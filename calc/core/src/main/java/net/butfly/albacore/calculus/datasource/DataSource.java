@@ -5,7 +5,6 @@ import java.util.Collection;
 import java.util.HashMap;
 
 import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +13,7 @@ import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
+import net.butfly.albacore.calculus.lambda.VoidFunction;
 import net.butfly.albacore.calculus.marshall.Marshaller;
 
 public abstract class DataSource<FK, K, V, D extends DataDetail> implements Serializable {

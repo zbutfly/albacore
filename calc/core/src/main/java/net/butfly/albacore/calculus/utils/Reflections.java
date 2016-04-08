@@ -1,5 +1,6 @@
 package net.butfly.albacore.calculus.utils;
 
+import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -14,7 +15,9 @@ import java.util.function.Function;
 
 import com.google.common.reflect.TypeToken;
 
-public final class Reflections {
+public final class Reflections implements Serializable {
+	private static final long serialVersionUID = 6337397752201899394L;
+
 	private Reflections() {}
 
 	public static Field[] getDeclaredFields(Class<?> clazz) {

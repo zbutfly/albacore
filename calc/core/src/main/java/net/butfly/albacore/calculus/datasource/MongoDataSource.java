@@ -8,7 +8,7 @@ import java.util.List;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.api.java.function.VoidFunction;
+import net.butfly.albacore.calculus.lambda.VoidFunction;
 import org.bson.BSONObject;
 import org.bson.BasicBSONObject;
 import org.bson.Document;
@@ -93,14 +93,14 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Mong
 		String qstr = null == referField ? detail.filter
 				: filter(detail.filter, marshaller.parseField(Reflections.getDeclaredField(factor, referField)), referValues);
 		if (!Reflections.anyEmpty(qstr)) {
-			if (logger.isTraceEnabled()) logger.trace("Run mongodb filter: " + qstr);
+			if (logger.isTraceEnabled()) logger.trace(
+					"Run mongodb filter: " + (qstr.length() <= 100 ? qstr : qstr.substring(0, 100) + "...(too long string eliminated)"));
 			mconf.set("mongo.input.query", qstr);
 		}
 		// conf.mconf.set("mongo.input.fields
 		mconf.set("mongo.input.notimeout", "true");
-		JavaPairRDD<Object, BSONObject> rr = calc.sc.newAPIHadoopRDD(mconf, MongoInputFormat.class, Object.class, BSONObject.class);
-		if (calc.debug && logger.isTraceEnabled()) logger.trace("MongoDB read: " + rr.count());
-		return rr.mapToPair(t -> null == t ? null : new Tuple2<>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor)));
+		return calc.sc.newAPIHadoopRDD(mconf, MongoInputFormat.class, Object.class, BSONObject.class)
+				.mapToPair(t -> new Tuple2<>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor)));
 	}
 
 	private String filter(String filter, String referField, Collection<?> referValues) {

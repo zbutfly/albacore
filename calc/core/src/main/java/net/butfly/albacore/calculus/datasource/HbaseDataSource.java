@@ -162,10 +162,8 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 		}
 
 		public JavaPairRDD<byte[], F> scan(JavaSparkContext sc, Configuration hconf) {
-			JavaPairRDD<byte[], F> r = sc.newAPIHadoopRDD(hconf, TableInputFormat.class, ImmutableBytesWritable.class, Result.class)
-					.mapToPair(t -> null == t ? null : new Tuple2<>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor)));
-			if (debug && logger.isTraceEnabled()) logger.trace("HBase scaned: " + r.count());
-			return r;
+			return sc.newAPIHadoopRDD(hconf, TableInputFormat.class, ImmutableBytesWritable.class, Result.class)
+					.mapToPair(t -> new Tuple2<>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor)));
 		}
 
 		public HConf<F> debug(final Configuration hconf) {

@@ -59,8 +59,10 @@ public class HbaseMarshaller extends Marshaller<byte[], ImmutableBytesWritable, 
 	public String parseField(Field f) {
 		String col = super.parseField(f);
 		Class<?> to = f.getDeclaringClass();
+		// XXX: field in parent class could not found annotation on sub-class.
 		String family = f.isAnnotationPresent(HbaseColumnFamily.class) ? f.getAnnotation(HbaseColumnFamily.class).value()
-				: (to.isAnnotationPresent(HbaseColumnFamily.class) ? to.getAnnotation(HbaseColumnFamily.class).value() : null);
+				: (to.isAnnotationPresent(HbaseColumnFamily.class) ? to.getAnnotation(HbaseColumnFamily.class).value()
+						: HbaseColumnFamily.DEFAULT_COLUMN_FAMILY);
 		if (family == null)
 			throw new IllegalArgumentException("Column family is not defined on " + to.toString() + ", field " + f.getName());
 		return family + ":" + col;

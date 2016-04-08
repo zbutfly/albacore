@@ -5,13 +5,13 @@ import java.util.Collection;
 import java.util.UUID;
 
 import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.api.java.function.VoidFunction;
 
 import com.google.common.base.Joiner;
 
 import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
+import net.butfly.albacore.calculus.lambda.VoidFunction;
 import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
 

@@ -6,8 +6,6 @@ import java.util.Comparator;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.function.Function0;
-import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.streaming.StreamingContext;
 import org.apache.spark.streaming.Time;
@@ -16,10 +14,11 @@ import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.dstream.InputDStream;
 
 import net.butfly.albacore.calculus.factor.rds.RDS;
+import net.butfly.albacore.calculus.lambda.Function0;
+import net.butfly.albacore.calculus.lambda.Function2;
 import scala.Option;
 import scala.Tuple2;
 import scala.collection.JavaConversions;
-import scala.runtime.AbstractFunction0;
 
 public abstract class RDDDStream<T> extends InputDStream<T> {
 	public enum Mechanism {
@@ -53,16 +52,7 @@ public abstract class RDDDStream<T> extends InputDStream<T> {
 	final public void stop() {}
 
 	final protected void trace(Function0<String> msg) {
-		logTrace(new AbstractFunction0<String>() {
-			@Override
-			public String apply() {
-				try {
-					return msg.call();
-				} catch (Exception e) {
-					throw new RuntimeException(e);
-				}
-			}
-		});
+		if (log().isTraceEnabled()) log().trace(msg.call());
 	}
 
 	public static <K, V> JavaPairDStream<K, V> pstream(StreamingContext ssc, Mechanism mechanism, Function0<JavaPairRDD<K, V>> rdd) {

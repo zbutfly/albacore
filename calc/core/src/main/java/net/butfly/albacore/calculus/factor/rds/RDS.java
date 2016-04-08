@@ -9,17 +9,16 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaRDDLike;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.Function;
-import org.apache.spark.api.java.function.Function2;
-import org.apache.spark.api.java.function.PairFunction;
-import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaDStreamLike;
 import org.apache.spark.streaming.dstream.DStream;
 
+import net.butfly.albacore.calculus.lambda.Function;
+import net.butfly.albacore.calculus.lambda.Function2;
+import net.butfly.albacore.calculus.lambda.PairFunction;
+import net.butfly.albacore.calculus.lambda.VoidFunction;
 import net.butfly.albacore.calculus.utils.Reflections;
-import scala.Function1;
 import scala.Tuple2;
 import scala.reflect.ClassTag;
 import scala.reflect.ManifestFactory;
@@ -32,9 +31,9 @@ public class RDS<T> implements Serializable {
 		RDD, DSTREAM
 	}
 
-	protected RDSType type;
-	protected List<RDD<T>> rdds;
-	protected DStream<T> dstream;
+	protected transient RDSType type;
+	protected transient List<RDD<T>> rdds;
+	protected transient DStream<T> dstream;
 
 	protected RDS() {}
 
@@ -113,43 +112,11 @@ public class RDS<T> implements Serializable {
 		switch (type) {
 		case RDD:
 			for (RDD<T> rdd : rdds)
-				try {
-					consumer.call(JavaRDD.fromRDD(rdd, tag()));
-				} catch (Exception e) {
-					throw new RuntimeException(e);
-				}
-			break;
-		case DSTREAM:
-			dstream.foreachRDD(wrap(rdd -> {
 				consumer.call(JavaRDD.fromRDD(rdd, tag()));
-				return BoxedUnit.UNIT;
-			}));
-			break;
-		}
-		return this;
-	}
-
-	public RDS<T> each(VoidFunction<T> consumer) {
-		Function1<T, BoxedUnit> func = t -> {
-			try {
-				consumer.call(t);
-			} catch (Exception e) {
-				throw new RuntimeException(e);
-			}
-			return BoxedUnit.UNIT;
-		};
-		switch (type) {
-		case RDD:
-			for (RDD<T> rdd : rdds)
-				try {
-					rdd.foreach(func);
-				} catch (Exception e) {
-					throw new RuntimeException(e);
-				}
 			break;
 		case DSTREAM:
 			dstream.foreachRDD(rdd -> {
-				rdd.foreach(func);
+				consumer.call(JavaRDD.fromRDD(rdd, tag()));
 				return BoxedUnit.UNIT;
 			});
 			break;
@@ -157,14 +124,49 @@ public class RDS<T> implements Serializable {
 		return this;
 	}
 
+	public RDS<T> each(VoidFunction<T> consumer) {
+
+		switch (type) {
+		case RDD:
+			for (RDD<T> rdd : rdds)
+				rdd.foreach(t -> {
+					consumer.call(t);
+					return BoxedUnit.UNIT;
+				});
+			break;
+		case DSTREAM:
+			dstream.foreachRDD(rdd -> {
+				rdd.foreach(t -> {
+					consumer.call(t);
+					return BoxedUnit.UNIT;
+				});
+				return BoxedUnit.UNIT;
+			});
+			break;
+		}
+		return this;
+	}
+
+	public RDS<T> filter(Function<T, Boolean> func) {
+		switch (type) {
+		case RDD:
+			rdds = trans(rdds, r -> JavaRDD.fromRDD(r, tag()).filter(t -> func.call(t)).rdd());
+			break;
+		case DSTREAM:
+			dstream = JavaDStream.fromDStream(dstream, tag()).filter(t -> func.call(t)).dstream();
+			break;
+		default:
+			throw new IllegalArgumentException();
+		}
+		return this;
+	}
+
 	public <K2, V2> RDS<Tuple2<K2, V2>> mapToPair(PairFunction<T, K2, V2> func) {
 		switch (type) {
 		case RDD:
-			Function<RDD<T>, RDD<Tuple2<K2, V2>>> f = rdd -> JavaRDD.fromRDD(rdd, tag()).mapToPair(func).rdd();
-			List<RDD<Tuple2<K2, V2>>> r = trans(rdds, f);
-			return new RDS<Tuple2<K2, V2>>().init(r);
+			return new RDS<Tuple2<K2, V2>>().init(trans(rdds, rdd -> JavaRDD.fromRDD(rdd, tag()).mapToPair(t -> func.call(t)).rdd()));
 		case DSTREAM:
-			return new RDS<Tuple2<K2, V2>>(JavaDStream.fromDStream(dstream, tag()).mapToPair(func));
+			return new RDS<Tuple2<K2, V2>>(JavaDStream.fromDStream(dstream, tag()).mapToPair(t -> func.call(t)));
 		default:
 			throw new IllegalArgumentException();
 		}
@@ -173,9 +175,9 @@ public class RDS<T> implements Serializable {
 	public final <T1> RDS<T1> map(Function<T, T1> func) {
 		switch (type) {
 		case RDD:
-			return new RDS<T1>().init(trans(rdds, rdd -> rdd.map(wrap(func), tag())));
+			return new RDS<T1>().init(trans(rdds, rdd -> rdd.map(t -> func.call(t), tag())));
 		case DSTREAM:
-			return new RDS<T1>().init(dstream.map(wrap(func), tag()));
+			return new RDS<T1>().init(dstream.map(t -> func.call(t), tag()));
 		default:
 			throw new IllegalArgumentException();
 		}
@@ -185,11 +187,7 @@ public class RDS<T> implements Serializable {
 		scala.runtime.AbstractFunction2<T, T, T> f = new scala.runtime.AbstractFunction2<T, T, T>() {
 			@Override
 			public T apply(T v1, T v2) {
-				try {
-					return func.call(v1, v2);
-				} catch (Exception e) {
-					throw new RuntimeException(e);
-				}
+				return func.call(v1, v2);
 			}
 		};
 		switch (type) {
@@ -210,11 +208,11 @@ public class RDS<T> implements Serializable {
 				r[0] += rdd.count();
 			break;
 		case DSTREAM:
-			dstream.count().foreachRDD(wrap(rl -> {
+			dstream.count().foreachRDD(rl -> {
 				for (long l : (Long[]) rl.collect())
 					r[0] += l;
 				return BoxedUnit.UNIT;
-			}));
+			});
 		default:
 			throw new IllegalArgumentException();
 		}
@@ -263,25 +261,12 @@ public class RDS<T> implements Serializable {
 
 	static <T> RDD<T> union(DStream<T> s) {
 		List<RDD<T>> l = new ArrayList<>();
-		s.foreachRDD(wrap(v1 -> {
+		s.foreachRDD(v1 -> {
 			if (l.isEmpty()) l.add(v1);
 			else l.set(0, l.get(0).union(v1));
 			return BoxedUnit.UNIT;
-		}));
+		});
 		return l.get(0);
-	}
-
-	static <T, R> scala.Function1<T, R> wrap(Function<T, R> f) {
-		return new scala.runtime.AbstractFunction1<T, R>() {
-			@Override
-			public R apply(T v1) {
-				try {
-					return f.call(v1);
-				} catch (Exception e) {
-					throw new RuntimeException(e);
-				}
-			}
-		};
 	}
 
 	@SuppressWarnings("unchecked")
