@@ -39,8 +39,8 @@ public class ConstDataSource extends DataSource<String, Void, Void, DataDetail> 
 		if (null != referField) throw new IllegalArgumentException("Constant data source does not support filter on reading.");
 		String[] values = this.values;
 		if (values == null) values = new String[0];
-		return calc.sc.parallelize(Arrays.asList(values)).mapToPair(
-				t -> null == t ? null : new Tuple2<String, F>(UUID.randomUUID().toString(), (F) Reflections.construct(factor, t)));
+		return calc.sc.parallelize(Arrays.asList(values))
+				.mapToPair(t -> null == t ? null : new Tuple2<>(UUID.randomUUID().toString(), (F) Reflections.construct(factor, t)));
 	}
 
 	@Override

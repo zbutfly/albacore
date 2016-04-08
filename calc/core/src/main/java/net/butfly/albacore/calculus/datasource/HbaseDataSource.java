@@ -163,8 +163,7 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 
 		public JavaPairRDD<byte[], F> scan(JavaSparkContext sc, Configuration hconf) {
 			JavaPairRDD<byte[], F> r = sc.newAPIHadoopRDD(hconf, TableInputFormat.class, ImmutableBytesWritable.class, Result.class)
-					.mapToPair(t -> null == t ? null
-							: new Tuple2<byte[], F>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor)));
+					.mapToPair(t -> null == t ? null : new Tuple2<>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor)));
 			if (debug && logger.isTraceEnabled()) logger.trace("HBase scaned: " + r.count());
 			return r;
 		}
@@ -197,7 +196,7 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 		public <V> HConf<F> filter(Configuration hconf, String referField, Collection<V> referValues) {
 			if (referField != null && referValues != null && referValues.size() > 0) {
 				Field f = Reflections.getDeclaredField(factor, referField);
-				String[] qulifier = ((HbaseMarshaller) marshaller).parseQulifier(factor, f);
+				String[] qulifier = marshaller.parseField(f).split(":");
 				Function<V, byte[]> conv = (Function<V, byte[]>) CONVERTERS.get((Class<V>) f.getType());
 				if (null == conv) throw new UnsupportedOperationException("Class " + f.getType().toString() + " not supported.");
 				try {// hconf.get(TableInputFormat.SCAN);

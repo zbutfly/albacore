@@ -85,8 +85,8 @@ public class KafkaDataSource extends DataSource<String, String, byte[], KafkaDat
 			kafka = KafkaUtils.createStream(calc.ssc, String.class, byte[].class, StringDecoder.class, DefaultDecoder.class, params,
 					topicsMap, StorageLevel.MEMORY_ONLY());
 		}
-		JavaPairDStream<String, F> r = (JavaPairDStream<String, F>) kafka.mapToPair(t -> null == t ? null
-				: new Tuple2<String, F>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor)));
+		JavaPairDStream<String, F> r = (JavaPairDStream<String, F>) kafka
+				.mapToPair(t -> null == t ? null : new Tuple2<>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor)));
 		if (logger.isTraceEnabled()) logger.trace("Stocking from hbase: " + r.count().reduce((v1, v2) -> v1 + v2));
 		return r;
 	}

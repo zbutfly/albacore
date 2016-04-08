@@ -90,15 +90,17 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Mong
 		MongoClientURI uri = new MongoClientURI(this.uri);
 		// mconf.set("mongo.auth.uri", uri.toString());
 		mconf.set("mongo.input.uri", new MongoClientURIBuilder(uri).collection(uri.getDatabase(), detail.tables[0]).build().toString());
-		String qstr = filter(detail.filter, referField, referValues);
-		if (logger.isTraceEnabled()) logger.trace("Run mongodb filter: " + qstr);
-		if (null != qstr) mconf.set("mongo.input.query", qstr);
+		String qstr = null == referField ? detail.filter
+				: filter(detail.filter, marshaller.parseField(Reflections.getDeclaredField(factor, referField)), referValues);
+		if (!Reflections.anyEmpty(qstr)) {
+			if (logger.isTraceEnabled()) logger.trace("Run mongodb filter: " + qstr);
+			mconf.set("mongo.input.query", qstr);
+		}
 		// conf.mconf.set("mongo.input.fields
 		mconf.set("mongo.input.notimeout", "true");
 		JavaPairRDD<Object, BSONObject> rr = calc.sc.newAPIHadoopRDD(mconf, MongoInputFormat.class, Object.class, BSONObject.class);
 		if (calc.debug && logger.isTraceEnabled()) logger.trace("MongoDB read: " + rr.count());
-		return rr.mapToPair(t -> null == t ? null
-				: new Tuple2<Object, F>(this.marshaller.unmarshallId(t._1), this.marshaller.unmarshall(t._2, factor)));
+		return rr.mapToPair(t -> null == t ? null : new Tuple2<>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor)));
 	}
 
 	private String filter(String filter, String referField, Collection<?> referValues) {

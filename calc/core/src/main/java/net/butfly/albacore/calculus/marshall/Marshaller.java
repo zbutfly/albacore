@@ -1,12 +1,17 @@
 package net.butfly.albacore.calculus.marshall;
 
 import java.io.Serializable;
+import java.lang.reflect.Field;
 import java.util.Comparator;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.CaseFormat;
+
 import net.butfly.albacore.calculus.factor.Factor;
+import net.butfly.albacore.calculus.utils.Reflections;
 
 @SuppressWarnings("unchecked")
 public abstract class Marshaller<FK, VK, VV> implements Serializable {
@@ -31,5 +36,11 @@ public abstract class Marshaller<FK, VK, VV> implements Serializable {
 
 	public Comparator<FK> comparator() {
 		throw new UnsupportedOperationException();
+	}
+
+	public String parseField(Field f) {
+		Reflections.noneNull("", f);
+		return f.isAnnotationPresent(JsonProperty.class) ? f.getAnnotation(JsonProperty.class).value()
+				: CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, f.getName());
 	}
 }

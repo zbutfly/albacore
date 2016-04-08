@@ -13,11 +13,8 @@ import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.Text;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.CaseFormat;
 import com.google.common.base.Defaults;
 import com.google.common.base.Joiner;
-import com.google.common.base.Preconditions;
 
 import net.butfly.albacore.calculus.datasource.HbaseColumnFamily;
 import net.butfly.albacore.calculus.factor.Factor;
@@ -45,7 +42,7 @@ public class HbaseMarshaller extends Marshaller<byte[], ImmutableBytesWritable, 
 			throw new RuntimeException(e);
 		}
 		for (Field f : Reflections.getDeclaredFields(to)) {
-			String[] qulifier = parseQulifier(to, f);
+			String[] qulifier = parseField(f).split(",");
 			try {
 				Cell cell = from.getColumnLatestCell(Text.encode(qulifier[0]).array(), Text.encode(qulifier[1]).array());
 				if (cell != null) Reflections.set(t, f, fromBytes(f.getType(), CellUtil.cloneValue(cell)));
@@ -58,15 +55,15 @@ public class HbaseMarshaller extends Marshaller<byte[], ImmutableBytesWritable, 
 		return t;
 	}
 
-	public <T> String[] parseQulifier(Class<T> to, Field f) {
-		Preconditions.checkNotNull(f);
-		String dcf = to.isAnnotationPresent(HbaseColumnFamily.class) ? to.getAnnotation(HbaseColumnFamily.class).value() : null;
-		String col = f.isAnnotationPresent(JsonProperty.class) ? f.getAnnotation(JsonProperty.class).value()
-				: CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, f.getName());
-		String family = f.isAnnotationPresent(HbaseColumnFamily.class) ? f.getAnnotation(HbaseColumnFamily.class).value() : dcf;
+	@Override
+	public String parseField(Field f) {
+		String col = super.parseField(f);
+		Class<?> to = f.getDeclaringClass();
+		String family = f.isAnnotationPresent(HbaseColumnFamily.class) ? f.getAnnotation(HbaseColumnFamily.class).value()
+				: (to.isAnnotationPresent(HbaseColumnFamily.class) ? to.getAnnotation(HbaseColumnFamily.class).value() : null);
 		if (family == null)
 			throw new IllegalArgumentException("Column family is not defined on " + to.toString() + ", field " + f.getName());
-		return new String[] { family, col };
+		return family + ":" + col;
 	}
 
 	@Override

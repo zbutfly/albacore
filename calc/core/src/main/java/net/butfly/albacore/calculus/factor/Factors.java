@@ -64,7 +64,6 @@ public final class Factors implements Serializable {
 			if (config.batching <= 0) return new PairRDS<K, F>(ds.stocking(calc, config.factorClass, config.detail, field, other));
 			else return new PairRDS<K, F>(RDDDStream.bpstream(calc.ssc.ssc(), config.batching,
 					(limit, offset) -> ds.batching(calc, config.factorClass, limit, offset, config.detail), ds.marshaller().comparator()));
-			// batching, no foreign key refer.
 		case STREAMING:
 			switch (config.mode) {
 			case STOCKING:
