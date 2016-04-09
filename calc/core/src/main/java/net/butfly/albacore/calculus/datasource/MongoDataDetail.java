@@ -6,7 +6,7 @@ public class MongoDataDetail extends DataDetail {
 	private static final long serialVersionUID = 4206637701358532787L;
 
 	public MongoDataDetail(String filter, String... table) {
-		super(Type.HBASE, filter, table);
+		super(Type.MONGODB, filter, table);
 	}
 
 	@Override

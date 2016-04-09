@@ -3,6 +3,6 @@ package net.butfly.albacore.calculus.lambda;
 import java.io.Serializable;
 
 @FunctionalInterface
-public interface VoidFunction2<V1, V2> extends Serializable {
-	void call(V1 v1, V2 v2);
+public interface VoidFunction<T> extends Serializable {
+	public void call(T t);
 }

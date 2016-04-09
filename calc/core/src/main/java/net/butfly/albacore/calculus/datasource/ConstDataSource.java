@@ -1,17 +1,17 @@
 package net.butfly.albacore.calculus.datasource;
 
 import java.util.Arrays;
-import java.util.Set;
+import java.util.Collection;
 import java.util.UUID;
 
 import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.api.java.function.VoidFunction;
 
 import com.google.common.base.Joiner;
 
 import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
+import net.butfly.albacore.calculus.lambda.VoidFunction;
 import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
 
@@ -20,7 +20,7 @@ public class ConstDataSource extends DataSource<String, Void, Void, DataDetail> 
 	private String[] values;
 
 	public ConstDataSource(String[] values) {
-		super(Type.CONSTAND_TO_CONSOLE, null);
+		super(Type.CONSTAND_TO_CONSOLE, false, null);
 		this.values = values;
 	}
 
@@ -35,12 +35,12 @@ public class ConstDataSource extends DataSource<String, Void, Void, DataDetail> 
 
 	@Override
 	public <F extends Factor<F>> JavaPairRDD<String, F> stocking(Calculator calc, Class<F> factor, DataDetail detail, String referField,
-			Set<?> referValues) {
+			Collection<?> referValues) {
 		if (null != referField) throw new IllegalArgumentException("Constant data source does not support filter on reading.");
 		String[] values = this.values;
 		if (values == null) values = new String[0];
-		return calc.sc.parallelize(Arrays.asList(values)).mapToPair(
-				t -> null == t ? null : new Tuple2<String, F>(UUID.randomUUID().toString(), (F) Reflections.construct(factor, t)));
+		return calc.sc.parallelize(Arrays.asList(values))
+				.mapToPair(t -> null == t ? null : new Tuple2<>(UUID.randomUUID().toString(), (F) Reflections.construct(factor, t)));
 	}
 
 	@Override
