@@ -53,7 +53,7 @@ public abstract class Factor<F extends Factor<F>> implements Serializable {
 
 		@Override
 		public String toString() {
-			return value == null ? null : value.toString();
+			return value == null ? "null" : value.toString();
 		}
 	}
 }

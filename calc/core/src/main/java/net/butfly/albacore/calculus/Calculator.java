@@ -50,9 +50,9 @@ public class Calculator implements Serializable {
 	public boolean debug;
 
 	// spark configurations
-	public SparkConf sconf;
-	public JavaSparkContext sc;
-	public JavaStreamingContext ssc;
+	public transient SparkConf sconf;
+	public transient JavaSparkContext sc;
+	public transient JavaStreamingContext ssc;
 	public DataSources dss = new DataSources();
 	private int dura;
 
@@ -106,8 +106,8 @@ public class Calculator implements Serializable {
 	private Calculator(Properties props) {
 		mode = Mode.valueOf(props.getProperty("calculus.mode", "STREAMING").toUpperCase());
 		debug = Boolean.valueOf(props.getProperty("calculus.debug", "false").toLowerCase());
-		if (mode == Mode.STOCKING && props.containsKey("calculus.spark.duration.seconds"))
-			logger.warn("Stocking does not support duration, but duration may be set by calculator for batching.");
+		if (mode == Mode.STOCKING && props.containsKey("calculus.spark.duration.seconds")) logger.warn(
+				"Stocking does not support duration, but duration may be set by calculator for batching.");
 		dura = mode == Mode.STREAMING ? Integer.parseInt(props.getProperty("calculus.spark.duration.seconds", "30"))
 				: Integer.parseInt(props.getProperty("calculus.spark.duration.seconds", "1"));
 		validate = Boolean.parseBoolean(props.getProperty("calculus.validate.table", "false"));
@@ -122,8 +122,8 @@ public class Calculator implements Serializable {
 		if (props.containsKey("calculus.spark.home")) sconf.setSparkHome(props.getProperty("calculus.spark.home"));
 		if (debug) sconf.set("spark.testing", "true");
 
-		if (!props.containsKey("calculus.class"))
-			throw new IllegalArgumentException("Calculus not defined (-c xxx.ClassName or -Dcalculus.class=xxx.ClassName).");
+		if (!props.containsKey("calculus.class")) throw new IllegalArgumentException(
+				"Calculus not defined (-c xxx.ClassName or -Dcalculus.class=xxx.ClassName).");
 		// scan and run calculuses
 		Class<?> c;
 		try {
@@ -191,10 +191,9 @@ public class Calculator implements Serializable {
 				// , dbprops.getProperty("authdb"),dbprops.getProperty("authdb")
 				break;
 			case KAFKA:
-				dss.put(dsid,
-						new KafkaDataSource(dbprops.getProperty("servers"), dbprops.getProperty("root"),
-								Integer.parseInt(dbprops.getProperty("topic.partitions", "1")),
-								debug ? appname + UUID.randomUUID().toString() : appname, (KafkaMarshaller) m));
+				dss.put(dsid, new KafkaDataSource(dbprops.getProperty("servers"), dbprops.getProperty("root"), Integer.parseInt(dbprops
+						.getProperty("topic.partitions", "1")), debug ? appname + UUID.randomUUID().toString() : appname,
+						(KafkaMarshaller) m));
 				break;
 			default:
 				logger.warn("Unsupportted type: " + type);
@@ -212,8 +211,8 @@ public class Calculator implements Serializable {
 		opts.addOption("h", "help", false, "Print help information like this.");
 
 		CommandLine cmd = parser.parse(opts, args);
-		if (cmd.hasOption('h'))
-			new HelpFormatter().printHelp("java net.butfly.albacore.calculus.Calculator xxx.xxx.XxxCalculus [option]...", opts);
+		if (cmd.hasOption('h')) new HelpFormatter().printHelp(
+				"java net.butfly.albacore.calculus.Calculator xxx.xxx.XxxCalculus [option]...", opts);
 		return cmd;
 	}
 

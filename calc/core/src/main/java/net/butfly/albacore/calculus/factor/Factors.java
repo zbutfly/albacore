@@ -111,7 +111,7 @@ public final class Factors implements Serializable {
 			config.dbid = s.source();
 			switch (s.type()) {
 			case HBASE:
-				if (Factor.NOT_DEFINED.equals(s.table())) throw new IllegalArgumentException("Table not defined for factor " + factor
+				if (null == s.table() || s.table().length == 0) throw new IllegalArgumentException("Table not defined for factor " + factor
 						.toString());
 				config.detail = new HbaseDataDetail(s.table());
 				if (calc.validate) {
@@ -121,7 +121,7 @@ public final class Factors implements Serializable {
 				config.keyClass = (Class<K>) byte[].class;
 				break;
 			case MONGODB:
-				if (Factor.NOT_DEFINED.equals(s.table())) throw new IllegalArgumentException("Table not defined for factor " + factor
+				if (null == s.table() || s.table().length == 0) throw new IllegalArgumentException("Table not defined for factor " + factor
 						.toString());
 				config.detail = new MongoDataDetail(Factor.NOT_DEFINED.equals(s.filter()) ? null : s.filter(), s.table());
 				if (calc.validate) {
