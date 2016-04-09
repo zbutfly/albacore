@@ -1,0 +1,27 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>net.butfly.albacore</groupId>
+		<artifactId>albacore-parent</artifactId>
+		<version>3.0.0-SNAPSHOT</version>
+	</parent>
+	<artifactId>albacore-core</artifactId>
+	<name>albacore-core</name>
+	<properties>
+		<deps.version.scala>2.11</deps.version.scala>
+		<deps.version.scala.lib>2.12.0-M3-dc9effe</deps.version.scala.lib>
+	</properties>
+	<dependencies>
+		<dependency>
+			<groupId>org.scala-lang</groupId>
+			<artifactId>scala-library</artifactId>
+			<version>${deps.version.scala.lib}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.scala-lang</groupId>
+			<artifactId>scala-reflect</artifactId>
+			<version>${deps.version.scala.lib}</version>
+		</dependency>
+	</dependencies>
+</project>
