@@ -25,7 +25,7 @@ public class KafkaDataSource extends DataSource<String, String, byte[], KafkaDat
 	int topicPartitions;
 
 	public KafkaDataSource(String servers, String root, int topicPartitions, String group, KafkaMarshaller marshaller) {
-		super(Type.KAFKA, null == marshaller ? new KafkaMarshaller() : marshaller);
+		super(Type.KAFKA, false, null == marshaller ? new KafkaMarshaller() : marshaller);
 		int pos = servers.indexOf('/');
 		if (root == null && pos >= 0) {
 			this.servers = servers.substring(0, pos);
@@ -85,9 +85,6 @@ public class KafkaDataSource extends DataSource<String, String, byte[], KafkaDat
 			kafka = KafkaUtils.createStream(calc.ssc, String.class, byte[].class, StringDecoder.class, DefaultDecoder.class, params,
 					topicsMap, StorageLevel.MEMORY_ONLY());
 		}
-		JavaPairDStream<String, F> r = (JavaPairDStream<String, F>) kafka.mapToPair(t -> null == t ? null
-				: new Tuple2<String, F>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor)));
-		if (logger.isTraceEnabled()) logger.trace("Stocking from hbase: " + r.count().reduce((v1, v2) -> v1 + v2));
-		return r;
+		return kafka.mapToPair(t -> new Tuple2<String, F>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor)));
 	}
 }

@@ -2,13 +2,13 @@ package net.butfly.albacore.calculus.datasource;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.api.java.function.VoidFunction;
+import net.butfly.albacore.calculus.lambda.VoidFunction;
 import org.bson.BSONObject;
 import org.bson.BasicBSONObject;
 import org.bson.Document;
@@ -35,15 +35,16 @@ import scala.Tuple2;
 
 public class MongoDataSource extends DataSource<Object, Object, BSONObject, MongoDataDetail> {
 	private static final long serialVersionUID = -2617369621178264387L;
-	String uri;
+	public String uri;
 
-	public MongoDataSource(String uri, MongoMarshaller marshaller) {
-		super(Type.MONGODB, null == marshaller ? new MongoMarshaller() : marshaller);
+	public MongoDataSource(String uri, MongoMarshaller marshaller, String suffix, boolean validate) {
+		super(Type.MONGODB, validate, null == marshaller ? new MongoMarshaller() : marshaller);
+		super.suffix = suffix;
 		this.uri = uri;
 	}
 
-	public MongoDataSource(String uri) {
-		this(uri, new MongoMarshaller());
+	public MongoDataSource(String uri, String suffix, boolean validate) {
+		this(uri, new MongoMarshaller(), suffix, validate);
 	}
 
 	@Override
@@ -55,25 +56,25 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Mong
 		return uri;
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	public boolean confirm(Class<? extends Factor<?>> factor, MongoDataDetail detail) {
 		MongoClientURI muri = new MongoClientURI(getUri());
 		MongoClient mclient = new MongoClient(muri);
 		try {
-			MongoDatabase db = mclient.getDatabase(muri.getDatabase());
-			MongoCollection<Document> col = db.getCollection(detail.tables[0]);
-			if (col == null) {
+			if (!mclient.getDB(muri.getDatabase()).collectionExists(detail.tables[0])) {
+				MongoDatabase db = mclient.getDatabase(muri.getDatabase());
 				db.createCollection(detail.tables[0]);
-				col = db.getCollection(detail.tables[0]);
+				MongoCollection<Document> col = db.getCollection(detail.tables[0]);
+				for (Field f : Reflections.getDeclaredFields(factor))
+					if (f.isAnnotationPresent(Index.class)) {
+						String colname = f.isAnnotationPresent(JsonProperty.class) ? f.getAnnotation(JsonProperty.class).value()
+								: CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, f.getName());
+						BSONObject dbi = new BasicDBObject();
+						dbi.put(colname, 1);
+						col.createIndex((Bson) dbi);
+					}
 			}
-			for (Field f : Reflections.getDeclaredFields(factor))
-				if (f.isAnnotationPresent(Index.class)) {
-					String colname = f.isAnnotationPresent(JsonProperty.class) ? f.getAnnotation(JsonProperty.class).value()
-							: CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, f.getName());
-					BSONObject dbi = new BasicDBObject();
-					dbi.put(colname, 1);
-					col.createIndex((Bson) dbi);
-				}
 			return true;
 		} finally {
 			mclient.close();
@@ -82,25 +83,27 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Mong
 
 	@Override
 	public <F extends Factor<F>> JavaPairRDD<Object, F> stocking(Calculator calc, Class<F> factor, MongoDataDetail detail,
-			String referField, Set<?> referValues) {
-		if (logger.isDebugEnabled()) logger.debug("Stocking begin: " + factor.toString());
+			String referField, Collection<?> referValues) {
+		if (logger.isDebugEnabled()) logger.debug("Stocking begin: " + factor.toString() + ", from table: " + detail.tables[0] + ".");
 		Configuration mconf = new Configuration();
 		mconf.set("mongo.job.input.format", "com.mongodb.hadoop.MongoInputFormat");
 		MongoClientURI uri = new MongoClientURI(this.uri);
 		// mconf.set("mongo.auth.uri", uri.toString());
 		mconf.set("mongo.input.uri", new MongoClientURIBuilder(uri).collection(uri.getDatabase(), detail.tables[0]).build().toString());
-		String qstr = filter(detail.filter, referField, referValues);
-		if (logger.isTraceEnabled()) logger.trace("Run mongodb filter: " + qstr);
-		if (null != qstr) mconf.set("mongo.input.query", qstr);
+		String qstr = null == referField ? detail.filter
+				: filter(detail.filter, marshaller.parseField(Reflections.getDeclaredField(factor, referField)), referValues);
+		if (!Reflections.anyEmpty(qstr)) {
+			if (logger.isTraceEnabled()) logger.trace(
+					"Run mongodb filter: " + (qstr.length() <= 100 ? qstr : qstr.substring(0, 100) + "...(too long string eliminated)"));
+			mconf.set("mongo.input.query", qstr);
+		}
 		// conf.mconf.set("mongo.input.fields
 		mconf.set("mongo.input.notimeout", "true");
-		JavaPairRDD<Object, BSONObject> rr = calc.sc.newAPIHadoopRDD(mconf, MongoInputFormat.class, Object.class, BSONObject.class);
-		if (logger.isTraceEnabled()) logger.trace("MongoDB read: " + rr.count());
-		return rr.mapToPair(t -> null == t ? null
-				: new Tuple2<Object, F>(this.marshaller.unmarshallId(t._1), this.marshaller.unmarshall(t._2, factor)));
+		return calc.sc.newAPIHadoopRDD(mconf, MongoInputFormat.class, Object.class, BSONObject.class)
+				.mapToPair(t -> new Tuple2<>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor)));
 	}
 
-	private String filter(String filter, String referField, Set<?> referValues) {
+	private String filter(String filter, String referField, Collection<?> referValues) {
 		MongoMarshaller bsoner = (MongoMarshaller) this.marshaller;
 		List<BSONObject> qs = new ArrayList<>();
 		if (referField != null) {
@@ -130,12 +133,16 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Mong
 		MongoClientURI uri = new MongoClientURI(this.uri);
 		conf.set("mongo.output.uri", new MongoClientURIBuilder(uri).collection(uri.getDatabase(), detail.tables[0]).build().toString());
 		return r -> {
+			if (logger.isTraceEnabled()) {
+				r = r.cache();
+				logger.trace("Write back to mongodb: " + r.count() + " records.");
+			}
 			r.mapToPair(t -> {
 				BasicBSONObject q = new BasicBSONObject();
 				q.append("_id", this.marshaller.marshallId(t._1));
 				BasicBSONObject u = new BasicBSONObject();
 				u.append("$set", this.marshaller.marshall(t._2));
-				if (logger.isTraceEnabled()) logger.trace("MongoUpdateWritable: " + u.toString() + " from " + q.toString());
+				if (calc.debug && logger.isTraceEnabled()) logger.trace("MongoUpdateWritable: " + u.toString() + " from " + q.toString());
 				return new Tuple2<Object, MongoUpdateWritable>(null, new MongoUpdateWritable(q, u, true, true));
 			}).saveAsNewAPIHadoopFile("", Object.class, BSONObject.class, MongoOutputFormat.class, conf);
 		};

@@ -1,5 +1,7 @@
 package net.butfly.albacore.calculus.utils;
 
+import java.io.Serializable;
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
@@ -13,20 +15,19 @@ import java.util.function.Function;
 
 import com.google.common.reflect.TypeToken;
 
-public final class Reflections {
+public final class Reflections implements Serializable {
+	private static final long serialVersionUID = 6337397752201899394L;
+
 	private Reflections() {}
 
 	public static Field[] getDeclaredFields(Class<?> clazz) {
+		noneNull("", clazz);
 		Map<String, Field> fields = new HashMap<String, Field>();
 		while (clazz != null) {
 			for (Field field : clazz.getDeclaredFields()) {
 				if (fields.containsKey(field.getName())) continue;
 				int mod = field.getModifiers();
-				if (Modifier.isFinal(mod)) continue;
-				if (Modifier.isStatic(mod)) continue;
-				if (Modifier.isTransient(mod)) continue;
-				if (Modifier.isVolatile(mod)) continue;
-
+				if (Modifier.isFinal(mod) || Modifier.isStatic(mod) || Modifier.isTransient(mod) || Modifier.isVolatile(mod)) continue;
 				fields.put(field.getName(), field);
 			}
 			clazz = clazz.getSuperclass();
@@ -36,6 +37,7 @@ public final class Reflections {
 	}
 
 	public static Field getDeclaredField(Class<?> clazz, String name) {
+		noneNull("", clazz, name);
 		while (clazz != null) {
 			try {
 				return clazz.getDeclaredField(name);
@@ -120,5 +122,25 @@ public final class Reflections {
 		List<R> r = new ArrayList<>(original.size());
 		original.forEach(o -> r.add(trans.apply(o)));
 		return r;
+	}
+
+	public static boolean anyNull(Object... value) {
+		for (Object v : value)
+			if (null == v) return true;
+		return false;
+	}
+
+	public static void noneNull(String msg, Object... value) {
+		for (Object v : value)
+			if (null == v) throw new IllegalArgumentException(msg);
+	}
+
+	public static boolean anyEmpty(Object... value) {
+		for (Object v : value) {
+			if (null == v) return true;
+			if (v.getClass().isArray() && Array.getLength(v) == 0) return true;
+			if (v instanceof CharSequence && ((CharSequence) v).length() == 0) return true;
+		}
+		return false;
 	}
 }

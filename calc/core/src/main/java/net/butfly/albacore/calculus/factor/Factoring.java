@@ -21,18 +21,6 @@ public @interface Factoring {
 
 	Mechanism stockOnStreaming() default Mechanism.CONST;
 
-	String foreignKey() default Factor.NOT_DEFINED;
-
-	Join join() default Join.RIGHT;
-
-	String primaryFactor() default Factor.NOT_DEFINED;
-
-	String primaryKey() default Factor.NOT_DEFINED;
-
-	public enum Join {
-		INNER, LEFT, RIGHT
-	}
-
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target(ElementType.TYPE)
 	public @interface Factorings {

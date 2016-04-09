@@ -1,11 +1,10 @@
 package net.butfly.albacore.calculus.datasource;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.HashMap;
-import java.util.Set;
 
 import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +13,7 @@ import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
+import net.butfly.albacore.calculus.lambda.VoidFunction;
 import net.butfly.albacore.calculus.marshall.Marshaller;
 
 public abstract class DataSource<FK, K, V, D extends DataDetail> implements Serializable {
@@ -21,6 +21,8 @@ public abstract class DataSource<FK, K, V, D extends DataDetail> implements Seri
 	protected Factor.Type type;
 	protected Marshaller<FK, K, V> marshaller;
 	protected final Logger logger = LoggerFactory.getLogger(this.getClass());
+	public boolean validate;
+	public String suffix;
 
 	public Factor.Type type() {
 		return type;
@@ -30,9 +32,10 @@ public abstract class DataSource<FK, K, V, D extends DataDetail> implements Seri
 		return marshaller;
 	}
 
-	public DataSource(Type type, Marshaller<FK, K, V> marshaller) {
+	public DataSource(Type type, boolean validate, Marshaller<FK, K, V> marshaller) {
 		super();
 		this.type = type;
+		this.validate = validate;
 		this.marshaller = marshaller;
 	}
 
@@ -42,7 +45,7 @@ public abstract class DataSource<FK, K, V, D extends DataDetail> implements Seri
 	}
 
 	public <F extends Factor<F>> JavaPairRDD<FK, F> stocking(Calculator calc, Class<F> factor, D detail, String referField,
-			Set<?> referValues) {
+			Collection<?> referValues) {
 		throw new UnsupportedOperationException("Unsupportted stocking mode: " + type + " on " + factor.toString());
 	}
 
