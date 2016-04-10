@@ -9,6 +9,7 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaRDDLike;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.rdd.EmptyRDD;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaDStreamLike;
@@ -219,6 +220,34 @@ public class RDS<T> implements Serializable {
 		return r[0];
 	}
 
+	@SuppressWarnings("unchecked")
+	public static <T> ClassTag<T> tag() {
+		return (ClassTag<T>) ManifestFactory.AnyRef();
+	}
+
+	protected final RDS<T> rddlike() {
+		switch (type) {
+		case RDD:
+			if (rdds.size() <= 1) return this;
+			RDD<T> r0 = rdds.get(0);
+			for (int i = 1; i < rdds.size(); i++)
+				r0 = r0.union(rdds.get(1));
+			rdds = Arrays.asList(r0);
+			break;
+		case DSTREAM:
+			this.type = RDSType.RDD;
+			rdds = Arrays.asList(new EmptyRDD<T>(dstream.ssc().sc(), tag()));
+			dstream.foreachRDD(rdd -> {
+				rdds.set(0, rdds.get(0).union(rdd));
+				return BoxedUnit.UNIT;
+			});
+			break;
+		default:
+			throw new IllegalArgumentException();
+		}
+		return this;
+	}
+
 	static <T, T1> List<T1> trans(List<T> r, Function<T, T1> transformer) {
 		if (r == null) return null;
 		List<T1> r1 = new ArrayList<>(r.size());
@@ -267,11 +296,6 @@ public class RDS<T> implements Serializable {
 			return BoxedUnit.UNIT;
 		});
 		return l.get(0);
-	}
-
-	@SuppressWarnings("unchecked")
-	public static <T> ClassTag<T> tag() {
-		return (ClassTag<T>) ManifestFactory.AnyRef();
 	}
 
 	static <K, V> JavaPairRDD<K, V>[] pair(JavaRDD<Tuple2<K, V>>[] rdds) {

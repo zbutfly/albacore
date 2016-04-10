@@ -113,7 +113,7 @@ public final class Reflections implements Serializable {
 		TypeVariable<?>[] vv = declareClass.getTypeParameters();
 		for (TypeVariable<?> v : vv) {
 			types.put(v.getName(), (Class<?>) TypeToken.of(implType).resolveType(v).getRawType());
-		};
+		} ;
 		return types;
 	}
 

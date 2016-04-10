@@ -2,13 +2,11 @@ package net.butfly.albacore.calculus.datasource;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.spark.api.java.JavaPairRDD;
-import net.butfly.albacore.calculus.lambda.VoidFunction;
 import org.bson.BSONObject;
 import org.bson.BasicBSONObject;
 import org.bson.Document;
@@ -29,6 +27,12 @@ import com.mongodb.hadoop.util.MongoClientURIBuilder;
 import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
+import net.butfly.albacore.calculus.factor.filter.Filter;
+import net.butfly.albacore.calculus.factor.filter.Filter.Between;
+import net.butfly.albacore.calculus.factor.filter.Filter.Equal;
+import net.butfly.albacore.calculus.factor.filter.Filter.FieldFilter;
+import net.butfly.albacore.calculus.factor.filter.Filter.In;
+import net.butfly.albacore.calculus.lambda.VoidFunction;
 import net.butfly.albacore.calculus.marshall.MongoMarshaller;
 import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
@@ -83,47 +87,58 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Mong
 
 	@Override
 	public <F extends Factor<F>> JavaPairRDD<Object, F> stocking(Calculator calc, Class<F> factor, MongoDataDetail detail,
-			String referField, Collection<?> referValues) {
+			Filter... filters) {
 		if (logger.isDebugEnabled()) logger.debug("Stocking begin: " + factor.toString() + ", from table: " + detail.tables[0] + ".");
 		Configuration mconf = new Configuration();
 		mconf.set("mongo.job.input.format", "com.mongodb.hadoop.MongoInputFormat");
 		MongoClientURI uri = new MongoClientURI(this.uri);
 		// mconf.set("mongo.auth.uri", uri.toString());
 		mconf.set("mongo.input.uri", new MongoClientURIBuilder(uri).collection(uri.getDatabase(), detail.tables[0]).build().toString());
-		String qstr = null == referField ? detail.filter
-				: filter(detail.filter, marshaller.parseField(Reflections.getDeclaredField(factor, referField)), referValues);
-		if (!Reflections.anyEmpty(qstr)) {
-			if (logger.isTraceEnabled()) logger.trace(
-					"Run mongodb filter: " + (qstr.length() <= 100 ? qstr : qstr.substring(0, 100) + "...(too long string eliminated)"));
-			mconf.set("mongo.input.query", qstr);
+		List<BSONObject> ands = new ArrayList<>();
+		MongoMarshaller bsoner = (MongoMarshaller) this.marshaller;
+		if (detail.filter != null) ands.add(bsoner.bsonFromJSON(detail.filter));
+		for (Filter f : filters)
+			ands.add(filter(factor, f));
+		switch (ands.size()) {
+		case 0:
+			break;
+		case 1:
+			mconf.set("mongo.input.query", bsoner.jsonFromBSON(ands.get(0)));
+			break;
+		default:
+			mconf.set("mongo.input.query", bsoner.jsonFromBSON(assembly("$and", ands)));
+			break;
 		}
+		if ((null != mconf.get("mongo.input.query")) && logger.isTraceEnabled()) logger.trace("Run mongodb filter on " + factor.toString()
+				+ ": " + (mconf.get("mongo.input.query").length() <= 100 ? mconf.get("mongo.input.query")
+						: mconf.get("mongo.input.query").substring(0, 100) + "...(too long string eliminated)"));
 		// conf.mconf.set("mongo.input.fields
 		mconf.set("mongo.input.notimeout", "true");
 		return calc.sc.newAPIHadoopRDD(mconf, MongoInputFormat.class, Object.class, BSONObject.class)
 				.mapToPair(t -> new Tuple2<>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor)));
 	}
 
-	private String filter(String filter, String referField, Collection<?> referValues) {
-		MongoMarshaller bsoner = (MongoMarshaller) this.marshaller;
-		List<BSONObject> qs = new ArrayList<>();
-		if (referField != null) {
-			BSONObject qq = new BasicDBObject();
-			qq.put("$in", referValues.toArray(new String[referValues.size()]));
-			BSONObject rq = new BasicDBObject();
-			rq.put(referField, qq);
-			qs.add(rq);
+	@SuppressWarnings("rawtypes")
+	private BSONObject filter(Class<?> mapperClass, Filter filter) {
+		if (filter instanceof FieldFilter) {
+			String col = marshaller.parseField(Reflections.getDeclaredField(mapperClass, ((FieldFilter<?>) filter).field));
+			if (filter.getClass().equals(In.class)) return assembly(col, assembly("$in", ((In<?>) filter).values));
+			if (filter.getClass().equals(Equal.class)) return assembly(col, assembly("$eq", ((Equal<?>) filter).value));
+			if (filter.getClass().equals(Between.class)) {
+				Filter.Between be = (Between) filter;
+				List<BSONObject> ands = new ArrayList<>();
+				if (be.min != null) ands.add(assembly(col, assembly("$gte", be.min)));
+				if (be.max != null) ands.add(assembly(col, assembly("$lte", be.max)));
+				return assembly("$and", ands);
+			}
 		}
-		if (filter != null) qs.add(bsoner.bsonFromJSON(filter));
-		switch (qs.size()) {
-		case 0:
-			return null;
-		case 1:
-			return bsoner.jsonFromBSON(qs.get(0));
-		default:
-			BSONObject q = new BasicDBObject();
-			q.put("$and", qs);
-			return bsoner.jsonFromBSON(q);
-		}
+		throw new UnsupportedOperationException("Unsupportted filter: " + filter.getClass());
+	}
+
+	private BSONObject assembly(String key, Object value) {
+		BSONObject fd = new BasicDBObject();
+		fd.put(key, value);
+		return fd;
 	}
 
 	@Override

@@ -1,9 +1,7 @@
 package net.butfly.albacore.calculus.factor;
 
 import java.io.Serializable;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -18,6 +16,7 @@ import net.butfly.albacore.calculus.datasource.KafkaDataDetail;
 import net.butfly.albacore.calculus.datasource.MongoDataDetail;
 import net.butfly.albacore.calculus.factor.Factor.Stocking;
 import net.butfly.albacore.calculus.factor.Factor.Streaming;
+import net.butfly.albacore.calculus.factor.filter.Filter;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.streaming.RDDDStream;
 import net.butfly.albacore.calculus.streaming.RDDDStream.Mechanism;
@@ -52,16 +51,12 @@ public final class Factors implements Serializable {
 		}
 	}
 
-	public <K, F extends Factor<F>> PairRDS<K, F> get(String factoring) {
-		return get(factoring, null, new HashSet<>());
-	}
-
-	public <K, F extends Factor<F>, E extends Factor<E>> PairRDS<K, F> get(String factoring, String field, Collection<?> other) {
+	public <K, F extends Factor<F>, E extends Factor<E>> PairRDS<K, F> get(String factoring, Filter... filters) {
 		FactorConfig<K, F> config = (FactorConfig<K, F>) pool.get(factoring);
 		DataSource<K, ?, ?, DataDetail> ds = calc.dss.ds(config.dbid);
 		switch (calc.mode) {
 		case STOCKING:
-			if (config.batching <= 0) return new PairRDS<K, F>(ds.stocking(calc, config.factorClass, config.detail, field, other));
+			if (config.batching <= 0) return new PairRDS<K, F>(ds.stocking(calc, config.factorClass, config.detail, filters));
 			else return new PairRDS<K, F>(RDDDStream.bpstream(calc.ssc.ssc(), config.batching,
 					(limit, offset) -> ds.batching(calc, config.factorClass, limit, offset, config.detail), ds.marshaller().comparator()));
 		case STREAMING:
@@ -70,10 +65,10 @@ public final class Factors implements Serializable {
 				switch (config.streaming) {
 				case CONST:
 					return new PairRDS<K, F>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.CONST,
-							() -> ds.stocking(calc, config.factorClass, config.detail, field, other)));
+							() -> ds.stocking(calc, config.factorClass, config.detail, filters)));
 				case FRESH:
 					return new PairRDS<K, F>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.FRESH,
-							() -> ds.stocking(calc, config.factorClass, config.detail, field, other)));
+							() -> ds.stocking(calc, config.factorClass, config.detail, filters)));
 				default:
 					throw new UnsupportedOperationException();
 				}
@@ -83,10 +78,6 @@ public final class Factors implements Serializable {
 		default:
 			throw new UnsupportedOperationException();
 		}
-	}
-
-	public <K, F extends Factor<F>> PairRDS<K, F> get(String factoring, String field, PairRDS<?, ?> other) {
-		return get(factoring, field, other.collectKeys());
 	}
 
 	public <K, F extends Factor<F>> FactorConfig<K, F> config(Class<F> factor) {

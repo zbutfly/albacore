@@ -244,6 +244,42 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 		}
 	}
 
+	public PairRDS<K, V> sortByKey(boolean asc) {
+		rddlike();
+		if (rdds.size() > 0) rdds.set(0, JavaPairRDD.fromRDD(rdds.get(0), tag(), tag()).sortByKey(asc).rdd());
+		return this;
+	}
+
+	public Tuple2<K, V> first() {
+		rddlike();
+		return rdds.size() > 0 ? rdds.get(0).first() : null;
+	}
+
+	public Tuple2<K, V> maxByKey() {
+		sortByKey(false);
+		return first();
+	}
+
+	public Tuple2<K, V> minByKey() {
+		sortByKey(true);
+		return first();
+	}
+
+	@Override
+	public PairRDS<K, V> filter(Function<Tuple2<K, V>, Boolean> func) {
+		switch (type) {
+		case RDD:
+			rdds = trans(rdds, r -> JavaPairRDD.fromRDD(r, tag(), tag()).filter(t -> func.call(t)).rdd());
+			break;
+		case DSTREAM:
+			dstream = JavaPairDStream.fromPairDStream(dstream, tag(), tag()).filter(t -> func.call(t)).dstream();
+			break;
+		default:
+			throw new IllegalArgumentException();
+		}
+		return this;
+	}
+
 	public final <K2, V2> PairRDS<K2, V2> mapPair(PairFunction<Tuple2<K, V>, K2, V2> func) {
 		switch (type) {
 		case RDD:
@@ -266,21 +302,6 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 
 	public PairRDS<K, V> persist() {
 		super.persist();
-		return this;
-	}
-
-	@Override
-	public PairRDS<K, V> filter(Function<Tuple2<K, V>, Boolean> func) {
-		switch (type) {
-		case RDD:
-			rdds = trans(rdds, r -> JavaPairRDD.fromRDD(r, tag(), tag()).filter(t -> func.call(t)).rdd());
-			break;
-		case DSTREAM:
-			dstream = JavaPairDStream.fromPairDStream(dstream, tag(), tag()).filter(t -> func.call(t)).dstream();
-			break;
-		default:
-			throw new IllegalArgumentException();
-		}
 		return this;
 	}
 }

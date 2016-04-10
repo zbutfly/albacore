@@ -1,7 +1,6 @@
 package net.butfly.albacore.calculus.datasource;
 
 import java.io.Serializable;
-import java.util.Collection;
 import java.util.HashMap;
 
 import org.apache.spark.api.java.JavaPairRDD;
@@ -12,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
+import net.butfly.albacore.calculus.factor.filter.Filter;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.lambda.VoidFunction;
 import net.butfly.albacore.calculus.marshall.Marshaller;
@@ -44,8 +44,7 @@ public abstract class DataSource<FK, K, V, D extends DataDetail> implements Seri
 		return "CalculatorDataSource:" + this.type;
 	}
 
-	public <F extends Factor<F>> JavaPairRDD<FK, F> stocking(Calculator calc, Class<F> factor, D detail, String referField,
-			Collection<?> referValues) {
+	public <F extends Factor<F>> JavaPairRDD<FK, F> stocking(Calculator calc, Class<F> factor, D detail, Filter... filters) {
 		throw new UnsupportedOperationException("Unsupportted stocking mode: " + type + " on " + factor.toString());
 	}
 
