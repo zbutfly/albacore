@@ -23,6 +23,7 @@ import com.mongodb.hadoop.MongoInputFormat;
 import com.mongodb.hadoop.MongoOutputFormat;
 import com.mongodb.hadoop.io.MongoUpdateWritable;
 import com.mongodb.hadoop.util.MongoClientURIBuilder;
+import com.mongodb.hadoop.util.MongoConfigUtil;
 
 import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
@@ -90,30 +91,38 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Mong
 			Filter... filters) {
 		if (logger.isDebugEnabled()) logger.debug("Stocking begin: " + factor.toString() + ", from table: " + detail.tables[0] + ".");
 		Configuration mconf = new Configuration();
-		mconf.set("mongo.job.input.format", "com.mongodb.hadoop.MongoInputFormat");
+		mconf.set(MongoConfigUtil.JOB_INPUT_FORMAT, "com.mongodb.hadoop.MongoInputFormat");
 		MongoClientURI uri = new MongoClientURI(this.uri);
-		// mconf.set("mongo.auth.uri", uri.toString());
-		mconf.set("mongo.input.uri", new MongoClientURIBuilder(uri).collection(uri.getDatabase(), detail.tables[0]).build().toString());
+		// mconf.set(MongoConfigUtil.INPUT_URI, uri.toString());
+		mconf.set(MongoConfigUtil.INPUT_URI,
+				new MongoClientURIBuilder(uri).collection(uri.getDatabase(), detail.tables[0]).build().toString());
 		List<BSONObject> ands = new ArrayList<>();
 		MongoMarshaller bsoner = (MongoMarshaller) this.marshaller;
 		if (detail.filter != null) ands.add(bsoner.bsonFromJSON(detail.filter));
 		for (Filter f : filters)
 			ands.add(filter(factor, f));
+		String inputquery = null;
 		switch (ands.size()) {
 		case 0:
 			break;
 		case 1:
-			mconf.set("mongo.input.query", bsoner.jsonFromBSON(ands.get(0)));
+			inputquery = bsoner.jsonFromBSON(ands.get(0));
 			break;
 		default:
-			mconf.set("mongo.input.query", bsoner.jsonFromBSON(assembly("$and", ands)));
+			inputquery = bsoner.jsonFromBSON(assembly("$and", ands));
 			break;
 		}
-		if ((null != mconf.get("mongo.input.query")) && logger.isTraceEnabled()) logger.trace("Run mongodb filter on " + factor.toString()
-				+ ": " + (mconf.get("mongo.input.query").length() <= 100 ? mconf.get("mongo.input.query")
-						: mconf.get("mongo.input.query").substring(0, 100) + "...(too long string eliminated)"));
-		// conf.mconf.set("mongo.input.fields
-		mconf.set("mongo.input.notimeout", "true");
+		if (null != inputquery) {
+			mconf.set(MongoConfigUtil.INPUT_QUERY, inputquery);
+			mconf.set(MongoConfigUtil.SPLITS_USE_RANGEQUERY, "true");
+			mconf.set(MongoConfigUtil.MONGO_SPLITTER_CLASS, "com.mongodb.hadoop.splitter.MongoPaginatingSplitter");
+			if (logger.isTraceEnabled()) logger.trace("Run mongodb filter on " + factor.toString() + ": "
+					+ (inputquery.length() <= 100 ? inputquery : inputquery.substring(0, 100) + "...(too long string eliminated)"));
+		}
+		// conf.mconf.set(MongoConfigUtil.INPUT_FIELDS
+		mconf.set(MongoConfigUtil.INPUT_NOTIMEOUT, "true");
+		// mconf.set("mongo.input.split.use_range_queries", "true");
+
 		return calc.sc.newAPIHadoopRDD(mconf, MongoInputFormat.class, Object.class, BSONObject.class)
 				.mapToPair(t -> new Tuple2<>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor)));
 	}

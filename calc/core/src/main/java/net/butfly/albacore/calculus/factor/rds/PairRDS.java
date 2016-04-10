@@ -255,12 +255,12 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 		return rdds.size() > 0 ? rdds.get(0).first() : null;
 	}
 
-	public Tuple2<K, V> maxByKey() {
+	public Tuple2<K, V> maxKey() {
 		sortByKey(false);
 		return first();
 	}
 
-	public Tuple2<K, V> minByKey() {
+	public Tuple2<K, V> minKey() {
 		sortByKey(true);
 		return first();
 	}
