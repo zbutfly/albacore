@@ -61,6 +61,7 @@ public class Calculator implements Serializable {
 	public Factoring[] factorings;
 	private Calculus<?, ?> calculus;
 	private String appname;
+	private boolean optimizeMongo;
 
 	public static void main(String... args) {
 		final Properties props = new Properties();
@@ -106,6 +107,7 @@ public class Calculator implements Serializable {
 	private Calculator(Properties props) {
 		mode = Mode.valueOf(props.getProperty("calculus.mode", "STREAMING").toUpperCase());
 		debug = Boolean.valueOf(props.getProperty("calculus.debug", "false").toLowerCase());
+		optimizeMongo = Boolean.valueOf(props.getProperty("calculus.mongo.optimize", "true").toLowerCase());
 		if (debug) logger.error("Running in DEBUG mode, slowly!!!!!");
 		if (mode == Mode.STOCKING && props.containsKey("calculus.spark.duration.seconds"))
 			logger.warn("Stocking does not support duration, but duration may be set by calculator for batching.");
@@ -191,13 +193,14 @@ public class Calculator implements Serializable {
 				break;
 			case MONGODB:
 				dss.put(dsid, new MongoDataSource(dbprops.getProperty("uri"), (MongoMarshaller) m, dbprops.getProperty("output.suffix"),
-						Boolean.parseBoolean(dbprops.getProperty("validate", "true"))));
+						Boolean.parseBoolean(dbprops.getProperty("validate", "true")), this.optimizeMongo));
 				// , dbprops.getProperty("authdb"),dbprops.getProperty("authdb")
 				break;
 			case KAFKA:
-				dss.put(dsid, new KafkaDataSource(dbprops.getProperty("servers"), dbprops.getProperty("root"), Integer.parseInt(dbprops
-						.getProperty("topic.partitions", "1")), debug ? appname + UUID.randomUUID().toString() : appname,
-						(KafkaMarshaller) m));
+				dss.put(dsid,
+						new KafkaDataSource(dbprops.getProperty("servers"), dbprops.getProperty("root"),
+								Integer.parseInt(dbprops.getProperty("topic.partitions", "1")),
+								debug ? appname + UUID.randomUUID().toString() : appname, (KafkaMarshaller) m));
 				break;
 			default:
 				logger.warn("Unsupportted type: " + type);
@@ -215,8 +218,8 @@ public class Calculator implements Serializable {
 		opts.addOption("h", "help", false, "Print help information like this.");
 
 		CommandLine cmd = parser.parse(opts, args);
-		if (cmd.hasOption('h')) new HelpFormatter().printHelp(
-				"java net.butfly.albacore.calculus.Calculator xxx.xxx.XxxCalculus [option]...", opts);
+		if (cmd.hasOption('h'))
+			new HelpFormatter().printHelp("java net.butfly.albacore.calculus.Calculator xxx.xxx.XxxCalculus [option]...", opts);
 		return cmd;
 	}
 

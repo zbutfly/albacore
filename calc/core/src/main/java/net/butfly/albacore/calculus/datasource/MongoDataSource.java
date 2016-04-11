@@ -41,15 +41,17 @@ import scala.Tuple2;
 public class MongoDataSource extends DataSource<Object, Object, BSONObject, MongoDataDetail> {
 	private static final long serialVersionUID = -2617369621178264387L;
 	public String uri;
+	private boolean optimize;
 
-	public MongoDataSource(String uri, MongoMarshaller marshaller, String suffix, boolean validate) {
+	public MongoDataSource(String uri, MongoMarshaller marshaller, String suffix, boolean validate, boolean optimize) {
 		super(Type.MONGODB, validate, null == marshaller ? new MongoMarshaller() : marshaller);
 		super.suffix = suffix;
 		this.uri = uri;
+		this.optimize = optimize;
 	}
 
-	public MongoDataSource(String uri, String suffix, boolean validate) {
-		this(uri, new MongoMarshaller(), suffix, validate);
+	public MongoDataSource(String uri, String suffix, boolean validate, boolean optimize) {
+		this(uri, new MongoMarshaller(), suffix, validate, optimize);
 	}
 
 	@Override
@@ -114,8 +116,10 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Mong
 		}
 		if (null != inputquery) {
 			mconf.set(MongoConfigUtil.INPUT_QUERY, inputquery);
-			mconf.set(MongoConfigUtil.SPLITS_USE_RANGEQUERY, "true");
-			mconf.set(MongoConfigUtil.MONGO_SPLITTER_CLASS, "com.mongodb.hadoop.splitter.MongoPaginatingSplitter");
+			if (this.optimize) {
+				mconf.set(MongoConfigUtil.SPLITS_USE_RANGEQUERY, "true");
+				mconf.set(MongoConfigUtil.MONGO_SPLITTER_CLASS, "com.mongodb.hadoop.splitter.MongoPaginatingSplitter");
+			}
 			if (logger.isTraceEnabled()) logger.trace("Run mongodb filter on " + factor.toString() + ": "
 					+ (inputquery.length() <= 100 ? inputquery : inputquery.substring(0, 100) + "...(too long string eliminated)"));
 		}

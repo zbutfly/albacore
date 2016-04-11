@@ -18,6 +18,7 @@ import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.dstream.DStream;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.Ordering;
 
 import net.butfly.albacore.calculus.lambda.Function;
 import net.butfly.albacore.calculus.lambda.Function2;
@@ -255,14 +256,17 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 		return rdds.size() > 0 ? rdds.get(0).first() : null;
 	}
 
-	public Tuple2<K, V> maxKey() {
-		sortByKey(false);
-		return first();
+	public K maxKey() {
+		@SuppressWarnings("unchecked")
+		Ordering<K> c = (Ordering<K>) Ordering.natural();
+		this.cache();
+		return this.reduce((t1, t2) -> (c.compare(t1._1, t2._1) > 0 ? t1 : t2))._1;
 	}
 
-	public Tuple2<K, V> minKey() {
-		sortByKey(true);
-		return first();
+	public K minKey() {
+		@SuppressWarnings("unchecked")
+		Ordering<K> c = (Ordering<K>) Ordering.natural();
+		return this.reduce((t1, t2) -> (c.compare(t1._1, t2._1) < 0 ? t1 : t2))._1;
 	}
 
 	@Override
