@@ -5,11 +5,8 @@ import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -29,6 +26,7 @@ import org.apache.hadoop.hbase.filter.FilterList;
 import org.apache.hadoop.hbase.filter.FilterList.Operator;
 import org.apache.hadoop.hbase.filter.PageFilter;
 import org.apache.hadoop.hbase.filter.RandomRowFilter;
+import org.apache.hadoop.hbase.filter.RegexStringComparator;
 import org.apache.hadoop.hbase.filter.SingleColumnValueFilter;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
@@ -46,8 +44,7 @@ import com.google.common.base.CaseFormat;
 import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
-import net.butfly.albacore.calculus.factor.filter.Filter.FieldFilter;
-import net.butfly.albacore.calculus.factor.filter.Filter.In;
+import net.butfly.albacore.calculus.factor.filter.FactorFilter;
 import net.butfly.albacore.calculus.marshall.HbaseMarshaller;
 import net.butfly.albacore.calculus.utils.Logable;
 import net.butfly.albacore.calculus.utils.Reflections;
@@ -110,27 +107,27 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 
 	@Override
 	public <F extends Factor<F>> JavaPairRDD<byte[], F> stocking(Calculator calc, Class<F> factor, HbaseDataDetail detail,
-			net.butfly.albacore.calculus.factor.filter.Filter... filters) {
+			FactorFilter... filters) {
 		debug(() -> "Scaning begin: " + factor.toString() + ", from table: " + detail.tables[0] + ".");
 		Configuration conf = HBaseConfiguration.create();
-		return new HConf<F>(configFile, factor, detail.tables[0], (HbaseMarshaller) marshaller, calc.debug).init(conf).filter(conf, filters)
-				.debug(conf).scan(calc.sc, conf);
+		HUtil<F> util = new HUtil<F>(configFile, factor, detail.tables[0], (HbaseMarshaller) marshaller, calc.debug).init(conf);
+		return util.filter(conf, util.filter(filters)).debug(conf).scan(calc.sc, conf);
 	}
 
 	@Override
 	@Deprecated
 	public <F extends Factor<F>> JavaPairRDD<byte[], F> batching(Calculator calc, Class<F> factor, long limit, byte[] offset,
-			HbaseDataDetail detail, net.butfly.albacore.calculus.factor.filter.Filter... filters) {
+			HbaseDataDetail detail, FactorFilter... filters) {
 		debug(() -> "Scaning begin: " + factor.toString() + ", from table: " + detail.tables[0] + ".");
 		error(() -> "Batching mode is not supported now... BUG!!!!!");
 		Configuration conf = HBaseConfiguration.create();
-		return new HConf<F>(configFile, factor, detail.tables[0], (HbaseMarshaller) marshaller, calc.debug).init(conf)
-				.filter(conf, new net.butfly.albacore.calculus.factor.filter.Filter.Page<byte[]>(offset, limit)).scan(calc.sc, conf);
+		HUtil<F> util = new HUtil<F>(configFile, factor, detail.tables[0], (HbaseMarshaller) marshaller, calc.debug).init(conf);
+		return util.filter(conf, util.filter(new FactorFilter.Page<byte[]>(offset, limit))).scan(calc.sc, conf);
 	}
 
-	protected static class HConf<F extends Factor<F>> implements Serializable, Logable {
+	protected static class HUtil<F extends Factor<F>> implements Serializable, Logable {
 		private static final long serialVersionUID = 2314819561624610201L;
-		protected final static Logger logger = LoggerFactory.getLogger(HConf.class);
+		protected final static Logger logger = LoggerFactory.getLogger(HUtil.class);
 		Class<F> factor;
 		boolean filtered = false;
 		boolean debug;
@@ -138,7 +135,7 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 		private String configFile;
 		private String table;
 
-		public HConf(String configFile, Class<F> factor, String table, HbaseMarshaller marshaller, boolean debug) {
+		public HUtil(String configFile, Class<F> factor, String table, HbaseMarshaller marshaller, boolean debug) {
 			super();
 			this.configFile = configFile;
 			this.table = table;
@@ -147,7 +144,7 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 			this.marshaller = marshaller;
 		}
 
-		public HConf<F> init(Configuration hconf) {
+		public HUtil<F> init(Configuration hconf) {
 			try {
 				hconf.addResource(Calculator.scanInputStream(configFile));
 			} catch (IOException e) {
@@ -162,7 +159,7 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 					.mapToPair(t -> new Tuple2<>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor)));
 		}
 
-		public HConf<F> debug(final Configuration hconf) {
+		public HUtil<F> debug(final Configuration hconf) {
 			if (debug && !filtered) try {
 				float ratio = Float.parseFloat(System.getProperty("calculus.debug.hbase.random.ratio", "0"));
 				if (ratio > 0) {
@@ -186,32 +183,65 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 			return this;
 		}
 
-		@SuppressWarnings("unchecked")
-		public HConf<F> filter(Configuration hconf, net.butfly.albacore.calculus.factor.filter.Filter... filters) {
-			if (filters.length > 0) {
+		public HUtil<F> filter(final Configuration hconf, Filter filter) {
+			try {
+				hconf.set(TableInputFormat.SCAN, Base64.encodeBytes(ProtobufUtil.toScan(createScan().setFilter(filter)).toByteArray()));
 				filtered = true;
-				FilterList fl = new FilterList(Operator.MUST_PASS_ALL);
-				for (net.butfly.albacore.calculus.factor.filter.Filter f : filters) {
-					if (f instanceof FieldFilter) {
-						Field field = Reflections.getDeclaredField(factor, ((FieldFilter<?>) f).field);
-						String[] qulifier = marshaller.parseField(field).split(":");
-						if (f.getClass().equals(In.class)) for (Filter hf : in(qulifier[0], qulifier[1], CONVERTERS.get(field.getType()),
-								(Collection<Object>) ((In<?>) f).values))
-							fl.addFilter(hf);
-					}
-				}
-				try {
-					hconf.set(TableInputFormat.SCAN, Base64.encodeBytes(ProtobufUtil.toScan(createScan().setFilter(fl)).toByteArray()));
-				} catch (IOException e) {
-					throw new RuntimeException("HBase configuration invalid.", e);
-				}
+			} catch (IOException e) {
+				throw new RuntimeException("HBase configuration invalid.", e);
 			}
 			return this;
 		}
 
-		public List<Filter> in(String family, String column, Function<Object, byte[]> conv, Collection<Object> referValues) {
-			return new ArrayList<>(Reflections.transform(referValues, val -> new SingleColumnValueFilter(Bytes.toBytes(family),
-					Bytes.toBytes(column), CompareOp.EQUAL, null == val ? null : conv.apply(val))));
+		private Filter filter(FactorFilter[] filters) {
+			if (filters.length == 0) return null;
+			if (filters.length == 1) return filter(filters[0]);
+			FilterList fl = new FilterList(Operator.MUST_PASS_ALL);
+			for (FactorFilter f : filters)
+				if (f != null) fl.addFilter(filter(f));
+			return fl;
+		}
+
+		private Filter filter(FactorFilter filter) {
+			if (filter instanceof FactorFilter.ByField) {
+				Field field = Reflections.getDeclaredField(factor, ((FactorFilter.ByField<?>) filter).field);
+				String[] q = marshaller.parseField(field).split(":");
+				byte[][] qulifiers = new byte[][] { Bytes.toBytes(q[0]), Bytes.toBytes(q[1]) };
+				Function<Object, byte[]> conv = CONVERTERS.get(field.getType());
+				if (filter instanceof FactorFilter.ByFieldValue) {
+					if (!ops.containsKey(filter.getClass()))
+						throw new UnsupportedOperationException("Unsupportted filter: " + filter.getClass());
+					byte[] val = conv.apply(((FactorFilter.ByFieldValue<?>) filter).value);
+					return new SingleColumnValueFilter(qulifiers[0], qulifiers[1], ops.get(filter.getClass()), val);
+				}
+				if (filter.getClass().equals(FactorFilter.In.class)) return new SingleColumnInValuesFilter(qulifiers[0], qulifiers[1],
+						Reflections.transform(((FactorFilter.In<?>) filter).values, o -> conv.apply(o)).toArray(new byte[0][]));
+				if (filter.getClass().equals(FactorFilter.Regex.class)) return new SingleColumnValueFilter(qulifiers[0], qulifiers[1],
+						CompareOp.EQUAL, new RegexStringComparator(((FactorFilter.Regex) filter).regex.toString()));
+			} else {
+				if (filter.getClass().equals(FactorFilter.And.class)) {
+					FilterList ands = new FilterList(Operator.MUST_PASS_ALL);
+					for (FactorFilter f : ((FactorFilter.And) filter).filters)
+						ands.addFilter(filter(f));
+					return ands;
+				} else if (filter.getClass().equals(FactorFilter.Or.class)) {
+					FilterList ors = new FilterList(Operator.MUST_PASS_ONE);
+					for (FactorFilter f : ((FactorFilter.And) filter).filters)
+						ors.addFilter(filter(f));
+					return ors;
+				}
+			}
+			throw new UnsupportedOperationException("Unsupportted filter: " + filter.getClass());
+		}
+
+		private static final Map<Class<? extends FactorFilter>, CompareOp> ops = new HashMap<>();
+		static {
+			ops.put(FactorFilter.Equal.class, CompareOp.EQUAL);
+			ops.put(FactorFilter.NotEqual.class, CompareOp.NOT_EQUAL);
+			ops.put(FactorFilter.Less.class, CompareOp.LESS);
+			ops.put(FactorFilter.Greater.class, CompareOp.GREATER);
+			ops.put(FactorFilter.LessOrEqual.class, CompareOp.LESS_OR_EQUAL);
+			ops.put(FactorFilter.GreaterOrEqual.class, CompareOp.GREATER_OR_EQUAL);
 		}
 
 		private Scan createScan() {
@@ -237,14 +267,14 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 	private static final Map<Class, Function<Object, byte[]>> CONVERTERS = new HashMap<>();
 
 	static {
-		CONVERTERS.put(String.class, val -> Bytes.toBytes((String) val));
-		CONVERTERS.put(Integer.class, val -> Bytes.toBytes((Integer) val));
-		CONVERTERS.put(Boolean.class, val -> Bytes.toBytes((Boolean) val));
-		CONVERTERS.put(Long.class, val -> Bytes.toBytes((Long) val));
-		CONVERTERS.put(Double.class, val -> Bytes.toBytes((Double) val));
-		CONVERTERS.put(Float.class, val -> Bytes.toBytes((Float) val));
-		CONVERTERS.put(Short.class, val -> Bytes.toBytes((Short) val));
-		CONVERTERS.put(Byte.class, val -> Bytes.toBytes((Byte) val));
-		CONVERTERS.put(BigDecimal.class, val -> Bytes.toBytes((BigDecimal) val));
+		CONVERTERS.put(String.class, val -> null == val ? null : Bytes.toBytes((String) val));
+		CONVERTERS.put(Integer.class, val -> null == val ? null : Bytes.toBytes((Integer) val));
+		CONVERTERS.put(Boolean.class, val -> null == val ? null : Bytes.toBytes((Boolean) val));
+		CONVERTERS.put(Long.class, val -> null == val ? null : Bytes.toBytes((Long) val));
+		CONVERTERS.put(Double.class, val -> null == val ? null : Bytes.toBytes((Double) val));
+		CONVERTERS.put(Float.class, val -> null == val ? null : Bytes.toBytes((Float) val));
+		CONVERTERS.put(Short.class, val -> null == val ? null : Bytes.toBytes((Short) val));
+		CONVERTERS.put(Byte.class, val -> null == val ? null : Bytes.toBytes((Byte) val));
+		CONVERTERS.put(BigDecimal.class, val -> null == val ? null : Bytes.toBytes((BigDecimal) val));
 	}
 }

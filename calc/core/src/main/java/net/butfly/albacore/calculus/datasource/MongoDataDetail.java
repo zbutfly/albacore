@@ -11,6 +11,6 @@ public class MongoDataDetail extends DataDetail {
 
 	@Override
 	public String toString() {
-		return "[Table: " + tables[0] + ", Filter: " + filter + "]";
+		return "[Table: " + tables[0] + ", FactorFilter: " + filter + "]";
 	}
 }

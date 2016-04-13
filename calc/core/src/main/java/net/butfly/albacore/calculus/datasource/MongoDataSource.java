@@ -33,8 +33,7 @@ import com.mongodb.hadoop.util.MongoConfigUtil;
 import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
-import net.butfly.albacore.calculus.factor.filter.Filter;
-import net.butfly.albacore.calculus.factor.filter.MongoFilter;
+import net.butfly.albacore.calculus.factor.filter.FactorFilter;
 import net.butfly.albacore.calculus.lambda.VoidFunction;
 import net.butfly.albacore.calculus.marshall.MongoMarshaller;
 import net.butfly.albacore.calculus.utils.Reflections;
@@ -92,7 +91,7 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Mong
 
 	@Override
 	public <F extends Factor<F>> JavaPairRDD<Object, F> stocking(Calculator calc, Class<F> factor, MongoDataDetail detail,
-			Filter... filters) {
+			FactorFilter... filters) {
 		debug(() -> "Stocking begin: " + factor.toString() + ", from table: " + detail.tables[0] + ".");
 		Configuration mconf = new Configuration();
 		mconf.setClass(MongoConfigUtil.JOB_INPUT_FORMAT, MongoInputFormat.class, InputFormat.class);
@@ -102,17 +101,19 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Mong
 				new MongoClientURIBuilder(uri).collection(uri.getDatabase(), detail.tables[0]).build().toString());
 		List<BSONObject> ands = new ArrayList<>();
 		if (detail.filter != null) ands.add(((MongoMarshaller) this.marshaller).bsonFromJSON(detail.filter));
-		for (Filter f : filters) {
-			if (f instanceof Filter.Limit) {
-				warn(() -> "MongoDB query limit set as [" + ((Filter.Limit) f).limit + "], maybe debug...");
-				mconf.setLong(MongoConfigUtil.INPUT_LIMIT, ((Filter.Limit) f).limit);
-			} else if (f instanceof Filter.Skip) {
-				warn(() -> "MongoDB query skip set as [" + ((Filter.Skip) f).skip + "], maybe debug...");
-				mconf.setLong(MongoConfigUtil.INPUT_SKIP, ((Filter.Skip) f).skip);
-			} else if (f instanceof Filter.Sort) {
-				warn(() -> "MongoDB query sort set as [" + ((Filter.Sort) f).field + ":" + ((Filter.Sort) f).asc + "], maybe debug...");
+		for (FactorFilter f : filters) {
+			if (null == f) continue;
+			if (f instanceof FactorFilter.Limit) {
+				warn(() -> "MongoDB query limit set as [" + ((FactorFilter.Limit) f).limit + "], maybe debug...");
+				mconf.setLong(MongoConfigUtil.INPUT_LIMIT, ((FactorFilter.Limit) f).limit);
+			} else if (f instanceof FactorFilter.Skip) {
+				warn(() -> "MongoDB query skip set as [" + ((FactorFilter.Skip) f).skip + "], maybe debug...");
+				mconf.setLong(MongoConfigUtil.INPUT_SKIP, ((FactorFilter.Skip) f).skip);
+			} else if (f instanceof FactorFilter.Sort) {
+				warn(() -> "MongoDB query sort set as [" + ((FactorFilter.Sort) f).field + ":" + ((FactorFilter.Sort) f).asc
+						+ "], maybe debug...");
 				mconf.set(MongoConfigUtil.INPUT_SORT, ((MongoMarshaller) this.marshaller)
-						.jsonFromBSON(assembly(((Filter.Sort) f).field, ((Filter.Sort) f).asc ? 1 : -1)));
+						.jsonFromBSON(assembly(((FactorFilter.Sort) f).field, ((FactorFilter.Sort) f).asc ? 1 : -1)));
 			} else ands.add(filter(factor, f));
 		}
 		String inputquery = fromBSON(ands);
@@ -148,35 +149,37 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Mong
 		}
 	}
 
-	private static final Map<Class<? extends Filter>, String> ops = new HashMap<>();
+	private static final Map<Class<? extends FactorFilter>, String> ops = new HashMap<>();
 	static {
-		ops.put(Filter.Equal.class, "$eq");
-		ops.put(Filter.LessThan.class, "$lt");
-		ops.put(Filter.GreaterThan.class, "$gt");
-		ops.put(Filter.LessOrEqual.class, "$lte");
-		ops.put(Filter.GreaterOrEqual.class, "$gte");
-		ops.put(MongoFilter.Regex.class, "$regex");
-		ops.put(MongoFilter.Where.class, "$where");
-		ops.put(MongoFilter.Type.class, "$type");
+		ops.put(FactorFilter.Equal.class, "$eq");
+		ops.put(FactorFilter.NotEqual.class, "$ne");
+		ops.put(FactorFilter.Less.class, "$lt");
+		ops.put(FactorFilter.Greater.class, "$gt");
+		ops.put(FactorFilter.LessOrEqual.class, "$lte");
+		ops.put(FactorFilter.GreaterOrEqual.class, "$gte");
+		ops.put(FactorFilter.Regex.class, "$regex");
+		ops.put(FactorFilter.Where.class, "$where");
+		ops.put(FactorFilter.Type.class, "$type");
 	}
 
-	private BSONObject filter(Class<?> mapperClass, Filter filter) {
-		if (filter instanceof Filter.FieldFilter) {
-			String col = marshaller.parseField(Reflections.getDeclaredField(mapperClass, ((Filter.FieldFilter<?>) filter).field));
-			if (filter instanceof Filter.SingleFieldFilter)
-				return assembly(col, assembly(ops.get(filter.getClass()), ((Filter.SingleFieldFilter<?>) filter).value));
-			if (filter.getClass().equals(Filter.In.class)) return assembly(col, assembly("$in", ((Filter.In<?>) filter).values));
-			if (filter.getClass().equals(MongoFilter.Regex.class))
-				return assembly(col, assembly("$regex", ((MongoFilter.Regex) filter).regex));
+	private BSONObject filter(Class<?> mapperClass, FactorFilter filter) {
+		if (filter instanceof FactorFilter.ByField) {
+			String col = marshaller.parseField(Reflections.getDeclaredField(mapperClass, ((FactorFilter.ByField<?>) filter).field));
+			if (filter instanceof FactorFilter.ByFieldValue)
+				return assembly(col, assembly(ops.get(filter.getClass()), ((FactorFilter.ByFieldValue<?>) filter).value));
+			if (filter.getClass().equals(FactorFilter.In.class))
+				return assembly(col, assembly("$in", ((FactorFilter.In<?>) filter).values));
+			if (filter.getClass().equals(FactorFilter.Regex.class))
+				return assembly(col, assembly("$regex", ((FactorFilter.Regex) filter).regex));
 		} else {
-			if (filter.getClass().equals(Filter.And.class)) {
+			if (filter.getClass().equals(FactorFilter.And.class)) {
 				List<BSONObject> ands = new ArrayList<>();
-				for (Filter f : ((Filter.And) filter).filters)
+				for (FactorFilter f : ((FactorFilter.And) filter).filters)
 					ands.add(filter(mapperClass, f));
 				return assembly("$and", ands);
-			} else if (filter.getClass().equals(Filter.Or.class)) {
+			} else if (filter.getClass().equals(FactorFilter.Or.class)) {
 				List<BSONObject> ors = new ArrayList<>();
-				for (Filter f : ((Filter.And) filter).filters)
+				for (FactorFilter f : ((FactorFilter.And) filter).filters)
 					ors.add(filter(mapperClass, f));
 				return assembly("$or", ors);
 			}
@@ -203,7 +206,8 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Mong
 				q.append("_id", this.marshaller.marshallId(t._1));
 				BasicBSONObject u = new BasicBSONObject();
 				u.append("$set", this.marshaller.marshall(t._2));
-//				if (calc.debug) trace(() -> "MongoUpdateWritable: " + u.toString() + " from " + q.toString());
+				// if (calc.debug) trace(() -> "MongoUpdateWritable: " +
+				// u.toString() + " from " + q.toString());
 				return new Tuple2<Object, MongoUpdateWritable>(null, new MongoUpdateWritable(q, u, true, true));
 			}).saveAsNewAPIHadoopFile("", Object.class, BSONObject.class, MongoOutputFormat.class, conf);
 		};

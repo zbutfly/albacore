@@ -16,7 +16,7 @@ import net.butfly.albacore.calculus.datasource.KafkaDataDetail;
 import net.butfly.albacore.calculus.datasource.MongoDataDetail;
 import net.butfly.albacore.calculus.factor.Factor.Stocking;
 import net.butfly.albacore.calculus.factor.Factor.Streaming;
-import net.butfly.albacore.calculus.factor.filter.Filter;
+import net.butfly.albacore.calculus.factor.filter.FactorFilter;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.streaming.RDDDStream;
 import net.butfly.albacore.calculus.streaming.RDDDStream.Mechanism;
@@ -52,7 +52,7 @@ public final class Factors implements Serializable, Logable {
 		}
 	}
 
-	public <K, F extends Factor<F>, E extends Factor<E>> PairRDS<K, F> get(String factoring, Filter... filters) {
+	public <K, F extends Factor<F>, E extends Factor<E>> PairRDS<K, F> get(String factoring, FactorFilter... filters) {
 		FactorConfig<K, F> config = (FactorConfig<K, F>) pool.get(factoring);
 		DataSource<K, ?, ?, DataDetail> ds = calc.dss.ds(config.dbid);
 		switch (calc.mode) {

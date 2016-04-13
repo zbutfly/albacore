@@ -10,7 +10,7 @@ import com.google.common.base.Joiner;
 import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
-import net.butfly.albacore.calculus.factor.filter.Filter;
+import net.butfly.albacore.calculus.factor.filter.FactorFilter;
 import net.butfly.albacore.calculus.lambda.VoidFunction;
 import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
@@ -34,7 +34,7 @@ public class ConstDataSource extends DataSource<String, Void, Void, DataDetail> 
 	}
 
 	@Override
-	public <F extends Factor<F>> JavaPairRDD<String, F> stocking(Calculator calc, Class<F> factor, DataDetail detail, Filter... filters) {
+	public <F extends Factor<F>> JavaPairRDD<String, F> stocking(Calculator calc, Class<F> factor, DataDetail detail, FactorFilter... filters) {
 		String[] values = this.values;
 		if (values == null) values = new String[0];
 		return calc.sc.parallelize(Arrays.asList(values))

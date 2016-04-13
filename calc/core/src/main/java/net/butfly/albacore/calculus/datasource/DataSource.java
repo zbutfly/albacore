@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
-import net.butfly.albacore.calculus.factor.filter.Filter;
+import net.butfly.albacore.calculus.factor.filter.FactorFilter;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.lambda.VoidFunction;
 import net.butfly.albacore.calculus.marshall.Marshaller;
@@ -45,17 +45,17 @@ public abstract class DataSource<FK, K, V, D extends DataDetail> implements Seri
 		return "CalculatorDataSource:" + this.type;
 	}
 
-	public <F extends Factor<F>> JavaPairRDD<FK, F> stocking(Calculator calc, Class<F> factor, D detail, Filter... filters) {
+	public <F extends Factor<F>> JavaPairRDD<FK, F> stocking(Calculator calc, Class<F> factor, D detail, FactorFilter... filters) {
 		throw new UnsupportedOperationException("Unsupportted stocking mode: " + type + " on " + factor.toString());
 	}
 
 	@Deprecated
 	public <F extends Factor<F>> JavaPairRDD<FK, F> batching(Calculator calc, Class<F> factorClass, long batching, FK offset, D detail,
-			Filter... filters) {
+			FactorFilter... filters) {
 		throw new UnsupportedOperationException("Unsupportted stocking mode with batching: " + type + " on " + factorClass.toString());
 	}
 
-	public <F extends Factor<F>> JavaPairDStream<FK, F> streaming(Calculator calc, Class<F> factor, D detail, Filter... filters) {
+	public <F extends Factor<F>> JavaPairDStream<FK, F> streaming(Calculator calc, Class<F> factor, D detail, FactorFilter... filters) {
 		throw new UnsupportedOperationException("Unsupportted streaming mode: " + type + " on " + factor.toString());
 	}
 

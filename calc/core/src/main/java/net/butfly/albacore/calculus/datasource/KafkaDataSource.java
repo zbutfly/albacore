@@ -14,6 +14,7 @@ import kafka.serializer.StringDecoder;
 import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
+import net.butfly.albacore.calculus.factor.filter.FactorFilter;
 import net.butfly.albacore.calculus.marshall.KafkaMarshaller;
 import scala.Tuple2;
 
@@ -64,7 +65,8 @@ public class KafkaDataSource extends DataSource<String, String, byte[], KafkaDat
 	}
 
 	@Override
-	public <F extends Factor<F>> JavaPairDStream<String, F> streaming(Calculator calc, Class<F> factor, KafkaDataDetail detail) {
+	public <F extends Factor<F>> JavaPairDStream<String, F> streaming(Calculator calc, Class<F> factor, KafkaDataDetail detail,
+			FactorFilter... filters) {
 		debug(() -> "Streaming begin: " + factor.toString());
 		JavaPairDStream<String, byte[]> kafka;
 		Map<String, String> params = new HashMap<>();
