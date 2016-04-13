@@ -29,11 +29,6 @@ public abstract class DataSource<FK, K, V, D extends DataDetail> implements Seri
 		return type;
 	}
 
-	@Override
-	public Logger logger() {
-		return logger;
-	}
-
 	public Marshaller<FK, K, V> marshaller() {
 		return marshaller;
 	}
@@ -55,11 +50,12 @@ public abstract class DataSource<FK, K, V, D extends DataDetail> implements Seri
 	}
 
 	@Deprecated
-	public <F extends Factor<F>> JavaPairRDD<FK, F> batching(Calculator calc, Class<F> factorClass, long batching, FK offset, D detail) {
+	public <F extends Factor<F>> JavaPairRDD<FK, F> batching(Calculator calc, Class<F> factorClass, long batching, FK offset, D detail,
+			Filter... filters) {
 		throw new UnsupportedOperationException("Unsupportted stocking mode with batching: " + type + " on " + factorClass.toString());
 	}
 
-	public <F extends Factor<F>> JavaPairDStream<FK, F> streaming(Calculator calc, Class<F> factor, D detail) {
+	public <F extends Factor<F>> JavaPairDStream<FK, F> streaming(Calculator calc, Class<F> factor, D detail, Filter... filters) {
 		throw new UnsupportedOperationException("Unsupportted streaming mode: " + type + " on " + factor.toString());
 	}
 
@@ -73,17 +69,13 @@ public abstract class DataSource<FK, K, V, D extends DataDetail> implements Seri
 
 	public <F extends Factor<F>> void save(Calculator calc, PairRDS<FK, F> result, D detail) {
 		VoidFunction<JavaPairRDD<FK, F>> saving = saving(calc, detail);
-		long[] count = new long[] { 0 };
 		if (null != result) result.eachPairRDD((VoidFunction<JavaPairRDD<FK, F>>) rdd -> {
 			if (null != rdd) try {
 				saving.call(rdd);
 			} catch (Exception e) {
-				logger.error("Saving failure", e);
-			} finally {
-				if (logger.isInfoEnabled()) count[0] += rdd.count();
+				error(() -> "Saving failure", e);
 			}
 		});
-		if (logger.isInfoEnabled()) logger.info("Calculus result handled: " + count[0]);
 	}
 
 	public static class DataSources extends HashMap<String, DataSource<?, ?, ?, ?>> {

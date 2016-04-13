@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.net.URL;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -40,11 +41,12 @@ import net.butfly.albacore.calculus.marshall.HbaseMarshaller;
 import net.butfly.albacore.calculus.marshall.KafkaMarshaller;
 import net.butfly.albacore.calculus.marshall.Marshaller;
 import net.butfly.albacore.calculus.marshall.MongoMarshaller;
+import net.butfly.albacore.calculus.utils.Logable;
 import net.butfly.albacore.calculus.utils.Reflections;
 
-public class Calculator implements Serializable {
+public class Calculator implements Logable, Serializable {
 	private static final long serialVersionUID = 7850755405377027618L;
-	private static final Logger logger = LoggerFactory.getLogger(Calculator.class);
+	protected static final Logger logger = LoggerFactory.getLogger(Calculator.class);
 
 	// devel configurations
 	public boolean debug;
@@ -80,7 +82,7 @@ public class Calculator implements Serializable {
 		for (Object key : props.keySet())
 			System.setProperty(key.toString(), props.getProperty(key.toString()));
 		Calculator c = new Calculator(props);
-		c.start().calculate(c.calculus).finish();
+		c.start().calculate(c.calculus).end();
 	}
 
 	private Calculator start() {
@@ -89,15 +91,15 @@ public class Calculator implements Serializable {
 		return this;
 	}
 
-	private Calculator finish() {
+	private Calculator end() {
 		if (mode == Mode.STREAMING) {
 			ssc.start();
-			logger.info(calculus.name + " streaming started, warting for finish. ");
+			info(() -> calculus.name + " streaming started, warting for finish. ");
 			ssc.awaitTermination();
 			try {
 				ssc.close();
 			} catch (Throwable th) {
-				logger.error("Streaming error", th);
+				error(() -> "Streaming error", th);
 			}
 		}
 		sc.close();
@@ -108,9 +110,9 @@ public class Calculator implements Serializable {
 		mode = Mode.valueOf(props.getProperty("calculus.mode", "STREAMING").toUpperCase());
 		debug = Boolean.valueOf(props.getProperty("calculus.debug", "false").toLowerCase());
 		optimizeMongo = Boolean.valueOf(props.getProperty("calculus.mongo.optimize", "true").toLowerCase());
-		if (debug) logger.error("Running in DEBUG mode, slowly!!!!!");
+		if (debug) error(() -> "Running in DEBUG mode, slowly!!!!!");
 		if (mode == Mode.STOCKING && props.containsKey("calculus.spark.duration.seconds"))
-			logger.warn("Stocking does not support duration, but duration may be set by calculator for batching.");
+			warn(() -> "Stocking does not support duration, but duration may be set by calculator for batching.");
 		dura = mode == Mode.STREAMING ? Integer.parseInt(props.getProperty("calculus.spark.duration.seconds", "30"))
 				: Integer.parseInt(props.getProperty("calculus.spark.duration.seconds", "1"));
 		this.parseCalculus(props.getProperty("calculus.class"));
@@ -125,7 +127,7 @@ public class Calculator implements Serializable {
 		if (debug) sconf.set("spark.testing", "true");
 		parseDatasources(subprops(props, "calculus.ds."));
 		calculus.name = "Calculus [" + calculus.getClass().getSimpleName() + "]";
-		logger.debug("Running " + calculus.name);
+		debug(() -> "Running " + calculus.name);
 	}
 
 	private void parseCalculus(String calclass) {
@@ -150,13 +152,15 @@ public class Calculator implements Serializable {
 	}
 
 	private <OK, OF extends Factor<OF>> Calculator calculate(Calculus<OK, OF> calculus) {
-		logger.info(calculus.name + " starting... ");
+		info(() -> calculus.name + " starting... ");
+		long now = new Date().getTime();
 		Class<OF> c = Reflections.resolveGenericParameter(calculus.getClass(), Calculus.class, "OF");
-		logger.info(calculus.name + " will output as: " + c.toString());
+		info(() -> calculus.name + " will output as: " + c.toString());
 		Factors factors = new Factors(this);
 		FactorConfig<OK, OF> s = factors.config(c);
 		DataSource<OK, ?, ?, DataDetail> ds = dss.ds(s.dbid);
 		ds.save(this, calculus.calculate(factors), s.detail);
+		info(() -> calculus.name + " ended, spent: " + (new Date().getTime() - now) + " ms.");
 		return this;
 	}
 
@@ -203,7 +207,7 @@ public class Calculator implements Serializable {
 								debug ? appname + UUID.randomUUID().toString() : appname, (KafkaMarshaller) m));
 				break;
 			default:
-				logger.warn("Unsupportted type: " + type);
+				warn(() -> "Unsupportted type: " + type);
 			}
 		}
 	}
@@ -227,4 +231,5 @@ public class Calculator implements Serializable {
 		URL url = Thread.currentThread().getContextClassLoader().getResource(file);
 		return null == url ? new FileInputStream(file) : url.openStream();
 	}
+
 }

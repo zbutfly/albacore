@@ -123,8 +123,11 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Mong
 				mconf.setClass(MongoConfigUtil.MONGO_SPLITTER_CLASS, MongoPaginatingSplitter.class, MongoSplitter.class);
 				info(() -> "Use optimized spliter: " + MongoPaginatingSplitter.class.toString());
 			}
-			trace(() -> "Run mongodb filter on " + factor.toString() + ": " + (inputquery.length() <= 200 || calc.debug ? inputquery
-					: inputquery.substring(0, 100) + "...(too long string eliminated)"));
+			trace(() -> "Run mongodb filter on " + factor.toString() + ": "
+					+ (inputquery.length() <= 200 || calc.debug ? inputquery
+							: inputquery.substring(0, 100) + "...(too long string eliminated)")
+					+ (mconf.get(MongoConfigUtil.INPUT_LIMIT) == null ? "" : ", limit: " + mconf.get(MongoConfigUtil.INPUT_LIMIT))
+					+ (mconf.get(MongoConfigUtil.INPUT_SKIP) == null ? "" : ", skip: " + mconf.get(MongoConfigUtil.INPUT_SKIP)) + ".");
 		}
 		// conf.mconf.set(MongoConfigUtil.INPUT_FIELDS
 		mconf.setBoolean(MongoConfigUtil.INPUT_NOTIMEOUT, true);
@@ -200,7 +203,7 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Mong
 				q.append("_id", this.marshaller.marshallId(t._1));
 				BasicBSONObject u = new BasicBSONObject();
 				u.append("$set", this.marshaller.marshall(t._2));
-				if (calc.debug) trace(() -> "MongoUpdateWritable: " + u.toString() + " from " + q.toString());
+//				if (calc.debug) trace(() -> "MongoUpdateWritable: " + u.toString() + " from " + q.toString());
 				return new Tuple2<Object, MongoUpdateWritable>(null, new MongoUpdateWritable(q, u, true, true));
 			}).saveAsNewAPIHadoopFile("", Object.class, BSONObject.class, MongoOutputFormat.class, conf);
 		};

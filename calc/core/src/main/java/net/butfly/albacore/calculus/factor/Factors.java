@@ -20,11 +20,12 @@ import net.butfly.albacore.calculus.factor.filter.Filter;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.streaming.RDDDStream;
 import net.butfly.albacore.calculus.streaming.RDDDStream.Mechanism;
+import net.butfly.albacore.calculus.utils.Logable;
 
 @SuppressWarnings({ "unchecked", "deprecation" })
-public final class Factors implements Serializable {
+public final class Factors implements Serializable, Logable {
 	private static final long serialVersionUID = -3712903710207597570L;
-	private static final Logger logger = LoggerFactory.getLogger(Factors.class);
+	protected static final Logger logger = LoggerFactory.getLogger(Factors.class);
 	public Calculator calc;
 	protected Map<String, FactorConfig<?, ?>> pool;
 
@@ -58,7 +59,8 @@ public final class Factors implements Serializable {
 		case STOCKING:
 			if (config.batching <= 0) return new PairRDS<K, F>(ds.stocking(calc, config.factorClass, config.detail, filters));
 			else return new PairRDS<K, F>(RDDDStream.bpstream(calc.ssc.ssc(), config.batching,
-					(limit, offset) -> ds.batching(calc, config.factorClass, limit, offset, config.detail), ds.marshaller().comparator()));
+					(limit, offset) -> ds.batching(calc, config.factorClass, limit, offset, config.detail, filters),
+					ds.marshaller().comparator()));
 		case STREAMING:
 			switch (config.mode) {
 			case STOCKING:
@@ -73,7 +75,7 @@ public final class Factors implements Serializable {
 					throw new UnsupportedOperationException();
 				}
 			case STREAMING:
-				return new PairRDS<K, F>(ds.streaming(calc, config.factorClass, config.detail));
+				return new PairRDS<K, F>(ds.streaming(calc, config.factorClass, config.detail, filters));
 			}
 		default:
 			throw new UnsupportedOperationException();
@@ -114,7 +116,8 @@ public final class Factors implements Serializable {
 					String[] nt = new String[s.table().length];
 					for (int i = 0; i < s.table().length; i++) {
 						nt[i] = s.table()[i] + "_" + suffix;
-						logger.info("output redirected on [" + s.source() + "]: [" + s.table()[i] + " => " + nt[i] + "].");
+						final int j = i;
+						info(() -> "output redirected on [" + s.source() + "]: [" + s.table()[j] + " => " + nt[j] + "].");
 					}
 					config.detail = new MongoDataDetail(Factor.NOT_DEFINED.equals(s.filter()) ? null : s.filter(), nt);
 

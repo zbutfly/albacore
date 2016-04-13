@@ -1,14 +1,20 @@
 package net.butfly.albacore.calculus.utils;
 
-import java.io.Serializable;
+import java.lang.reflect.Field;
 import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public interface Logable extends Serializable {
+public interface Logable {
 	default Logger logger() {
-		return LoggerFactory.getLogger(this.getClass());
+		try {
+			Field f = this.getClass().getDeclaredField("logger");
+			f.setAccessible(true);
+			return (Logger) f.get(this);
+		} catch (Throwable e) {
+			return LoggerFactory.getLogger(this.getClass());
+		}
 	};
 
 	default void trace(Supplier<String> func) {

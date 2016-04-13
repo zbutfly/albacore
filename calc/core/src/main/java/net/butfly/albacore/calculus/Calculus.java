@@ -1,5 +1,7 @@
 package net.butfly.albacore.calculus;
 
+import java.io.Serializable;
+
 import org.apache.spark.api.java.JavaPairRDD;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,7 +12,7 @@ import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.functor.Functor;
 import net.butfly.albacore.calculus.utils.Logable;
 
-public abstract class Calculus<OK, OF extends Factor<OF>> implements Logable {
+public abstract class Calculus<OK, OF extends Factor<OF>> implements Logable, Serializable {
 	private static final long serialVersionUID = 6432707546470042520L;
 	protected final Logger logger;
 	public String name;
@@ -20,10 +22,6 @@ public abstract class Calculus<OK, OF extends Factor<OF>> implements Logable {
 		logger = LoggerFactory.getLogger(getClass());
 	}
 
-	@Override
-	public Logger logger() {
-		return logger;
-	}
 
 	public Functor[] stages() {
 		return new Functor[0];

@@ -49,6 +49,7 @@ import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.factor.filter.Filter.FieldFilter;
 import net.butfly.albacore.calculus.factor.filter.Filter.In;
 import net.butfly.albacore.calculus.marshall.HbaseMarshaller;
+import net.butfly.albacore.calculus.utils.Logable;
 import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
 
@@ -119,7 +120,7 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 	@Override
 	@Deprecated
 	public <F extends Factor<F>> JavaPairRDD<byte[], F> batching(Calculator calc, Class<F> factor, long limit, byte[] offset,
-			HbaseDataDetail detail) {
+			HbaseDataDetail detail, net.butfly.albacore.calculus.factor.filter.Filter... filters) {
 		debug(() -> "Scaning begin: " + factor.toString() + ", from table: " + detail.tables[0] + ".");
 		error(() -> "Batching mode is not supported now... BUG!!!!!");
 		Configuration conf = HBaseConfiguration.create();
@@ -127,9 +128,9 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 				.filter(conf, new net.butfly.albacore.calculus.factor.filter.Filter.Page<byte[]>(offset, limit)).scan(calc.sc, conf);
 	}
 
-	private static class HConf<F extends Factor<F>> implements Serializable {
+	protected static class HConf<F extends Factor<F>> implements Serializable, Logable {
 		private static final long serialVersionUID = 2314819561624610201L;
-		private final static Logger logger = LoggerFactory.getLogger(HConf.class);
+		protected final static Logger logger = LoggerFactory.getLogger(HConf.class);
 		Class<F> factor;
 		boolean filtered = false;
 		boolean debug;
@@ -165,21 +166,21 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 			if (debug && !filtered) try {
 				float ratio = Float.parseFloat(System.getProperty("calculus.debug.hbase.random.ratio", "0"));
 				if (ratio > 0) {
-					logger.error("Hbase debugging, random sampling results of " + ratio
+					error(() -> "Hbase debugging, random sampling results of " + ratio
 							+ " (can be customized by -Dcalculus.debug.hbase.random.ratio=0.00000X)");
 					hconf.set(TableInputFormat.SCAN,
 							Base64.encodeBytes(ProtobufUtil.toScan(createScan().setFilter(new RandomRowFilter(ratio))).toByteArray()));
 				} else {
 					long limit = Long.parseLong(System.getProperty("calculus.debug.hbase.limit", "-1"));
 					if (limit > 0) {
-						logger.error(
-								"Hbase debugging, limit results in " + limit + " (can be customized by -Dcalculus.debug.hbase.limit=100)");
+						error(() -> "Hbase debugging, limit results in " + limit
+								+ " (can be customized by -Dcalculus.debug.hbase.limit=100)");
 						hconf.set(TableInputFormat.SCAN,
 								Base64.encodeBytes(ProtobufUtil.toScan(createScan().setFilter(new PageFilter(limit))).toByteArray()));
 					}
 				}
 			} catch (IOException e) {
-				logger.error("Hbase debugging failure, page scan definition error", e);
+				error(() -> "Hbase debugging failure, page scan definition error", e);
 			}
 			filtered = true;
 			return this;

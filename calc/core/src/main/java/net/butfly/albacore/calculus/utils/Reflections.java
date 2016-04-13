@@ -148,7 +148,9 @@ public final class Reflections implements Serializable {
 		for (Field f : getDeclaredFields(src.getClass())) {
 			Field f1 = getDeclaredField(dst.getClass(), f.getName());
 			if (null != f1) try {
-				f1.set(f.get(src), dst);
+				f1.setAccessible(true);
+				f.setAccessible(true);
+				f1.set(dst, f.get(src));
 			} catch (IllegalArgumentException | IllegalAccessException e) {}
 		}
 	}
