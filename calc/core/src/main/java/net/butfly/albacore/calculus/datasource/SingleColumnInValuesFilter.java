@@ -18,7 +18,7 @@ public class SingleColumnInValuesFilter extends FilterBase {
 	protected ByteArrayComparable[] comparators;
 	protected boolean foundColumn = false;
 	protected boolean matchedColumn = false;
-	protected boolean filterIfMissing = false;
+	protected boolean filterIfMissing = true;
 	protected boolean latestVersionOnly = true;
 
 	/**

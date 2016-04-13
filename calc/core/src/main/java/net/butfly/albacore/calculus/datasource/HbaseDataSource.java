@@ -212,25 +212,33 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 					if (!ops.containsKey(filter.getClass()))
 						throw new UnsupportedOperationException("Unsupportted filter: " + filter.getClass());
 					byte[] val = conv.apply(((FactorFilter.ByFieldValue<?>) filter).value);
-					return new SingleColumnValueFilter(qulifiers[0], qulifiers[1], ops.get(filter.getClass()), val);
+					SingleColumnValueFilter f = new SingleColumnValueFilter(qulifiers[0], qulifiers[1], ops.get(filter.getClass()), val);
+					f.setFilterIfMissing(true);
+					return f;
 				}
 				if (filter.getClass().equals(FactorFilter.In.class)) return new SingleColumnInValuesFilter(qulifiers[0], qulifiers[1],
 						Reflections.transform(((FactorFilter.In<?>) filter).values, o -> conv.apply(o)).toArray(new byte[0][]));
-				if (filter.getClass().equals(FactorFilter.Regex.class)) return new SingleColumnValueFilter(qulifiers[0], qulifiers[1],
-						CompareOp.EQUAL, new RegexStringComparator(((FactorFilter.Regex) filter).regex.toString()));
-			} else {
-				if (filter.getClass().equals(FactorFilter.And.class)) {
-					FilterList ands = new FilterList(Operator.MUST_PASS_ALL);
-					for (FactorFilter f : ((FactorFilter.And) filter).filters)
-						ands.addFilter(filter(f));
-					return ands;
-				} else if (filter.getClass().equals(FactorFilter.Or.class)) {
-					FilterList ors = new FilterList(Operator.MUST_PASS_ONE);
-					for (FactorFilter f : ((FactorFilter.And) filter).filters)
-						ors.addFilter(filter(f));
-					return ors;
+				if (filter.getClass().equals(FactorFilter.Regex.class)) {
+					SingleColumnValueFilter f = new SingleColumnValueFilter(qulifiers[0], qulifiers[1], CompareOp.EQUAL,
+							new RegexStringComparator(((FactorFilter.Regex) filter).regex.toString()));
+					f.setFilterIfMissing(true);
+					return f;
 				}
 			}
+			if (filter.getClass().equals(FactorFilter.Limit.class)) return new PageFilter(((FactorFilter.Limit) filter).limit);
+			if (filter.getClass().equals(FactorFilter.And.class)) {
+				FilterList ands = new FilterList(Operator.MUST_PASS_ALL);
+				for (FactorFilter f : ((FactorFilter.And) filter).filters)
+					ands.addFilter(filter(f));
+				return ands;
+			}
+			if (filter.getClass().equals(FactorFilter.Or.class)) {
+				FilterList ors = new FilterList(Operator.MUST_PASS_ONE);
+				for (FactorFilter f : ((FactorFilter.And) filter).filters)
+					ors.addFilter(filter(f));
+				return ors;
+			}
+
 			throw new UnsupportedOperationException("Unsupportted filter: " + filter.getClass());
 		}
 
@@ -244,23 +252,6 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 			ops.put(FactorFilter.GreaterOrEqual.class, CompareOp.GREATER_OR_EQUAL);
 		}
 
-		private Scan createScan() {
-			Scan sc = new Scan();
-			try {
-				sc.setCaching(-1);
-				sc.setCacheBlocks(false);
-				sc.setSmall(true);
-			} catch (Throwable th) {
-				// XXX
-				try {
-					sc.getClass().getMethod("setCacheBlocks", boolean.class).invoke(sc, false);
-					sc.getClass().getMethod("setSmall", boolean.class).invoke(sc, false);
-					sc.getClass().getMethod("setCaching", int.class).invoke(sc, -1);
-				} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
-						| SecurityException e) {}
-			}
-			return sc;
-		}
 	}
 
 	@SuppressWarnings("rawtypes")
@@ -276,5 +267,24 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 		CONVERTERS.put(Short.class, val -> null == val ? null : Bytes.toBytes((Short) val));
 		CONVERTERS.put(Byte.class, val -> null == val ? null : Bytes.toBytes((Byte) val));
 		CONVERTERS.put(BigDecimal.class, val -> null == val ? null : Bytes.toBytes((BigDecimal) val));
+	}
+
+	private static Scan createScan() {
+		Scan sc = new Scan();
+		try {
+			sc.setCaching(-1);
+			sc.setCacheBlocks(false);
+			// sc.setSmall(true);
+		} catch (Throwable th) {
+			// XXX
+			try {
+				sc.getClass().getMethod("setCacheBlocks", boolean.class).invoke(sc, false);
+				// sc.getClass().getMethod("setSmall", boolean.class).invoke(sc,
+				// false);
+				sc.getClass().getMethod("setCaching", int.class).invoke(sc, -1);
+			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
+					| SecurityException e) {}
+		}
+		return sc;
 	}
 }

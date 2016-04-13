@@ -42,7 +42,7 @@ public class HbaseMarshaller extends Marshaller<byte[], ImmutableBytesWritable, 
 			throw new RuntimeException(e);
 		}
 		for (Field f : Reflections.getDeclaredFields(to)) {
-			String[] qulifier = parseField(f).split(",");
+			String[] qulifier = parseField(f).split(":");
 			try {
 				Cell cell = from.getColumnLatestCell(Text.encode(qulifier[0]).array(), Text.encode(qulifier[1]).array());
 				if (cell != null) Reflections.set(t, f, fromBytes(f.getType(), CellUtil.cloneValue(cell)));
