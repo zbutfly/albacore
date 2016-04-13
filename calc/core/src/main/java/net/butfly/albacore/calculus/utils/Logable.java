@@ -4,9 +4,12 @@ import java.io.Serializable;
 import java.util.function.Supplier;
 
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public interface Logable extends Serializable {
-	Logger logger();
+	default Logger logger() {
+		return LoggerFactory.getLogger(this.getClass());
+	};
 
 	default void trace(Supplier<String> func) {
 		if (logger().isTraceEnabled()) logger().trace(func.get());
@@ -21,10 +24,16 @@ public interface Logable extends Serializable {
 	}
 
 	default void warn(Supplier<String> func, Throwable... th) {
-		if (logger().isWarnEnabled()) logger().warn(func.get());
+		if (logger().isWarnEnabled()) {
+			if (th.length > 0) logger().warn(func.get(), th[0]);
+			else logger().warn(func.get());
+		}
 	}
 
 	default void error(Supplier<String> func, Throwable... th) {
-		if (logger().isErrorEnabled()) logger().warn(func.get());
+		if (logger().isErrorEnabled()) {
+			if (th.length > 0) logger().error(func.get(), th[0]);
+			else logger().error(func.get());
+		}
 	}
 }

@@ -15,8 +15,9 @@ import net.butfly.albacore.calculus.factor.filter.Filter;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.lambda.VoidFunction;
 import net.butfly.albacore.calculus.marshall.Marshaller;
+import net.butfly.albacore.calculus.utils.Logable;
 
-public abstract class DataSource<FK, K, V, D extends DataDetail> implements Serializable {
+public abstract class DataSource<FK, K, V, D extends DataDetail> implements Serializable, Logable {
 	private static final long serialVersionUID = 1L;
 	protected Factor.Type type;
 	protected Marshaller<FK, K, V> marshaller;
@@ -26,6 +27,11 @@ public abstract class DataSource<FK, K, V, D extends DataDetail> implements Seri
 
 	public Factor.Type type() {
 		return type;
+	}
+
+	@Override
+	public Logger logger() {
+		return logger;
 	}
 
 	public Marshaller<FK, K, V> marshaller() {
@@ -66,11 +72,11 @@ public abstract class DataSource<FK, K, V, D extends DataDetail> implements Seri
 	}
 
 	public <F extends Factor<F>> void save(Calculator calc, PairRDS<FK, F> result, D detail) {
-		VoidFunction<JavaPairRDD<FK, F>> hh = saving(calc, detail);
+		VoidFunction<JavaPairRDD<FK, F>> saving = saving(calc, detail);
 		long[] count = new long[] { 0 };
 		if (null != result) result.eachPairRDD((VoidFunction<JavaPairRDD<FK, F>>) rdd -> {
 			if (null != rdd) try {
-				hh.call(rdd);
+				saving.call(rdd);
 			} catch (Exception e) {
 				logger.error("Saving failure", e);
 			} finally {

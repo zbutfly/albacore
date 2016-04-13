@@ -33,7 +33,7 @@ class RDDBatchInputDStream<K, V> extends RDDDStream<Tuple2<K, V>> {
 		load();
 		// results exclude last item on prev batch
 		if (null != offset)
-			current = JavaRDD.fromRDD(current, RDS.tag()).subtract(RDDDStream.rdd(sc, new Tuple2<K, V>(offset, null))).rdd();
+			current = JavaRDD.fromRDD(current, RDS.tag()).subtract(RDDDStream.rddValue(sc, new Tuple2<K, V>(offset, null))).rdd();
 		if (current.isEmpty()) ssc.stop(true, true);
 		// next skip is last item this time
 		else offset = JavaRDD.fromRDD(current, RDS.tag()).treeReduce((t1, t2) -> comparator.compare(t1._1, t2._1) < 0 ? t1 : t2)._1;

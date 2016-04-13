@@ -143,4 +143,13 @@ public final class Reflections implements Serializable {
 		}
 		return false;
 	}
+
+	public static void copy(Object src, Object dst) {
+		for (Field f : getDeclaredFields(src.getClass())) {
+			Field f1 = getDeclaredField(dst.getClass(), f.getName());
+			if (null != f1) try {
+				f1.set(f.get(src), dst);
+			} catch (IllegalArgumentException | IllegalAccessException e) {}
+		}
+	}
 }

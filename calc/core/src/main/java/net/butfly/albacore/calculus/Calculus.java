@@ -20,6 +20,7 @@ public abstract class Calculus<OK, OF extends Factor<OF>> implements Logable {
 		logger = LoggerFactory.getLogger(getClass());
 	}
 
+	@Override
 	public Logger logger() {
 		return logger;
 	}

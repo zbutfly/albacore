@@ -46,7 +46,6 @@ import com.google.common.base.CaseFormat;
 import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
-import net.butfly.albacore.calculus.factor.filter.Filter.Between;
 import net.butfly.albacore.calculus.factor.filter.Filter.FieldFilter;
 import net.butfly.albacore.calculus.factor.filter.Filter.In;
 import net.butfly.albacore.calculus.marshall.HbaseMarshaller;
@@ -102,8 +101,8 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 			a.enableTable(ht);
 			return true;
 		} catch (IOException e) {
-			logger.error(
-					"Failure confirm rddsOrDStream source: " + factor.getName() + " => " + this.toString() + " => " + detail.toString());
+			error(() -> "Failure confirm rddsOrDStream source: " + factor.getName() + " => " + this.toString() + " => " + detail.toString(),
+					e);
 			return false;
 		}
 	}
@@ -111,7 +110,7 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 	@Override
 	public <F extends Factor<F>> JavaPairRDD<byte[], F> stocking(Calculator calc, Class<F> factor, HbaseDataDetail detail,
 			net.butfly.albacore.calculus.factor.filter.Filter... filters) {
-		if (logger.isDebugEnabled()) logger.debug("Scaning begin: " + factor.toString() + ", from table: " + detail.tables[0] + ".");
+		debug(() -> "Scaning begin: " + factor.toString() + ", from table: " + detail.tables[0] + ".");
 		Configuration conf = HBaseConfiguration.create();
 		return new HConf<F>(configFile, factor, detail.tables[0], (HbaseMarshaller) marshaller, calc.debug).init(conf).filter(conf, filters)
 				.debug(conf).scan(calc.sc, conf);
@@ -121,8 +120,8 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 	@Deprecated
 	public <F extends Factor<F>> JavaPairRDD<byte[], F> batching(Calculator calc, Class<F> factor, long limit, byte[] offset,
 			HbaseDataDetail detail) {
-		if (logger.isDebugEnabled()) logger.debug("Scaning begin: " + factor.toString() + ", from table: " + detail.tables[0] + ".");
-		logger.error("Batching mode is not supported now... BUG!!!!!");
+		debug(() -> "Scaning begin: " + factor.toString() + ", from table: " + detail.tables[0] + ".");
+		error(() -> "Batching mode is not supported now... BUG!!!!!");
 		Configuration conf = HBaseConfiguration.create();
 		return new HConf<F>(configFile, factor, detail.tables[0], (HbaseMarshaller) marshaller, calc.debug).init(conf)
 				.filter(conf, new net.butfly.albacore.calculus.factor.filter.Filter.Page<byte[]>(offset, limit)).scan(calc.sc, conf);
@@ -195,11 +194,8 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 					if (f instanceof FieldFilter) {
 						Field field = Reflections.getDeclaredField(factor, ((FieldFilter<?>) f).field);
 						String[] qulifier = marshaller.parseField(field).split(":");
-						if (f.getClass().equals(Between.class)) for (Filter hf : between(qulifier[0], qulifier[1],
-								CONVERTERS.get(field.getType()), ((Between<?>) f).min, ((Between<?>) f).max))
-							fl.addFilter(hf);
-						else if (f.getClass().equals(In.class)) for (Filter hf : in(qulifier[0], qulifier[1],
-								CONVERTERS.get(field.getType()), (Collection<Object>) ((In<?>) f).values))
+						if (f.getClass().equals(In.class)) for (Filter hf : in(qulifier[0], qulifier[1], CONVERTERS.get(field.getType()),
+								(Collection<Object>) ((In<?>) f).values))
 							fl.addFilter(hf);
 					}
 				}
@@ -215,15 +211,6 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 		public List<Filter> in(String family, String column, Function<Object, byte[]> conv, Collection<Object> referValues) {
 			return new ArrayList<>(Reflections.transform(referValues, val -> new SingleColumnValueFilter(Bytes.toBytes(family),
 					Bytes.toBytes(column), CompareOp.EQUAL, null == val ? null : conv.apply(val))));
-		}
-
-		private List<Filter> between(String family, String column, Function<Object, byte[]> conv, Object minValue, Object maxValue) {
-			List<Filter> fl = new ArrayList<>();
-			if (minValue != null) fl.add(new SingleColumnValueFilter(Bytes.toBytes(family), Bytes.toBytes(column),
-					CompareOp.GREATER_OR_EQUAL, conv.apply(minValue)));
-			if (maxValue != null) fl.add(new SingleColumnValueFilter(Bytes.toBytes(family), Bytes.toBytes(column), CompareOp.LESS_OR_EQUAL,
-					conv.apply(maxValue)));
-			return fl;
 		}
 
 		private Scan createScan() {

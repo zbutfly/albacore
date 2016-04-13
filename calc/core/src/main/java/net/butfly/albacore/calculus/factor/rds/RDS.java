@@ -19,6 +19,8 @@ import net.butfly.albacore.calculus.lambda.Function;
 import net.butfly.albacore.calculus.lambda.Function2;
 import net.butfly.albacore.calculus.lambda.PairFunction;
 import net.butfly.albacore.calculus.lambda.VoidFunction;
+import net.butfly.albacore.calculus.streaming.RDDDStream;
+import net.butfly.albacore.calculus.streaming.RDDDStream.Mechanism;
 import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
 import scala.reflect.ClassTag;
@@ -148,6 +150,43 @@ public class RDS<T> implements Serializable {
 		return this;
 	}
 
+	@SuppressWarnings("deprecation")
+	public RDS<T> union(RDS<T> other) {
+		switch (type) {
+		case RDD:
+			switch (other.type) {
+			case RDD:
+				rdds.addAll(other.rdds);
+				break;
+			case DSTREAM:
+				JavaDStream.fromDStream(dstream, tag()).foreachRDD(r -> {
+					rdds.add(r.rdd());
+					return null;
+				});
+				break;
+			default:
+				throw new IllegalArgumentException();
+			}
+			break;
+		case DSTREAM:
+			switch (other.type) {
+			case RDD:
+				if (other.rdds.size() == 1) dstream = dstream.union(
+						RDDDStream.stream(dstream.ssc(), Mechanism.CONST, () -> JavaRDD.fromRDD(other.rdds.get(0), tag())).dstream());
+				break;
+			case DSTREAM:
+				dstream = dstream.union(other.dstream);
+				break;
+			default:
+				throw new IllegalArgumentException();
+			}
+			break;
+		default:
+			throw new IllegalArgumentException();
+		}
+		return this;
+	}
+
 	public RDS<T> filter(Function<T, Boolean> func) {
 		switch (type) {
 		case RDD:
@@ -225,27 +264,27 @@ public class RDS<T> implements Serializable {
 		return (ClassTag<T>) ManifestFactory.AnyRef();
 	}
 
-	protected final RDS<T> rddlike() {
+	public JavaRDD<T> rdd() {
 		switch (type) {
 		case RDD:
-			if (rdds.size() <= 1) return this;
-			RDD<T> r0 = rdds.get(0);
-			for (int i = 1; i < rdds.size(); i++)
-				r0 = r0.union(rdds.get(1));
-			rdds = Arrays.asList(r0);
-			break;
+			if (rdds.size() == 0) return null;
+			else {
+				RDD<T> r = rdds.get(0);
+				for (int i = 1; i < rdds.size(); i++)
+					r = r.union(rdds.get(i));
+				return JavaRDD.fromRDD(r, tag());
+			}
 		case DSTREAM:
-			this.type = RDSType.RDD;
-			rdds = Arrays.asList(new EmptyRDD<T>(dstream.ssc().sc(), tag()));
+			List<RDD<T>> rs = new ArrayList<>();
+			rs.add(new EmptyRDD<T>(dstream.ssc().sc(), tag()));
 			dstream.foreachRDD(rdd -> {
-				rdds.set(0, rdds.get(0).union(rdd));
+				rs.set(0, rs.get(0).union(rdd));
 				return BoxedUnit.UNIT;
 			});
-			break;
+			return JavaRDD.fromRDD(rs.get(0), tag());
 		default:
 			throw new IllegalArgumentException();
 		}
-		return this;
 	}
 
 	static <T, T1> List<T1> trans(List<T> r, Function<T, T1> transformer) {

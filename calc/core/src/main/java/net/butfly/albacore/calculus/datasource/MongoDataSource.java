@@ -2,10 +2,13 @@ package net.butfly.albacore.calculus.datasource;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.bson.BSONObject;
 import org.bson.BasicBSONObject;
@@ -22,6 +25,8 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.hadoop.MongoInputFormat;
 import com.mongodb.hadoop.MongoOutputFormat;
 import com.mongodb.hadoop.io.MongoUpdateWritable;
+import com.mongodb.hadoop.splitter.MongoPaginatingSplitter;
+import com.mongodb.hadoop.splitter.MongoSplitter;
 import com.mongodb.hadoop.util.MongoClientURIBuilder;
 import com.mongodb.hadoop.util.MongoConfigUtil;
 
@@ -29,10 +34,7 @@ import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.factor.filter.Filter;
-import net.butfly.albacore.calculus.factor.filter.Filter.Between;
-import net.butfly.albacore.calculus.factor.filter.Filter.Equal;
-import net.butfly.albacore.calculus.factor.filter.Filter.FieldFilter;
-import net.butfly.albacore.calculus.factor.filter.Filter.In;
+import net.butfly.albacore.calculus.factor.filter.MongoFilter;
 import net.butfly.albacore.calculus.lambda.VoidFunction;
 import net.butfly.albacore.calculus.marshall.MongoMarshaller;
 import net.butfly.albacore.calculus.utils.Reflections;
@@ -91,58 +93,89 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Mong
 	@Override
 	public <F extends Factor<F>> JavaPairRDD<Object, F> stocking(Calculator calc, Class<F> factor, MongoDataDetail detail,
 			Filter... filters) {
-		if (logger.isDebugEnabled()) logger.debug("Stocking begin: " + factor.toString() + ", from table: " + detail.tables[0] + ".");
+		debug(() -> "Stocking begin: " + factor.toString() + ", from table: " + detail.tables[0] + ".");
 		Configuration mconf = new Configuration();
-		mconf.set(MongoConfigUtil.JOB_INPUT_FORMAT, "com.mongodb.hadoop.MongoInputFormat");
+		mconf.setClass(MongoConfigUtil.JOB_INPUT_FORMAT, MongoInputFormat.class, InputFormat.class);
 		MongoClientURI uri = new MongoClientURI(this.uri);
 		// mconf.set(MongoConfigUtil.INPUT_URI, uri.toString());
 		mconf.set(MongoConfigUtil.INPUT_URI,
 				new MongoClientURIBuilder(uri).collection(uri.getDatabase(), detail.tables[0]).build().toString());
 		List<BSONObject> ands = new ArrayList<>();
-		MongoMarshaller bsoner = (MongoMarshaller) this.marshaller;
-		if (detail.filter != null) ands.add(bsoner.bsonFromJSON(detail.filter));
-		for (Filter f : filters)
-			ands.add(filter(factor, f));
-		String inputquery = null;
-		switch (ands.size()) {
-		case 0:
-			break;
-		case 1:
-			inputquery = bsoner.jsonFromBSON(ands.get(0));
-			break;
-		default:
-			inputquery = bsoner.jsonFromBSON(assembly("$and", ands));
-			break;
+		if (detail.filter != null) ands.add(((MongoMarshaller) this.marshaller).bsonFromJSON(detail.filter));
+		for (Filter f : filters) {
+			if (f instanceof Filter.Limit) {
+				warn(() -> "MongoDB query limit set as [" + ((Filter.Limit) f).limit + "], maybe debug...");
+				mconf.setLong(MongoConfigUtil.INPUT_LIMIT, ((Filter.Limit) f).limit);
+			} else if (f instanceof Filter.Skip) {
+				warn(() -> "MongoDB query skip set as [" + ((Filter.Skip) f).skip + "], maybe debug...");
+				mconf.setLong(MongoConfigUtil.INPUT_SKIP, ((Filter.Skip) f).skip);
+			} else if (f instanceof Filter.Sort) {
+				warn(() -> "MongoDB query sort set as [" + ((Filter.Sort) f).field + ":" + ((Filter.Sort) f).asc + "], maybe debug...");
+				mconf.set(MongoConfigUtil.INPUT_SORT, ((MongoMarshaller) this.marshaller)
+						.jsonFromBSON(assembly(((Filter.Sort) f).field, ((Filter.Sort) f).asc ? 1 : -1)));
+			} else ands.add(filter(factor, f));
 		}
+		String inputquery = fromBSON(ands);
 		if (null != inputquery) {
 			mconf.set(MongoConfigUtil.INPUT_QUERY, inputquery);
 			if (this.optimize) {
-				mconf.set(MongoConfigUtil.SPLITS_USE_RANGEQUERY, "true");
-				mconf.set(MongoConfigUtil.MONGO_SPLITTER_CLASS, "com.mongodb.hadoop.splitter.MongoPaginatingSplitter");
+				mconf.setBoolean(MongoConfigUtil.SPLITS_USE_RANGEQUERY, true);
+				mconf.setClass(MongoConfigUtil.MONGO_SPLITTER_CLASS, MongoPaginatingSplitter.class, MongoSplitter.class);
+				info(() -> "Use optimized spliter: " + MongoPaginatingSplitter.class.toString());
 			}
-			if (logger.isTraceEnabled()) logger.trace("Run mongodb filter on " + factor.toString() + ": "
-					+ (inputquery.length() <= 100 ? inputquery : inputquery.substring(0, 100) + "...(too long string eliminated)"));
+			trace(() -> "Run mongodb filter on " + factor.toString() + ": " + (inputquery.length() <= 200 || calc.debug ? inputquery
+					: inputquery.substring(0, 100) + "...(too long string eliminated)"));
 		}
 		// conf.mconf.set(MongoConfigUtil.INPUT_FIELDS
-		mconf.set(MongoConfigUtil.INPUT_NOTIMEOUT, "true");
+		mconf.setBoolean(MongoConfigUtil.INPUT_NOTIMEOUT, true);
 		// mconf.set("mongo.input.split.use_range_queries", "true");
 
 		return calc.sc.newAPIHadoopRDD(mconf, MongoInputFormat.class, Object.class, BSONObject.class)
 				.mapToPair(t -> new Tuple2<>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor)));
 	}
 
-	@SuppressWarnings("rawtypes")
+	private String fromBSON(List<BSONObject> ands) {
+		switch (ands.size()) {
+		case 0:
+			return null;
+		case 1:
+			return ((MongoMarshaller) this.marshaller).jsonFromBSON(ands.get(0));
+		default:
+			return ((MongoMarshaller) this.marshaller).jsonFromBSON(assembly("$and", ands));
+		}
+	}
+
+	private static final Map<Class<? extends Filter>, String> ops = new HashMap<>();
+	static {
+		ops.put(Filter.Equal.class, "$eq");
+		ops.put(Filter.LessThan.class, "$lt");
+		ops.put(Filter.GreaterThan.class, "$gt");
+		ops.put(Filter.LessOrEqual.class, "$lte");
+		ops.put(Filter.GreaterOrEqual.class, "$gte");
+		ops.put(MongoFilter.Regex.class, "$regex");
+		ops.put(MongoFilter.Where.class, "$where");
+		ops.put(MongoFilter.Type.class, "$type");
+	}
+
 	private BSONObject filter(Class<?> mapperClass, Filter filter) {
-		if (filter instanceof FieldFilter) {
-			String col = marshaller.parseField(Reflections.getDeclaredField(mapperClass, ((FieldFilter<?>) filter).field));
-			if (filter.getClass().equals(In.class)) return assembly(col, assembly("$in", ((In<?>) filter).values));
-			if (filter.getClass().equals(Equal.class)) return assembly(col, assembly("$eq", ((Equal<?>) filter).value));
-			if (filter.getClass().equals(Between.class)) {
-				Filter.Between be = (Between) filter;
+		if (filter instanceof Filter.FieldFilter) {
+			String col = marshaller.parseField(Reflections.getDeclaredField(mapperClass, ((Filter.FieldFilter<?>) filter).field));
+			if (filter instanceof Filter.SingleFieldFilter)
+				return assembly(col, assembly(ops.get(filter.getClass()), ((Filter.SingleFieldFilter<?>) filter).value));
+			if (filter.getClass().equals(Filter.In.class)) return assembly(col, assembly("$in", ((Filter.In<?>) filter).values));
+			if (filter.getClass().equals(MongoFilter.Regex.class))
+				return assembly(col, assembly("$regex", ((MongoFilter.Regex) filter).regex));
+		} else {
+			if (filter.getClass().equals(Filter.And.class)) {
 				List<BSONObject> ands = new ArrayList<>();
-				if (be.min != null) ands.add(assembly(col, assembly("$gte", be.min)));
-				if (be.max != null) ands.add(assembly(col, assembly("$lte", be.max)));
+				for (Filter f : ((Filter.And) filter).filters)
+					ands.add(filter(mapperClass, f));
 				return assembly("$and", ands);
+			} else if (filter.getClass().equals(Filter.Or.class)) {
+				List<BSONObject> ors = new ArrayList<>();
+				for (Filter f : ((Filter.And) filter).filters)
+					ors.add(filter(mapperClass, f));
+				return assembly("$or", ors);
 			}
 		}
 		throw new UnsupportedOperationException("Unsupportted filter: " + filter.getClass());
@@ -161,16 +194,13 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Mong
 		MongoClientURI uri = new MongoClientURI(this.uri);
 		conf.set("mongo.output.uri", new MongoClientURIBuilder(uri).collection(uri.getDatabase(), detail.tables[0]).build().toString());
 		return r -> {
-			if (logger.isTraceEnabled()) {
-				r = r.cache();
-				logger.trace("Write back to mongodb: " + r.count() + " records.");
-			}
+			trace(() -> "Write back to mongodb: " + r.count() + " records.");
 			r.mapToPair(t -> {
 				BasicBSONObject q = new BasicBSONObject();
 				q.append("_id", this.marshaller.marshallId(t._1));
 				BasicBSONObject u = new BasicBSONObject();
 				u.append("$set", this.marshaller.marshall(t._2));
-				if (calc.debug && logger.isTraceEnabled()) logger.trace("MongoUpdateWritable: " + u.toString() + " from " + q.toString());
+				if (calc.debug) trace(() -> "MongoUpdateWritable: " + u.toString() + " from " + q.toString());
 				return new Tuple2<Object, MongoUpdateWritable>(null, new MongoUpdateWritable(q, u, true, true));
 			}).saveAsNewAPIHadoopFile("", Object.class, BSONObject.class, MongoOutputFormat.class, conf);
 		};

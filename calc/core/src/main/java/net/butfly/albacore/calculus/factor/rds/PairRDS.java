@@ -11,6 +11,7 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaRDDLike;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.rdd.EmptyRDD;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaDStreamLike;
@@ -139,6 +140,11 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 		}
 	}
 
+	public PairRDS<K, V> union(PairRDS<K, V> other) {
+		super.union(other);
+		return this;
+	}
+
 	public <W> PairRDS<K, Tuple2<V, W>> join(PairRDS<K, W> other) {
 		switch (type) {
 		case RDD:
@@ -245,14 +251,34 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 		}
 	}
 
+	public JavaPairRDD<K, V> pairRDD() {
+		switch (type) {
+		case RDD:
+			if (rdds.size() == 0) return null;
+			else {
+				RDD<Tuple2<K, V>> r = rdds.get(0);
+				for (int i = 1; i < rdds.size(); i++)
+					r = r.union(rdds.get(i));
+				return JavaPairRDD.fromRDD(r, tag(), tag());
+			}
+		case DSTREAM:
+			List<RDD<Tuple2<K, V>>> rs = new ArrayList<>();
+			rs.add(new EmptyRDD<Tuple2<K, V>>(dstream.ssc().sc(), tag()));
+			dstream.foreachRDD(rdd -> {
+				rs.set(0, rs.get(0).union(rdd));
+				return BoxedUnit.UNIT;
+			});
+			return JavaPairRDD.fromRDD(rs.get(0), tag(), tag());
+		default:
+			throw new IllegalArgumentException();
+		}
+	}
+
 	public PairRDS<K, V> sortByKey(boolean asc) {
-		rddlike();
-		if (rdds.size() > 0) rdds.set(0, JavaPairRDD.fromRDD(rdds.get(0), tag(), tag()).sortByKey(asc).rdd());
-		return this;
+		return new PairRDS<K, V>(pairRDD().sortByKey(asc));
 	}
 
 	public Tuple2<K, V> first() {
-		rddlike();
 		return rdds.size() > 0 ? rdds.get(0).first() : null;
 	}
 

@@ -65,7 +65,7 @@ public class KafkaDataSource extends DataSource<String, String, byte[], KafkaDat
 
 	@Override
 	public <F extends Factor<F>> JavaPairDStream<String, F> streaming(Calculator calc, Class<F> factor, KafkaDataDetail detail) {
-		if (logger.isDebugEnabled()) logger.debug("Streaming begin: " + factor.toString());
+		debug(() -> "Streaming begin: " + factor.toString());
 		JavaPairDStream<String, byte[]> kafka;
 		Map<String, String> params = new HashMap<>();
 		if (root == null) { // direct mode

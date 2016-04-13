@@ -46,7 +46,7 @@ public class ConstDataSource extends DataSource<String, Void, Void, DataDetail> 
 		if (values == null) values = new String[0];
 		return r -> {
 			if (null != r) for (Tuple2<?, F> o : r.collect())
-				logger.info("Calculated, result => " + o._2.toString());
+				info(() -> "Calculated, result => " + o._2.toString());
 		};
 	}
 }

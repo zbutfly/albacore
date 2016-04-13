@@ -25,7 +25,7 @@ import net.butfly.albacore.calculus.streaming.RDDDStream.Mechanism;
 public final class Factors implements Serializable {
 	private static final long serialVersionUID = -3712903710207597570L;
 	private static final Logger logger = LoggerFactory.getLogger(Factors.class);
-	protected Calculator calc;
+	public Calculator calc;
 	protected Map<String, FactorConfig<?, ?>> pool;
 
 	public Factors(Calculator calc) {
@@ -112,10 +112,12 @@ public final class Factors implements Serializable {
 				String suffix = calc.dss.ds(config.dbid).suffix;
 				if (null != suffix) {
 					String[] nt = new String[s.table().length];
-					logger.info("All output mongodb table on " + s.source() + " will be appendded suffix: " + suffix);
-					for (int i = 0; i < s.table().length; i++)
+					for (int i = 0; i < s.table().length; i++) {
 						nt[i] = s.table()[i] + "_" + suffix;
+						logger.info("output redirected on [" + s.source() + "]: [" + s.table()[i] + " => " + nt[i] + "].");
+					}
 					config.detail = new MongoDataDetail(Factor.NOT_DEFINED.equals(s.filter()) ? null : s.filter(), nt);
+
 				} else config.detail = new MongoDataDetail(Factor.NOT_DEFINED.equals(s.filter()) ? null : s.filter(), s.table());
 				config.keyClass = (Class<K>) Object.class;
 				break;

@@ -2,6 +2,7 @@ package net.butfly.albacore.calculus.streaming;
 
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaPairRDD;
@@ -81,14 +82,23 @@ public abstract class RDDDStream<T> extends InputDStream<T> {
 	}
 
 	@SafeVarargs
-	public static <R> JavaRDD<R> rdd(SparkContext sc, R... r) {
+	public static <R> JavaRDD<R> rddValue(SparkContext sc, R... r) {
 		return JavaRDD.fromRDD(sc.parallelize(JavaConversions.asScalaBuffer(Arrays.asList(r)).seq(), sc.defaultParallelism(), RDS.tag()),
 				RDS.tag());
 	}
 
+	public static <R> JavaRDD<R> rddList(SparkContext sc, List<R> rs) {
+		return JavaRDD.fromRDD(sc.parallelize(JavaConversions.asScalaBuffer(rs).seq(), sc.defaultParallelism(), RDS.tag()), RDS.tag());
+	}
+
 	@SuppressWarnings("unchecked")
-	public static <R> JavaDStream<R> stream(StreamingContext ssc, R... r) {
-		JavaRDD<R> rdd = rdd(ssc.sc(), r);
+	public static <R> JavaDStream<R> streamValue(StreamingContext ssc, R... r) {
+		JavaRDD<R> rdd = rddValue(ssc.sc(), r);
+		return stream(ssc, Mechanism.CONST, () -> rdd);
+	}
+
+	public static <R> JavaDStream<R> streamList(StreamingContext ssc, List<R> rs) {
+		JavaRDD<R> rdd = rddList(ssc.sc(), rs);
 		return stream(ssc, Mechanism.CONST, () -> rdd);
 	}
 }
