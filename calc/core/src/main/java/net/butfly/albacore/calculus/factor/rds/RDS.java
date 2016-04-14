@@ -3,6 +3,8 @@ package net.butfly.albacore.calculus.factor.rds;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 
 import org.apache.spark.api.java.JavaPairRDD;
@@ -107,7 +109,7 @@ public class RDS<T> implements Serializable {
 
 	public List<T> collect() {
 		List<T> r = new ArrayList<>();
-		eachRDD(rdd -> r.addAll(rdd.collect()));
+		each(t -> r.add(t));
 		return r;
 	}
 
@@ -118,17 +120,16 @@ public class RDS<T> implements Serializable {
 				consumer.call(JavaRDD.fromRDD(rdd, tag()));
 			break;
 		case DSTREAM:
-			dstream.foreachRDD(rdd -> {
+			dstream = dstream.transform(rdd -> {
 				consumer.call(JavaRDD.fromRDD(rdd, tag()));
-				return BoxedUnit.UNIT;
-			});
+				return rdd;
+			}, tag());
 			break;
 		}
 		return this;
 	}
 
 	public RDS<T> each(VoidFunction<T> consumer) {
-
 		switch (type) {
 		case RDD:
 			for (RDD<T> rdd : rdds)
@@ -138,13 +139,13 @@ public class RDS<T> implements Serializable {
 				});
 			break;
 		case DSTREAM:
-			dstream.foreachRDD(rdd -> {
+			dstream = dstream.transform(rdd -> {
 				rdd.foreach(t -> {
 					consumer.call(t);
 					return BoxedUnit.UNIT;
 				});
-				return BoxedUnit.UNIT;
-			});
+				return rdd;
+			}, tag());
 			break;
 		}
 		return this;
@@ -223,6 +224,14 @@ public class RDS<T> implements Serializable {
 		}
 	}
 
+	public <U> PairRDS<U, Iterable<T>> groupBy(Function<T, U> func) {
+		return new PairRDS<U, Iterable<T>>(rdd().groupBy(t -> func.call(t)));
+	}
+
+	public <U> PairRDS<U, Iterable<T>> groupBy(Function<T, U> func, Comparator<T> sorting) {
+		return new PairRDS<U, Iterable<T>>(rdd().groupBy(t -> func.call(t)));
+	}
+
 	public final T reduce(Function2<T, T, T> func) {
 		scala.runtime.AbstractFunction2<T, T, T> f = new scala.runtime.AbstractFunction2<T, T, T>() {
 			@Override
@@ -277,14 +286,32 @@ public class RDS<T> implements Serializable {
 		case DSTREAM:
 			List<RDD<T>> rs = new ArrayList<>();
 			rs.add(new EmptyRDD<T>(dstream.ssc().sc(), tag()));
-			dstream.foreachRDD(rdd -> {
+			dstream = dstream.transform(rdd -> {
 				rs.set(0, rs.get(0).union(rdd));
-				return BoxedUnit.UNIT;
-			});
+				return rdd;
+			}, tag());
 			return JavaRDD.fromRDD(rs.get(0), tag());
 		default:
 			throw new IllegalArgumentException();
 		}
+	}
+
+	public Collection<JavaRDD<T>> rdds() {
+		switch (type) {
+		case RDD:
+			return Reflections.transform(rdds, rdd -> JavaRDD.fromRDD(rdd, tag()));
+		case DSTREAM:
+			List<JavaRDD<T>> r = new ArrayList<>();
+			eachRDD(rdd -> r.add(rdd));
+			return r;
+		default:
+			throw new IllegalArgumentException();
+		}
+	}
+
+	public <S> RDS<T> sortBy(Function<T, S> comp) {
+		JavaRDD<T> rdd = rdd();
+		return new RDS<T>(rdd.sortBy(t -> comp.call(t), true, rdd.getNumPartitions()));
 	}
 
 	static <T, T1> List<T1> trans(List<T> r, Function<T, T1> transformer) {

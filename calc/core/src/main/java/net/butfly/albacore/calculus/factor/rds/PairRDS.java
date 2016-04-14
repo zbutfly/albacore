@@ -1,6 +1,8 @@
 package net.butfly.albacore.calculus.factor.rds;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -28,6 +30,7 @@ import net.butfly.albacore.calculus.lambda.VoidFunction;
 import net.butfly.albacore.calculus.lambda.VoidFunction2;
 import net.butfly.albacore.calculus.streaming.RDDDStream;
 import net.butfly.albacore.calculus.streaming.RDDDStream.Mechanism;
+import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
 import scala.reflect.ClassTag;
 import scala.runtime.BoxedUnit;
@@ -69,19 +72,13 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 
 	public Map<K, V> collectAsMap() {
 		Map<K, V> r = new HashMap<>();
-		eachRDD(rdd -> {
-			for (Tuple2<K, V> t : rdd.collect())
-				r.put(t._1, t._2);
-		});
+		each(t -> r.put(t._1, t._2));
 		return r;
 	}
 
 	public Set<K> collectKeys() {
 		Set<K> r = new HashSet<>();
-		this.eachRDD(rdd -> {
-			for (Tuple2<K, V> t : rdd.collect())
-				if (t._1 != null) r.add(t._1);
-		});
+		this.each(t -> r.add(t._1));
 		return r;
 	}
 
@@ -114,6 +111,14 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 			break;
 		}
 		return this;
+	}
+
+	public <U> PairRDS<K, Iterable<V>> groupByKey() {
+		return new PairRDS<K, Iterable<V>>(pairRDD().groupByKey());
+	}
+
+	public <U> PairRDS<K, Iterable<V>> groupByKeyWithSort(Comparator<V> comp) {
+		return new PairRDS<K, Iterable<V>>(pairRDD().groupByKey());
 	}
 
 	public PairRDS<K, V> reduceByKey(Function2<V, V, V> func) {
@@ -251,6 +256,19 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 		}
 	}
 
+	public Collection<JavaPairRDD<K, V>> pairRDDs() {
+		switch (type) {
+		case RDD:
+			return Reflections.transform(rdds, rdd -> JavaPairRDD.fromRDD(rdd, tag(), tag()));
+		case DSTREAM:
+			List<JavaPairRDD<K, V>> r = new ArrayList<>();
+			eachPairRDD(rdd -> r.add(rdd));
+			return r;
+		default:
+			throw new IllegalArgumentException();
+		}
+	}
+
 	public JavaPairRDD<K, V> pairRDD() {
 		switch (type) {
 		case RDD:
@@ -274,8 +292,13 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 		}
 	}
 
+	public <S> PairRDS<K, V> sortBy(Function<Tuple2<K, V>, S> comp) {
+		JavaRDD<Tuple2<K, V>> rdd = rdd();
+		return new PairRDS<K, V>(rdd().sortBy(t -> comp.call(t), true, rdd.getNumPartitions()));
+	}
+
 	public PairRDS<K, V> sortByKey(boolean asc) {
-		return new PairRDS<K, V>(pairRDD().sortByKey(asc));
+		return new PairRDS<>(pairRDD().sortByKey(asc));
 	}
 
 	public Tuple2<K, V> first() {

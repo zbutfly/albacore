@@ -3,7 +3,6 @@ package net.butfly.albacore.calculus.marshall.bson;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
@@ -40,7 +39,6 @@ import com.mongodb.LazyDBObject;
 
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.marshall.Marshaller;
-import net.butfly.albacore.calculus.marshall.MongoMarshaller;
 
 public abstract class BsonMarshaller<FK, VK, VV> extends Marshaller<FK, VK, VV> {
 	private static final long serialVersionUID = -7385678674433019238L;
@@ -168,20 +166,22 @@ public abstract class BsonMarshaller<FK, VK, VV> extends Marshaller<FK, VK, VV> 
 		}
 	}
 
-	@SuppressWarnings("unchecked")
+//	@SuppressWarnings("unchecked")
 	public static void main(String... args) {
-		MongoMarshaller m = new MongoMarshaller();
-		BSONObject b = m.bsonFromJSON("{$and: [{a: 1, c:true, dd: {a: \"32\", d: [13, 2]}}, {b: 'asdfdsf'}]}");
-		List<Object> and = (List<Object>) b.get("$and");
-		Map<String, Object> item = (Map<String, Object>) and.get(0);
-		Map<String, Object> dd = (Map<String, Object>) item.get("dd");
-		List<Object> d = (List<Object>) dd.get("d");
-		Integer i = (Integer) d.get(0);
-		assert (i == 13);
-
-		and.add(new byte[] { 1, 2, 3 });
-		and.add(new boolean[] { false, true, false });
-		and.add(123456789);
-		System.out.println(m.jsonFromBSON(b));
+//		MongoMarshaller m = new MongoMarshaller();
+//		BSONObject b = m.bsonFromJSON("{$and: [{a: 1, c:true, dd: {a: \"32\", d: [13, 2]}}, {b: 'asdfdsf'}]}");
+//		List<Object> and = (List<Object>) b.get("$and");
+//		Map<String, Object> item = (Map<String, Object>) and.get(0);
+//		Map<String, Object> dd = (Map<String, Object>) item.get("dd");
+//		List<Object> d = (List<Object>) dd.get("d");
+//		Integer i = (Integer) d.get(0);
+//		assert (i == 13);
+//
+//		and.add(new byte[] { 1, 2, 3 });
+//		and.add(new boolean[] { false, true, false });
+//		and.add(123456789);
+//		System.out.println(m.jsonFromBSON(b));
+//		Tuple2<String, String> t1 = new Tuple2<>("a", "b"), t2 = new Tuple2<>("a", "c");
+//		System.out.print(t1.equals(t2));
 	}
 }
