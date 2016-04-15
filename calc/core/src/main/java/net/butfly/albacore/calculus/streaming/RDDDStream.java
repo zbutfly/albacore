@@ -37,13 +37,20 @@ public abstract class RDDDStream<T> extends InputDStream<T> {
 	abstract protected RDD<T> load();
 
 	public Option<RDD<T>> compute(Time time) {
-		trace(() -> "RDD inputted as streaming with count: " + current.count());
+		trace(() -> "RDD [" + name() + "] inputted as streaming with count: " + current.count());
 		return Option.apply(current);
 	}
 
 	@Override
 	final public String name() {
-		return super.name() + "[for " + (null == current ? "null" : current.toDebugString()) + "]";
+		if (current == null) return "[UNINITED]";
+		String n = current.name();
+		if (n != null) return n;
+		n = current.toDebugString();
+		if (n != null) return n;
+		n = super.name();
+		if (n != null) return n;
+		return current.getClass().toString();
 	}
 
 	@Override
