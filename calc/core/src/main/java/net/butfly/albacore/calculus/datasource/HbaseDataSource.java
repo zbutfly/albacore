@@ -226,6 +226,7 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 				}
 			}
 			if (filter.getClass().equals(FactorFilter.Limit.class)) return new PageFilter(((FactorFilter.Limit) filter).limit);
+//			if (filter.getClass().equals(FactorFilter.Skip.class)) return new SkipFilter(((FactorFilter.Skip) filter).skip);
 			if (filter.getClass().equals(FactorFilter.And.class)) {
 				FilterList ands = new FilterList(Operator.MUST_PASS_ALL);
 				for (FactorFilter f : ((FactorFilter.And) filter).filters)

@@ -23,11 +23,11 @@ import org.apache.spark.streaming.dstream.DStream;
 import com.google.common.base.Optional;
 import com.google.common.collect.Ordering;
 
-import net.butfly.albacore.calculus.lambda.Function;
-import net.butfly.albacore.calculus.lambda.Function2;
-import net.butfly.albacore.calculus.lambda.PairFunction;
-import net.butfly.albacore.calculus.lambda.VoidFunction;
-import net.butfly.albacore.calculus.lambda.VoidFunction2;
+import net.butfly.albacore.calculus.lambda.Func;
+import net.butfly.albacore.calculus.lambda.Func2;
+import net.butfly.albacore.calculus.lambda.PairFunc;
+import net.butfly.albacore.calculus.lambda.VoidFunc;
+import net.butfly.albacore.calculus.lambda.VoidFunc2;
 import net.butfly.albacore.calculus.streaming.RDDDStream;
 import net.butfly.albacore.calculus.streaming.RDDDStream.Mechanism;
 import net.butfly.albacore.calculus.utils.Reflections;
@@ -82,7 +82,7 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 		return r;
 	}
 
-	public void eachPairRDD(VoidFunction<JavaPairRDD<K, V>> consumer) {
+	public void eachPairRDD(VoidFunc<JavaPairRDD<K, V>> consumer) {
 		switch (type) {
 		case RDD:
 			for (RDD<Tuple2<K, V>> rdd : rdds)
@@ -97,7 +97,7 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 		}
 	}
 
-	public PairRDS<K, V> each(VoidFunction2<K, V> consumer) {
+	public PairRDS<K, V> each(VoidFunc2<K, V> consumer) {
 		switch (type) {
 		case RDD:
 			for (RDD<Tuple2<K, V>> rdd : rdds)
@@ -121,7 +121,7 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 		return new PairRDS<K, Iterable<V>>(pairRDD().groupByKey());
 	}
 
-	public PairRDS<K, V> reduceByKey(Function2<V, V, V> func) {
+	public PairRDS<K, V> reduceByKey(Func2<V, V, V> func) {
 		switch (type) {
 		case RDD:
 			return new PairRDS<K, V>(JavaPairRDD.fromRDD(union(rdds), tag(), tag()).reduceByKey((v1, v2) -> func.call(v1, v2)));
@@ -132,7 +132,7 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 		}
 	}
 
-	public PairRDS<K, V> reduceByKey(Function2<V, V, V> func, int numPartitions) {
+	public PairRDS<K, V> reduceByKey(Func2<V, V, V> func, int numPartitions) {
 		switch (type) {
 		case RDD:
 			return new PairRDS<K, V>(
@@ -292,7 +292,7 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 		}
 	}
 
-	public <S> PairRDS<K, V> sortBy(Function<Tuple2<K, V>, S> comp) {
+	public <S> PairRDS<K, V> sortBy(Func<Tuple2<K, V>, S> comp) {
 		JavaRDD<Tuple2<K, V>> rdd = rdd();
 		return new PairRDS<K, V>(rdd().sortBy(t -> comp.call(t), true, rdd.getNumPartitions()));
 	}
@@ -319,7 +319,7 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 	}
 
 	@Override
-	public PairRDS<K, V> filter(Function<Tuple2<K, V>, Boolean> func) {
+	public PairRDS<K, V> filter(Func<Tuple2<K, V>, Boolean> func) {
 		switch (type) {
 		case RDD:
 			rdds = trans(rdds, r -> JavaPairRDD.fromRDD(r, tag(), tag()).filter(t -> func.call(t)).rdd());
@@ -333,7 +333,7 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 		return this;
 	}
 
-	public final <K2, V2> PairRDS<K2, V2> mapPair(PairFunction<Tuple2<K, V>, K2, V2> func) {
+	public final <K2, V2> PairRDS<K2, V2> mapPair(PairFunc<Tuple2<K, V>, K2, V2> func) {
 		switch (type) {
 		case RDD:
 			return new PairRDS<K2, V2>().init(RDS.trans(rdds, rdd -> JavaRDD.fromRDD(rdd, tag()).mapToPair(t -> func.call(t)).rdd()));

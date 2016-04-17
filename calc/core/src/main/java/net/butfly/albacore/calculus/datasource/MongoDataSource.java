@@ -34,7 +34,7 @@ import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
-import net.butfly.albacore.calculus.lambda.VoidFunction;
+import net.butfly.albacore.calculus.lambda.VoidFunc;
 import net.butfly.albacore.calculus.marshall.MongoMarshaller;
 import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
@@ -194,7 +194,7 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Mong
 	}
 
 	@Override
-	public <F extends Factor<F>> VoidFunction<JavaPairRDD<Object, F>> saving(Calculator calc, MongoDataDetail detail) {
+	public <F extends Factor<F>> VoidFunc<JavaPairRDD<Object, F>> saving(Calculator calc, MongoDataDetail detail) {
 		Configuration conf = HBaseConfiguration.create();
 		conf.set("mongo.job.output.format", MongoOutputFormat.class.getName());
 		MongoClientURI uri = new MongoClientURI(this.uri);

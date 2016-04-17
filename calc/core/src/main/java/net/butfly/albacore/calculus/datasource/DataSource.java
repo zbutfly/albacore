@@ -12,8 +12,7 @@ import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
-import net.butfly.albacore.calculus.factor.rds.PairRDS;
-import net.butfly.albacore.calculus.lambda.VoidFunction;
+import net.butfly.albacore.calculus.lambda.VoidFunc;
 import net.butfly.albacore.calculus.marshall.Marshaller;
 import net.butfly.albacore.calculus.utils.Logable;
 
@@ -59,23 +58,12 @@ public abstract class DataSource<FK, K, V, D extends DataDetail> implements Seri
 		throw new UnsupportedOperationException("Unsupportted streaming mode: " + type + " on " + factor.toString());
 	}
 
-	public <F extends Factor<F>> VoidFunction<JavaPairRDD<FK, F>> saving(Calculator calc, D detail) {
+	public <F extends Factor<F>> VoidFunc<JavaPairRDD<FK, F>> saving(Calculator calc, D detail) {
 		throw new UnsupportedOperationException("Unsupportted saving: " + type);
 	}
 
 	public boolean confirm(Class<? extends Factor<?>> factor, D detail) {
 		return true;
-	}
-
-	public <F extends Factor<F>> void save(Calculator calc, PairRDS<FK, F> result, D detail) {
-		VoidFunction<JavaPairRDD<FK, F>> saving = saving(calc, detail);
-		if (null != result) result.eachPairRDD((VoidFunction<JavaPairRDD<FK, F>>) rdd -> {
-			if (null != rdd) try {
-				saving.call(rdd);
-			} catch (Exception e) {
-				error(() -> "Saving failure", e);
-			}
-		});
 	}
 
 	public static class DataSources extends HashMap<String, DataSource<?, ?, ?, ?>> {

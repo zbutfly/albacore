@@ -37,6 +37,7 @@ import net.butfly.albacore.calculus.factor.FactorConfig;
 import net.butfly.albacore.calculus.factor.Factoring;
 import net.butfly.albacore.calculus.factor.Factoring.Factorings;
 import net.butfly.albacore.calculus.factor.Factors;
+import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.marshall.HbaseMarshaller;
 import net.butfly.albacore.calculus.marshall.KafkaMarshaller;
 import net.butfly.albacore.calculus.marshall.Marshaller;
@@ -161,7 +162,8 @@ public class Calculator implements Logable, Serializable {
 		Factors factors = new Factors(this);
 		FactorConfig<OK, OF> s = factors.config(c);
 		DataSource<OK, ?, ?, DataDetail> ds = dss.ds(s.dbid);
-		ds.save(this, calculus.calculate(factors), s.detail);
+		PairRDS<OK, OF> result = calculus.calculate(factors);
+		if (null != result) result.eachPairRDD(ds.saving(this, s.detail));
 		info(() -> calculus.name + " ended, spent: " + (new Date().getTime() - now) + " ms.");
 		return this;
 	}

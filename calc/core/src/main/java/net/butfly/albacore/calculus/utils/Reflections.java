@@ -11,9 +11,10 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 import com.google.common.reflect.TypeToken;
+
+import net.butfly.albacore.calculus.lambda.Func;
 
 public final class Reflections implements Serializable {
 	private static final long serialVersionUID = 6337397752201899394L;
@@ -117,10 +118,10 @@ public final class Reflections implements Serializable {
 		return types;
 	}
 
-	public static <T, R> Collection<R> transform(Collection<T> original, Function<T, R> trans) {
+	public static <T, R> Collection<R> transform(Collection<T> original, Func<T, R> trans) {
 		if (original == null) return null;
 		List<R> r = new ArrayList<>(original.size());
-		original.forEach(o -> r.add(trans.apply(o)));
+		original.forEach(o -> r.add(trans.call(o)));
 		return r;
 	}
 

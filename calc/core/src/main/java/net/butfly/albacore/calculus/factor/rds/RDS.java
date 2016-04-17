@@ -17,10 +17,10 @@ import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaDStreamLike;
 import org.apache.spark.streaming.dstream.DStream;
 
-import net.butfly.albacore.calculus.lambda.Function;
-import net.butfly.albacore.calculus.lambda.Function2;
-import net.butfly.albacore.calculus.lambda.PairFunction;
-import net.butfly.albacore.calculus.lambda.VoidFunction;
+import net.butfly.albacore.calculus.lambda.Func;
+import net.butfly.albacore.calculus.lambda.Func2;
+import net.butfly.albacore.calculus.lambda.PairFunc;
+import net.butfly.albacore.calculus.lambda.VoidFunc;
 import net.butfly.albacore.calculus.streaming.RDDDStream;
 import net.butfly.albacore.calculus.streaming.RDDDStream.Mechanism;
 import net.butfly.albacore.calculus.utils.Reflections;
@@ -113,7 +113,7 @@ public class RDS<T> implements Serializable {
 		return r;
 	}
 
-	public RDS<T> eachRDD(VoidFunction<JavaRDD<T>> consumer) {
+	public RDS<T> eachRDD(VoidFunc<JavaRDD<T>> consumer) {
 		switch (type) {
 		case RDD:
 			for (RDD<T> rdd : rdds)
@@ -129,7 +129,7 @@ public class RDS<T> implements Serializable {
 		return this;
 	}
 
-	public RDS<T> each(VoidFunction<T> consumer) {
+	public RDS<T> each(VoidFunc<T> consumer) {
 		switch (type) {
 		case RDD:
 			for (RDD<T> rdd : rdds)
@@ -188,7 +188,7 @@ public class RDS<T> implements Serializable {
 		return this;
 	}
 
-	public RDS<T> filter(Function<T, Boolean> func) {
+	public RDS<T> filter(Func<T, Boolean> func) {
 		switch (type) {
 		case RDD:
 			rdds = trans(rdds, r -> JavaRDD.fromRDD(r, tag()).filter(t -> func.call(t)).rdd());
@@ -202,7 +202,7 @@ public class RDS<T> implements Serializable {
 		return this;
 	}
 
-	public <K2, V2> RDS<Tuple2<K2, V2>> mapToPair(PairFunction<T, K2, V2> func) {
+	public <K2, V2> RDS<Tuple2<K2, V2>> mapToPair(PairFunc<T, K2, V2> func) {
 		switch (type) {
 		case RDD:
 			return new RDS<Tuple2<K2, V2>>().init(trans(rdds, rdd -> JavaRDD.fromRDD(rdd, tag()).mapToPair(t -> func.call(t)).rdd()));
@@ -213,7 +213,7 @@ public class RDS<T> implements Serializable {
 		}
 	}
 
-	public final <T1> RDS<T1> map(Function<T, T1> func) {
+	public final <T1> RDS<T1> map(Func<T, T1> func) {
 		switch (type) {
 		case RDD:
 			return new RDS<T1>().init(trans(rdds, rdd -> rdd.map(t -> func.call(t), tag())));
@@ -224,15 +224,15 @@ public class RDS<T> implements Serializable {
 		}
 	}
 
-	public <U> PairRDS<U, Iterable<T>> groupBy(Function<T, U> func) {
+	public <U> PairRDS<U, Iterable<T>> groupBy(Func<T, U> func) {
 		return new PairRDS<U, Iterable<T>>(rdd().groupBy(t -> func.call(t)));
 	}
 
-	public <U> PairRDS<U, Iterable<T>> groupBy(Function<T, U> func, Comparator<T> sorting) {
+	public <U> PairRDS<U, Iterable<T>> groupBy(Func<T, U> func, Comparator<T> sorting) {
 		return new PairRDS<U, Iterable<T>>(rdd().groupBy(t -> func.call(t)));
 	}
 
-	public final T reduce(Function2<T, T, T> func) {
+	public final T reduce(Func2<T, T, T> func) {
 		scala.runtime.AbstractFunction2<T, T, T> f = new scala.runtime.AbstractFunction2<T, T, T>() {
 			@Override
 			public T apply(T v1, T v2) {
@@ -309,12 +309,12 @@ public class RDS<T> implements Serializable {
 		}
 	}
 
-	public <S> RDS<T> sortBy(Function<T, S> comp) {
+	public <S> RDS<T> sortBy(Func<T, S> comp) {
 		JavaRDD<T> rdd = rdd();
 		return new RDS<T>(rdd.sortBy(t -> comp.call(t), true, rdd.getNumPartitions()));
 	}
 
-	static <T, T1> List<T1> trans(List<T> r, Function<T, T1> transformer) {
+	static <T, T1> List<T1> trans(List<T> r, Func<T, T1> transformer) {
 		if (r == null) return null;
 		List<T1> r1 = new ArrayList<>(r.size());
 		for (T rr : r)

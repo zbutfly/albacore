@@ -11,7 +11,7 @@ import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
-import net.butfly.albacore.calculus.lambda.VoidFunction;
+import net.butfly.albacore.calculus.lambda.VoidFunc;
 import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
 
@@ -42,7 +42,7 @@ public class ConstDataSource extends DataSource<String, Void, Void, DataDetail> 
 	}
 
 	@Override
-	public <F extends Factor<F>> VoidFunction<JavaPairRDD<String, F>> saving(Calculator calc, DataDetail detail) {
+	public <F extends Factor<F>> VoidFunc<JavaPairRDD<String, F>> saving(Calculator calc, DataDetail detail) {
 		if (values == null) values = new String[0];
 		return r -> {
 			if (null != r) for (Tuple2<?, F> o : r.collect())
