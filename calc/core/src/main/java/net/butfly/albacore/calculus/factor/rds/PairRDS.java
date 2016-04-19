@@ -84,40 +84,6 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 		}));
 	}
 
-	@SuppressWarnings("unchecked")
-	public void save(DataSource<K, ?, ?, ?, ?> ds, DataDetail<V> dd) {
-		switch (type) {
-		case RDD:
-			for (RDD<Tuple2<K, V>> rdd : rdds) {
-				JavaPairRDD<ObjectId, MongoUpdateWritable> r = JavaPairRDD.fromRDD(rdd, tag(), tag())
-						.mapToPair(new PairFunction<Tuple2<K, V>, ObjectId, MongoUpdateWritable>() {
-							@Override
-							public Tuple2<ObjectId, MongoUpdateWritable> call(Tuple2<K, V> t) throws Exception {
-								return (Tuple2<ObjectId, MongoUpdateWritable>) ds.prepare(t._1, t._2, dd.factorClass);
-							}
-						});
-				r.saveAsNewAPIHadoopFile("", ds.keyClass, ds.valueClass, ds.outputFormatClass, dd.outputConfig(ds));
-			}
-			break;
-		case DSTREAM:
-			JavaPairDStream.fromPairDStream(dstream, tag(), tag()).foreachRDD(new Function<JavaPairRDD<K, V>, Void>() {
-				@Override
-				public Void call(JavaPairRDD<K, V> rdd) throws Exception {
-					JavaPairRDD<ObjectId, MongoUpdateWritable> r = rdd
-							.mapToPair(new PairFunction<Tuple2<K, V>, ObjectId, MongoUpdateWritable>() {
-								@Override
-								public Tuple2<ObjectId, MongoUpdateWritable> call(Tuple2<K, V> t) throws Exception {
-									return (Tuple2<ObjectId, MongoUpdateWritable>) ds.prepare(t._1, t._2, dd.factorClass);
-								}
-							});
-					r.saveAsNewAPIHadoopFile("", ds.keyClass, ds.valueClass, ds.outputFormatClass, dd.outputConfig(ds));
-					return null;
-				}
-			});
-			break;
-		}
-	}
-
 	public Map<K, V> collectAsMap() {
 		Map<K, V> r = new HashMap<>();
 		each(new VoidFunc<Tuple2<K, V>>() {

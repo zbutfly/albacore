@@ -9,6 +9,7 @@ import java.util.Map;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.function.PairFunction;
 import org.bson.BSONObject;
 import org.bson.BasicBSONObject;
 import org.bson.Document;
@@ -34,6 +35,7 @@ import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
+import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.marshall.MongoMarshaller;
 import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
@@ -197,11 +199,19 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <F> Tuple2<ObjectId, MongoUpdateWritable> prepare(Object key, F factor, Class<F> factorClass) throws Exception {
+	protected <F> Tuple2<ObjectId, MongoUpdateWritable> prepare(Object key, F factor, Class<F> factorClass) throws Exception {
 		final BasicBSONObject q = new BasicBSONObject();
 		q.append("_id", this.marshaller.marshallId(key));
 		final BasicBSONObject u = new BasicBSONObject();
 		u.append("$set", marshaller.marshall((Factor) factor));
 		return new Tuple2<ObjectId, MongoUpdateWritable>(new ObjectId(), new MongoUpdateWritable(q, u, true, true));
+	}
+
+	@Override
+	public <F> void save(DataDetail<F> detail, Class<F> factorClass, PairRDS<Object, F> result) {
+		final PairFunction<Tuple2<Object, F>, ObjectId, MongoUpdateWritable> prepare = (
+				final Tuple2<Object, F> t) -> (Tuple2<ObjectId, MongoUpdateWritable>) prepare(t._1, t._2, factorClass);
+		if (null != result) result.eachPairRDD((final JavaPairRDD<Object, F> rdd) -> rdd.mapToPair(prepare).saveAsNewAPIHadoopFile("",
+				keyClass, valueClass, outputFormatClass, detail.outputConfig(this)));
 	}
 }

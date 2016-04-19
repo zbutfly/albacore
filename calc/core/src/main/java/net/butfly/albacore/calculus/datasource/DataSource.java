@@ -14,10 +14,12 @@ import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
+import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.marshall.Marshaller;
 import net.butfly.albacore.calculus.utils.Logable;
 import scala.Tuple2;
 
+@SuppressWarnings("rawtypes")
 public abstract class DataSource<FK, RK, RV, WK, WV> implements Serializable, Logable {
 	private static final long serialVersionUID = 1L;
 	protected Factor.Type type;
@@ -27,7 +29,6 @@ public abstract class DataSource<FK, RK, RV, WK, WV> implements Serializable, Lo
 	public String suffix;
 	public Class<RK> keyClass;
 	public Class<RV> valueClass;
-	@SuppressWarnings("rawtypes")
 	public Class<? extends OutputFormat> outputFormatClass;
 	protected Configuration outputConfig;
 
@@ -40,7 +41,7 @@ public abstract class DataSource<FK, RK, RV, WK, WV> implements Serializable, Lo
 	}
 
 	public DataSource(Type type, boolean validate, Marshaller<FK, RK, RV> marshaller, Class<RK> keyClass, Class<RV> valueClass,
-			@SuppressWarnings("rawtypes") Class<? extends OutputFormat> outputFormatClass) {
+			Class<? extends OutputFormat> outputFormatClass) {
 		super();
 		this.type = type;
 		this.validate = validate;
@@ -75,16 +76,19 @@ public abstract class DataSource<FK, RK, RV, WK, WV> implements Serializable, Lo
 		return true;
 	}
 
-	public static class DataSources extends HashMap<String, DataSource<?, ?, ?, ?, ?>> {
+	public static class DataSources extends HashMap<String, DataSource> {
 		private static final long serialVersionUID = -7809799411800022817L;
 
 		@SuppressWarnings("unchecked")
-		public <FK, RK, RV, WK, WV, DS extends DataSource<FK, RK, RV, WK, WV>> DS ds(String dbid) {
+		public <DS extends DataSource> DS ds(String dbid) {
 			return (DS) super.get(dbid);
 		}
 	}
 
-	public <F> Tuple2<WK, WV> prepare(FK key, F factor, Class<F> factorClass) throws Exception {
+	protected <F> Tuple2<WK, WV> prepare(FK key, F factor, Class<F> factorClass) throws Exception {
 		throw new UnsupportedOperationException("Unsupportted saving prepare: " + type);
+	}
+	public <F> void save(DataDetail<F> detail, Class<F> factorClass, PairRDS<FK, F> result) {
+		throw new UnsupportedOperationException("Unsupportted saving: " + type);
 	}
 }

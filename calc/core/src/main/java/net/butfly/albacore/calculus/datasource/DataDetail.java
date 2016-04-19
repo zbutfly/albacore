@@ -9,6 +9,7 @@ import com.google.common.base.Preconditions;
 
 import net.butfly.albacore.calculus.factor.Factor.Type;
 
+@SuppressWarnings("rawtypes")
 public abstract class DataDetail<F> implements Serializable {
 	private static final long serialVersionUID = 1900035964021610093L;
 	public Type type;
@@ -25,8 +26,7 @@ public abstract class DataDetail<F> implements Serializable {
 
 	abstract public String toString();
 
-	@SuppressWarnings("rawtypes")
-	public <DS extends DataSource> Configuration outputConfig(DS ds) {
+	public Configuration outputConfig(DataSource ds) {
 		return HBaseConfiguration.create();
 	}
 }

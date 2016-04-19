@@ -354,4 +354,5 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 		}
 		return sc;
 	}
+
 }

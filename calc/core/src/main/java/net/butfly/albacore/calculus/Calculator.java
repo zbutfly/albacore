@@ -18,16 +18,11 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 import org.apache.spark.SparkConf;
-import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.streaming.Durations;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
-import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.mongodb.hadoop.io.MongoUpdateWritable;
 
 import net.butfly.albacore.calculus.datasource.ConstDataSource;
 import net.butfly.albacore.calculus.datasource.DataSource;
@@ -38,17 +33,13 @@ import net.butfly.albacore.calculus.datasource.MongoDataSource;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.factor.FactorConfig;
-import net.butfly.albacore.calculus.factor.Factoring;
-import net.butfly.albacore.calculus.factor.Factoring.Factorings;
 import net.butfly.albacore.calculus.factor.Factors;
-import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.marshall.HbaseMarshaller;
 import net.butfly.albacore.calculus.marshall.KafkaMarshaller;
 import net.butfly.albacore.calculus.marshall.Marshaller;
 import net.butfly.albacore.calculus.marshall.MongoMarshaller;
 import net.butfly.albacore.calculus.utils.Logable;
 import net.butfly.albacore.calculus.utils.Reflections;
-import scala.Tuple2;
 
 public class Calculator implements Logable, Serializable {
 	private static final long serialVersionUID = 7850755405377027618L;
@@ -66,8 +57,7 @@ public class Calculator implements Logable, Serializable {
 
 	// calculus configurations
 	public Mode mode;
-	public Factoring[] factorings;
-	private Calculus<?, ?> calculus;
+	public Calculus<?, ?> calculus;
 	private String appname;
 	private boolean optimizeMongo;
 
@@ -150,9 +140,6 @@ public class Calculator implements Logable, Serializable {
 			throw new IllegalArgumentException("Calculus " + calclass + "not found.", e);
 		}
 		if (!Calculus.class.isAssignableFrom(c)) throw new IllegalArgumentException("Calculus " + c.toString() + " is not Calculus.");
-		if (c.isAnnotationPresent(Factorings.class)) factorings = c.getAnnotation(Factorings.class).value();
-		else if (c.isAnnotationPresent(Factoring.class)) factorings = new Factoring[] { c.getAnnotation(Factoring.class) };
-		else throw new IllegalArgumentException("Calculus " + c.toString() + " has no @Factoring annotated.");
 		try {
 			calculus = ((Calculus<?, ?>) c.newInstance()).calculator(this);
 		} catch (Exception e) {
@@ -163,17 +150,13 @@ public class Calculator implements Logable, Serializable {
 	private <OK, OF extends Factor<OF>> Calculator calculate(Calculus<OK, OF> calculus) {
 		info(() -> calculus.name + " starting... ");
 		long now = new Date().getTime();
-		Class<OF> c = Reflections.resolveGenericParameter(calculus.getClass(), Calculus.class, "OF");
-		info(() -> calculus.name + " will output as: " + c.toString());
+		Class<OF> factor = Reflections.resolveGenericParameter(calculus.getClass(), Calculus.class, "OF");
+		info(() -> calculus.name + " will output as: " + factor.toString());
 		Factors factors = new Factors(this);
-		FactorConfig<OK, OF> s = factors.config(c);
-		DataSource<OK, ?, ?, ?, ?> ds = dss.ds(s.dbid);
-		PairRDS<OK, OF> result = calculus.calculate(factors);
+		FactorConfig<OK, OF> s = factors.config(factor);
 		@SuppressWarnings("unchecked")
-		final PairFunction<Tuple2<OK, OF>, ObjectId, MongoUpdateWritable> prepare = (
-				final Tuple2<OK, OF> t) -> (Tuple2<ObjectId, MongoUpdateWritable>) ds.prepare(t._1, t._2, c);
-		if (null != result) result.eachPairRDD((final JavaPairRDD<OK, OF> rdd) -> rdd.mapToPair(prepare).saveAsNewAPIHadoopFile("",
-				ds.keyClass, ds.valueClass, ds.outputFormatClass, s.detail.outputConfig(ds)));
+		DataSource<OK, ?, ?, ?, ?> ds = dss.ds(s.dbid);
+		ds.save(s.detail, factor, calculus.calculate(factors));
 		info(() -> calculus.name + " ended, spent: " + (new Date().getTime() - now) + " ms.");
 		return this;
 	}

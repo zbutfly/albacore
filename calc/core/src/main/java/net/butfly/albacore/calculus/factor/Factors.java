@@ -10,7 +10,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.butfly.albacore.calculus.Calculator;
+import net.butfly.albacore.calculus.Calculus;
 import net.butfly.albacore.calculus.Mode;
+import net.butfly.albacore.calculus.datasource.DataDetail;
 import net.butfly.albacore.calculus.datasource.DataSource;
 import net.butfly.albacore.calculus.datasource.HbaseDataDetail;
 import net.butfly.albacore.calculus.datasource.KafkaDataDetail;
@@ -18,6 +20,7 @@ import net.butfly.albacore.calculus.datasource.MongoDataDetail;
 import net.butfly.albacore.calculus.datasource.MongoDataSource;
 import net.butfly.albacore.calculus.factor.Factor.Stocking;
 import net.butfly.albacore.calculus.factor.Factor.Streaming;
+import net.butfly.albacore.calculus.factor.Factoring.Factorings;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.streaming.RDDDStream;
@@ -32,27 +35,33 @@ public final class Factors implements Serializable, Logable {
 	protected Map<String, FactorConfig<?, ?>> pool;
 
 	public Factors(Calculator calc) {
-		pool = new HashMap<>(calc.factorings.length);
+		@SuppressWarnings("rawtypes")
+		Class<? extends Calculus> c = calc.calculus.getClass();
+		Factoring[] factorings;
+		if (c.isAnnotationPresent(Factorings.class)) factorings = c.getAnnotation(Factorings.class).value();
+		else if (c.isAnnotationPresent(Factoring.class)) factorings = new Factoring[] { c.getAnnotation(Factoring.class) };
+		else throw new IllegalArgumentException("Calculus " + c.toString() + " has no @Factoring annotated.");
+		pool = new HashMap<>(factorings.length);
 		this.calc = calc;
 
 		FactorConfig<?, ?> batch = null;
 		List<Class<?>> cl = new ArrayList<>();
-		for (Factoring f : calc.factorings) {
+		for (Factoring f : factorings) {
 			if (pool.containsKey(f.key())) throw new IllegalArgumentException("Conflictted factoring id: " + f.key());
 			@SuppressWarnings("rawtypes")
 			Class fc = f.factor();
 			if (!fc.isAnnotationPresent(Streaming.class) && !fc.isAnnotationPresent(Stocking.class)) throw new IllegalArgumentException(
 					"Factor [" + fc.toString() + "] is annotated as neither @Streaming nor @Stocking, can't calculate it!");
-			FactorConfig<?, ?> c = config(fc);
-			cl.add(c.factorClass);
-			c.batching = f.batching();
-			c.streaming = f.stockOnStreaming();
+			FactorConfig<?, ?> conf = config(fc);
+			cl.add(conf.factorClass);
+			conf.batching = f.batching();
+			conf.streaming = f.stockOnStreaming();
 			if (f.batching() > 0) {
 				if (batch != null) throw new IllegalArgumentException("Only one batch stocking source supported, now found second: "
-						+ batch.factorClass.toString() + " and " + c.factorClass.toString());
-				else batch = c;
+						+ batch.factorClass.toString() + " and " + conf.factorClass.toString());
+				else batch = conf;
 			}
-			pool.put(f.key(), c);
+			pool.put(f.key(), conf);
 		}
 		calc.sconf.registerKryoClasses(cl.toArray(new Class[cl.size()]));
 	}
@@ -60,27 +69,28 @@ public final class Factors implements Serializable, Logable {
 	public <K, F extends Factor<F>, E extends Factor<E>> PairRDS<K, F> get(String factoring, FactorFilter... filters) {
 		FactorConfig<K, F> config = (FactorConfig<K, F>) pool.get(factoring);
 		DataSource<K, ?, ?, ?, ?> ds = calc.dss.ds(config.dbid);
+		DataDetail<F> d = config.detail;
 		switch (calc.mode) {
 		case STOCKING:
-			if (config.batching <= 0) return new PairRDS<K, F>(ds.stocking(calc, config.factorClass, config.detail, filters));
+			if (config.batching <= 0) return new PairRDS<K, F>(ds.stocking(calc, config.factorClass, d, filters));
 			else return new PairRDS<K, F>(RDDDStream.bpstream(calc.ssc.ssc(), config.batching,
-					(final Long limit, final K offset) -> ds.batching(calc, config.factorClass, limit, offset, config.detail, filters),
+					(final Long limit, final K offset) -> ds.batching(calc, config.factorClass, limit, offset, d, filters),
 					ds.marshaller().comparator()));
 		case STREAMING:
 			switch (config.mode) {
 			case STOCKING:
 				switch (config.streaming) {
 				case CONST:
-					return new PairRDS<K, F>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.CONST,
-							() -> ds.stocking(calc, config.factorClass, config.detail, filters)));
+					return new PairRDS<K, F>(
+							RDDDStream.pstream(calc.ssc.ssc(), Mechanism.CONST, () -> ds.stocking(calc, config.factorClass, d, filters)));
 				case FRESH:
-					return new PairRDS<K, F>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.FRESH,
-							() -> ds.stocking(calc, config.factorClass, config.detail, filters)));
+					return new PairRDS<K, F>(
+							RDDDStream.pstream(calc.ssc.ssc(), Mechanism.FRESH, () -> ds.stocking(calc, config.factorClass, d, filters)));
 				default:
 					throw new UnsupportedOperationException();
 				}
 			case STREAMING:
-				return new PairRDS<K, F>(ds.streaming(calc, config.factorClass, config.detail, filters));
+				return new PairRDS<K, F>(ds.streaming(calc, config.factorClass, d, filters));
 			}
 		default:
 			throw new UnsupportedOperationException();
