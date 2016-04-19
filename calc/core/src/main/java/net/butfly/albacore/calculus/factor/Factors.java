@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.spark.api.java.JavaPairRDD;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,8 +20,6 @@ import net.butfly.albacore.calculus.factor.Factor.Stocking;
 import net.butfly.albacore.calculus.factor.Factor.Streaming;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
-import net.butfly.albacore.calculus.lambda.Func0;
-import net.butfly.albacore.calculus.lambda.Func2;
 import net.butfly.albacore.calculus.streaming.RDDDStream;
 import net.butfly.albacore.calculus.streaming.RDDDStream.Mechanism;
 import net.butfly.albacore.calculus.utils.Logable;
@@ -66,30 +63,19 @@ public final class Factors implements Serializable, Logable {
 		switch (calc.mode) {
 		case STOCKING:
 			if (config.batching <= 0) return new PairRDS<K, F>(ds.stocking(calc, config.factorClass, config.detail, filters));
-			else return new PairRDS<K, F>(RDDDStream.bpstream(calc.ssc.ssc(), config.batching, new Func2<Long, K, JavaPairRDD<K, F>>() {
-				@Override
-				public JavaPairRDD<K, F> call(Long limit, K offset) {
-					return ds.batching(calc, config.factorClass, limit, offset, config.detail, filters);
-				}
-			}, ds.marshaller().comparator()));
+			else return new PairRDS<K, F>(RDDDStream.bpstream(calc.ssc.ssc(), config.batching,
+					(final Long limit, final K offset) -> ds.batching(calc, config.factorClass, limit, offset, config.detail, filters),
+					ds.marshaller().comparator()));
 		case STREAMING:
 			switch (config.mode) {
 			case STOCKING:
 				switch (config.streaming) {
 				case CONST:
-					return new PairRDS<K, F>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.CONST, new Func0<JavaPairRDD<K, F>>() {
-						@Override
-						public JavaPairRDD<K, F> call() {
-							return ds.stocking(calc, config.factorClass, config.detail, filters);
-						}
-					}));
+					return new PairRDS<K, F>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.CONST,
+							() -> ds.stocking(calc, config.factorClass, config.detail, filters)));
 				case FRESH:
-					return new PairRDS<K, F>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.FRESH, new Func0<JavaPairRDD<K, F>>() {
-						@Override
-						public JavaPairRDD<K, F> call() {
-							return ds.stocking(calc, config.factorClass, config.detail, filters);
-						}
-					}));
+					return new PairRDS<K, F>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.FRESH,
+							() -> ds.stocking(calc, config.factorClass, config.detail, filters)));
 				default:
 					throw new UnsupportedOperationException();
 				}

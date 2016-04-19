@@ -5,7 +5,6 @@ import java.util.UUID;
 
 import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
 import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.api.java.function.PairFunction;
 
 import com.google.common.base.Joiner;
 
@@ -39,11 +38,7 @@ public class ConstDataSource extends DataSource<String, Void, String, Void, Stri
 			FactorFilter... filters) {
 		String[] values = this.values;
 		if (values == null) values = new String[0];
-		return calc.sc.parallelize(Arrays.asList(values)).mapToPair(new PairFunction<String, String, F>() {
-			@Override
-			public Tuple2<String, F> call(String t) throws Exception {
-				return null == t ? null : new Tuple2<>(UUID.randomUUID().toString(), (F) Reflections.construct(factor, t));
-			}
-		});
+		return calc.sc.parallelize(Arrays.asList(values)).mapToPair(
+				(final String t) -> null == t ? null : new Tuple2<>(UUID.randomUUID().toString(), (F) Reflections.construct(factor, t)));
 	}
 }

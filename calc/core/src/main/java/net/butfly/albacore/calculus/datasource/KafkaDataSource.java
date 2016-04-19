@@ -6,7 +6,6 @@ import java.util.HashSet;
 import java.util.Map;
 
 import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
-import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.storage.StorageLevel;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.kafka.KafkaUtils;
@@ -91,11 +90,7 @@ public class KafkaDataSource extends DataSource<String, String, byte[], Void, Vo
 			kafka = KafkaUtils.createStream(calc.ssc, String.class, byte[].class, StringDecoder.class, DefaultDecoder.class, params,
 					topicsMap, StorageLevel.MEMORY_ONLY());
 		}
-		return kafka.mapToPair(new PairFunction<Tuple2<String, byte[]>, String, F>() {
-			@Override
-			public Tuple2<String, F> call(Tuple2<String, byte[]> t) throws Exception {
-				return new Tuple2<String, F>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor));
-			}
-		});
+		return kafka.mapToPair((final Tuple2<String, byte[]> t) -> new Tuple2<String, F>(marshaller.unmarshallId(t._1),
+				marshaller.unmarshall(t._2, factor)));
 	}
 }

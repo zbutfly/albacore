@@ -3,8 +3,8 @@
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>net.butfly.albacore</groupId>
-		<artifactId>albacore</artifactId>
-		<version>3.0.0-SNAPSHOT</version>
+		<artifactId>albacore-calc-deps</artifactId>
+		<version>1.0.0-SNAPSHOT</version>
 	</parent>
 	<artifactId>albacore-calculus</artifactId>
 	<version>1.0.0-SNAPSHOT</version>
@@ -34,14 +34,11 @@
 				<version>2.4.3</version>
 				<configuration>
 					<shadedArtifactAttached>false</shadedArtifactAttached>
-					<outputFile>${project.build.directory}/narc-calc-submit.jar</outputFile>
+					<outputFile>${project.build.directory}/${project.build.finalName}-submit.jar</outputFile>
 					<artifactSet>
 						<includes>
 							<include>*:*</include>
 						</includes>
-						<excludes>
-							<exclude>*-cdh*.jar</exclude>
-						</excludes>
 					</artifactSet>
 					<relocations>
 <!-- 						<relocation> -->
@@ -76,7 +73,6 @@
 								<resource>log4j.properties</resource>
 								<resource>log4j.xml</resource>
 							</resources>
-
 						</transformer>
 					</transformers>
 				</configuration>

@@ -5,6 +5,7 @@ import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -212,6 +213,7 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 			return fl;
 		}
 
+		@SuppressWarnings("unchecked")
 		private Filter filter(FactorFilter filter) {
 			if (filter instanceof FactorFilter.ByField) {
 				Field field = Reflections.getDeclaredField(factor, ((FactorFilter.ByField<?>) filter).field);
@@ -221,18 +223,22 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 				if (filter instanceof FactorFilter.ByFieldValue) {
 					if (!ops.containsKey(filter.getClass()))
 						throw new UnsupportedOperationException("Unsupportted filter: " + filter.getClass());
-					byte[] val = conv.call(((FactorFilter.ByFieldValue<?>) filter).value);
+					Object value = ((FactorFilter.ByFieldValue<?>) filter).value;
+					byte[] val = conv.call(value);
 					SingleColumnValueFilter f = new SingleColumnValueFilter(qulifiers[0], qulifiers[1], ops.get(filter.getClass()), val);
 					f.setFilterIfMissing(true);
 					return f;
 				}
-				if (filter.getClass().equals(FactorFilter.In.class)) return new SingleColumnInValuesFilter(qulifiers[0], qulifiers[1],
-						Reflections.transform(((FactorFilter.In<Object>) filter).values, new Func<Object, byte[]>() {
-							@Override
-							public byte[] call(Object v) {
-								return conv.call(v);
-							}
-						}).toArray(new byte[0][]));
+				if (filter.getClass().equals(FactorFilter.In.class)) {
+					Collection<Object> values = ((FactorFilter.In) filter).values;
+					return new SingleColumnInValuesFilter(qulifiers[0], qulifiers[1],
+							Reflections.transform(values, new Func<Object, byte[]>() {
+								@Override
+								public byte[] call(Object v) {
+									return conv.call(v);
+								}
+							}).toArray(new byte[0][]));
+				}
 				if (filter.getClass().equals(FactorFilter.Regex.class)) {
 					SingleColumnValueFilter f = new SingleColumnValueFilter(qulifiers[0], qulifiers[1], CompareOp.EQUAL,
 							new RegexStringComparator(((FactorFilter.Regex) filter).regex.toString()));

@@ -42,7 +42,6 @@ import net.butfly.albacore.calculus.factor.Factoring;
 import net.butfly.albacore.calculus.factor.Factoring.Factorings;
 import net.butfly.albacore.calculus.factor.Factors;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
-import net.butfly.albacore.calculus.lambda.VoidFunc;
 import net.butfly.albacore.calculus.marshall.HbaseMarshaller;
 import net.butfly.albacore.calculus.marshall.KafkaMarshaller;
 import net.butfly.albacore.calculus.marshall.Marshaller;
@@ -130,6 +129,7 @@ public class Calculator implements Logable, Serializable {
 		sconf.setAppName(appname + "-Spark");
 		if (props.containsKey("calculus.spark.jars")) sconf.setJars(props.getProperty("calculus.spark.jars").split(","));
 		sconf.set("spark.app.id", appname + "[Spark-App]");
+		sconf.set("spark.testing", Boolean.toString(debug));
 		// sconf.set("spark.serializer", KryoSerializer.class.toString());
 		if (props.containsKey("calculus.spark.jars")) sconf.setJars(props.getProperty("calculus.spark.jars").split(","));
 		if (props.containsKey("calculus.spark.home")) sconf.setSparkHome(props.getProperty("calculus.spark.home"));
@@ -169,21 +169,11 @@ public class Calculator implements Logable, Serializable {
 		FactorConfig<OK, OF> s = factors.config(c);
 		DataSource<OK, ?, ?, ?, ?> ds = dss.ds(s.dbid);
 		PairRDS<OK, OF> result = calculus.calculate(factors);
-		final PairFunction<Tuple2<OK, OF>, ObjectId, MongoUpdateWritable> prepare = new PairFunction<Tuple2<OK, OF>, ObjectId, MongoUpdateWritable>() {
-			@SuppressWarnings("unchecked")
-			@Override
-			public Tuple2<ObjectId, MongoUpdateWritable> call(Tuple2<OK, OF> t) throws Exception {
-				return (Tuple2<ObjectId, MongoUpdateWritable>) ds.prepare(t._1, t._2, c);
-			}
-		};
-		if (null != result) result.eachPairRDD(new VoidFunc<JavaPairRDD<OK, OF>>() {
-			@Override
-			public void call(JavaPairRDD<OK, OF> rdd) {
-				JavaPairRDD<ObjectId, MongoUpdateWritable> r = rdd.mapToPair(prepare);
-				if (debug) trace(() -> "Write to mongodb: " + r.count());
-				r.saveAsNewAPIHadoopFile("", ds.keyClass, ds.valueClass, ds.outputFormatClass, s.detail.outputConfig(ds));
-			}
-		});
+		@SuppressWarnings("unchecked")
+		final PairFunction<Tuple2<OK, OF>, ObjectId, MongoUpdateWritable> prepare = (
+				final Tuple2<OK, OF> t) -> (Tuple2<ObjectId, MongoUpdateWritable>) ds.prepare(t._1, t._2, c);
+		if (null != result) result.eachPairRDD((final JavaPairRDD<OK, OF> rdd) -> rdd.mapToPair(prepare).saveAsNewAPIHadoopFile("",
+				ds.keyClass, ds.valueClass, ds.outputFormatClass, s.detail.outputConfig(ds)));
 		info(() -> calculus.name + " ended, spent: " + (new Date().getTime() - now) + " ms.");
 		return this;
 	}

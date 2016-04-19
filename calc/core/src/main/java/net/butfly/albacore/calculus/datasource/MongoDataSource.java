@@ -9,7 +9,6 @@ import java.util.Map;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.api.java.function.PairFunction;
 import org.bson.BSONObject;
 import org.bson.BasicBSONObject;
 import org.bson.Document;
@@ -137,13 +136,8 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 		mconf.setBoolean(MongoConfigUtil.INPUT_NOTIMEOUT, true);
 		// mconf.set("mongo.input.split.use_range_queries", "true");
 
-		return calc.sc.newAPIHadoopRDD(mconf, MongoInputFormat.class, Object.class, BSONObject.class)
-				.mapToPair(new PairFunction<Tuple2<Object, BSONObject>, Object, F>() {
-					@Override
-					public Tuple2<Object, F> call(Tuple2<Object, BSONObject> t) throws Exception {
-						return new Tuple2<>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor));
-					}
-				});
+		return calc.sc.newAPIHadoopRDD(mconf, MongoInputFormat.class, Object.class, BSONObject.class).mapToPair(
+				(final Tuple2<Object, BSONObject> t) -> new Tuple2<>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor)));
 	}
 
 	private String fromBSON(List<BSONObject> ands) {
