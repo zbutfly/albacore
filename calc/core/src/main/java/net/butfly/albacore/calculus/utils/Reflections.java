@@ -11,6 +11,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import com.google.common.reflect.TypeToken;
 
@@ -121,7 +122,12 @@ public final class Reflections implements Serializable {
 	public static <T, R> Collection<R> transform(Collection<T> original, Func<T, R> trans) {
 		if (original == null) return null;
 		List<R> r = new ArrayList<>(original.size());
-		original.forEach(o -> r.add(trans.call(o)));
+		original.forEach(new Consumer<T>() {
+			@Override
+			public void accept(T o) {
+				r.add(trans.call(o));
+			}
+		});
 		return r;
 	}
 

@@ -9,7 +9,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
@@ -18,6 +17,7 @@ import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
+import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.filter.CompareFilter.CompareOp;
@@ -30,11 +30,13 @@ import org.apache.hadoop.hbase.filter.RegexStringComparator;
 import org.apache.hadoop.hbase.filter.SingleColumnValueFilter;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
+import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
 import org.apache.hadoop.hbase.protobuf.ProtobufUtil;
 import org.apache.hadoop.hbase.util.Base64;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.PairFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,17 +47,20 @@ import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
+import net.butfly.albacore.calculus.lambda.Func;
 import net.butfly.albacore.calculus.marshall.HbaseMarshaller;
 import net.butfly.albacore.calculus.utils.Logable;
 import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
 
-public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, Result, HbaseDataDetail> {
+@SuppressWarnings("rawtypes")
+public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, Result, byte[], Mutation> {
 	private static final long serialVersionUID = 3367501286179801635L;
 	String configFile;
 
 	public HbaseDataSource(String configFile, HbaseMarshaller marshaller) {
-		super(Type.HBASE, false, null == marshaller ? new HbaseMarshaller() : marshaller);
+		super(Type.HBASE, false, null == marshaller ? new HbaseMarshaller() : marshaller, ImmutableBytesWritable.class, Result.class,
+				TableOutputFormat.class);
 		this.configFile = configFile;
 	}
 
@@ -69,7 +74,7 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 	}
 
 	@Override
-	public boolean confirm(Class<? extends Factor<?>> factor, HbaseDataDetail detail) {
+	public <F> boolean confirm(Class<F> factor, DataDetail<F> detail) {
 		try {
 			TableName ht = TableName.valueOf(detail.tables[0]);
 			Configuration hconf = HBaseConfiguration.create();
@@ -106,7 +111,7 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 	}
 
 	@Override
-	public <F extends Factor<F>> JavaPairRDD<byte[], F> stocking(Calculator calc, Class<F> factor, HbaseDataDetail detail,
+	public <F extends Factor<F>> JavaPairRDD<byte[], F> stocking(Calculator calc, Class<F> factor, DataDetail<F> detail,
 			FactorFilter... filters) {
 		debug(() -> "Scaning begin: " + factor.toString() + ", from table: " + detail.tables[0] + ".");
 		Configuration conf = HBaseConfiguration.create();
@@ -117,7 +122,7 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 	@Override
 	@Deprecated
 	public <F extends Factor<F>> JavaPairRDD<byte[], F> batching(Calculator calc, Class<F> factor, long limit, byte[] offset,
-			HbaseDataDetail detail, FactorFilter... filters) {
+			DataDetail<F> detail, FactorFilter... filters) {
 		debug(() -> "Scaning begin: " + factor.toString() + ", from table: " + detail.tables[0] + ".");
 		error(() -> "Batching mode is not supported now... BUG!!!!!");
 		Configuration conf = HBaseConfiguration.create();
@@ -156,7 +161,12 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 
 		public JavaPairRDD<byte[], F> scan(JavaSparkContext sc, Configuration hconf) {
 			return sc.newAPIHadoopRDD(hconf, TableInputFormat.class, ImmutableBytesWritable.class, Result.class)
-					.mapToPair(t -> new Tuple2<>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor)));
+					.mapToPair(new PairFunction<Tuple2<ImmutableBytesWritable, Result>, byte[], F>() {
+						@Override
+						public Tuple2<byte[], F> call(Tuple2<ImmutableBytesWritable, Result> t) throws Exception {
+							return new Tuple2<>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor));
+						}
+					});
 		}
 
 		public HUtil<F> debug(final Configuration hconf) {
@@ -207,17 +217,22 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 				Field field = Reflections.getDeclaredField(factor, ((FactorFilter.ByField<?>) filter).field);
 				String[] q = marshaller.parseField(field).split(":");
 				byte[][] qulifiers = new byte[][] { Bytes.toBytes(q[0]), Bytes.toBytes(q[1]) };
-				Function<Object, byte[]> conv = CONVERTERS.get(field.getType());
+				Func<Object, byte[]> conv = CONVERTERS.get(field.getType());
 				if (filter instanceof FactorFilter.ByFieldValue) {
 					if (!ops.containsKey(filter.getClass()))
 						throw new UnsupportedOperationException("Unsupportted filter: " + filter.getClass());
-					byte[] val = conv.apply(((FactorFilter.ByFieldValue<?>) filter).value);
+					byte[] val = conv.call(((FactorFilter.ByFieldValue<?>) filter).value);
 					SingleColumnValueFilter f = new SingleColumnValueFilter(qulifiers[0], qulifiers[1], ops.get(filter.getClass()), val);
 					f.setFilterIfMissing(true);
 					return f;
 				}
 				if (filter.getClass().equals(FactorFilter.In.class)) return new SingleColumnInValuesFilter(qulifiers[0], qulifiers[1],
-						Reflections.transform(((FactorFilter.In<?>) filter).values, o -> conv.apply(o)).toArray(new byte[0][]));
+						Reflections.transform(((FactorFilter.In<Object>) filter).values, new Func<Object, byte[]>() {
+							@Override
+							public byte[] call(Object v) {
+								return conv.call(v);
+							}
+						}).toArray(new byte[0][]));
 				if (filter.getClass().equals(FactorFilter.Regex.class)) {
 					SingleColumnValueFilter f = new SingleColumnValueFilter(qulifiers[0], qulifiers[1], CompareOp.EQUAL,
 							new RegexStringComparator(((FactorFilter.Regex) filter).regex.toString()));
@@ -226,7 +241,8 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 				}
 			}
 			if (filter.getClass().equals(FactorFilter.Limit.class)) return new PageFilter(((FactorFilter.Limit) filter).limit);
-//			if (filter.getClass().equals(FactorFilter.Skip.class)) return new SkipFilter(((FactorFilter.Skip) filter).skip);
+			// if (filter.getClass().equals(FactorFilter.Skip.class)) return new
+			// SkipFilter(((FactorFilter.Skip) filter).skip);
 			if (filter.getClass().equals(FactorFilter.And.class)) {
 				FilterList ands = new FilterList(Operator.MUST_PASS_ALL);
 				for (FactorFilter f : ((FactorFilter.And) filter).filters)
@@ -255,19 +271,63 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 
 	}
 
-	@SuppressWarnings("rawtypes")
-	private static final Map<Class, Function<Object, byte[]>> CONVERTERS = new HashMap<>();
+	private static final Map<Class, Func<Object, byte[]>> CONVERTERS = new HashMap<>();
 
 	static {
-		CONVERTERS.put(String.class, val -> null == val ? null : Bytes.toBytes((String) val));
-		CONVERTERS.put(Integer.class, val -> null == val ? null : Bytes.toBytes((Integer) val));
-		CONVERTERS.put(Boolean.class, val -> null == val ? null : Bytes.toBytes((Boolean) val));
-		CONVERTERS.put(Long.class, val -> null == val ? null : Bytes.toBytes((Long) val));
-		CONVERTERS.put(Double.class, val -> null == val ? null : Bytes.toBytes((Double) val));
-		CONVERTERS.put(Float.class, val -> null == val ? null : Bytes.toBytes((Float) val));
-		CONVERTERS.put(Short.class, val -> null == val ? null : Bytes.toBytes((Short) val));
-		CONVERTERS.put(Byte.class, val -> null == val ? null : Bytes.toBytes((Byte) val));
-		CONVERTERS.put(BigDecimal.class, val -> null == val ? null : Bytes.toBytes((BigDecimal) val));
+		CONVERTERS.put(String.class, new Func<Object, byte[]>() {
+			@Override
+			public byte[] call(Object val) {
+				return null == val ? null : Bytes.toBytes((String) val);
+			}
+		});
+		CONVERTERS.put(Integer.class, new Func<Object, byte[]>() {
+			@Override
+			public byte[] call(Object val) {
+				return null == val ? null : Bytes.toBytes((Integer) val);
+			}
+		});
+		CONVERTERS.put(Boolean.class, new Func<Object, byte[]>() {
+			@Override
+			public byte[] call(Object val) {
+				return null == val ? null : Bytes.toBytes((Boolean) val);
+			}
+		});
+		CONVERTERS.put(Long.class, new Func<Object, byte[]>() {
+			@Override
+			public byte[] call(Object val) {
+				return null == val ? null : Bytes.toBytes((Long) val);
+			}
+		});
+		CONVERTERS.put(Double.class, new Func<Object, byte[]>() {
+			@Override
+			public byte[] call(Object val) {
+				return null == val ? null : Bytes.toBytes((Double) val);
+			}
+		});
+		CONVERTERS.put(Float.class, new Func<Object, byte[]>() {
+			@Override
+			public byte[] call(Object val) {
+				return null == val ? null : Bytes.toBytes((Float) val);
+			}
+		});
+		CONVERTERS.put(Short.class, new Func<Object, byte[]>() {
+			@Override
+			public byte[] call(Object val) {
+				return null == val ? null : Bytes.toBytes((Short) val);
+			}
+		});
+		CONVERTERS.put(Byte.class, new Func<Object, byte[]>() {
+			@Override
+			public byte[] call(Object val) {
+				return null == val ? null : Bytes.toBytes((Byte) val);
+			}
+		});
+		CONVERTERS.put(BigDecimal.class, new Func<Object, byte[]>() {
+			@Override
+			public byte[] call(Object val) {
+				return null == val ? null : Bytes.toBytes((BigDecimal) val);
+			}
+		});
 	}
 
 	private static Scan createScan() {

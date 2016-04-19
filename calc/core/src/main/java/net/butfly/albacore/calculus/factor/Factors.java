@@ -1,23 +1,28 @@
 package net.butfly.albacore.calculus.factor;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import org.apache.spark.api.java.JavaPairRDD;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.Mode;
-import net.butfly.albacore.calculus.datasource.DataDetail;
 import net.butfly.albacore.calculus.datasource.DataSource;
 import net.butfly.albacore.calculus.datasource.HbaseDataDetail;
 import net.butfly.albacore.calculus.datasource.KafkaDataDetail;
 import net.butfly.albacore.calculus.datasource.MongoDataDetail;
+import net.butfly.albacore.calculus.datasource.MongoDataSource;
 import net.butfly.albacore.calculus.factor.Factor.Stocking;
 import net.butfly.albacore.calculus.factor.Factor.Streaming;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
+import net.butfly.albacore.calculus.lambda.Func0;
+import net.butfly.albacore.calculus.lambda.Func2;
 import net.butfly.albacore.calculus.streaming.RDDDStream;
 import net.butfly.albacore.calculus.streaming.RDDDStream.Mechanism;
 import net.butfly.albacore.calculus.utils.Logable;
@@ -34,6 +39,7 @@ public final class Factors implements Serializable, Logable {
 		this.calc = calc;
 
 		FactorConfig<?, ?> batch = null;
+		List<Class<?>> cl = new ArrayList<>();
 		for (Factoring f : calc.factorings) {
 			if (pool.containsKey(f.key())) throw new IllegalArgumentException("Conflictted factoring id: " + f.key());
 			@SuppressWarnings("rawtypes")
@@ -41,6 +47,7 @@ public final class Factors implements Serializable, Logable {
 			if (!fc.isAnnotationPresent(Streaming.class) && !fc.isAnnotationPresent(Stocking.class)) throw new IllegalArgumentException(
 					"Factor [" + fc.toString() + "] is annotated as neither @Streaming nor @Stocking, can't calculate it!");
 			FactorConfig<?, ?> c = config(fc);
+			cl.add(c.factorClass);
 			c.batching = f.batching();
 			c.streaming = f.stockOnStreaming();
 			if (f.batching() > 0) {
@@ -50,27 +57,39 @@ public final class Factors implements Serializable, Logable {
 			}
 			pool.put(f.key(), c);
 		}
+		calc.sconf.registerKryoClasses(cl.toArray(new Class[cl.size()]));
 	}
 
 	public <K, F extends Factor<F>, E extends Factor<E>> PairRDS<K, F> get(String factoring, FactorFilter... filters) {
 		FactorConfig<K, F> config = (FactorConfig<K, F>) pool.get(factoring);
-		DataSource<K, ?, ?, DataDetail> ds = calc.dss.ds(config.dbid);
+		DataSource<K, ?, ?, ?, ?> ds = calc.dss.ds(config.dbid);
 		switch (calc.mode) {
 		case STOCKING:
 			if (config.batching <= 0) return new PairRDS<K, F>(ds.stocking(calc, config.factorClass, config.detail, filters));
-			else return new PairRDS<K, F>(RDDDStream.bpstream(calc.ssc.ssc(), config.batching,
-					(limit, offset) -> ds.batching(calc, config.factorClass, limit, offset, config.detail, filters),
-					ds.marshaller().comparator()));
+			else return new PairRDS<K, F>(RDDDStream.bpstream(calc.ssc.ssc(), config.batching, new Func2<Long, K, JavaPairRDD<K, F>>() {
+				@Override
+				public JavaPairRDD<K, F> call(Long limit, K offset) {
+					return ds.batching(calc, config.factorClass, limit, offset, config.detail, filters);
+				}
+			}, ds.marshaller().comparator()));
 		case STREAMING:
 			switch (config.mode) {
 			case STOCKING:
 				switch (config.streaming) {
 				case CONST:
-					return new PairRDS<K, F>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.CONST,
-							() -> ds.stocking(calc, config.factorClass, config.detail, filters)));
+					return new PairRDS<K, F>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.CONST, new Func0<JavaPairRDD<K, F>>() {
+						@Override
+						public JavaPairRDD<K, F> call() {
+							return ds.stocking(calc, config.factorClass, config.detail, filters);
+						}
+					}));
 				case FRESH:
-					return new PairRDS<K, F>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.FRESH,
-							() -> ds.stocking(calc, config.factorClass, config.detail, filters)));
+					return new PairRDS<K, F>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.FRESH, new Func0<JavaPairRDD<K, F>>() {
+						@Override
+						public JavaPairRDD<K, F> call() {
+							return ds.stocking(calc, config.factorClass, config.detail, filters);
+						}
+					}));
 				default:
 					throw new UnsupportedOperationException();
 				}
@@ -91,7 +110,7 @@ public final class Factors implements Serializable, Logable {
 			config.dbid = s.source();
 			switch (s.type()) {
 			case KAFKA:
-				config.detail = new KafkaDataDetail(s.table());
+				config.detail = new KafkaDataDetail<F>(factor, s.table());
 				config.keyClass = (Class<K>) String.class;
 				break;
 			default:
@@ -105,13 +124,14 @@ public final class Factors implements Serializable, Logable {
 			case HBASE:
 				if (null == s.table() || s.table().length == 0)
 					throw new IllegalArgumentException("Table not defined for factor " + factor.toString());
-				config.detail = new HbaseDataDetail(s.table());
+				config.detail = new HbaseDataDetail<F>(factor, s.table());
 				config.keyClass = (Class<K>) byte[].class;
 				break;
 			case MONGODB:
 				if (null == s.table() || s.table().length == 0)
 					throw new IllegalArgumentException("Table not defined for factor " + factor.toString());
-				String suffix = calc.dss.ds(config.dbid).suffix;
+				MongoDataSource ds = calc.dss.ds(config.dbid);
+				String suffix = ds.suffix;
 				if (null != suffix) {
 					String[] nt = new String[s.table().length];
 					for (int i = 0; i < s.table().length; i++) {
@@ -119,9 +139,8 @@ public final class Factors implements Serializable, Logable {
 						final int j = i;
 						info(() -> "output redirected on [" + s.source() + "]: [" + s.table()[j] + " => " + nt[j] + "].");
 					}
-					config.detail = new MongoDataDetail(Factor.NOT_DEFINED.equals(s.filter()) ? null : s.filter(), nt);
-
-				} else config.detail = new MongoDataDetail(Factor.NOT_DEFINED.equals(s.filter()) ? null : s.filter(), s.table());
+					config.detail = new MongoDataDetail<F>(factor, Factor.NOT_DEFINED.equals(s.filter()) ? null : s.filter(), nt);
+				} else config.detail = new MongoDataDetail<F>(factor, Factor.NOT_DEFINED.equals(s.filter()) ? null : s.filter(), s.table());
 				config.keyClass = (Class<K>) Object.class;
 				break;
 			case CONSTAND_TO_CONSOLE:

@@ -1,10 +1,11 @@
 package net.butfly.albacore.calculus.utils;
 
 import java.lang.reflect.Field;
-import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import net.butfly.albacore.calculus.lambda.Func0;
 
 public interface Logable {
 	default Logger logger() {
@@ -17,29 +18,29 @@ public interface Logable {
 		}
 	};
 
-	default void trace(Supplier<String> func) {
-		if (logger().isTraceEnabled()) logger().trace(func.get());
+	default void trace(Func0<String> func) {
+		if (logger().isTraceEnabled()) logger().trace(func.call());
 	}
 
-	default void debug(Supplier<String> func) {
-		if (logger().isDebugEnabled()) logger().debug(func.get());
+	default void debug(Func0<String> func) {
+		if (logger().isDebugEnabled()) logger().debug(func.call());
 	}
 
-	default void info(Supplier<String> func) {
-		if (logger().isInfoEnabled()) logger().info(func.get());
+	default void info(Func0<String> func) {
+		if (logger().isInfoEnabled()) logger().info(func.call());
 	}
 
-	default void warn(Supplier<String> func, Throwable... th) {
+	default void warn(Func0<String> func, Throwable... th) {
 		if (logger().isWarnEnabled()) {
-			if (th.length > 0) logger().warn(func.get(), th[0]);
-			else logger().warn(func.get());
+			if (th.length > 0) logger().warn(func.call(), th[0]);
+			else logger().warn(func.call());
 		}
 	}
 
-	default void error(Supplier<String> func, Throwable... th) {
+	default void error(Func0<String> func, Throwable... th) {
 		if (logger().isErrorEnabled()) {
-			if (th.length > 0) logger().error(func.get(), th[0]);
-			else logger().error(func.get());
+			if (th.length > 0) logger().error(func.call(), th[0]);
+			else logger().error(func.call());
 		}
 	}
 }

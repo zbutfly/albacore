@@ -7,13 +7,14 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.function.PairFunction;
 import org.bson.BSONObject;
 import org.bson.BasicBSONObject;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.bson.types.ObjectId;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.CaseFormat;
@@ -34,21 +35,23 @@ import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
-import net.butfly.albacore.calculus.lambda.VoidFunc;
 import net.butfly.albacore.calculus.marshall.MongoMarshaller;
 import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
 
-public class MongoDataSource extends DataSource<Object, Object, BSONObject, MongoDataDetail> {
+@SuppressWarnings("rawtypes")
+public class MongoDataSource extends DataSource<Object, Object, BSONObject, ObjectId, MongoUpdateWritable> {
 	private static final long serialVersionUID = -2617369621178264387L;
 	public String uri;
 	private boolean optimize;
 
 	public MongoDataSource(String uri, MongoMarshaller marshaller, String suffix, boolean validate, boolean optimize) {
-		super(Type.MONGODB, validate, null == marshaller ? new MongoMarshaller() : marshaller);
+		super(Type.MONGODB, validate, null == marshaller ? new MongoMarshaller() : marshaller, Object.class, BSONObject.class,
+				MongoOutputFormat.class);
 		super.suffix = suffix;
 		this.uri = uri;
 		this.optimize = optimize;
+
 	}
 
 	public MongoDataSource(String uri, String suffix, boolean validate, boolean optimize) {
@@ -64,9 +67,9 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Mong
 		return uri;
 	}
 
-	@SuppressWarnings("deprecation")
+	@SuppressWarnings({ "deprecation" })
 	@Override
-	public boolean confirm(Class<? extends Factor<?>> factor, MongoDataDetail detail) {
+	public <F> boolean confirm(Class<F> factor, DataDetail<F> detail) {
 		MongoClientURI muri = new MongoClientURI(getUri());
 		MongoClient mclient = new MongoClient(muri);
 		try {
@@ -90,7 +93,7 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Mong
 	}
 
 	@Override
-	public <F extends Factor<F>> JavaPairRDD<Object, F> stocking(Calculator calc, Class<F> factor, MongoDataDetail detail,
+	public <F extends Factor<F>> JavaPairRDD<Object, F> stocking(Calculator calc, Class<F> factor, DataDetail<F> detail,
 			FactorFilter... filters) {
 		debug(() -> "Stocking begin: " + factor.toString() + ", from table: " + detail.tables[0] + ".");
 		Configuration mconf = new Configuration();
@@ -135,7 +138,12 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Mong
 		// mconf.set("mongo.input.split.use_range_queries", "true");
 
 		return calc.sc.newAPIHadoopRDD(mconf, MongoInputFormat.class, Object.class, BSONObject.class)
-				.mapToPair(t -> new Tuple2<>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor)));
+				.mapToPair(new PairFunction<Tuple2<Object, BSONObject>, Object, F>() {
+					@Override
+					public Tuple2<Object, F> call(Tuple2<Object, BSONObject> t) throws Exception {
+						return new Tuple2<>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor));
+					}
+				});
 	}
 
 	private String fromBSON(List<BSONObject> ands) {
@@ -193,23 +201,13 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Mong
 		return fd;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
-	public <F extends Factor<F>> VoidFunc<JavaPairRDD<Object, F>> saving(Calculator calc, MongoDataDetail detail) {
-		Configuration conf = HBaseConfiguration.create();
-		conf.set("mongo.job.output.format", MongoOutputFormat.class.getName());
-		MongoClientURI uri = new MongoClientURI(this.uri);
-		conf.set("mongo.output.uri", new MongoClientURIBuilder(uri).collection(uri.getDatabase(), detail.tables[0]).build().toString());
-		return r -> {
-			if (calc.debug) trace(() -> "Write back to mongodb: " + r.count() + " records.");
-			r.mapToPair(t -> {
-				BasicBSONObject q = new BasicBSONObject();
-				q.append("_id", this.marshaller.marshallId(t._1));
-				BasicBSONObject u = new BasicBSONObject();
-				u.append("$set", this.marshaller.marshall(t._2));
-				// if (calc.debug) trace(() -> "MongoUpdateWritable: " +
-				// u.toString() + " from " + q.toString());
-				return new Tuple2<Object, MongoUpdateWritable>(null, new MongoUpdateWritable(q, u, true, true));
-			}).saveAsNewAPIHadoopFile("", Object.class, BSONObject.class, MongoOutputFormat.class, conf);
-		};
+	public <F> Tuple2<ObjectId, MongoUpdateWritable> prepare(Object key, F factor, Class<F> factorClass) throws Exception {
+		final BasicBSONObject q = new BasicBSONObject();
+		q.append("_id", this.marshaller.marshallId(key));
+		final BasicBSONObject u = new BasicBSONObject();
+		u.append("$set", marshaller.marshall((Factor) factor));
+		return new Tuple2<ObjectId, MongoUpdateWritable>(new ObjectId(), new MongoUpdateWritable(q, u, true, true));
 	}
 }

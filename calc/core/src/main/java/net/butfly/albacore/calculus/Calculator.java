@@ -18,14 +18,18 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.streaming.Durations;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
+import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.mongodb.hadoop.io.MongoUpdateWritable;
+
 import net.butfly.albacore.calculus.datasource.ConstDataSource;
-import net.butfly.albacore.calculus.datasource.DataDetail;
 import net.butfly.albacore.calculus.datasource.DataSource;
 import net.butfly.albacore.calculus.datasource.DataSource.DataSources;
 import net.butfly.albacore.calculus.datasource.HbaseDataSource;
@@ -38,12 +42,14 @@ import net.butfly.albacore.calculus.factor.Factoring;
 import net.butfly.albacore.calculus.factor.Factoring.Factorings;
 import net.butfly.albacore.calculus.factor.Factors;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
+import net.butfly.albacore.calculus.lambda.VoidFunc;
 import net.butfly.albacore.calculus.marshall.HbaseMarshaller;
 import net.butfly.albacore.calculus.marshall.KafkaMarshaller;
 import net.butfly.albacore.calculus.marshall.Marshaller;
 import net.butfly.albacore.calculus.marshall.MongoMarshaller;
 import net.butfly.albacore.calculus.utils.Logable;
 import net.butfly.albacore.calculus.utils.Reflections;
+import scala.Tuple2;
 
 public class Calculator implements Logable, Serializable {
 	private static final long serialVersionUID = 7850755405377027618L;
@@ -83,10 +89,10 @@ public class Calculator implements Logable, Serializable {
 		for (Object key : props.keySet())
 			System.setProperty(key.toString(), props.getProperty(key.toString()));
 		Calculator c = new Calculator(props);
-		c.start().calculate(c.calculus).end();
+		c.spark().calculate(c.calculus).end();
 	}
 
-	private Calculator start() {
+	private Calculator spark() {
 		sc = new JavaSparkContext(sconf);
 		if (mode == Mode.STREAMING) ssc = new JavaStreamingContext(sc, Durations.seconds(dura));
 		return this;
@@ -122,9 +128,9 @@ public class Calculator implements Logable, Serializable {
 		sconf = new SparkConf();
 		if (props.containsKey("calculus.spark.url")) sconf.setMaster(props.getProperty("calculus.spark.url"));
 		sconf.setAppName(appname + "-Spark");
+		if (props.containsKey("calculus.spark.jars")) sconf.setJars(props.getProperty("calculus.spark.jars").split(","));
 		sconf.set("spark.app.id", appname + "[Spark-App]");
 		// sconf.set("spark.serializer", KryoSerializer.class.toString());
-		// sconf.registerKryoClasses();
 		if (props.containsKey("calculus.spark.jars")) sconf.setJars(props.getProperty("calculus.spark.jars").split(","));
 		if (props.containsKey("calculus.spark.home")) sconf.setSparkHome(props.getProperty("calculus.spark.home"));
 		if (debug) sconf.set("spark.testing", "true");
@@ -161,9 +167,23 @@ public class Calculator implements Logable, Serializable {
 		info(() -> calculus.name + " will output as: " + c.toString());
 		Factors factors = new Factors(this);
 		FactorConfig<OK, OF> s = factors.config(c);
-		DataSource<OK, ?, ?, DataDetail> ds = dss.ds(s.dbid);
+		DataSource<OK, ?, ?, ?, ?> ds = dss.ds(s.dbid);
 		PairRDS<OK, OF> result = calculus.calculate(factors);
-		if (null != result) result.eachPairRDD(ds.saving(this, s.detail));
+		final PairFunction<Tuple2<OK, OF>, ObjectId, MongoUpdateWritable> prepare = new PairFunction<Tuple2<OK, OF>, ObjectId, MongoUpdateWritable>() {
+			@SuppressWarnings("unchecked")
+			@Override
+			public Tuple2<ObjectId, MongoUpdateWritable> call(Tuple2<OK, OF> t) throws Exception {
+				return (Tuple2<ObjectId, MongoUpdateWritable>) ds.prepare(t._1, t._2, c);
+			}
+		};
+		if (null != result) result.eachPairRDD(new VoidFunc<JavaPairRDD<OK, OF>>() {
+			@Override
+			public void call(JavaPairRDD<OK, OF> rdd) {
+				JavaPairRDD<ObjectId, MongoUpdateWritable> r = rdd.mapToPair(prepare);
+				if (debug) trace(() -> "Write to mongodb: " + r.count());
+				r.saveAsNewAPIHadoopFile("", ds.keyClass, ds.valueClass, ds.outputFormatClass, s.detail.outputConfig(ds));
+			}
+		});
 		info(() -> calculus.name + " ended, spent: " + (new Date().getTime() - now) + " ms.");
 		return this;
 	}
@@ -235,5 +255,4 @@ public class Calculator implements Logable, Serializable {
 		URL url = Thread.currentThread().getContextClassLoader().getResource(file);
 		return null == url ? new FileInputStream(file) : url.openStream();
 	}
-
 }

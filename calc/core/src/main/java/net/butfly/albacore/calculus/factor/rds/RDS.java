@@ -11,6 +11,9 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaRDDLike;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.Function;
+import org.apache.spark.api.java.function.PairFunction;
+import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.rdd.EmptyRDD;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.streaming.api.java.JavaDStream;
@@ -18,6 +21,7 @@ import org.apache.spark.streaming.api.java.JavaDStreamLike;
 import org.apache.spark.streaming.dstream.DStream;
 
 import net.butfly.albacore.calculus.lambda.Func;
+import net.butfly.albacore.calculus.lambda.Func0;
 import net.butfly.albacore.calculus.lambda.Func2;
 import net.butfly.albacore.calculus.lambda.PairFunc;
 import net.butfly.albacore.calculus.lambda.VoidFunc;
@@ -27,7 +31,6 @@ import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
 import scala.reflect.ClassTag;
 import scala.reflect.ManifestFactory;
-import scala.runtime.BoxedUnit;
 
 public class RDS<T> implements Serializable {
 	private static final long serialVersionUID = 5884484452918532597L;
@@ -56,7 +59,13 @@ public class RDS<T> implements Serializable {
 
 	@SafeVarargs
 	public RDS(JavaRDDLike<T, ?>... rdd) {
-		init(trans(Arrays.asList(rdd), r1 -> r1.rdd()));
+		List<RDD<T>> rs = trans(Arrays.asList(rdd), new Func<JavaRDDLike<T, ?>, RDD<T>>() {
+			@Override
+			public RDD<T> call(JavaRDDLike<T, ?> r1) {
+				return r1.rdd();
+			}
+		});
+		init(rs);
 	}
 
 	public RDS(JavaDStreamLike<T, ?, ?> dstream) {
@@ -71,7 +80,12 @@ public class RDS<T> implements Serializable {
 	public RDS<T> cache() {
 		switch (type) {
 		case RDD:
-			rdds = new ArrayList<>(Reflections.transform(rdds, r -> r.cache()));
+			rdds = new ArrayList<>(Reflections.transform(rdds, new Func<RDD<T>, RDD<T>>() {
+				@Override
+				public RDD<T> call(RDD<T> v) {
+					return v.cache();
+				}
+			}));
 			break;
 		case DSTREAM:
 			dstream = dstream.cache();
@@ -85,7 +99,12 @@ public class RDS<T> implements Serializable {
 	public RDS<T> persist() {
 		switch (type) {
 		case RDD:
-			rdds = new ArrayList<>(Reflections.transform(rdds, r -> r.persist()));
+			rdds = new ArrayList<>(Reflections.transform(rdds, new Func<RDD<T>, RDD<T>>() {
+				@Override
+				public RDD<T> call(RDD<T> v) {
+					return v.persist();
+				}
+			}));
 			break;
 		case DSTREAM:
 			dstream = dstream.persist();
@@ -109,7 +128,12 @@ public class RDS<T> implements Serializable {
 
 	public List<T> collect() {
 		List<T> r = new ArrayList<>();
-		each(t -> r.add(t));
+		each(new VoidFunc<T>() {
+			@Override
+			public void call(T t) {
+				r.add(t);
+			}
+		});
 		return r;
 	}
 
@@ -120,10 +144,13 @@ public class RDS<T> implements Serializable {
 				consumer.call(JavaRDD.fromRDD(rdd, tag()));
 			break;
 		case DSTREAM:
-			dstream = dstream.transform(rdd -> {
-				consumer.call(JavaRDD.fromRDD(rdd, tag()));
-				return rdd;
-			}, tag());
+			dstream = JavaDStream.fromDStream(dstream, tag()).transform(new Function<JavaRDD<T>, JavaRDD<T>>() {
+				@Override
+				public JavaRDD<T> call(JavaRDD<T> rdd) throws Exception {
+					consumer.call(rdd);
+					return rdd;
+				}
+			}).dstream();
 			break;
 		}
 		return this;
@@ -133,19 +160,26 @@ public class RDS<T> implements Serializable {
 		switch (type) {
 		case RDD:
 			for (RDD<T> rdd : rdds)
-				rdd.foreach(t -> {
-					consumer.call(t);
-					return BoxedUnit.UNIT;
-				});
+				JavaRDD.fromRDD(rdd, tag()).foreach(new VoidFunction<T>() {
+					@Override
+					public void call(T t) throws Exception {
+						consumer.call(t);
+					}
+				});;
 			break;
 		case DSTREAM:
-			dstream = dstream.transform(rdd -> {
-				rdd.foreach(t -> {
-					consumer.call(t);
-					return BoxedUnit.UNIT;
-				});
-				return rdd;
-			}, tag());
+			JavaDStream.fromDStream(dstream, tag()).transform(new Function<JavaRDD<T>, JavaRDD<T>>() {
+				@Override
+				public JavaRDD<T> call(JavaRDD<T> rdd) throws Exception {
+					rdd.foreach(new VoidFunction<T>() {
+						@Override
+						public void call(T t) throws Exception {
+							consumer.call(t);
+						}
+					});
+					return rdd;
+				}
+			});
 			break;
 		}
 		return this;
@@ -160,9 +194,12 @@ public class RDS<T> implements Serializable {
 				rdds.addAll(other.rdds);
 				break;
 			case DSTREAM:
-				JavaDStream.fromDStream(dstream, tag()).foreachRDD(r -> {
-					rdds.add(r.rdd());
-					return null;
+				JavaDStream.fromDStream(dstream, tag()).foreachRDD(new Function<JavaRDD<T>, Void>() {
+					@Override
+					public Void call(JavaRDD<T> r) throws Exception {
+						rdds.add(r.rdd());
+						return null;
+					}
 				});
 				break;
 			default:
@@ -172,8 +209,13 @@ public class RDS<T> implements Serializable {
 		case DSTREAM:
 			switch (other.type) {
 			case RDD:
-				if (other.rdds.size() == 1) dstream = dstream.union(
-						RDDDStream.stream(dstream.ssc(), Mechanism.CONST, () -> JavaRDD.fromRDD(other.rdds.get(0), tag())).dstream());
+				if (other.rdds.size() == 1)
+					dstream = dstream.union(RDDDStream.stream(dstream.ssc(), Mechanism.CONST, new Func0<JavaRDD<T>>() {
+						@Override
+						public JavaRDD<T> call() {
+							return JavaRDD.fromRDD(other.rdds.get(0), tag());
+						}
+					}).dstream());
 				break;
 			case DSTREAM:
 				dstream = dstream.union(other.dstream);
@@ -191,10 +233,25 @@ public class RDS<T> implements Serializable {
 	public RDS<T> filter(Func<T, Boolean> func) {
 		switch (type) {
 		case RDD:
-			rdds = trans(rdds, r -> JavaRDD.fromRDD(r, tag()).filter(t -> func.call(t)).rdd());
+			rdds = trans(rdds, new Func<RDD<T>, RDD<T>>() {
+				@Override
+				public RDD<T> call(RDD<T> r) {
+					return JavaRDD.fromRDD(r, tag()).filter(new Function<T, Boolean>() {
+						@Override
+						public Boolean call(T v1) throws Exception {
+							return func.call(v1);
+						}
+					}).rdd();
+				}
+			});
 			break;
 		case DSTREAM:
-			dstream = JavaDStream.fromDStream(dstream, tag()).filter(t -> func.call(t)).dstream();
+			dstream = JavaDStream.fromDStream(dstream, tag()).filter(new Function<T, Boolean>() {
+				@Override
+				public Boolean call(T v1) throws Exception {
+					return func.call(v1);
+				}
+			}).dstream();
 			break;
 		default:
 			throw new IllegalArgumentException();
@@ -205,9 +262,24 @@ public class RDS<T> implements Serializable {
 	public <K2, V2> RDS<Tuple2<K2, V2>> mapToPair(PairFunc<T, K2, V2> func) {
 		switch (type) {
 		case RDD:
-			return new RDS<Tuple2<K2, V2>>().init(trans(rdds, rdd -> JavaRDD.fromRDD(rdd, tag()).mapToPair(t -> func.call(t)).rdd()));
+			return new RDS<Tuple2<K2, V2>>().init(trans(rdds, new Func<RDD<T>, RDD<Tuple2<K2, V2>>>() {
+				@Override
+				public RDD<Tuple2<K2, V2>> call(RDD<T> rdd) {
+					return JavaRDD.fromRDD(rdd, tag()).mapToPair(new PairFunction<T, K2, V2>() {
+						@Override
+						public Tuple2<K2, V2> call(T t) throws Exception {
+							return func.call(t);
+						}
+					}).rdd();
+				}
+			}));
 		case DSTREAM:
-			return new RDS<Tuple2<K2, V2>>(JavaDStream.fromDStream(dstream, tag()).mapToPair(t -> func.call(t)));
+			return new RDS<Tuple2<K2, V2>>(JavaDStream.fromDStream(dstream, tag()).mapToPair(new PairFunction<T, K2, V2>() {
+				@Override
+				public Tuple2<K2, V2> call(T t) throws Exception {
+					return func.call(t);
+				}
+			}));
 		default:
 			throw new IllegalArgumentException();
 		}
@@ -216,20 +288,45 @@ public class RDS<T> implements Serializable {
 	public final <T1> RDS<T1> map(Func<T, T1> func) {
 		switch (type) {
 		case RDD:
-			return new RDS<T1>().init(trans(rdds, rdd -> rdd.map(t -> func.call(t), tag())));
+			return new RDS<T1>().init(trans(rdds, new Func<RDD<T>, RDD<T1>>() {
+				@Override
+				public RDD<T1> call(RDD<T> rdd) {
+					return JavaRDD.fromRDD(rdd, tag()).map(new Function<T, T1>() {
+						@Override
+						public T1 call(T v) throws Exception {
+							return func.call(v);
+						}
+					}).rdd();
+				}
+			}));
 		case DSTREAM:
-			return new RDS<T1>().init(dstream.map(t -> func.call(t), tag()));
+			return new RDS<T1>().init(JavaDStream.fromDStream(dstream, tag()).map(new Function<T, T1>() {
+				@Override
+				public T1 call(T v) throws Exception {
+					return func.call(v);
+				}
+			}).dstream());
 		default:
 			throw new IllegalArgumentException();
 		}
 	}
 
 	public <U> PairRDS<U, Iterable<T>> groupBy(Func<T, U> func) {
-		return new PairRDS<U, Iterable<T>>(rdd().groupBy(t -> func.call(t)));
+		return new PairRDS<U, Iterable<T>>(rdd().groupBy(new Function<T, U>() {
+			@Override
+			public U call(T v1) throws Exception {
+				return func.call(v1);
+			}
+		}));
 	}
 
 	public <U> PairRDS<U, Iterable<T>> groupBy(Func<T, U> func, Comparator<T> sorting) {
-		return new PairRDS<U, Iterable<T>>(rdd().groupBy(t -> func.call(t)));
+		return new PairRDS<U, Iterable<T>>(rdd().groupBy(new Function<T, U>() {
+			@Override
+			public U call(T v1) throws Exception {
+				return func.call(v1);
+			}
+		}));
 	}
 
 	public final T reduce(Func2<T, T, T> func) {
@@ -257,10 +354,12 @@ public class RDS<T> implements Serializable {
 				r[0] += rdd.count();
 			break;
 		case DSTREAM:
-			dstream.count().foreachRDD(rl -> {
-				for (long l : (Long[]) rl.collect())
-					r[0] += l;
-				return BoxedUnit.UNIT;
+			JavaDStream.fromDStream(dstream, tag()).count().foreachRDD(new Function<JavaRDD<Long>, Void>() {
+				@Override
+				public Void call(JavaRDD<Long> rdd) throws Exception {
+					r[0] += rdd.first();
+					return null;
+				}
 			});
 		default:
 			throw new IllegalArgumentException();
@@ -286,10 +385,13 @@ public class RDS<T> implements Serializable {
 		case DSTREAM:
 			List<RDD<T>> rs = new ArrayList<>();
 			rs.add(new EmptyRDD<T>(dstream.ssc().sc(), tag()));
-			dstream = dstream.transform(rdd -> {
-				rs.set(0, rs.get(0).union(rdd));
-				return rdd;
-			}, tag());
+			JavaDStream.fromDStream(dstream, tag()).foreachRDD(new Function<JavaRDD<T>, Void>() {
+				@Override
+				public Void call(JavaRDD<T> rdd) throws Exception {
+					rs.set(0, rs.get(0).union(rdd.rdd()));
+					return null;
+				}
+			});
 			return JavaRDD.fromRDD(rs.get(0), tag());
 		default:
 			throw new IllegalArgumentException();
@@ -299,10 +401,20 @@ public class RDS<T> implements Serializable {
 	public Collection<JavaRDD<T>> rdds() {
 		switch (type) {
 		case RDD:
-			return Reflections.transform(rdds, rdd -> JavaRDD.fromRDD(rdd, tag()));
+			return Reflections.transform(rdds, new Func<RDD<T>, JavaRDD<T>>() {
+				@Override
+				public JavaRDD<T> call(RDD<T> rdd) {
+					return JavaRDD.fromRDD(rdd, tag());
+				}
+			});
 		case DSTREAM:
 			List<JavaRDD<T>> r = new ArrayList<>();
-			eachRDD(rdd -> r.add(rdd));
+			eachRDD(new VoidFunc<JavaRDD<T>>() {
+				@Override
+				public void call(JavaRDD<T> t) {
+					r.add(t);
+				}
+			});
 			return r;
 		default:
 			throw new IllegalArgumentException();
@@ -311,7 +423,12 @@ public class RDS<T> implements Serializable {
 
 	public <S> RDS<T> sortBy(Func<T, S> comp) {
 		JavaRDD<T> rdd = rdd();
-		return new RDS<T>(rdd.sortBy(t -> comp.call(t), true, rdd.getNumPartitions()));
+		return new RDS<T>(rdd.sortBy(new Function<T, S>() {
+			@Override
+			public S call(T v1) throws Exception {
+				return comp.call(v1);
+			}
+		}, true, rdd.partitions().size()));
 	}
 
 	static <T, T1> List<T1> trans(List<T> r, Func<T, T1> transformer) {
@@ -337,10 +454,13 @@ public class RDS<T> implements Serializable {
 	@SuppressWarnings({ "unchecked", "deprecation" })
 	static <T, R extends JavaRDDLike<T, R>, S extends JavaDStreamLike<T, S, R>> R union(S s) {
 		List<R> l = new ArrayList<>();
-		s.foreachRDD(v1 -> {
-			if (l.isEmpty()) l.add(v1);
-			else l.set(0, (R) JavaRDD.fromRDD(l.get(0).rdd().union(v1.rdd()), l.get(0).classTag()));
-			return null;
+		s.foreachRDD(new Function<R, Void>() {
+			@Override
+			public Void call(R v1) throws Exception {
+				if (l.isEmpty()) l.add(v1);
+				else l.set(0, (R) JavaRDD.fromRDD(l.get(0).rdd().union(v1.rdd()), l.get(0).classTag()));
+				return null;
+			}
 		});
 		return l.get(0);
 	}
@@ -356,10 +476,13 @@ public class RDS<T> implements Serializable {
 
 	static <T> RDD<T> union(DStream<T> s) {
 		List<RDD<T>> l = new ArrayList<>();
-		s.foreachRDD(v1 -> {
-			if (l.isEmpty()) l.add(v1);
-			else l.set(0, l.get(0).union(v1));
-			return BoxedUnit.UNIT;
+		JavaDStream.fromDStream(s, tag()).foreachRDD(new Function<JavaRDD<T>, Void>() {
+			@Override
+			public Void call(JavaRDD<T> rdd) throws Exception {
+				if (l.isEmpty()) l.add(rdd.rdd());
+				else l.set(0, l.get(0).union(rdd.rdd()));
+				return null;
+			}
 		});
 		return l.get(0);
 	}
@@ -368,7 +491,12 @@ public class RDS<T> implements Serializable {
 		@SuppressWarnings("unchecked")
 		JavaPairRDD<K, V>[] prdds = new JavaPairRDD[rdds.length];
 		for (int i = 0; i < rdds.length; i++)
-			prdds[i] = rdds[i].mapToPair(t -> t);
+			prdds[i] = rdds[i].mapToPair(new PairFunction<Tuple2<K, V>, K, V>() {
+				@Override
+				public Tuple2<K, V> call(Tuple2<K, V> t) throws Exception {
+					return t;
+				}
+			});
 		return prdds;
 	}
 
@@ -376,7 +504,12 @@ public class RDS<T> implements Serializable {
 		@SuppressWarnings("unchecked")
 		JavaRDD<Tuple2<K, V>>[] rdds = new JavaRDD[prdds.length];
 		for (int i = 0; i < prdds.length; i++)
-			rdds[i] = prdds[i].map(t -> t);
+			rdds[i] = prdds[i].map(new Function<Tuple2<K, V>, Tuple2<K, V>>() {
+				@Override
+				public Tuple2<K, V> call(Tuple2<K, V> t) throws Exception {
+					return t;
+				}
+			});
 		return rdds;
 	}
 }
