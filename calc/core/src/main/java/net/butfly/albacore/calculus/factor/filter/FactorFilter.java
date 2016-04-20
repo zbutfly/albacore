@@ -152,6 +152,16 @@ public interface FactorFilter extends Serializable {
 		}
 	}
 
+	public static final class Random implements FactorFilter {
+		private static final long serialVersionUID = -2980235677478896288L;
+		public float chance;
+
+		public Random(float chance) {
+			super();
+			this.chance = chance;
+		}
+	}
+
 	public static final class Sort extends ByField<Boolean> {
 		private static final long serialVersionUID = 2917438870291349552L;
 		public boolean asc;

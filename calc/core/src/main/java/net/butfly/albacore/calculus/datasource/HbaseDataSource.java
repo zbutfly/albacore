@@ -37,7 +37,6 @@ import org.apache.hadoop.hbase.util.Base64;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.PairFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -162,12 +161,8 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 
 		public JavaPairRDD<byte[], F> scan(JavaSparkContext sc, Configuration hconf) {
 			return sc.newAPIHadoopRDD(hconf, TableInputFormat.class, ImmutableBytesWritable.class, Result.class)
-					.mapToPair(new PairFunction<Tuple2<ImmutableBytesWritable, Result>, byte[], F>() {
-						@Override
-						public Tuple2<byte[], F> call(Tuple2<ImmutableBytesWritable, Result> t) throws Exception {
-							return new Tuple2<>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor));
-						}
-					});
+					.mapToPair((final Tuple2<ImmutableBytesWritable, Result> t) -> new Tuple2<>(marshaller.unmarshallId(t._1),
+							marshaller.unmarshall(t._2, factor)));
 		}
 
 		public HUtil<F> debug(final Configuration hconf) {
@@ -181,7 +176,7 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 				} else {
 					long limit = Long.parseLong(System.getProperty("calculus.debug.hbase.limit", "-1"));
 					if (limit > 0) {
-						error(() -> "Hbase debugging, limit results in " + limit
+						error(() -> "Hbase debugging, chance results in " + limit
 								+ " (can be customized by -Dcalculus.debug.hbase.limit=100)");
 						hconf.set(TableInputFormat.SCAN,
 								Base64.encodeBytes(ProtobufUtil.toScan(createScan().setFilter(new PageFilter(limit))).toByteArray()));
@@ -232,12 +227,7 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 				if (filter.getClass().equals(FactorFilter.In.class)) {
 					Collection<Object> values = ((FactorFilter.In) filter).values;
 					return new SingleColumnInValuesFilter(qulifiers[0], qulifiers[1],
-							Reflections.transform(values, new Func<Object, byte[]>() {
-								@Override
-								public byte[] call(Object v) {
-									return conv.call(v);
-								}
-							}).toArray(new byte[0][]));
+							Reflections.transform(values, conv::call).toArray(new byte[0][]));
 				}
 				if (filter.getClass().equals(FactorFilter.Regex.class)) {
 					SingleColumnValueFilter f = new SingleColumnValueFilter(qulifiers[0], qulifiers[1], CompareOp.EQUAL,
@@ -247,8 +237,7 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 				}
 			}
 			if (filter.getClass().equals(FactorFilter.Limit.class)) return new PageFilter(((FactorFilter.Limit) filter).limit);
-			// if (filter.getClass().equals(FactorFilter.Skip.class)) return new
-			// SkipFilter(((FactorFilter.Skip) filter).skip);
+			if (filter.getClass().equals(FactorFilter.Random.class)) return new RandomRowFilter(((FactorFilter.Random) filter).chance);
 			if (filter.getClass().equals(FactorFilter.And.class)) {
 				FilterList ands = new FilterList(Operator.MUST_PASS_ALL);
 				for (FactorFilter f : ((FactorFilter.And) filter).filters)
@@ -280,60 +269,15 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 	private static final Map<Class, Func<Object, byte[]>> CONVERTERS = new HashMap<>();
 
 	static {
-		CONVERTERS.put(String.class, new Func<Object, byte[]>() {
-			@Override
-			public byte[] call(Object val) {
-				return null == val ? null : Bytes.toBytes((String) val);
-			}
-		});
-		CONVERTERS.put(Integer.class, new Func<Object, byte[]>() {
-			@Override
-			public byte[] call(Object val) {
-				return null == val ? null : Bytes.toBytes((Integer) val);
-			}
-		});
-		CONVERTERS.put(Boolean.class, new Func<Object, byte[]>() {
-			@Override
-			public byte[] call(Object val) {
-				return null == val ? null : Bytes.toBytes((Boolean) val);
-			}
-		});
-		CONVERTERS.put(Long.class, new Func<Object, byte[]>() {
-			@Override
-			public byte[] call(Object val) {
-				return null == val ? null : Bytes.toBytes((Long) val);
-			}
-		});
-		CONVERTERS.put(Double.class, new Func<Object, byte[]>() {
-			@Override
-			public byte[] call(Object val) {
-				return null == val ? null : Bytes.toBytes((Double) val);
-			}
-		});
-		CONVERTERS.put(Float.class, new Func<Object, byte[]>() {
-			@Override
-			public byte[] call(Object val) {
-				return null == val ? null : Bytes.toBytes((Float) val);
-			}
-		});
-		CONVERTERS.put(Short.class, new Func<Object, byte[]>() {
-			@Override
-			public byte[] call(Object val) {
-				return null == val ? null : Bytes.toBytes((Short) val);
-			}
-		});
-		CONVERTERS.put(Byte.class, new Func<Object, byte[]>() {
-			@Override
-			public byte[] call(Object val) {
-				return null == val ? null : Bytes.toBytes((Byte) val);
-			}
-		});
-		CONVERTERS.put(BigDecimal.class, new Func<Object, byte[]>() {
-			@Override
-			public byte[] call(Object val) {
-				return null == val ? null : Bytes.toBytes((BigDecimal) val);
-			}
-		});
+		CONVERTERS.put(String.class, val -> null == val ? null : Bytes.toBytes((String) val));
+		CONVERTERS.put(Integer.class, val -> null == val ? null : Bytes.toBytes((Integer) val));
+		CONVERTERS.put(Boolean.class, val -> null == val ? null : Bytes.toBytes((Boolean) val));
+		CONVERTERS.put(Long.class, val -> null == val ? null : Bytes.toBytes((Long) val));
+		CONVERTERS.put(Double.class, val -> null == val ? null : Bytes.toBytes((Double) val));
+		CONVERTERS.put(Float.class, val -> null == val ? null : Bytes.toBytes((Float) val));
+		CONVERTERS.put(Short.class, val -> null == val ? null : Bytes.toBytes((Short) val));
+		CONVERTERS.put(Byte.class, val -> null == val ? null : Bytes.toBytes((Byte) val));
+		CONVERTERS.put(BigDecimal.class, val -> null == val ? null : Bytes.toBytes((BigDecimal) val));
 	}
 
 	private static Scan createScan() {

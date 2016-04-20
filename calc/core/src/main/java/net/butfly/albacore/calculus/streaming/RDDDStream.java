@@ -7,9 +7,6 @@ import java.util.List;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.function.Function;
-import org.apache.spark.api.java.function.Function0;
-import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.streaming.StreamingContext;
 import org.apache.spark.streaming.Time;
@@ -68,17 +65,8 @@ public abstract class RDDDStream<T> extends InputDStream<T> {
 
 	public static <K, V> JavaPairDStream<K, V> pstream(StreamingContext ssc, Mechanism mechanism, Func0<JavaPairRDD<K, V>> rdd) {
 		try {
-			return JavaPairDStream.fromPairDStream(new RDDInputDStream<Tuple2<K, V>>(ssc, mechanism, new Function0<RDD<Tuple2<K, V>>>() {
-				@Override
-				public RDD<Tuple2<K, V>> call() throws Exception {
-					return rdd.call().map(new Function<Tuple2<K, V>, Tuple2<K, V>>() {
-						@Override
-						public Tuple2<K, V> call(Tuple2<K, V> t) throws Exception {
-							return t;
-						}
-					}).rdd();
-				}
-			}), RDS.tag(), RDS.tag());
+			return JavaPairDStream.fromPairDStream(new RDDInputDStream<Tuple2<K, V>>(ssc, mechanism, rdd.call().map(t -> t)::rdd),
+					RDS.tag(), RDS.tag());
 		} catch (Exception ex) {
 			throw new RuntimeException(ex);
 		}
@@ -88,24 +76,16 @@ public abstract class RDDDStream<T> extends InputDStream<T> {
 	public static <K, V> JavaPairDStream<K, V> bpstream(StreamingContext ssc, long batch, Func2<Long, K, JavaPairRDD<K, V>> batcher,
 			Comparator<K> comparator) {
 		try {
-			return JavaPairDStream.fromPairDStream(new RDDBatchInputDStream<K, V>(ssc, batch, new Function2<Long, K, RDD<Tuple2<K, V>>>() {
-				@Override
-				public RDD<Tuple2<K, V>> call(Long limit, K offset) throws Exception {
-					return batcher.call(limit, offset).rdd();
-				}
-			}, comparator), RDS.tag(), RDS.tag());
+			return JavaPairDStream.fromPairDStream(
+					new RDDBatchInputDStream<K, V>(ssc, batch, (limit, offset) -> batcher.call(limit, offset).rdd(), comparator), RDS.tag(),
+					RDS.tag());
 		} catch (Exception ex) {
 			throw new RuntimeException(ex);
 		}
 	}
 
 	public static <R> JavaDStream<R> stream(StreamingContext ssc, Mechanism mechanism, Func0<JavaRDD<R>> rdd) {
-		return JavaDStream.fromDStream(new RDDInputDStream<R>(ssc, mechanism, new Function0<RDD<R>>() {
-			@Override
-			public RDD<R> call() throws Exception {
-				return rdd.call().rdd();
-			}
-		}), RDS.tag());
+		return JavaDStream.fromDStream(new RDDInputDStream<R>(ssc, mechanism, rdd.call()::rdd), RDS.tag());
 	}
 
 	@SafeVarargs
@@ -121,21 +101,11 @@ public abstract class RDDDStream<T> extends InputDStream<T> {
 	@SuppressWarnings("unchecked")
 	public static <R> JavaDStream<R> streamValue(StreamingContext ssc, R... r) {
 		JavaRDD<R> rdd = rddValue(ssc.sc(), r);
-		return stream(ssc, Mechanism.CONST, new Func0<JavaRDD<R>>() {
-			@Override
-			public JavaRDD<R> call() {
-				return rdd;
-			}
-		});
+		return stream(ssc, Mechanism.CONST, () -> rdd);
 	}
 
 	public static <R> JavaDStream<R> streamList(StreamingContext ssc, List<R> rs) {
 		JavaRDD<R> rdd = rddList(ssc.sc(), rs);
-		return stream(ssc, Mechanism.CONST, new Func0<JavaRDD<R>>() {
-			@Override
-			public JavaRDD<R> call() {
-				return rdd;
-			}
-		});
+		return stream(ssc, Mechanism.CONST, () -> rdd);
 	}
 }

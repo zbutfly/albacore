@@ -22,14 +22,14 @@ import scala.Tuple2;
 @SuppressWarnings("rawtypes")
 public abstract class DataSource<FK, RK, RV, WK, WV> implements Serializable, Logable {
 	private static final long serialVersionUID = 1L;
-	protected Factor.Type type;
-	protected Marshaller<FK, RK, RV> marshaller;
+	protected final Factor.Type type;
+	protected final Marshaller<FK, RK, RV> marshaller;
 	protected final Logger logger = LoggerFactory.getLogger(this.getClass());
-	public boolean validate;
+	public final boolean validate;
 	public String suffix;
-	public Class<RK> keyClass;
-	public Class<RV> valueClass;
-	public Class<? extends OutputFormat> outputFormatClass;
+	public final Class<RK> keyClass;
+	public final Class<RV> valueClass;
+	public final Class<? extends OutputFormat> outputFormatClass;
 	protected Configuration outputConfig;
 
 	public Factor.Type type() {
@@ -85,10 +85,14 @@ public abstract class DataSource<FK, RK, RV, WK, WV> implements Serializable, Lo
 		}
 	}
 
-	protected <F> Tuple2<WK, WV> prepare(FK key, F factor, Class<F> factorClass) throws Exception {
+	protected <F extends Factor<F>> Tuple2<WK, WV> prepare(FK key, F factor, Class<F> factorClass) {
 		throw new UnsupportedOperationException("Unsupportted saving prepare: " + type);
 	}
-	public <F> void save(DataDetail<F> detail, Class<F> factorClass, PairRDS<FK, F> result) {
-		throw new UnsupportedOperationException("Unsupportted saving: " + type);
+
+	public <F extends Factor<F>> void save(DataDetail<F> detail, Class<F> factorClass, PairRDS<FK, F> result) {
+		if (null == result) debug(() -> "No result returned from calculus.");
+		result.eachPairRDD((final JavaPairRDD<FK, F> rdd) -> rdd
+				.mapToPair((final Tuple2<FK, F> t) -> (Tuple2<WK, WV>) prepare(t._1, t._2, factorClass))
+				.saveAsNewAPIHadoopFile("", keyClass, valueClass, outputFormatClass, detail.outputConfig(this)));
 	}
 }

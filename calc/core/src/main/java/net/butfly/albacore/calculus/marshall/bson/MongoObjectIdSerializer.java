@@ -11,7 +11,5 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 
 public class MongoObjectIdSerializer extends JsonSerializer<ObjectId> {
 	@Override
-	public void serialize(ObjectId value, JsonGenerator gen, SerializerProvider serializers) throws IOException, JsonProcessingException {
-		// TODO Auto-generated method stub
-	}
+	public void serialize(ObjectId value, JsonGenerator gen, SerializerProvider serializers) throws IOException, JsonProcessingException {}
 }

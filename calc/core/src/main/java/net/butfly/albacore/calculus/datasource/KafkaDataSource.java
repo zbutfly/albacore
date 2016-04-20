@@ -27,7 +27,7 @@ public class KafkaDataSource extends DataSource<String, String, byte[], Void, Vo
 	int topicPartitions;
 
 	public KafkaDataSource(String servers, String root, int topicPartitions, String group, KafkaMarshaller marshaller) {
-		// TODO
+		// TODO: customize topic partitions map in configuration.
 		super(Type.KAFKA, false, null == marshaller ? new KafkaMarshaller() : marshaller, String.class, byte[].class,
 				NullOutputFormat.class);
 		int pos = servers.indexOf('/');

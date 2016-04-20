@@ -3,6 +3,7 @@ package net.butfly.albacore.calculus.utils;
 import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
@@ -57,7 +58,16 @@ public final class Reflections implements Serializable {
 
 	public static <T> T construct(final Class<T> cls, Object... parameters) {
 		final Class<?> parameterTypes[] = toClass(parameters);
-		return construct(cls, parameters, parameterTypes);
+		return constr(cls, parameters, parameterTypes);
+	}
+
+	private static <T> T constr(final Class<T> cls, Object[] parameters, Class<?>[] parameterTypes) {
+		try {
+			return cls.getConstructor(parameterTypes).newInstance(parameters);
+		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
+				| NoSuchMethodException | SecurityException e) {
+			throw new RuntimeException("Instance of " + cls.toString() + " construction failure.", e);
+		}
 	}
 
 	@SuppressWarnings("unchecked")

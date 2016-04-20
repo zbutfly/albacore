@@ -40,7 +40,6 @@ import net.butfly.albacore.calculus.marshall.MongoMarshaller;
 import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
 
-@SuppressWarnings("rawtypes")
 public class MongoDataSource extends DataSource<Object, Object, BSONObject, ObjectId, MongoUpdateWritable> {
 	private static final long serialVersionUID = -2617369621178264387L;
 	public String uri;
@@ -108,7 +107,7 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 		for (FactorFilter f : filters) {
 			if (null == f) continue;
 			if (f instanceof FactorFilter.Limit) {
-				warn(() -> "MongoDB query limit set as [" + ((FactorFilter.Limit) f).limit + "], maybe debug...");
+				warn(() -> "MongoDB query chance set as [" + ((FactorFilter.Limit) f).limit + "], maybe debug...");
 				mconf.setLong(MongoConfigUtil.INPUT_LIMIT, ((FactorFilter.Limit) f).limit);
 			} else if (f instanceof FactorFilter.Skip) {
 				warn(() -> "MongoDB query skip set as [" + ((FactorFilter.Skip) f).skip + "], maybe debug...");
@@ -131,7 +130,7 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 			trace(() -> "Run mongodb filter on " + factor.toString() + ": "
 					+ (inputquery.length() <= 200 || calc.debug ? inputquery
 							: inputquery.substring(0, 100) + "...(too long string eliminated)")
-					+ (mconf.get(MongoConfigUtil.INPUT_LIMIT) == null ? "" : ", limit: " + mconf.get(MongoConfigUtil.INPUT_LIMIT))
+					+ (mconf.get(MongoConfigUtil.INPUT_LIMIT) == null ? "" : ", chance: " + mconf.get(MongoConfigUtil.INPUT_LIMIT))
 					+ (mconf.get(MongoConfigUtil.INPUT_SKIP) == null ? "" : ", skip: " + mconf.get(MongoConfigUtil.INPUT_SKIP)) + ".");
 		}
 		// conf.mconf.set(MongoConfigUtil.INPUT_FIELDS
@@ -197,18 +196,17 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 		return fd;
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
-	protected <F> Tuple2<ObjectId, MongoUpdateWritable> prepare(Object key, F factor, Class<F> factorClass) throws Exception {
+	protected <F extends Factor<F>> Tuple2<ObjectId, MongoUpdateWritable> prepare(Object key, F factor, Class<F> factorClass) {
 		final BasicBSONObject q = new BasicBSONObject();
 		q.append("_id", this.marshaller.marshallId(key));
 		final BasicBSONObject u = new BasicBSONObject();
-		u.append("$set", marshaller.marshall((Factor) factor));
+		u.append("$set", marshaller.marshall(factor));
 		return new Tuple2<ObjectId, MongoUpdateWritable>(new ObjectId(), new MongoUpdateWritable(q, u, true, true));
 	}
 
 	@Override
-	public <F> void save(DataDetail<F> detail, Class<F> factorClass, PairRDS<Object, F> result) {
+	public <F extends Factor<F>> void save(DataDetail<F> detail, Class<F> factorClass, PairRDS<Object, F> result) {
 		final PairFunction<Tuple2<Object, F>, ObjectId, MongoUpdateWritable> prepare = (
 				final Tuple2<Object, F> t) -> (Tuple2<ObjectId, MongoUpdateWritable>) prepare(t._1, t._2, factorClass);
 		if (null != result) result.eachPairRDD((final JavaPairRDD<Object, F> rdd) -> rdd.mapToPair(prepare).saveAsNewAPIHadoopFile("",
