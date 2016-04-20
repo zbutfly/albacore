@@ -57,7 +57,7 @@ public class Calculator implements Logable, Serializable {
 
 	// calculus configurations
 	public Mode mode;
-	public Calculus<?, ?> calculus;
+	public Class<Calculus<?, ?>> calculusClass;
 	private String appname;
 	private boolean optimizeMongo;
 
@@ -78,7 +78,7 @@ public class Calculator implements Logable, Serializable {
 		for (Object key : props.keySet())
 			System.setProperty(key.toString(), props.getProperty(key.toString()));
 		Calculator c = new Calculator(props);
-		c.spark().calculate(c.calculus).end();
+		c.spark().calculate().end();
 	}
 
 	private Calculator spark() {
@@ -90,7 +90,7 @@ public class Calculator implements Logable, Serializable {
 	private Calculator end() {
 		if (mode == Mode.STREAMING) {
 			ssc.start();
-			info(() -> calculus.name + " streaming started, warting for finish. ");
+			info(() -> calculusClass.getSimpleName() + " streaming started, warting for finish. ");
 			ssc.awaitTermination();
 			try {
 				ssc.close();
@@ -102,6 +102,7 @@ public class Calculator implements Logable, Serializable {
 		return this;
 	}
 
+	@SuppressWarnings("unchecked")
 	private Calculator(Properties props) {
 		mode = Mode.valueOf(props.getProperty("calculus.mode", "STREAMING").toUpperCase());
 		debug = Boolean.valueOf(props.getProperty("calculus.debug", "false").toLowerCase());
@@ -111,53 +112,42 @@ public class Calculator implements Logable, Serializable {
 			warn(() -> "Stocking does not support duration, but duration may be set by calculator for batching.");
 		dura = mode == Mode.STREAMING ? Integer.parseInt(props.getProperty("calculus.spark.duration.seconds", "30"))
 				: Integer.parseInt(props.getProperty("calculus.spark.duration.seconds", "1"));
-		this.parseCalculus(props.getProperty("calculus.class"));
-		this.appname = props.getProperty("calculus.app.name", "Calculuses-" + calculus.getClass().getSimpleName());
+		if (!props.containsKey("calculus.class"))
+			throw new IllegalArgumentException("Calculus not defined (-c xxx.ClassName or -Dcalculus.class=xxx.ClassName).");
+		// scan and run calculuses
+		try {
+			calculusClass = (Class<Calculus<?, ?>>) Class.forName(props.getProperty("calculus.class"));
+		} catch (ClassNotFoundException e) {
+			throw new IllegalArgumentException("Calculus " + props.getProperty("calculus.class") + "not found or not calculus.", e);
+		}
+		this.appname = props.getProperty("calculus.app.name", "Calculuses:" + calculusClass.getSimpleName());
 		// dadatabse configurations parsing
 		sconf = new SparkConf();
 		if (props.containsKey("calculus.spark.url")) sconf.setMaster(props.getProperty("calculus.spark.url"));
 		sconf.setAppName(appname + "-Spark");
 		if (props.containsKey("calculus.spark.jars")) sconf.setJars(props.getProperty("calculus.spark.jars").split(","));
 		sconf.set("spark.app.id", appname + "[Spark-App]");
-		sconf.set("spark.testing", Boolean.toString(debug));
+		sconf.set("spark.testing", Boolean.toString(false));
 		// sconf.set("spark.serializer", KryoSerializer.class.toString());
 		if (props.containsKey("calculus.spark.jars")) sconf.setJars(props.getProperty("calculus.spark.jars").split(","));
 		if (props.containsKey("calculus.spark.home")) sconf.setSparkHome(props.getProperty("calculus.spark.home"));
 		if (debug) sconf.set("spark.testing", "true");
 		parseDatasources(subprops(props, "calculus.ds."));
-		calculus.name = "Calculus [" + calculus.getClass().getSimpleName() + "]";
-		debug(() -> "Running " + calculus.name);
+		debug(() -> "Running " + calculusClass.getSimpleName());
 	}
 
-	private void parseCalculus(String calclass) {
-		if (null == calclass)
-			throw new IllegalArgumentException("Calculus not defined (-c xxx.ClassName or -Dcalculus.class=xxx.ClassName).");
-		// scan and run calculuses
-		Class<?> c;
-		try {
-			c = Class.forName(calclass);
-		} catch (ClassNotFoundException e) {
-			throw new IllegalArgumentException("Calculus " + calclass + "not found.", e);
-		}
-		if (!Calculus.class.isAssignableFrom(c)) throw new IllegalArgumentException("Calculus " + c.toString() + " is not Calculus.");
-		try {
-			calculus = ((Calculus<?, ?>) c.newInstance()).calculator(this);
-		} catch (Exception e) {
-			throw new IllegalArgumentException("Calculus " + c.toString() + " constructor failure, ignored", e);
-		}
-	}
-
-	private <OK, OF extends Factor<OF>> Calculator calculate(Calculus<OK, OF> calculus) {
-		info(() -> calculus.name + " starting... ");
+	@SuppressWarnings("unchecked")
+	private <OK, OF extends Factor<OF>> Calculator calculate() {
+		info(() -> calculusClass.getSimpleName() + " starting... ");
 		long now = new Date().getTime();
-		Class<OF> factor = Reflections.resolveGenericParameter(calculus.getClass(), Calculus.class, "OF");
-		info(() -> calculus.name + " will output as: " + factor.toString());
+		Class<OF> factor = Reflections.resolveGenericParameter(calculusClass, Calculus.class, "OF");
+		info(() -> calculusClass.getSimpleName() + " will output as: " + factor.toString());
 		Factors factors = new Factors(this);
 		FactorConfig<OK, OF> s = factors.config(factor);
-		@SuppressWarnings("unchecked")
 		DataSource<OK, ?, ?, ?, ?> ds = dss.ds(s.dbid);
-		ds.save(s.detail, factor, calculus.calculate(factors));
-		info(() -> calculus.name + " ended, spent: " + (new Date().getTime() - now) + " ms.");
+		Calculus<OK, OF> calculus = (Calculus<OK, OF>) Reflections.construct(calculusClass, factors);
+		ds.save(s.detail, factor, calculus.calculate());
+		info(() -> calculusClass.getSimpleName() + " ended, spent: " + (new Date().getTime() - now) + " ms.");
 		return this;
 	}
 

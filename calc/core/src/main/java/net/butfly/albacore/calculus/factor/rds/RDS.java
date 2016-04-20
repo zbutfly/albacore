@@ -45,9 +45,9 @@ public class RDS<T> implements Serializable {
 
 	protected RDS() {}
 
-	protected RDS<T> init(List<RDD<T>> rdds) {
+	protected RDS<T> init(Collection<RDD<T>> rdds) {
 		type = RDSType.RDD;
-		this.rdds = rdds;
+		this.rdds = new ArrayList<>(rdds);
 		return this;
 	}
 
@@ -451,7 +451,7 @@ public class RDS<T> implements Serializable {
 		return rr.get(0);
 	}
 
-	@SuppressWarnings({ "unchecked", "deprecation" })
+	@SuppressWarnings({ "unchecked" })
 	static <T, R extends JavaRDDLike<T, R>, S extends JavaDStreamLike<T, S, R>> R union(S s) {
 		List<R> l = new ArrayList<>();
 		s.foreachRDD(new Function<R, Void>() {

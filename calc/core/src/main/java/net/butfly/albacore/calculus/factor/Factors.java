@@ -10,7 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.butfly.albacore.calculus.Calculator;
-import net.butfly.albacore.calculus.Calculus;
 import net.butfly.albacore.calculus.Mode;
 import net.butfly.albacore.calculus.datasource.DataDetail;
 import net.butfly.albacore.calculus.datasource.DataSource;
@@ -35,12 +34,12 @@ public final class Factors implements Serializable, Logable {
 	protected Map<String, FactorConfig<?, ?>> pool;
 
 	public Factors(Calculator calc) {
-		@SuppressWarnings("rawtypes")
-		Class<? extends Calculus> c = calc.calculus.getClass();
 		Factoring[] factorings;
-		if (c.isAnnotationPresent(Factorings.class)) factorings = c.getAnnotation(Factorings.class).value();
-		else if (c.isAnnotationPresent(Factoring.class)) factorings = new Factoring[] { c.getAnnotation(Factoring.class) };
-		else throw new IllegalArgumentException("Calculus " + c.toString() + " has no @Factoring annotated.");
+		if (calc.calculusClass.isAnnotationPresent(Factorings.class))
+			factorings = calc.calculusClass.getAnnotation(Factorings.class).value();
+		else if (calc.calculusClass.isAnnotationPresent(Factoring.class))
+			factorings = new Factoring[] { calc.calculusClass.getAnnotation(Factoring.class) };
+		else throw new IllegalArgumentException("Calculus " + calc.calculusClass.toString() + " has no @Factoring annotated.");
 		pool = new HashMap<>(factorings.length);
 		this.calc = calc;
 

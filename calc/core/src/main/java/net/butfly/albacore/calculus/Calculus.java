@@ -17,17 +17,18 @@ public abstract class Calculus<OK, OF extends Factor<OF>> implements Logable, Se
 	protected final Logger logger;
 	public String name;
 	public Calculator calc;
+	protected final Factors factors;
 
-	public Calculus() {
+	public Calculus(final Factors factors) {
 		logger = LoggerFactory.getLogger(getClass());
+		this.factors = factors;
 	}
-
 
 	public Functor[] stages() {
 		return new Functor[0];
 	}
 
-	public abstract PairRDS<OK, OF> calculate(final Factors factors);
+	public abstract PairRDS<OK, OF> calculate();
 
 	protected boolean saving(JavaPairRDD<OK, OF> rdd) {
 		return true;

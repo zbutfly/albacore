@@ -56,7 +56,7 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 	}
 
 	@Override
-	protected PairRDS<K, V> init(List<RDD<Tuple2<K, V>>> rdds) {
+	protected PairRDS<K, V> init(Collection<RDD<Tuple2<K, V>>> rdds) {
 		super.init(rdds);
 		return this;
 	}
@@ -82,6 +82,15 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 				return new Tuple2<>(e.getKey(), e.getValue());
 			}
 		}));
+	}
+
+	public PairRDS(Collection<PairRDS<K, V>> l) {
+		this();
+		List<RDD<Tuple2<K, V>>> s = new ArrayList<>();
+		for (Collection<RDD<Tuple2<K, V>>> rs : Reflections.transform(Reflections.transform(l, PairRDS<K, V>::rdds),
+				(final Collection<JavaRDD<Tuple2<K, V>>> rs) -> Reflections.transform(rs, JavaRDD<Tuple2<K, V>>::rdd)))
+			s.addAll(rs);
+		init(s);
 	}
 
 	public Map<K, V> collectAsMap() {
