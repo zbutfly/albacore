@@ -9,14 +9,13 @@ import java.util.Map;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.api.java.function.PairFunction;
 import org.bson.BSONObject;
-import org.bson.BasicBSONObject;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.CaseFormat;
 import com.mongodb.BasicDBObject;
 import com.mongodb.MongoClient;
@@ -35,7 +34,6 @@ import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
-import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.marshall.MongoMarshaller;
 import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
@@ -190,26 +188,24 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 		throw new UnsupportedOperationException("Unsupportted filter: " + filter.getClass());
 	}
 
-	private BSONObject assembly(String key, Object value) {
-		BSONObject fd = new BasicDBObject();
+	private BasicDBObject assembly(String key, Object value) {
+		BasicDBObject fd = new BasicDBObject();
 		fd.put(key, value);
 		return fd;
 	}
 
 	@Override
-	protected <F extends Factor<F>> Tuple2<ObjectId, MongoUpdateWritable> prepare(Object key, F factor, Class<F> factorClass) {
-		final BasicBSONObject q = new BasicBSONObject();
-		q.append("_id", this.marshaller.marshallId(key));
-		final BasicBSONObject u = new BasicBSONObject();
-		u.append("$set", marshaller.marshall(factor));
+	public <V> Tuple2<ObjectId, MongoUpdateWritable> writing(Object key, V value) {
+		BasicDBObject q = assembly("_id", this.marshaller.marshallId(key));
+		BasicDBObject u = assembly("$set", marshaller.marshall(value));
+		trace(() -> {
+			try {
+				ObjectMapper om = new ObjectMapper();
+				return "MongoDB writing upsert: " + om.writeValueAsString(u) + " for query: " + om.writeValueAsString(u);
+			} catch (Exception e) {
+				return "MongoDB writing upsert but cannot print... ";
+			}
+		});
 		return new Tuple2<ObjectId, MongoUpdateWritable>(new ObjectId(), new MongoUpdateWritable(q, u, true, true));
-	}
-
-	@Override
-	public <F extends Factor<F>> void save(DataDetail<F> detail, Class<F> factorClass, PairRDS<Object, F> result) {
-		final PairFunction<Tuple2<Object, F>, ObjectId, MongoUpdateWritable> prepare = (
-				final Tuple2<Object, F> t) -> (Tuple2<ObjectId, MongoUpdateWritable>) prepare(t._1, t._2, factorClass);
-		if (null != result) result.eachPairRDD((final JavaPairRDD<Object, F> rdd) -> rdd.mapToPair(prepare).saveAsNewAPIHadoopFile("",
-				keyClass, valueClass, outputFormatClass, detail.outputConfig(this)));
 	}
 }

@@ -21,8 +21,8 @@ public class MongoDataDetail<F> extends DataDetail<F> {
 	}
 
 	@Override
-	public Configuration outputConfig(@SuppressWarnings("rawtypes") DataSource ds) {
-		Configuration outputConfig = super.outputConfig(ds);
+	public Configuration outputConfiguration(@SuppressWarnings("rawtypes") DataSource ds) {
+		Configuration outputConfig = super.outputConfiguration(ds);
 		outputConfig.set("mongo.job.output.format", MongoOutputFormat.class.getName());
 		MongoClientURI muri = new MongoClientURI(MongoDataSource.class.cast(ds).uri);
 		outputConfig.set("mongo.output.uri", new MongoClientURIBuilder(muri).collection(muri.getDatabase(), tables[0]).build().toString());

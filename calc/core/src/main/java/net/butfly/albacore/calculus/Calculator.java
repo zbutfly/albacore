@@ -146,7 +146,7 @@ public class Calculator implements Logable, Serializable {
 		FactorConfig<OK, OF> s = factors.config(factor);
 		DataSource<OK, ?, ?, ?, ?> ds = dss.ds(s.dbid);
 		Calculus<OK, OF> calculus = (Calculus<OK, OF>) Reflections.construct(calculusClass, factors);
-		ds.save(s.detail, factor, calculus.calculate());
+		calculus.calculate().save(ds, s.detail);
 		info(() -> calculusClass.getSimpleName() + " ended, spent: " + (new Date().getTime() - now) + " ms.");
 		return this;
 	}

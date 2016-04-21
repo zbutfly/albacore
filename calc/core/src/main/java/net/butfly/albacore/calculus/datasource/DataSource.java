@@ -14,16 +14,15 @@ import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
-import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.marshall.Marshaller;
 import net.butfly.albacore.calculus.utils.Logable;
 import scala.Tuple2;
 
 @SuppressWarnings("rawtypes")
-public abstract class DataSource<FK, RK, RV, WK, WV> implements Serializable, Logable {
+public abstract class DataSource<K, RK, RV, WK, WV> implements Serializable, Logable {
 	private static final long serialVersionUID = 1L;
 	protected final Factor.Type type;
-	protected final Marshaller<FK, RK, RV> marshaller;
+	protected final Marshaller<K, RK, RV> marshaller;
 	protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 	public final boolean validate;
 	public String suffix;
@@ -36,11 +35,11 @@ public abstract class DataSource<FK, RK, RV, WK, WV> implements Serializable, Lo
 		return type;
 	}
 
-	public Marshaller<FK, RK, RV> marshaller() {
+	public Marshaller<K, RK, RV> marshaller() {
 		return marshaller;
 	}
 
-	public DataSource(Type type, boolean validate, Marshaller<FK, RK, RV> marshaller, Class<RK> keyClass, Class<RV> valueClass,
+	public DataSource(Type type, boolean validate, Marshaller<K, RK, RV> marshaller, Class<RK> keyClass, Class<RV> valueClass,
 			Class<? extends OutputFormat> outputFormatClass) {
 		super();
 		this.type = type;
@@ -56,18 +55,18 @@ public abstract class DataSource<FK, RK, RV, WK, WV> implements Serializable, Lo
 		return "CalculatorDataSource:" + this.type;
 	}
 
-	public <F extends Factor<F>> JavaPairRDD<FK, F> stocking(Calculator calc, Class<F> factor, DataDetail<F> detail,
+	public <F extends Factor<F>> JavaPairRDD<K, F> stocking(Calculator calc, Class<F> factor, DataDetail<F> detail,
 			FactorFilter... filters) {
 		throw new UnsupportedOperationException("Unsupportted stocking mode: " + type + " on " + factor.toString());
 	}
 
 	@Deprecated
-	public <F extends Factor<F>> JavaPairRDD<FK, F> batching(Calculator calc, Class<F> factorClass, long batching, FK offset,
+	public <F extends Factor<F>> JavaPairRDD<K, F> batching(Calculator calc, Class<F> factorClass, long batching, K offset,
 			DataDetail<F> detail, FactorFilter... filters) {
 		throw new UnsupportedOperationException("Unsupportted stocking mode with batching: " + type + " on " + factorClass.toString());
 	}
 
-	public <F extends Factor<F>> JavaPairDStream<FK, F> streaming(Calculator calc, Class<F> factor, DataDetail<F> detail,
+	public <F extends Factor<F>> JavaPairDStream<K, F> streaming(Calculator calc, Class<F> factor, DataDetail<F> detail,
 			FactorFilter... filters) {
 		throw new UnsupportedOperationException("Unsupportted streaming mode: " + type + " on " + factor.toString());
 	}
@@ -85,14 +84,7 @@ public abstract class DataSource<FK, RK, RV, WK, WV> implements Serializable, Lo
 		}
 	}
 
-	protected <F extends Factor<F>> Tuple2<WK, WV> prepare(FK key, F factor, Class<F> factorClass) {
+	public <V> Tuple2<WK, WV> writing(K key, V value) {
 		throw new UnsupportedOperationException("Unsupportted saving prepare: " + type);
-	}
-
-	public <F extends Factor<F>> void save(DataDetail<F> detail, Class<F> factorClass, PairRDS<FK, F> result) {
-		if (null == result) debug(() -> "No result returned from calculus.");
-		result.eachPairRDD((final JavaPairRDD<FK, F> rdd) -> rdd
-				.mapToPair((final Tuple2<FK, F> t) -> (Tuple2<WK, WV>) prepare(t._1, t._2, factorClass))
-				.saveAsNewAPIHadoopFile("", keyClass, valueClass, outputFormatClass, detail.outputConfig(this)));
 	}
 }

@@ -26,7 +26,7 @@ public abstract class DataDetail<F> implements Serializable {
 
 	abstract public String toString();
 
-	public Configuration outputConfig(DataSource ds) {
+	public Configuration outputConfiguration(DataSource ds) {
 		return HBaseConfiguration.create();
 	}
 }

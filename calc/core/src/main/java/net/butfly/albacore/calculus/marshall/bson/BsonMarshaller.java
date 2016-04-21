@@ -37,26 +37,25 @@ import com.mongodb.DBRef;
 import com.mongodb.DefaultDBEncoder;
 import com.mongodb.LazyDBObject;
 
-import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.marshall.Marshaller;
 
 public abstract class BsonMarshaller<FK, VK, VV> extends Marshaller<FK, VK, VV> {
 	private static final long serialVersionUID = -7385678674433019238L;
-	private static ObjectMapper bsoner = new ObjectMapper(MongoBsonFactory.createFactory())
+	public static ObjectMapper bsoner = new ObjectMapper(MongoBsonFactory.createFactory())
 			.setPropertyNamingStrategy(new UpperCaseWithUnderscoresStrategy()).disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 			.disable(MapperFeature.USE_GETTERS_AS_SETTERS).disable(SerializationFeature.WRITE_NULL_MAP_VALUES)
 			.setSerializationInclusion(Include.NON_NULL).configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
 	// .enable(Feature.WRITE_BIGDECIMAL_AS_PLAIN)
 
 	@Override
-	public final <T extends Factor<T>> T unmarshall(VV from, Class<T> to) {
+	public final <T> T unmarshall(VV from, Class<T> to) {
 		if (null == from) return null;
 		return unmarshallFromBSON(decode(from), to);
 
 	}
 
 	@Override
-	public final <T extends Factor<T>> VV marshall(T from) {
+	public final <T> VV marshall(T from) {
 		if (null == from) return null;
 		return encode(marshallToBSON(from));
 	}
@@ -111,7 +110,7 @@ public abstract class BsonMarshaller<FK, VK, VV> extends Marshaller<FK, VK, VV> 
 	}
 
 	@SuppressWarnings("deprecation")
-	private <T extends Factor<T>> T unmarshallFromBSON(BSONObject bson, Class<T> to) {
+	private <T> T unmarshallFromBSON(BSONObject bson, Class<T> to) {
 		OutputBuffer buf = new BasicOutputBuffer();
 		try {
 			try {
@@ -131,7 +130,7 @@ public abstract class BsonMarshaller<FK, VK, VV> extends Marshaller<FK, VK, VV> 
 		}
 	}
 
-	private <T extends Factor<T>> BSONObject marshallToBSON(T from) {
+	private <T> BSONObject marshallToBSON(T from) {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		try {
 			bsoner.writer().writeValue(baos, from);

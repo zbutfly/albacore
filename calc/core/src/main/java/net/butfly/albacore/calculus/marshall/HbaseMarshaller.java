@@ -17,7 +17,6 @@ import com.google.common.base.Defaults;
 import com.google.common.base.Joiner;
 
 import net.butfly.albacore.calculus.datasource.HbaseColumnFamily;
-import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.utils.Reflections;
 
 public class HbaseMarshaller extends Marshaller<byte[], ImmutableBytesWritable, Result> {
@@ -33,7 +32,7 @@ public class HbaseMarshaller extends Marshaller<byte[], ImmutableBytesWritable, 
 	}
 
 	@Override
-	public <T extends Factor<T>> T unmarshall(Result from, Class<T> to) {
+	public <T> T unmarshall(Result from, Class<T> to) {
 		if (null == from) return null;
 		T t;
 		try {
@@ -69,7 +68,7 @@ public class HbaseMarshaller extends Marshaller<byte[], ImmutableBytesWritable, 
 	}
 
 	@Override
-	public <T extends Factor<T>> Result marshall(T from) {
+	public <T> Result marshall(T from) {
 		throw new UnsupportedOperationException("Hbase marshall / write not supported.");
 	}
 

@@ -25,6 +25,8 @@ import org.apache.spark.streaming.dstream.DStream;
 import com.google.common.base.Optional;
 import com.google.common.collect.Ordering;
 
+import net.butfly.albacore.calculus.datasource.DataDetail;
+import net.butfly.albacore.calculus.datasource.DataSource;
 import net.butfly.albacore.calculus.lambda.Func;
 import net.butfly.albacore.calculus.lambda.Func2;
 import net.butfly.albacore.calculus.lambda.PairFunc;
@@ -365,5 +367,10 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 	public PairRDS<K, V> persist() {
 		super.persist();
 		return this;
+	}
+
+	public <RK, RV, WK, WV> void save(DataSource<K, RK, RV, WK, WV> ds, DataDetail<V> dd) {
+		eachPairRDD((final JavaPairRDD<K, V> rdd) -> rdd.mapToPair((final Tuple2<K, V> t) -> (Tuple2<WK, WV>) ds.writing(t._1, t._2))
+				.saveAsNewAPIHadoopFile("", ds.keyClass, ds.valueClass, ds.outputFormatClass, dd.outputConfiguration(ds)));
 	}
 }
