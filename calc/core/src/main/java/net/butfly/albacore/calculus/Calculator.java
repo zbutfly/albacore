@@ -25,14 +25,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.butfly.albacore.calculus.datasource.ConstDataSource;
-import net.butfly.albacore.calculus.datasource.DataSource;
 import net.butfly.albacore.calculus.datasource.DataSource.DataSources;
 import net.butfly.albacore.calculus.datasource.HbaseDataSource;
 import net.butfly.albacore.calculus.datasource.KafkaDataSource;
 import net.butfly.albacore.calculus.datasource.MongoDataSource;
-import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
-import net.butfly.albacore.calculus.factor.FactorConfig;
 import net.butfly.albacore.calculus.factor.Factors;
 import net.butfly.albacore.calculus.marshall.HbaseMarshaller;
 import net.butfly.albacore.calculus.marshall.KafkaMarshaller;
@@ -136,17 +133,10 @@ public class Calculator implements Logable, Serializable {
 		debug(() -> "Running " + calculusClass.getSimpleName());
 	}
 
-	@SuppressWarnings("unchecked")
-	private <OK, OF extends Factor<OF>> Calculator calculate() {
+	private Calculator calculate() {
 		info(() -> calculusClass.getSimpleName() + " starting... ");
 		long now = new Date().getTime();
-		Class<OF> factor = Reflections.resolveGenericParameter(calculusClass, Calculus.class, "OF");
-		info(() -> calculusClass.getSimpleName() + " will output as: " + factor.toString());
-		Factors factors = new Factors(this);
-		FactorConfig<OK, OF> s = factors.config(factor);
-		DataSource<OK, ?, ?, ?, ?> ds = dss.ds(s.dbid);
-		Calculus<OK, OF> calculus = (Calculus<OK, OF>) Reflections.construct(calculusClass, factors);
-		calculus.calculate().save(ds, s.detail);
+		Reflections.construct(calculusClass, new Factors(this)).calculate();
 		info(() -> calculusClass.getSimpleName() + " ended, spent: " + (new Date().getTime() - now) + " ms.");
 		return this;
 	}

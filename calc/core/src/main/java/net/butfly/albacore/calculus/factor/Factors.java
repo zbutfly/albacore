@@ -31,7 +31,9 @@ public final class Factors implements Serializable, Logable {
 	private static final long serialVersionUID = -3712903710207597570L;
 	protected static final Logger logger = LoggerFactory.getLogger(Factors.class);
 	public Calculator calc;
-	protected Map<String, FactorConfig<?, ?>> pool;
+	@SuppressWarnings("rawtypes")
+	private static final Map<String, FactorConfig> CONFIGS = new HashMap<>();
+	// private Map<String, FactorConfig<?, ?>> pool;
 
 	public Factors(Calculator calc) {
 		Factoring[] factorings;
@@ -40,13 +42,12 @@ public final class Factors implements Serializable, Logable {
 		else if (calc.calculusClass.isAnnotationPresent(Factoring.class))
 			factorings = new Factoring[] { calc.calculusClass.getAnnotation(Factoring.class) };
 		else throw new IllegalArgumentException("Calculus " + calc.calculusClass.toString() + " has no @Factoring annotated.");
-		pool = new HashMap<>(factorings.length);
 		this.calc = calc;
 
 		FactorConfig<?, ?> batch = null;
 		List<Class<?>> cl = new ArrayList<>();
 		for (Factoring f : factorings) {
-			if (pool.containsKey(f.key())) throw new IllegalArgumentException("Conflictted factoring id: " + f.key());
+			if (CONFIGS.containsKey(f.key())) throw new IllegalArgumentException("Conflictted factoring id: " + f.key());
 			@SuppressWarnings("rawtypes")
 			Class fc = f.factor();
 			if (!fc.isAnnotationPresent(Streaming.class) && !fc.isAnnotationPresent(Stocking.class)) throw new IllegalArgumentException(
@@ -60,13 +61,13 @@ public final class Factors implements Serializable, Logable {
 						+ batch.factorClass.toString() + " and " + conf.factorClass.toString());
 				else batch = conf;
 			}
-			pool.put(f.key(), conf);
+			CONFIGS.put(f.key(), conf);
 		}
 		calc.sconf.registerKryoClasses(cl.toArray(new Class[cl.size()]));
 	}
 
-	public <K, F extends Factor<F>, E extends Factor<E>> PairRDS<K, F> get(String factoring, FactorFilter... filters) {
-		FactorConfig<K, F> config = (FactorConfig<K, F>) pool.get(factoring);
+	public <K, F extends Factor<F>> PairRDS<K, F> get(String factoring, FactorFilter... filters) {
+		FactorConfig<K, F> config = (FactorConfig<K, F>) CONFIGS.get(factoring);
 		DataSource<K, ?, ?, ?, ?> ds = calc.dss.ds(config.dbid);
 		DataDetail<F> d = config.detail;
 		switch (calc.mode) {
@@ -96,7 +97,14 @@ public final class Factors implements Serializable, Logable {
 		}
 	}
 
+	public <K, F extends Factor<F>> void put(PairRDS<K, F> rds, Class<K> keyClass, Class<F> factorClass) {
+		FactorConfig<K, F> conf = config(factorClass);
+		DataSource<K, ?, ?, ?, ?> ds = calc.dss.ds(conf.dbid);
+		rds.save(ds, conf.detail);
+	}
+
 	public <K, F extends Factor<F>> FactorConfig<K, F> config(Class<F> factor) {
+		if (CONFIGS.containsKey(factor)) return CONFIGS.get(factor);
 		FactorConfig<K, F> config = new FactorConfig<>();
 		config.factorClass = factor;
 		if (calc.mode == Mode.STREAMING && factor.isAnnotationPresent(Streaming.class)) {
@@ -145,6 +153,7 @@ public final class Factors implements Serializable, Logable {
 			}
 		}
 		if (calc.dss.ds(config.dbid).validate) calc.dss.ds(config.dbid).confirm(factor, config.detail);
+		CONFIGS.put(factor.toString(), config);
 		return config;
 	}
 }

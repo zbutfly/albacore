@@ -28,7 +28,7 @@ public abstract class Calculus<OK, OF extends Factor<OF>> implements Logable, Se
 		return new Functor[0];
 	}
 
-	public abstract PairRDS<OK, OF> calculate();
+	public abstract void calculate();
 
 	protected boolean saving(JavaPairRDD<OK, OF> rdd) {
 		return true;

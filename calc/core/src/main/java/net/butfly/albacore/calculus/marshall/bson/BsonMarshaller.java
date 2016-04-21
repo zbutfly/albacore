@@ -164,4 +164,10 @@ public abstract class BsonMarshaller<FK, VK, VV> extends Marshaller<FK, VK, VV> 
 			throw new RuntimeException(e);
 		}
 	}
+
+	public static BasicDBObject assembly(String key, Object value) {
+		BasicDBObject fd = new BasicDBObject();
+		fd.put(key, value);
+		return fd;
+	}
 }

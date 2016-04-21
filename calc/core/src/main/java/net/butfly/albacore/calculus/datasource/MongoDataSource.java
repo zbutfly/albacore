@@ -15,9 +15,7 @@ import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.CaseFormat;
-import com.mongodb.BasicDBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import com.mongodb.client.MongoCollection;
@@ -35,6 +33,7 @@ import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
 import net.butfly.albacore.calculus.marshall.MongoMarshaller;
+import net.butfly.albacore.calculus.marshall.bson.BsonMarshaller;
 import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
 
@@ -79,9 +78,7 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 					if (f.isAnnotationPresent(Index.class)) {
 						String colname = f.isAnnotationPresent(JsonProperty.class) ? f.getAnnotation(JsonProperty.class).value()
 								: CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, f.getName());
-						BSONObject dbi = new BasicDBObject();
-						dbi.put(colname, 1);
-						col.createIndex((Bson) dbi);
+						col.createIndex((Bson) BsonMarshaller.assembly(colname, 1));
 					}
 			}
 			return true;
@@ -114,7 +111,7 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 				warn(() -> "MongoDB query sort set as [" + ((FactorFilter.Sort) f).field + ":" + ((FactorFilter.Sort) f).asc
 						+ "], maybe debug...");
 				mconf.set(MongoConfigUtil.INPUT_SORT, ((MongoMarshaller) this.marshaller)
-						.jsonFromBSON(assembly(((FactorFilter.Sort) f).field, ((FactorFilter.Sort) f).asc ? 1 : -1)));
+						.jsonFromBSON(BsonMarshaller.assembly(((FactorFilter.Sort) f).field, ((FactorFilter.Sort) f).asc ? 1 : -1)));
 			} else ands.add(filter(factor, f));
 		}
 		String inputquery = fromBSON(ands);
@@ -146,7 +143,7 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 		case 1:
 			return ((MongoMarshaller) this.marshaller).jsonFromBSON(ands.get(0));
 		default:
-			return ((MongoMarshaller) this.marshaller).jsonFromBSON(assembly("$and", ands));
+			return ((MongoMarshaller) this.marshaller).jsonFromBSON(BsonMarshaller.assembly("$and", ands));
 		}
 	}
 
@@ -166,46 +163,32 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 	private BSONObject filter(Class<?> mapperClass, FactorFilter filter) {
 		if (filter instanceof FactorFilter.ByField) {
 			String col = marshaller.parseField(Reflections.getDeclaredField(mapperClass, ((FactorFilter.ByField<?>) filter).field));
-			if (filter instanceof FactorFilter.ByFieldValue)
-				return assembly(col, assembly(ops.get(filter.getClass()), ((FactorFilter.ByFieldValue<?>) filter).value));
+			if (filter instanceof FactorFilter.ByFieldValue) return BsonMarshaller.assembly(col,
+					BsonMarshaller.assembly(ops.get(filter.getClass()), ((FactorFilter.ByFieldValue<?>) filter).value));
 			if (filter.getClass().equals(FactorFilter.In.class))
-				return assembly(col, assembly("$in", ((FactorFilter.In<?>) filter).values));
+				return BsonMarshaller.assembly(col, BsonMarshaller.assembly("$in", ((FactorFilter.In<?>) filter).values));
 			if (filter.getClass().equals(FactorFilter.Regex.class))
-				return assembly(col, assembly("$regex", ((FactorFilter.Regex) filter).regex));
+				return BsonMarshaller.assembly(col, BsonMarshaller.assembly("$regex", ((FactorFilter.Regex) filter).regex));
 		} else {
 			if (filter.getClass().equals(FactorFilter.And.class)) {
 				List<BSONObject> ands = new ArrayList<>();
 				for (FactorFilter f : ((FactorFilter.And) filter).filters)
 					ands.add(filter(mapperClass, f));
-				return assembly("$and", ands);
+				return BsonMarshaller.assembly("$and", ands);
 			} else if (filter.getClass().equals(FactorFilter.Or.class)) {
 				List<BSONObject> ors = new ArrayList<>();
 				for (FactorFilter f : ((FactorFilter.And) filter).filters)
 					ors.add(filter(mapperClass, f));
-				return assembly("$or", ors);
+				return BsonMarshaller.assembly("$or", ors);
 			}
 		}
 		throw new UnsupportedOperationException("Unsupportted filter: " + filter.getClass());
 	}
 
-	private BasicDBObject assembly(String key, Object value) {
-		BasicDBObject fd = new BasicDBObject();
-		fd.put(key, value);
-		return fd;
-	}
-
 	@Override
 	public <V> Tuple2<ObjectId, MongoUpdateWritable> writing(Object key, V value) {
-		BasicDBObject q = assembly("_id", this.marshaller.marshallId(key));
-		BasicDBObject u = assembly("$set", marshaller.marshall(value));
-		trace(() -> {
-			try {
-				ObjectMapper om = new ObjectMapper();
-				return "MongoDB writing upsert: " + om.writeValueAsString(u) + " for query: " + om.writeValueAsString(u);
-			} catch (Exception e) {
-				return "MongoDB writing upsert but cannot print... ";
-			}
-		});
-		return new Tuple2<ObjectId, MongoUpdateWritable>(new ObjectId(), new MongoUpdateWritable(q, u, true, true));
+		return new Tuple2<ObjectId, MongoUpdateWritable>(new ObjectId(),
+				new MongoUpdateWritable(BsonMarshaller.assembly("_id", this.marshaller.marshallId(key)),
+						BsonMarshaller.assembly("$set", marshaller.marshall(value)), true, true));
 	}
 }

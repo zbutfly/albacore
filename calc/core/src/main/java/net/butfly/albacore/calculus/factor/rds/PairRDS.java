@@ -371,6 +371,7 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 
 	public <RK, RV, WK, WV> void save(DataSource<K, RK, RV, WK, WV> ds, DataDetail<V> dd) {
 		eachPairRDD((final JavaPairRDD<K, V> rdd) -> rdd.mapToPair((final Tuple2<K, V> t) -> (Tuple2<WK, WV>) ds.writing(t._1, t._2))
+				.filter(t -> t != null && t._1 != null && t._2 != null)
 				.saveAsNewAPIHadoopFile("", ds.keyClass, ds.valueClass, ds.outputFormatClass, dd.outputConfiguration(ds)));
 	}
 }
