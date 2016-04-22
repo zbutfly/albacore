@@ -1,6 +1,7 @@
 package net.butfly.albacore.calculus.datasource;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -95,7 +96,7 @@ public abstract class DataSource<K, RK, RV, WK, WV> implements Serializable, Log
 	}
 
 	protected FactorFilter[] adddebug(FactorFilter[] filters) {
-		List<FactorFilter> l = Arrays.asList(filters);
+		List<FactorFilter> l = new ArrayList<>(Arrays.asList(filters));
 		if (debugRandomChance > 0) {
 			error(() -> "DataSource DEBUGGING, random sampling results of " + debugRandomChance);
 			l.add(new FactorFilter.Random(debugRandomChance));
