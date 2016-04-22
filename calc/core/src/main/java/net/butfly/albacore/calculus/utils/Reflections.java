@@ -10,6 +10,7 @@ import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -129,7 +130,7 @@ public final class Reflections implements Serializable {
 		return types;
 	}
 
-	public static <T, R> Collection<R> transform(Collection<T> original, Func<T, R> trans) {
+	public static <T, R> List<R> transform(Collection<T> original, Func<T, R> trans) {
 		if (original == null) return null;
 		List<R> r = new ArrayList<>(original.size());
 		original.forEach(new Consumer<T>() {
@@ -138,6 +139,16 @@ public final class Reflections implements Serializable {
 				r.add(trans.call(o));
 			}
 		});
+		return r;
+	}
+
+	public static <T, R> List<R> transform(Iterable<T> original, Func<T, R> trans) {
+		if (original == null) return null;
+		List<R> r = new ArrayList<>();
+		Iterator<T> it = original.iterator();
+		while (it.hasNext()) {
+			r.add(trans.call(it.next()));
+		}
 		return r;
 	}
 

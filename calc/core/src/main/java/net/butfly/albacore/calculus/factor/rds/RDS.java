@@ -14,6 +14,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.rdd.EmptyRDD;
 import org.apache.spark.rdd.RDD;
+import org.apache.spark.storage.StorageLevel;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaDStreamLike;
 import org.apache.spark.streaming.dstream.DStream;
@@ -72,7 +73,7 @@ public class RDS<T> implements Serializable {
 	public RDS<T> cache() {
 		switch (type) {
 		case RDD:
-			rdds = new ArrayList<>(Reflections.transform(rdds, RDD<T>::cache));
+			rdds = Reflections.transform(rdds, RDD<T>::cache);
 			break;
 		case DSTREAM:
 			dstream = dstream.cache();
@@ -86,10 +87,24 @@ public class RDS<T> implements Serializable {
 	public RDS<T> persist() {
 		switch (type) {
 		case RDD:
-			rdds = new ArrayList<>(Reflections.transform(rdds, RDD<T>::persist));
+			rdds = Reflections.transform(rdds, RDD<T>::persist);
 			break;
 		case DSTREAM:
 			dstream = dstream.persist();
+			break;
+		default:
+			throw new IllegalArgumentException();
+		}
+		return this;
+	}
+
+	public RDS<T> persist(StorageLevel level) {
+		switch (type) {
+		case RDD:
+			rdds = Reflections.transform(rdds, v -> v.persist(level));
+			break;
+		case DSTREAM:
+			dstream = dstream.persist(level);
 			break;
 		default:
 			throw new IllegalArgumentException();

@@ -54,7 +54,7 @@ public class Calculator implements Logable, Serializable {
 
 	// calculus configurations
 	public Mode mode;
-	public Class<Calculus<?, ?>> calculusClass;
+	public Class<Calculus> calculusClass;
 	private String appname;
 	private boolean optimizeMongo;
 
@@ -113,7 +113,7 @@ public class Calculator implements Logable, Serializable {
 			throw new IllegalArgumentException("Calculus not defined (-c xxx.ClassName or -Dcalculus.class=xxx.ClassName).");
 		// scan and run calculuses
 		try {
-			calculusClass = (Class<Calculus<?, ?>>) Class.forName(props.getProperty("calculus.class"));
+			calculusClass = (Class<Calculus>) Class.forName(props.getProperty("calculus.class"));
 		} catch (ClassNotFoundException e) {
 			throw new IllegalArgumentException("Calculus " + props.getProperty("calculus.class") + "not found or not calculus.", e);
 		}
@@ -125,7 +125,6 @@ public class Calculator implements Logable, Serializable {
 		if (props.containsKey("calculus.spark.jars")) sconf.setJars(props.getProperty("calculus.spark.jars").split(","));
 		sconf.set("spark.app.id", appname + "[Spark-App]");
 		sconf.set("spark.testing", Boolean.toString(false));
-		// sconf.set("spark.serializer", KryoSerializer.class.toString());
 		if (props.containsKey("calculus.spark.jars")) sconf.setJars(props.getProperty("calculus.spark.jars").split(","));
 		if (props.containsKey("calculus.spark.home")) sconf.setSparkHome(props.getProperty("calculus.spark.home"));
 		if (debug) sconf.set("spark.testing", "true");
@@ -136,7 +135,7 @@ public class Calculator implements Logable, Serializable {
 	private Calculator calculate() {
 		info(() -> calculusClass.getSimpleName() + " starting... ");
 		long now = new Date().getTime();
-		Reflections.construct(calculusClass, new Factors(this)).calculate();
+		Reflections.construct(calculusClass, this, new Factors(this)).calculate();
 		info(() -> calculusClass.getSimpleName() + " ended, spent: " + (new Date().getTime() - now) + " ms.");
 		return this;
 	}

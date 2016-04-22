@@ -17,6 +17,7 @@ import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.rdd.EmptyRDD;
 import org.apache.spark.rdd.RDD;
+import org.apache.spark.storage.StorageLevel;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaDStreamLike;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
@@ -366,6 +367,11 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 
 	public PairRDS<K, V> persist() {
 		super.persist();
+		return this;
+	}
+
+	public PairRDS<K, V> persist(StorageLevel level) {
+		super.persist(level);
 		return this;
 	}
 
