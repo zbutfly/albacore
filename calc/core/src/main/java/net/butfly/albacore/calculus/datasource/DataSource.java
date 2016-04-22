@@ -1,7 +1,9 @@
 package net.butfly.albacore.calculus.datasource;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.OutputFormat;
@@ -30,6 +32,10 @@ public abstract class DataSource<K, RK, RV, WK, WV> implements Serializable, Log
 	public final Class<RV> valueClass;
 	public final Class<? extends OutputFormat> outputFormatClass;
 	protected Configuration outputConfig;
+
+	// debug variables
+	public int debugLimit;
+	public float debugRandomChance;
 
 	public Factor.Type type() {
 		return type;
@@ -86,5 +92,18 @@ public abstract class DataSource<K, RK, RV, WK, WV> implements Serializable, Log
 
 	public <V> Tuple2<WK, WV> writing(K key, V value) {
 		throw new UnsupportedOperationException("Unsupportted saving prepare: " + type);
+	}
+
+	protected FactorFilter[] adddebug(FactorFilter[] filters) {
+		List<FactorFilter> l = Arrays.asList(filters);
+		if (debugRandomChance > 0) {
+			error(() -> "DataSource DEBUGGING, random sampling results of " + debugRandomChance);
+			l.add(new FactorFilter.Random(debugRandomChance));
+		}
+		if (debugLimit > 0) {
+			error(() -> "Hbase debugging, chance results in " + debugLimit);
+			l.add(new FactorFilter.Limit(debugLimit));
+		}
+		return l.toArray(new FactorFilter[l.size()]);
 	}
 }

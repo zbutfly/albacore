@@ -113,10 +113,11 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 	@Override
 	public <F extends Factor<F>> JavaPairRDD<byte[], F> stocking(Calculator calc, Class<F> factor, DataDetail<F> detail,
 			FactorFilter... filters) {
+		if (calc.debug && debugLimit > 0 && debugRandomChance > 0) filters = adddebug(filters);
 		debug(() -> "Scaning begin: " + factor.toString() + ", from table: " + detail.tables[0] + ".");
 		Configuration conf = HBaseConfiguration.create();
-		HUtil<F> util = new HUtil<F>(configFile, factor, detail.tables[0], (HbaseMarshaller) marshaller, calc.debug).init(conf);
-		return util.filter(conf, util.filter(filters)).debug(conf).scan(calc.sc, conf);
+		HUtil<F> util = new HUtil<F>(configFile, factor, detail.tables[0], (HbaseMarshaller) marshaller).init(conf);
+		return util.filter(conf, util.filter(filters)).scan(calc.sc, conf);
 	}
 
 	@Override
@@ -126,7 +127,7 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 		debug(() -> "Scaning begin: " + factor.toString() + ", from table: " + detail.tables[0] + ".");
 		error(() -> "Batching mode is not supported now... BUG!!!!!");
 		Configuration conf = HBaseConfiguration.create();
-		HUtil<F> util = new HUtil<F>(configFile, factor, detail.tables[0], (HbaseMarshaller) marshaller, calc.debug).init(conf);
+		HUtil<F> util = new HUtil<F>(configFile, factor, detail.tables[0], (HbaseMarshaller) marshaller).init(conf);
 		return util.filter(conf, util.filter(new FactorFilter.Page<byte[]>(offset, limit))).scan(calc.sc, conf);
 	}
 
@@ -135,17 +136,15 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 		protected final static Logger logger = LoggerFactory.getLogger(HUtil.class);
 		Class<F> factor;
 		boolean filtered = false;
-		boolean debug;
 		private HbaseMarshaller marshaller;
 		private String configFile;
 		private String table;
 
-		public HUtil(String configFile, Class<F> factor, String table, HbaseMarshaller marshaller, boolean debug) {
+		public HUtil(String configFile, Class<F> factor, String table, HbaseMarshaller marshaller) {
 			super();
 			this.configFile = configFile;
 			this.table = table;
 			this.factor = factor;
-			this.debug = debug;
 			this.marshaller = marshaller;
 		}
 
@@ -163,30 +162,6 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 			return sc.newAPIHadoopRDD(hconf, TableInputFormat.class, ImmutableBytesWritable.class, Result.class)
 					.mapToPair((final Tuple2<ImmutableBytesWritable, Result> t) -> new Tuple2<>(marshaller.unmarshallId(t._1),
 							marshaller.unmarshall(t._2, factor)));
-		}
-
-		public HUtil<F> debug(final Configuration hconf) {
-			if (debug && !filtered) try {
-				float ratio = Float.parseFloat(System.getProperty("calculus.debug.hbase.random.ratio", "0"));
-				if (ratio > 0) {
-					error(() -> "Hbase debugging, random sampling results of " + ratio
-							+ " (can be customized by -Dcalculus.debug.hbase.random.ratio=0.00000X)");
-					hconf.set(TableInputFormat.SCAN,
-							Base64.encodeBytes(ProtobufUtil.toScan(createScan().setFilter(new RandomRowFilter(ratio))).toByteArray()));
-				} else {
-					long limit = Long.parseLong(System.getProperty("calculus.debug.hbase.limit", "-1"));
-					if (limit > 0) {
-						error(() -> "Hbase debugging, chance results in " + limit
-								+ " (can be customized by -Dcalculus.debug.hbase.limit=100)");
-						hconf.set(TableInputFormat.SCAN,
-								Base64.encodeBytes(ProtobufUtil.toScan(createScan().setFilter(new PageFilter(limit))).toByteArray()));
-					}
-				}
-			} catch (IOException e) {
-				error(() -> "Hbase debugging failure, page scan definition error", e);
-			}
-			filtered = true;
-			return this;
 		}
 
 		public HUtil<F> filter(final Configuration hconf, Filter filter) {

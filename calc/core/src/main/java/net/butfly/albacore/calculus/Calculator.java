@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.butfly.albacore.calculus.datasource.ConstDataSource;
+import net.butfly.albacore.calculus.datasource.DataSource;
 import net.butfly.albacore.calculus.datasource.DataSource.DataSources;
 import net.butfly.albacore.calculus.datasource.HbaseDataSource;
 import net.butfly.albacore.calculus.datasource.KafkaDataSource;
@@ -164,26 +165,30 @@ public class Calculator implements Logable, Serializable {
 				m = null;
 			}
 			Type type = Type.valueOf(dbprops.getProperty("type"));
+			DataSource<?, ?, ?, ?, ?> ds = null;
 			switch (type) {
 			case CONSTAND_TO_CONSOLE:
-				dss.put(dsid, new ConstDataSource(dbprops.getProperty("values").split(",")));
+				ds = new ConstDataSource(dbprops.getProperty("values").split(","));
 				break;
 			case HBASE:
-				dss.put(dsid, new HbaseDataSource(dbprops.getProperty("config", "hbase-site.xml"), (HbaseMarshaller) m));
+				ds = new HbaseDataSource(dbprops.getProperty("config", "hbase-site.xml"), (HbaseMarshaller) m);
 				break;
 			case MONGODB:
-				dss.put(dsid, new MongoDataSource(dbprops.getProperty("uri"), (MongoMarshaller) m, dbprops.getProperty("output.suffix"),
-						Boolean.parseBoolean(dbprops.getProperty("validate", "true")), this.optimizeMongo));
-				// , dbprops.getProperty("authdb"),dbprops.getProperty("authdb")
+				ds = new MongoDataSource(dbprops.getProperty("uri"), (MongoMarshaller) m, dbprops.getProperty("output.suffix"),
+						Boolean.parseBoolean(dbprops.getProperty("validate", "true")), this.optimizeMongo);
 				break;
 			case KAFKA:
-				dss.put(dsid,
-						new KafkaDataSource(dbprops.getProperty("servers"), dbprops.getProperty("root"),
-								Integer.parseInt(dbprops.getProperty("topic.partitions", "1")),
-								debug ? appname + UUID.randomUUID().toString() : appname, (KafkaMarshaller) m));
+				ds = new KafkaDataSource(dbprops.getProperty("servers"), dbprops.getProperty("root"),
+						Integer.parseInt(dbprops.getProperty("topic.partitions", "1")),
+						debug ? appname + UUID.randomUUID().toString() : appname, (KafkaMarshaller) m);
 				break;
 			default:
 				warn(() -> "Unsupportted type: " + type);
+			}
+			if (null != ds) {
+				ds.debugLimit = Integer.parseInt(dbprops.getProperty("debug.limit", "0"));
+				ds.debugRandomChance = Float.parseFloat(dbprops.getProperty("debug.random", "0"));
+				dss.put(dsid, ds);
 			}
 		}
 	}

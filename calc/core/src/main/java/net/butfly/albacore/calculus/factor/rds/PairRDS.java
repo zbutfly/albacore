@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.spark.HashPartitioner;
+import org.apache.spark.Partitioner;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaRDDLike;
@@ -362,6 +364,25 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 
 	public PairRDS<K, V> cache() {
 		super.cache();
+		return this;
+	}
+
+	public PairRDS<K, V> repartition(int numPartitions, boolean rehash) {
+		if (!rehash || type == RDSType.DSTREAM) return repartition(numPartitions);
+		switch (type) {
+		case RDD:
+			Partitioner p = new HashPartitioner(numPartitions);
+			rdds = Reflections.transform(rdds, rdd -> JavaPairRDD.fromRDD(rdd, tag(), tag()).partitionBy(p).rdd());
+			break;
+		default:
+			throw new IllegalArgumentException();
+		}
+		return this;
+	}
+
+	@Override
+	public PairRDS<K, V> repartition(int numPartitions) {
+		super.repartition(numPartitions);
 		return this;
 	}
 

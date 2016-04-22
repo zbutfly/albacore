@@ -1,11 +1,12 @@
 package net.butfly.albacore.calculus.factor;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
+import org.apache.spark.storage.StorageLevel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,23 +46,25 @@ public final class Factors implements Serializable, Logable {
 		this.calc = calc;
 
 		FactorConfig<?, ?> batch = null;
-		List<Class<?>> cl = new ArrayList<>();
-		for (Factoring f : factorings) {
-			if (CONFIGS.containsKey(f.key())) throw new IllegalArgumentException("Conflictted factoring id: " + f.key());
+		Set<Class<?>> cl = new HashSet<>();
+		for (Factoring fing : factorings) {
+			if (CONFIGS.containsKey(fing.key())) throw new IllegalArgumentException("Conflictted factoring id: " + fing.key());
 			@SuppressWarnings("rawtypes")
-			Class fc = f.factor();
+			Class fc = fing.factor();
 			if (!fc.isAnnotationPresent(Streaming.class) && !fc.isAnnotationPresent(Stocking.class)) throw new IllegalArgumentException(
 					"Factor [" + fc.toString() + "] is annotated as neither @Streaming nor @Stocking, can't calculate it!");
 			FactorConfig<?, ?> conf = config(fc);
 			cl.add(conf.factorClass);
-			conf.batching = f.batching();
-			conf.streaming = f.stockOnStreaming();
-			if (f.batching() > 0) {
+			conf.batching = fing.batching();
+			conf.streaming = fing.stockOnStreaming();
+			conf.expanding = fing.expanding();
+			conf.persisting = "".equals(fing.persisting()) ? null : StorageLevel.fromString(fing.persisting());
+			if (fing.batching() > 0) {
 				if (batch != null) throw new IllegalArgumentException("Only one batch stocking source supported, now found second: "
 						+ batch.factorClass.toString() + " and " + conf.factorClass.toString());
 				else batch = conf;
 			}
-			CONFIGS.put(f.key(), conf);
+			CONFIGS.put(fing.key(), conf);
 		}
 		calc.sconf.registerKryoClasses(cl.toArray(new Class[cl.size()]));
 	}
@@ -72,8 +75,12 @@ public final class Factors implements Serializable, Logable {
 		DataDetail<F> d = config.detail;
 		switch (calc.mode) {
 		case STOCKING:
-			if (config.batching <= 0) return new PairRDS<K, F>(ds.stocking(calc, config.factorClass, d, filters));
-			else return new PairRDS<K, F>(RDDDStream.bpstream(calc.ssc.ssc(), config.batching,
+			if (config.batching <= 0) {
+				PairRDS<K, F> p = new PairRDS<K, F>(ds.stocking(calc, config.factorClass, d, filters));
+				if (config.expanding > 1) p = p.repartition(p.partitions() * config.expanding);
+				if (config.persisting != null) p = p.persist(config.persisting);
+				return p;
+			} else return new PairRDS<K, F>(RDDDStream.bpstream(calc.ssc.ssc(), config.batching,
 					(final Long limit, final K offset) -> ds.batching(calc, config.factorClass, limit, offset, d, filters),
 					ds.marshaller().comparator()));
 		case STREAMING:

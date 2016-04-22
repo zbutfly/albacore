@@ -84,6 +84,34 @@ public class RDS<T> implements Serializable {
 		return this;
 	}
 
+	public int partitions() {
+		switch (type) {
+		case RDD:
+			int p = 0;
+			for (RDD<T> rdd : rdds)
+				p += rdd.partitions().length;
+			return p;
+		case DSTREAM:
+			return -1;
+		default:
+			throw new IllegalArgumentException();
+		}
+	}
+
+	public RDS<T> repartition(int numPartitions) {
+		switch (type) {
+		case RDD:
+			rdds = Reflections.transform(rdds, rdd -> JavaRDD.fromRDD(rdd, tag()).repartition(numPartitions).rdd());
+			break;
+		case DSTREAM:
+			dstream = dstream.repartition(numPartitions);
+			break;
+		default:
+			throw new IllegalArgumentException();
+		}
+		return this;
+	}
+
 	public RDS<T> persist() {
 		switch (type) {
 		case RDD:
