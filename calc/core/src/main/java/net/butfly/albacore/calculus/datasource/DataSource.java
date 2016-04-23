@@ -7,8 +7,10 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.OutputFormat;
 import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,15 +26,17 @@ import scala.Tuple2;
 @SuppressWarnings("rawtypes")
 public abstract class DataSource<K, RK, RV, WK, WV> implements Serializable, Logable {
 	private static final long serialVersionUID = 1L;
+	protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 	protected final Factor.Type type;
 	protected final Marshaller<K, RK, RV> marshaller;
-	protected final Logger logger = LoggerFactory.getLogger(this.getClass());
-	public final boolean validate;
-	public String suffix;
 	public final Class<RK> keyClass;
 	public final Class<RV> valueClass;
 	public final Class<? extends OutputFormat> outputFormatClass;
+	private final Class<? extends InputFormat<RK, RV>> inputFormatClass;
 	protected Configuration outputConfig;
+
+	public final boolean validate;
+	public String suffix;
 
 	// debug variables
 	public int debugLimit;
@@ -47,7 +51,7 @@ public abstract class DataSource<K, RK, RV, WK, WV> implements Serializable, Log
 	}
 
 	public DataSource(Type type, boolean validate, Marshaller<K, RK, RV> marshaller, Class<RK> keyClass, Class<RV> valueClass,
-			Class<? extends OutputFormat> outputFormatClass) {
+			Class<? extends OutputFormat> outputFormatClass, Class<? extends InputFormat<RK, RV>> inputFormatClass) {
 		super();
 		this.type = type;
 		this.validate = validate;
@@ -55,6 +59,7 @@ public abstract class DataSource<K, RK, RV, WK, WV> implements Serializable, Log
 		this.keyClass = keyClass;
 		this.valueClass = valueClass;
 		this.outputFormatClass = outputFormatClass;
+		this.inputFormatClass = inputFormatClass;
 	}
 
 	@Override
@@ -91,7 +96,7 @@ public abstract class DataSource<K, RK, RV, WK, WV> implements Serializable, Log
 		}
 	}
 
-	public <V> Tuple2<WK, WV> writing(K key, V value) {
+	public <V> Tuple2<WK, WV> beforeWriting(K key, V value) {
 		throw new UnsupportedOperationException("Unsupportted saving prepare: " + type);
 	}
 
@@ -106,5 +111,19 @@ public abstract class DataSource<K, RK, RV, WK, WV> implements Serializable, Log
 			l.add(new FactorFilter.Limit(debugLimit));
 		}
 		return l.toArray(new FactorFilter[l.size()]);
+	}
+
+	public void save(JavaPairRDD<WK, WV> rdd, DataDetail<?> dd) {
+		rdd.saveAsNewAPIHadoopFile("", keyClass, valueClass, outputFormatClass, dd.outputConfiguration(this));
+	}
+
+	protected static <K, F extends Factor<F>, RK, RV> JavaPairRDD<K, F> defaultRead(DataSource<K, RK, RV, ?, ?> ds, JavaSparkContext sc,
+			Configuration conf, Class<F> factor) {
+		return sc.newAPIHadoopRDD(conf, ds.inputFormatClass, ds.keyClass, ds.valueClass).mapToPair(t -> ds.afterReading(t._1, t._2,
+				factor));
+	}
+
+	protected final <F extends Factor<F>> Tuple2<K, F> afterReading(RK key, RV value, Class<F> factor) {
+		return new Tuple2<>(marshaller.unmarshallId(key), marshaller.unmarshall(value, factor));
 	}
 }

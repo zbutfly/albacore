@@ -20,7 +20,7 @@ public class ConstDataSource extends DataSource<String, Void, String, Void, Stri
 	private String[] values;
 
 	public ConstDataSource(String[] values) {
-		super(Type.CONSTAND_TO_CONSOLE, false, null, Void.class, String.class, NullOutputFormat.class);
+		super(Type.CONSTAND_TO_CONSOLE, false, null, Void.class, String.class, NullOutputFormat.class, null);
 		this.values = values;
 	}
 
@@ -38,7 +38,7 @@ public class ConstDataSource extends DataSource<String, Void, String, Void, Stri
 			FactorFilter... filters) {
 		String[] values = this.values;
 		if (values == null) values = new String[0];
-		return calc.sc.parallelize(Arrays.asList(values)).mapToPair(
-				(final String t) -> null == t ? null : new Tuple2<>(UUID.randomUUID().toString(), (F) Reflections.construct(factor, t)));
+		return calc.sc.parallelize(Arrays.asList(values)).mapToPair((final String t) -> null == t ? null
+				: new Tuple2<>(UUID.randomUUID().toString(), (F) Reflections.construct(factor, t)));
 	}
 }

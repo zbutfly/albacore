@@ -50,7 +50,7 @@ public class ANSIConsoleAppender extends ConsoleAppender {
 	 * Get the appropriate control characters to change the colour for the
 	 * specified logging level.
 	 */
-	private String getColour(Level level) {
+	protected String getColour(Level level) {
 		switch (level.toInt()) {
 		case Priority.FATAL_INT:
 			return FATAL_COLOUR;

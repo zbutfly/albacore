@@ -8,9 +8,4 @@ public class KafkaDataDetail<F> extends DataDetail<F> {
 	public KafkaDataDetail(Class<F> factor, String... topics) {
 		super(Type.KAFKA, factor, null, topics);
 	}
-
-	@Override
-	public String toString() {
-		return "[Table: " + String.join(",", tables) + "]";
-	}
 }

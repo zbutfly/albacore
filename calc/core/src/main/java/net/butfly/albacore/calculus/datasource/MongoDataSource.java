@@ -31,6 +31,7 @@ import com.mongodb.hadoop.util.MongoConfigUtil;
 import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
+import net.butfly.albacore.calculus.factor.Index;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
 import net.butfly.albacore.calculus.marshall.MongoMarshaller;
 import net.butfly.albacore.calculus.marshall.bson.BsonMarshaller;
@@ -39,12 +40,12 @@ import scala.Tuple2;
 
 public class MongoDataSource extends DataSource<Object, Object, BSONObject, ObjectId, MongoUpdateWritable> {
 	private static final long serialVersionUID = -2617369621178264387L;
-	public String uri;
-	private boolean optimize;
+	final String uri;
+	private final boolean optimize;
 
 	public MongoDataSource(String uri, MongoMarshaller marshaller, String suffix, boolean validate, boolean optimize) {
 		super(Type.MONGODB, validate, null == marshaller ? new MongoMarshaller() : marshaller, Object.class, BSONObject.class,
-				MongoOutputFormat.class);
+				MongoOutputFormat.class, MongoInputFormat.class);
 		super.suffix = suffix;
 		this.uri = uri;
 		this.optimize = optimize;
@@ -95,8 +96,8 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 		mconf.setClass(MongoConfigUtil.JOB_INPUT_FORMAT, MongoInputFormat.class, InputFormat.class);
 		MongoClientURI uri = new MongoClientURI(this.uri);
 		// mconf.set(MongoConfigUtil.INPUT_URI, uri.toString());
-		mconf.set(MongoConfigUtil.INPUT_URI,
-				new MongoClientURIBuilder(uri).collection(uri.getDatabase(), detail.tables[0]).build().toString());
+		mconf.set(MongoConfigUtil.INPUT_URI, new MongoClientURIBuilder(uri).collection(uri.getDatabase(), detail.tables[0]).build()
+				.toString());
 		List<BSONObject> ands = new ArrayList<>();
 		if (detail.filter != null) ands.add(((MongoMarshaller) this.marshaller).bsonFromJSON(detail.filter));
 		for (FactorFilter f : filters) {
@@ -110,8 +111,8 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 			} else if (f instanceof FactorFilter.Sort) {
 				warn(() -> "MongoDB query sort set as [" + ((FactorFilter.Sort) f).field + ":" + ((FactorFilter.Sort) f).asc
 						+ "], maybe debug...");
-				mconf.set(MongoConfigUtil.INPUT_SORT, ((MongoMarshaller) this.marshaller)
-						.jsonFromBSON(BsonMarshaller.assembly(((FactorFilter.Sort) f).field, ((FactorFilter.Sort) f).asc ? 1 : -1)));
+				mconf.set(MongoConfigUtil.INPUT_SORT, ((MongoMarshaller) this.marshaller).jsonFromBSON(BsonMarshaller.assembly(
+						((FactorFilter.Sort) f).field, ((FactorFilter.Sort) f).asc ? 1 : -1)));
 			} else ands.add(filter(factor, f));
 		}
 		String inputquery = fromBSON(ands);
@@ -122,18 +123,16 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 				mconf.setClass(MongoConfigUtil.MONGO_SPLITTER_CLASS, MongoPaginatingSplitter.class, MongoSplitter.class);
 				info(() -> "Use optimized spliter: " + MongoPaginatingSplitter.class.toString());
 			}
-			trace(() -> "Run mongodb filter on " + factor.toString() + ": "
-					+ (inputquery.length() <= 200 || calc.debug ? inputquery
-							: inputquery.substring(0, 100) + "...(too long string eliminated)")
-					+ (mconf.get(MongoConfigUtil.INPUT_LIMIT) == null ? "" : ", chance: " + mconf.get(MongoConfigUtil.INPUT_LIMIT))
-					+ (mconf.get(MongoConfigUtil.INPUT_SKIP) == null ? "" : ", skip: " + mconf.get(MongoConfigUtil.INPUT_SKIP)) + ".");
+			trace(() -> "Run mongodb filter on " + factor.toString() + ": " + (inputquery.length() <= 200 || calc.debug ? inputquery
+					: inputquery.substring(0, 100) + "...(too long string eliminated)") + (mconf.get(MongoConfigUtil.INPUT_LIMIT) == null
+							? "" : ", chance: " + mconf.get(MongoConfigUtil.INPUT_LIMIT)) + (mconf.get(MongoConfigUtil.INPUT_SKIP) == null
+									? "" : ", skip: " + mconf.get(MongoConfigUtil.INPUT_SKIP)) + ".");
 		}
 		// conf.mconf.set(MongoConfigUtil.INPUT_FIELDS
 		mconf.setBoolean(MongoConfigUtil.INPUT_NOTIMEOUT, true);
 		// mconf.set("mongo.input.split.use_range_queries", "true");
 
-		return calc.sc.newAPIHadoopRDD(mconf, MongoInputFormat.class, Object.class, BSONObject.class).mapToPair(
-				(final Tuple2<Object, BSONObject> t) -> new Tuple2<>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor)));
+		return DataSource.defaultRead(this, calc.sc, mconf, factor);
 	}
 
 	private String fromBSON(List<BSONObject> ands) {
@@ -163,12 +162,12 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 	private BSONObject filter(Class<?> mapperClass, FactorFilter filter) {
 		if (filter instanceof FactorFilter.ByField) {
 			String col = marshaller.parseField(Reflections.getDeclaredField(mapperClass, ((FactorFilter.ByField<?>) filter).field));
-			if (filter instanceof FactorFilter.ByFieldValue) return BsonMarshaller.assembly(col,
-					BsonMarshaller.assembly(ops.get(filter.getClass()), ((FactorFilter.ByFieldValue<?>) filter).value));
-			if (filter.getClass().equals(FactorFilter.In.class))
-				return BsonMarshaller.assembly(col, BsonMarshaller.assembly("$in", ((FactorFilter.In<?>) filter).values));
-			if (filter.getClass().equals(FactorFilter.Regex.class))
-				return BsonMarshaller.assembly(col, BsonMarshaller.assembly("$regex", ((FactorFilter.Regex) filter).regex));
+			if (filter instanceof FactorFilter.ByFieldValue) return BsonMarshaller.assembly(col, BsonMarshaller.assembly(ops.get(filter
+					.getClass()), ((FactorFilter.ByFieldValue<?>) filter).value));
+			if (filter.getClass().equals(FactorFilter.In.class)) return BsonMarshaller.assembly(col, BsonMarshaller.assembly("$in",
+					((FactorFilter.In<?>) filter).values));
+			if (filter.getClass().equals(FactorFilter.Regex.class)) return BsonMarshaller.assembly(col, BsonMarshaller.assembly("$regex",
+					((FactorFilter.Regex) filter).regex));
 		} else {
 			if (filter.getClass().equals(FactorFilter.And.class)) {
 				List<BSONObject> ands = new ArrayList<>();
@@ -186,9 +185,8 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 	}
 
 	@Override
-	public <V> Tuple2<ObjectId, MongoUpdateWritable> writing(Object key, V value) {
-		return new Tuple2<ObjectId, MongoUpdateWritable>(new ObjectId(),
-				new MongoUpdateWritable(BsonMarshaller.assembly("_id", this.marshaller.marshallId(key)),
-						BsonMarshaller.assembly("$set", marshaller.marshall(value)), true, true));
+	public <V> Tuple2<ObjectId, MongoUpdateWritable> beforeWriting(Object key, V value) {
+		return new Tuple2<ObjectId, MongoUpdateWritable>(new ObjectId(), new MongoUpdateWritable(BsonMarshaller.assembly("_id",
+				this.marshaller.marshallId(key)), BsonMarshaller.assembly("$set", marshaller.marshall(value)), true, true));
 	}
 }
