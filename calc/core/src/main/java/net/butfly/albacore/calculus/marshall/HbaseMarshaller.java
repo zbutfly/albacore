@@ -17,7 +17,6 @@ import com.google.common.base.Defaults;
 import com.google.common.base.Joiner;
 
 import net.butfly.albacore.calculus.datasource.HbaseColumnFamily;
-import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.utils.Reflections;
 
 public class HbaseMarshaller extends Marshaller<byte[], ImmutableBytesWritable, Result> {
@@ -33,7 +32,7 @@ public class HbaseMarshaller extends Marshaller<byte[], ImmutableBytesWritable, 
 	}
 
 	@Override
-	public <T extends Factor<T>> T unmarshall(Result from, Class<T> to) {
+	public <T> T unmarshall(Result from, Class<T> to) {
 		if (null == from) return null;
 		T t;
 		try {
@@ -42,7 +41,7 @@ public class HbaseMarshaller extends Marshaller<byte[], ImmutableBytesWritable, 
 			throw new RuntimeException(e);
 		}
 		for (Field f : Reflections.getDeclaredFields(to)) {
-			String[] qulifier = parseField(f).split(",");
+			String[] qulifier = parseField(f).split(":");
 			try {
 				Cell cell = from.getColumnLatestCell(Text.encode(qulifier[0]).array(), Text.encode(qulifier[1]).array());
 				if (cell != null) Reflections.set(t, f, fromBytes(f.getType(), CellUtil.cloneValue(cell)));
@@ -69,7 +68,7 @@ public class HbaseMarshaller extends Marshaller<byte[], ImmutableBytesWritable, 
 	}
 
 	@Override
-	public <T extends Factor<T>> Result marshall(T from) {
+	public <T> Result marshall(T from) {
 		throw new UnsupportedOperationException("Hbase marshall / write not supported.");
 	}
 

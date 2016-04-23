@@ -17,13 +17,21 @@ public @interface Factoring {
 	String key();
 
 	@Deprecated
-	long batching() default 0L;
+	long batching()
 
-	Mechanism stockOnStreaming() default Mechanism.CONST;
+	default 0L;
+
+	Mechanism stockOnStreaming()
+
+	default Mechanism.CONST;
 
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target(ElementType.TYPE)
 	public @interface Factorings {
 		Factoring[] value();
 	}
+
+	int expanding() default 1;
+
+	String persisting() default "";
 }

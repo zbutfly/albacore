@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
+import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
 import org.apache.spark.storage.StorageLevel;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.kafka.KafkaUtils;
@@ -14,10 +15,11 @@ import kafka.serializer.StringDecoder;
 import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
+import net.butfly.albacore.calculus.factor.filter.FactorFilter;
 import net.butfly.albacore.calculus.marshall.KafkaMarshaller;
 import scala.Tuple2;
 
-public class KafkaDataSource extends DataSource<String, String, byte[], KafkaDataDetail> {
+public class KafkaDataSource extends DataSource<String, String, byte[], Void, Void> {
 	private static final long serialVersionUID = 7500441385655250814L;
 	String servers;
 	String root;
@@ -25,7 +27,9 @@ public class KafkaDataSource extends DataSource<String, String, byte[], KafkaDat
 	int topicPartitions;
 
 	public KafkaDataSource(String servers, String root, int topicPartitions, String group, KafkaMarshaller marshaller) {
-		super(Type.KAFKA, false, null == marshaller ? new KafkaMarshaller() : marshaller);
+		// TODO: customize topic partitions map in configuration.
+		super(Type.KAFKA, false, null == marshaller ? new KafkaMarshaller() : marshaller, String.class, byte[].class,
+				NullOutputFormat.class);
 		int pos = servers.indexOf('/');
 		if (root == null && pos >= 0) {
 			this.servers = servers.substring(0, pos);
@@ -64,8 +68,9 @@ public class KafkaDataSource extends DataSource<String, String, byte[], KafkaDat
 	}
 
 	@Override
-	public <F extends Factor<F>> JavaPairDStream<String, F> streaming(Calculator calc, Class<F> factor, KafkaDataDetail detail) {
-		if (logger.isDebugEnabled()) logger.debug("Streaming begin: " + factor.toString());
+	public <F extends Factor<F>> JavaPairDStream<String, F> streaming(Calculator calc, Class<F> factor, DataDetail<F> detail,
+			FactorFilter... filters) {
+		debug(() -> "Streaming begin: " + factor.toString());
 		JavaPairDStream<String, byte[]> kafka;
 		Map<String, String> params = new HashMap<>();
 		if (root == null) { // direct mode
@@ -85,6 +90,7 @@ public class KafkaDataSource extends DataSource<String, String, byte[], KafkaDat
 			kafka = KafkaUtils.createStream(calc.ssc, String.class, byte[].class, StringDecoder.class, DefaultDecoder.class, params,
 					topicsMap, StorageLevel.MEMORY_ONLY());
 		}
-		return kafka.mapToPair(t -> new Tuple2<String, F>(marshaller.unmarshallId(t._1), marshaller.unmarshall(t._2, factor)));
+		return kafka.mapToPair((final Tuple2<String, byte[]> t) -> new Tuple2<String, F>(marshaller.unmarshallId(t._1),
+				marshaller.unmarshall(t._2, factor)));
 	}
 }

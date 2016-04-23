@@ -3,17 +3,21 @@ package net.butfly.albacore.calculus.utils;
 import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.function.Consumer;
 
 import com.google.common.reflect.TypeToken;
+
+import net.butfly.albacore.calculus.lambda.Func;
 
 public final class Reflections implements Serializable {
 	private static final long serialVersionUID = 6337397752201899394L;
@@ -55,7 +59,16 @@ public final class Reflections implements Serializable {
 
 	public static <T> T construct(final Class<T> cls, Object... parameters) {
 		final Class<?> parameterTypes[] = toClass(parameters);
-		return construct(cls, parameters, parameterTypes);
+		return constr(cls, parameters, parameterTypes);
+	}
+
+	private static <T> T constr(final Class<T> cls, Object[] parameters, Class<?>[] parameterTypes) {
+		try {
+			return cls.getConstructor(parameterTypes).newInstance(parameters);
+		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
+				| NoSuchMethodException | SecurityException e) {
+			throw new RuntimeException("Instance of " + cls.toString() + " construction failure.", e);
+		}
 	}
 
 	@SuppressWarnings("unchecked")
@@ -113,14 +126,29 @@ public final class Reflections implements Serializable {
 		TypeVariable<?>[] vv = declareClass.getTypeParameters();
 		for (TypeVariable<?> v : vv) {
 			types.put(v.getName(), (Class<?>) TypeToken.of(implType).resolveType(v).getRawType());
-		};
+		} ;
 		return types;
 	}
 
-	public static <T, R> Collection<R> transform(Collection<T> original, Function<T, R> trans) {
+	public static <T, R> List<R> transform(Collection<T> original, Func<T, R> trans) {
 		if (original == null) return null;
 		List<R> r = new ArrayList<>(original.size());
-		original.forEach(o -> r.add(trans.apply(o)));
+		original.forEach(new Consumer<T>() {
+			@Override
+			public void accept(T o) {
+				r.add(trans.call(o));
+			}
+		});
+		return r;
+	}
+
+	public static <T, R> List<R> transform(Iterable<T> original, Func<T, R> trans) {
+		if (original == null) return null;
+		List<R> r = new ArrayList<>();
+		Iterator<T> it = original.iterator();
+		while (it.hasNext()) {
+			r.add(trans.call(it.next()));
+		}
 		return r;
 	}
 
@@ -142,5 +170,16 @@ public final class Reflections implements Serializable {
 			if (v instanceof CharSequence && ((CharSequence) v).length() == 0) return true;
 		}
 		return false;
+	}
+
+	public static void copy(Object src, Object dst) {
+		for (Field f : getDeclaredFields(src.getClass())) {
+			Field f1 = getDeclaredField(dst.getClass(), f.getName());
+			if (null != f1) try {
+				f1.setAccessible(true);
+				f.setAccessible(true);
+				f1.set(dst, f.get(src));
+			} catch (IllegalArgumentException | IllegalAccessException e) {}
+		}
 	}
 }

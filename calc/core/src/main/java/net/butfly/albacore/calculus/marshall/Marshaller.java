@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.CaseFormat;
 
-import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.utils.Reflections;
 
 @SuppressWarnings("unchecked")
@@ -22,7 +21,7 @@ public abstract class Marshaller<FK, VK, VV> implements Serializable {
 		return null == id ? null : (FK) id;
 	}
 
-	public <T extends Factor<T>> T unmarshall(VV from, Class<T> to) {
+	public <T> T unmarshall(VV from, Class<T> to) {
 		return (T) from;
 	}
 
@@ -30,7 +29,7 @@ public abstract class Marshaller<FK, VK, VV> implements Serializable {
 		return (VK) id;
 	}
 
-	public <T extends Factor<T>> VV marshall(T from) {
+	public <T> VV marshall(T from) {
 		return (VV) from;
 	}
 

@@ -2,6 +2,8 @@ package net.butfly.albacore.calculus.factor;
 
 import java.io.Serializable;
 
+import org.apache.spark.storage.StorageLevel;
+
 import net.butfly.albacore.calculus.Mode;
 import net.butfly.albacore.calculus.datasource.DataDetail;
 import net.butfly.albacore.calculus.streaming.RDDDStream.Mechanism;
@@ -13,8 +15,10 @@ public class FactorConfig<K, F extends Factor<F>> implements Serializable {
 	public Class<F> factorClass;
 	public Mode mode;
 	public String dbid;
-	public DataDetail detail;
+	public DataDetail<F> detail;
 	@Deprecated
 	public long batching = 0;
 	public Mechanism streaming;
+	public int expanding;
+	public StorageLevel persisting;
 }
