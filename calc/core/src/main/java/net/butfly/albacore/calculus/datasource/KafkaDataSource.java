@@ -29,7 +29,7 @@ public class KafkaDataSource extends DataSource<String, String, byte[], Void, Vo
 	public KafkaDataSource(String servers, String root, int topicPartitions, String group, KafkaMarshaller marshaller) {
 		// TODO: customize topic partitions map in configuration.
 		super(Type.KAFKA, false, null == marshaller ? new KafkaMarshaller() : marshaller, String.class, byte[].class,
-				NullOutputFormat.class);
+				NullOutputFormat.class, null);
 		int pos = servers.indexOf('/');
 		if (root == null && pos >= 0) {
 			this.servers = servers.substring(0, pos);
@@ -90,7 +90,7 @@ public class KafkaDataSource extends DataSource<String, String, byte[], Void, Vo
 			kafka = KafkaUtils.createStream(calc.ssc, String.class, byte[].class, StringDecoder.class, DefaultDecoder.class, params,
 					topicsMap, StorageLevel.MEMORY_ONLY());
 		}
-		return kafka.mapToPair((final Tuple2<String, byte[]> t) -> new Tuple2<String, F>(marshaller.unmarshallId(t._1),
-				marshaller.unmarshall(t._2, factor)));
+		return kafka.mapToPair((final Tuple2<String, byte[]> t) -> new Tuple2<String, F>(marshaller.unmarshallId(t._1), marshaller
+				.unmarshall(t._2, factor)));
 	}
 }

@@ -18,14 +18,14 @@
 		<deps.version.spark>1.5.0-cdh5.5.2</deps.version.spark>
 		<deps.version.jackson>2.7.3</deps.version.jackson>
 	</properties>
-<!-- 	<properties> -->
-<!-- 		<deps.version.scala>2.11</deps.version.scala> -->
-<!-- 		<deps.version.scala.lib>2.12.0-M3-dc9effe</deps.version.scala.lib> -->
-<!-- 		${deps.version.scala}.8 -->
-<!-- 		<deps.version.spark>1.6.1</deps.version.spark> -->
-<!-- 		<deps.version.hbase>1.2.0</deps.version.hbase> -->
-<!-- 		<deps.version.jackson>2.7.3</deps.version.jackson> -->
-<!-- 	</properties> -->
+	<!-- <properties> -->
+	<!-- <deps.version.scala>2.11</deps.version.scala> -->
+	<!-- <deps.version.scala.lib>2.12.0-M3-dc9effe</deps.version.scala.lib> -->
+	<!-- ${deps.version.scala}.8 -->
+	<!-- <deps.version.spark>1.6.1</deps.version.spark> -->
+	<!-- <deps.version.hbase>1.2.0</deps.version.hbase> -->
+	<!-- <deps.version.jackson>2.7.3</deps.version.jackson> -->
+	<!-- </properties> -->
 	<dependencies>
 		<dependency>
 			<groupId>org.apache.spark</groupId>
@@ -62,6 +62,37 @@
 			<artifactId>spark-streaming-kafka_${deps.version.scala}</artifactId>
 			<version>${deps.version.spark}</version>
 			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.spark</groupId>
+			<artifactId>spark-sql_${deps.version.scala}</artifactId>
+			<version>${deps.version.spark}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.spark</groupId>
+			<artifactId>spark-graphx_${deps.version.scala}</artifactId>
+			<version>${deps.version.spark}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.elasticsearch</groupId>
+			<artifactId>elasticsearch-hadoop</artifactId>
+			<version>2.3.0</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>log4j-over-slf4j</artifactId>
+					<groupId>org.slf4j</groupId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.apache.spark</groupId>
+					<artifactId>spark-core_2.10</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.apache.spark</groupId>
+					<artifactId>spark-sql_2.10</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.hbase</groupId>
@@ -138,4 +169,10 @@
 			<scope>provided</scope>
 		</dependency>
 	</dependencies>
+	<repositories>
+		<repository>
+			<id>cloudera</id>
+			<url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
+		</repository>
+	</repositories>
 </project>

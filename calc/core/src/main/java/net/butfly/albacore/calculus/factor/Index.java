@@ -1,4 +1,4 @@
-package net.butfly.albacore.calculus.datasource;
+package net.butfly.albacore.calculus.factor;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

@@ -13,7 +13,7 @@ import com.google.common.base.CaseFormat;
 import net.butfly.albacore.calculus.utils.Reflections;
 
 @SuppressWarnings("unchecked")
-public abstract class Marshaller<FK, VK, VV> implements Serializable {
+public class Marshaller<FK, VK, VV> implements Serializable {
 	private static final long serialVersionUID = 6678021328832491260L;
 	protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 

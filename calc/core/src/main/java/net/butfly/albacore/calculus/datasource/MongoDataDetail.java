@@ -16,11 +16,6 @@ public class MongoDataDetail<F> extends DataDetail<F> {
 	}
 
 	@Override
-	public String toString() {
-		return "[Table: " + tables[0] + ", FactorFilter: " + filter + "]";
-	}
-
-	@Override
 	public Configuration outputConfiguration(@SuppressWarnings("rawtypes") DataSource ds) {
 		Configuration outputConfig = super.outputConfiguration(ds);
 		outputConfig.set("mongo.job.output.format", MongoOutputFormat.class.getName());

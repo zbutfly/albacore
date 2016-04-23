@@ -8,9 +8,4 @@ public class HbaseDataDetail<F> extends DataDetail<F> {
 	public HbaseDataDetail(Class<F> factor, String... table) {
 		super(Type.HBASE, factor, null, table);
 	}
-
-	@Override
-	public String toString() {
-		return "[Table: " + this.tables[0] + "]";
-	}
 }
