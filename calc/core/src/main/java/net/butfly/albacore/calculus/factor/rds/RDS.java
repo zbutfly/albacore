@@ -112,6 +112,19 @@ public class RDS<T> implements Serializable {
 		return this;
 	}
 
+	public RDS<T> unpersist() {
+		switch (type) {
+		case RDD:
+			Reflections.transform(rdds, v -> v.unpersist(true));
+			break;
+		case DSTREAM:
+			break;
+		default:
+			throw new IllegalArgumentException();
+		}
+		return this;
+	}
+
 	public RDS<T> persist() {
 		switch (type) {
 		case RDD:
@@ -209,8 +222,8 @@ public class RDS<T> implements Serializable {
 		case DSTREAM:
 			switch (other.type) {
 			case RDD:
-				if (other.rdds.size() == 1) dstream = dstream.union(
-						RDDDStream.stream(dstream.ssc(), Mechanism.CONST, () -> JavaRDD.fromRDD(other.rdds.get(0), tag())).dstream());
+				if (other.rdds.size() == 1) dstream = dstream.union(RDDDStream.stream(dstream.ssc(), Mechanism.CONST, () -> JavaRDD.fromRDD(
+						other.rdds.get(0), tag())).dstream());
 				break;
 			case DSTREAM:
 				dstream = dstream.union(other.dstream);
@@ -319,6 +332,8 @@ public class RDS<T> implements Serializable {
 				RDD<T> r = rdds.get(0);
 				for (int i = 1; i < rdds.size(); i++)
 					r = r.union(rdds.get(i));
+				for (RDD<T> rr : rdds)
+					rr.unpersist(false);
 				return JavaRDD.fromRDD(r, tag());
 			}
 		case DSTREAM:
