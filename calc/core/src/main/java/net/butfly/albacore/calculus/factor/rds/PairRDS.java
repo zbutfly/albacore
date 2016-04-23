@@ -386,6 +386,12 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 		return this;
 	}
 
+	@Override
+	public PairRDS<K, V> unpersist() {
+		super.unpersist();
+		return this;
+	}
+
 	public PairRDS<K, V> persist() {
 		super.persist();
 		return this;
@@ -398,8 +404,8 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 
 	public <RK, RV, WK, WV> void save(DataSource<K, RK, RV, WK, WV> ds, DataDetail<V> dd) {
 		eachPairRDD((final JavaPairRDD<K, V> rdd) -> {
-			JavaPairRDD<WK, WV> w = rdd.mapToPair((final Tuple2<K, V> t) -> (Tuple2<WK, WV>) ds.beforeWriting(t._1, t._2)).filter(t -> t != null
-					&& t._1 != null && t._2 != null);
+			JavaPairRDD<WK, WV> w = rdd.mapToPair((final Tuple2<K, V> t) -> (Tuple2<WK, WV>) ds.beforeWriting(t._1, t._2)).filter(
+					t -> t != null && t._1 != null && t._2 != null);
 			ds.save(w, dd);
 		});
 	}
