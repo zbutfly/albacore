@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
 import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaRDD;
 
 import com.google.common.base.Joiner;
 
@@ -35,10 +36,12 @@ public class ConstDataSource extends DataSource<String, Void, String, Void, Stri
 
 	@Override
 	public <F extends Factor<F>> JavaPairRDD<String, F> stocking(Calculator calc, Class<F> factor, DataDetail<F> detail,
-			FactorFilter... filters) {
+			float expandPartitions, FactorFilter... filters) {
 		String[] values = this.values;
 		if (values == null) values = new String[0];
-		return calc.sc.parallelize(Arrays.asList(values)).mapToPair((final String t) -> null == t ? null
-				: new Tuple2<>(UUID.randomUUID().toString(), (F) Reflections.construct(factor, t)));
+		JavaRDD<String> records = calc.sc.parallelize(Arrays.asList(values));
+		if (expandPartitions > 1) records = records.repartition((int) Math.ceil(records.partitions().size() * expandPartitions));
+		return records.mapToPair(
+				(final String t) -> null == t ? null : new Tuple2<>(UUID.randomUUID().toString(), (F) Reflections.construct(factor, t)));
 	}
 }

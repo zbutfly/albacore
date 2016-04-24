@@ -31,7 +31,7 @@ public @interface Factoring {
 		Factoring[] value();
 	}
 
-	int expanding() default 1;
+	float expanding() default 1;
 
 	String persisting() default "";
 }

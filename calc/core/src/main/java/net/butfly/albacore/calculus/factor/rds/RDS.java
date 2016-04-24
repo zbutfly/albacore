@@ -98,13 +98,18 @@ public class RDS<T> implements Serializable {
 		}
 	}
 
-	public RDS<T> repartition(int numPartitions) {
+	public RDS<T> repartition(float ratio) {
 		switch (type) {
 		case RDD:
-			rdds = Reflections.transform(rdds, rdd -> JavaRDD.fromRDD(rdd, tag()).repartition(numPartitions).rdd());
+			List<RDD<T>> nrdds = Reflections.transform(rdds,
+					rdd -> JavaRDD.fromRDD(rdd, tag()).repartition((int) Math.ceil(rdd.partitions().length * ratio)).rdd());
+			unpersist();
+			rdds = nrdds;
 			break;
 		case DSTREAM:
-			dstream = dstream.repartition(numPartitions);
+			dstream = JavaDStream.fromDStream(dstream, tag())
+					.transform((Function<JavaRDD<T>, JavaRDD<T>>) rdd -> rdd.repartition((int) Math.ceil(rdd.partitions().size() * ratio)))
+					.dstream();
 			break;
 		default:
 			throw new IllegalArgumentException();
@@ -222,8 +227,8 @@ public class RDS<T> implements Serializable {
 		case DSTREAM:
 			switch (other.type) {
 			case RDD:
-				if (other.rdds.size() == 1) dstream = dstream.union(RDDDStream.stream(dstream.ssc(), Mechanism.CONST, () -> JavaRDD.fromRDD(
-						other.rdds.get(0), tag())).dstream());
+				if (other.rdds.size() == 1) dstream = dstream.union(
+						RDDDStream.stream(dstream.ssc(), Mechanism.CONST, () -> JavaRDD.fromRDD(other.rdds.get(0), tag())).dstream());
 				break;
 			case DSTREAM:
 				dstream = dstream.union(other.dstream);
@@ -332,8 +337,7 @@ public class RDS<T> implements Serializable {
 				RDD<T> r = rdds.get(0);
 				for (int i = 1; i < rdds.size(); i++)
 					r = r.union(rdds.get(i));
-				for (RDD<T> rr : rdds)
-					rr.unpersist(false);
+				unpersist();
 				return JavaRDD.fromRDD(r, tag());
 			}
 		case DSTREAM:

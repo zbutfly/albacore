@@ -21,8 +21,6 @@ import net.butfly.albacore.calculus.utils.Reflections;
 
 public class HbaseMarshaller extends Marshaller<byte[], ImmutableBytesWritable, Result> {
 	private static final long serialVersionUID = -4529825710243214685L;
-	public static final String SCAN_LIMIT = "hbase.calculus.limit";
-	public static final String SCAN_OFFSET = "hbase.calculus.limit";
 
 	private String[] rows(Result result) {
 		List<String> rows = new ArrayList<>();

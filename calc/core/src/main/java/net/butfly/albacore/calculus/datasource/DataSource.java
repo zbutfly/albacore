@@ -67,7 +67,7 @@ public abstract class DataSource<K, RK, RV, WK, WV> implements Serializable, Log
 		return "CalculatorDataSource:" + this.type;
 	}
 
-	public <F extends Factor<F>> JavaPairRDD<K, F> stocking(Calculator calc, Class<F> factor, DataDetail<F> detail,
+	public <F extends Factor<F>> JavaPairRDD<K, F> stocking(Calculator calc, Class<F> factor, DataDetail<F> detail, float expandPartitions,
 			FactorFilter... filters) {
 		throw new UnsupportedOperationException("Unsupportted stocking mode: " + type + " on " + factor.toString());
 	}
@@ -118,9 +118,12 @@ public abstract class DataSource<K, RK, RV, WK, WV> implements Serializable, Log
 	}
 
 	protected static <K, F extends Factor<F>, RK, RV> JavaPairRDD<K, F> defaultRead(DataSource<K, RK, RV, ?, ?> ds, JavaSparkContext sc,
-			Configuration conf, Class<F> factor) {
-		return sc.newAPIHadoopRDD(conf, ds.inputFormatClass, ds.keyClass, ds.valueClass).mapToPair(t -> ds.afterReading(t._1, t._2,
-				factor));
+			Configuration conf, Class<F> factor, float expandPartitions) {
+		final JavaPairRDD<RK, RV> records = sc.newAPIHadoopRDD(conf, ds.inputFormatClass, ds.keyClass, ds.valueClass);
+		ds.trace(() -> "Raw records read(ed) from " + ds.type + ": " + records.count());
+		JavaPairRDD<K, F> results = records.mapToPair(t -> ds.afterReading(t._1, t._2, factor));
+		if (expandPartitions > 1) results = results.repartition((int) Math.ceil(results.partitions().size() * expandPartitions));
+		return results;
 	}
 
 	protected final <F extends Factor<F>> Tuple2<K, F> afterReading(RK key, RV value, Class<F> factor) {

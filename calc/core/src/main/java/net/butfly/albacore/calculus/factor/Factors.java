@@ -76,8 +76,7 @@ public final class Factors implements Serializable, Logable {
 		switch (calc.mode) {
 		case STOCKING:
 			if (config.batching <= 0) {
-				PairRDS<K, F> p = new PairRDS<K, F>(ds.stocking(calc, config.factorClass, d, filters));
-				if (config.expanding > 1) p = p.repartition(p.partitions() * config.expanding);
+				PairRDS<K, F> p = new PairRDS<K, F>(ds.stocking(calc, config.factorClass, d, config.expanding, filters));
 				if (config.persisting != null) p = p.persist(config.persisting);
 				return p;
 			} else return new PairRDS<K, F>(RDDDStream.bpstream(calc.ssc.ssc(), config.batching,
@@ -88,11 +87,11 @@ public final class Factors implements Serializable, Logable {
 			case STOCKING:
 				switch (config.streaming) {
 				case CONST:
-					return new PairRDS<K, F>(
-							RDDDStream.pstream(calc.ssc.ssc(), Mechanism.CONST, () -> ds.stocking(calc, config.factorClass, d, filters)));
+					return new PairRDS<K, F>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.CONST,
+							() -> ds.stocking(calc, config.factorClass, d, -1, filters)));
 				case FRESH:
-					return new PairRDS<K, F>(
-							RDDDStream.pstream(calc.ssc.ssc(), Mechanism.FRESH, () -> ds.stocking(calc, config.factorClass, d, filters)));
+					return new PairRDS<K, F>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.FRESH,
+							() -> ds.stocking(calc, config.factorClass, d, -1, filters)));
 				default:
 					throw new UnsupportedOperationException();
 				}

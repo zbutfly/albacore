@@ -33,7 +33,7 @@ public interface FactorFilter extends Serializable {
 	}
 
 	public static final class Equal<V> extends ByFieldValue<V> {
-		private static final long serialVersionUID = -3327669047546685341L;
+		private static final long serialVersionUID = -6072059360387978184L;
 		public V value;
 
 		public Equal(String field, V value) {

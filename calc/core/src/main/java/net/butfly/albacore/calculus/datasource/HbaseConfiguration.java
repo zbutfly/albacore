@@ -23,8 +23,6 @@ import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
 import org.apache.hadoop.hbase.protobuf.ProtobufUtil;
 import org.apache.hadoop.hbase.util.Base64;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
@@ -36,7 +34,6 @@ import net.butfly.albacore.calculus.utils.Reflections;
 
 class HbaseConfiguration<F extends Factor<F>> implements Serializable, Logable {
 	private static final long serialVersionUID = 2314819561624610201L;
-	protected final static Logger logger = LoggerFactory.getLogger(HbaseConfiguration.class);
 	private final String table;
 	private final Class<F> factor;
 	private final String configFile;

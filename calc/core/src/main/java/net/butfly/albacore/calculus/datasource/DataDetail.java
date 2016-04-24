@@ -4,7 +4,6 @@ import java.io.Serializable;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
-import org.apache.storm.guava.base.Joiner;
 
 import com.google.common.base.Preconditions;
 
@@ -27,8 +26,12 @@ public abstract class DataDetail<V> implements Serializable {
 	}
 
 	public String toString() {
-		return type + " [Mapper: " + factorClass.toString() + "Source: " + Joiner.on(',').join(tables) + (Factor.NOT_DEFINED.equals(filter)
-				? "" : ", FactorFilter: " + filter) + "]";
+		StringBuilder sb = new StringBuilder(tables[0]);
+		for (int i = 1; i < tables.length; i++)
+			sb.append(",").append(tables[i]);
+
+		return type + " [Mapper: " + factorClass.toString() + "Source: " + sb.toString()
+				+ (Factor.NOT_DEFINED.equals(filter) ? "" : ", FactorFilter: " + filter) + "]";
 	}
 
 	public Configuration outputConfiguration(DataSource ds) {

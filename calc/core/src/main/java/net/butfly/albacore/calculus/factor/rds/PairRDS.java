@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.spark.HashPartitioner;
-import org.apache.spark.Partitioner;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaRDDLike;
@@ -79,8 +78,8 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 	public PairRDS(Collection<PairRDS<K, V>> l) {
 		this();
 		List<RDD<Tuple2<K, V>>> s = new ArrayList<>();
-		for (Collection<RDD<Tuple2<K, V>>> rs : Reflections.transform(Reflections.transform(l, PairRDS<K, V>::rdds), (
-				final Collection<JavaRDD<Tuple2<K, V>>> rs) -> Reflections.transform(rs, JavaRDD<Tuple2<K, V>>::rdd)))
+		for (Collection<RDD<Tuple2<K, V>>> rs : Reflections.transform(Reflections.transform(l, PairRDS<K, V>::rdds),
+				(final Collection<JavaRDD<Tuple2<K, V>>> rs) -> Reflections.transform(rs, JavaRDD<Tuple2<K, V>>::rdd)))
 			s.addAll(rs);
 		init(s);
 	}
@@ -152,8 +151,8 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 		case RDD:
 			return new PairRDS<K, V>(JavaPairRDD.fromRDD(union(rdds), tag(), tag()).reduceByKey(func::call, numPartitions));
 		case DSTREAM:
-			return new PairRDS<K, V>(JavaPairDStream.fromPairDStream(dstream, tag(), tag()).reduceByKey((Function2<V, V, V>) func::call,
-					numPartitions));
+			return new PairRDS<K, V>(
+					JavaPairDStream.fromPairDStream(dstream, tag(), tag()).reduceByKey((Function2<V, V, V>) func::call, numPartitions));
 		default:
 			throw new IllegalArgumentException();
 		}
@@ -181,8 +180,8 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 			JavaPairDStream<K, V> s1 = JavaPairDStream.fromPairDStream(dstream, tag(), tag());
 			switch (other.type) {
 			case RDD:
-				JavaPairDStream<K, W> s2 = RDDDStream.pstream(other.dstream.ssc(), Mechanism.CONST, () -> JavaPairRDD.fromRDD(union(
-						other.rdds), tag(), tag()));
+				JavaPairDStream<K, W> s2 = RDDDStream.pstream(other.dstream.ssc(), Mechanism.CONST,
+						() -> JavaPairRDD.fromRDD(union(other.rdds), tag(), tag()));
 				return new PairRDS<K, Tuple2<V, W>>(s1.join(s2));
 			case DSTREAM:
 				return new PairRDS<K, Tuple2<V, W>>(s1.join(JavaPairDStream.fromPairDStream(other.dstream, tag(), tag())));
@@ -208,8 +207,8 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 			JavaPairDStream<K, V> s1 = JavaPairDStream.fromPairDStream(dstream, tag(), tag());
 			switch (other.type) {
 			case RDD:
-				JavaPairDStream<K, W> s2 = RDDDStream.pstream(other.dstream.ssc(), Mechanism.CONST, () -> JavaPairRDD.fromRDD(union(
-						other.rdds), tag(), tag()));
+				JavaPairDStream<K, W> s2 = RDDDStream.pstream(other.dstream.ssc(), Mechanism.CONST,
+						() -> JavaPairRDD.fromRDD(union(other.rdds), tag(), tag()));
 				return new PairRDS<K, Tuple2<V, W>>(s1.join(s2, numPartitions));
 			case DSTREAM:
 				return new PairRDS<K, Tuple2<V, W>>(s1.join(JavaPairDStream.fromPairDStream(other.dstream, tag(), tag()), numPartitions));
@@ -236,12 +235,12 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 			JavaPairDStream<K, V> s1 = JavaPairDStream.fromPairDStream(dstream, tag(), tag());
 			switch (other.type) {
 			case RDD:
-				JavaPairDStream<K, W> s2 = RDDDStream.pstream(other.dstream.ssc(), Mechanism.CONST, () -> JavaPairRDD.fromRDD(union(
-						other.rdds), tag(), tag()));
+				JavaPairDStream<K, W> s2 = RDDDStream.pstream(other.dstream.ssc(), Mechanism.CONST,
+						() -> JavaPairRDD.fromRDD(union(other.rdds), tag(), tag()));
 				return new PairRDS<K, Tuple2<V, Optional<W>>>(s1.leftOuterJoin(s2));
 			case DSTREAM:
-				return new PairRDS<K, Tuple2<V, Optional<W>>>(s1.leftOuterJoin(JavaPairDStream.fromPairDStream(other.dstream, tag(),
-						tag())));
+				return new PairRDS<K, Tuple2<V, Optional<W>>>(
+						s1.leftOuterJoin(JavaPairDStream.fromPairDStream(other.dstream, tag(), tag())));
 			}
 		default:
 			throw new IllegalArgumentException();
@@ -258,12 +257,12 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 			JavaPairDStream<K, V> s1 = JavaPairDStream.fromPairDStream(dstream, tag(), tag());
 			switch (other.type) {
 			case RDD:
-				JavaPairDStream<K, W> s2 = RDDDStream.pstream(other.dstream.ssc(), Mechanism.CONST, () -> JavaPairRDD.fromRDD(union(
-						other.rdds), tag(), tag()));
+				JavaPairDStream<K, W> s2 = RDDDStream.pstream(other.dstream.ssc(), Mechanism.CONST,
+						() -> JavaPairRDD.fromRDD(union(other.rdds), tag(), tag()));
 				return new PairRDS<K, Tuple2<V, Optional<W>>>(s1.leftOuterJoin(s2, numPartitions));
 			case DSTREAM:
-				return new PairRDS<K, Tuple2<V, Optional<W>>>(s1.leftOuterJoin(JavaPairDStream.fromPairDStream(other.dstream, tag(), tag()),
-						numPartitions));
+				return new PairRDS<K, Tuple2<V, Optional<W>>>(
+						s1.leftOuterJoin(JavaPairDStream.fromPairDStream(other.dstream, tag(), tag()), numPartitions));
 			}
 		default:
 			throw new IllegalArgumentException();
@@ -306,6 +305,7 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 		}
 	}
 
+	@Override
 	public <S> PairRDS<K, V> sortBy(Func<Tuple2<K, V>, S> comp) {
 		JavaRDD<Tuple2<K, V>> rdd = rdd();
 		return new PairRDS<K, V>(rdd().sortBy(comp::call, true, rdd.partitions().size()));
@@ -362,17 +362,26 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 		return tag();
 	}
 
+	@Override
 	public PairRDS<K, V> cache() {
 		super.cache();
 		return this;
 	}
 
-	public PairRDS<K, V> repartition(int numPartitions, boolean rehash) {
-		if (!rehash || type == RDSType.DSTREAM) return repartition(numPartitions);
+	public PairRDS<K, V> repartition(float ratio, boolean rehash) {
+		if (!rehash) return repartition(ratio);
 		switch (type) {
 		case RDD:
-			Partitioner p = new HashPartitioner(numPartitions);
-			rdds = Reflections.transform(rdds, rdd -> JavaPairRDD.fromRDD(rdd, tag(), tag()).partitionBy(p).rdd());
+			List<RDD<Tuple2<K, V>>> nrdds = Reflections.transform(rdds, rdd -> JavaPairRDD.fromRDD(rdd, tag(), tag())
+					.partitionBy(new HashPartitioner((int) Math.ceil(rdd.partitions().length * ratio))).rdd());
+			unpersist();
+			rdds = nrdds;
+			break;
+		case DSTREAM:
+			dstream = JavaPairDStream.fromPairDStream(dstream, tag(), tag())
+					.transformToPair((Function<JavaPairRDD<K, V>, JavaPairRDD<K, V>>) rdd -> rdd
+							.partitionBy(new HashPartitioner((int) Math.ceil(rdd.partitions().size() * ratio))))
+					.dstream();
 			break;
 		default:
 			throw new IllegalArgumentException();
@@ -381,8 +390,8 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 	}
 
 	@Override
-	public PairRDS<K, V> repartition(int numPartitions) {
-		super.repartition(numPartitions);
+	public PairRDS<K, V> repartition(float ratio) {
+		super.repartition(ratio);
 		return this;
 	}
 
@@ -403,9 +412,9 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 	}
 
 	public <RK, RV, WK, WV> void save(DataSource<K, RK, RV, WK, WV> ds, DataDetail<V> dd) {
-		eachPairRDD((final JavaPairRDD<K, V> rdd) -> {
-			JavaPairRDD<WK, WV> w = rdd.mapToPair((final Tuple2<K, V> t) -> (Tuple2<WK, WV>) ds.beforeWriting(t._1, t._2)).filter(
-					t -> t != null && t._1 != null && t._2 != null);
+		eachPairRDD(rdd -> {
+			JavaPairRDD<WK, WV> w = rdd.mapToPair(t -> (Tuple2<WK, WV>) ds.beforeWriting(t._1, t._2))
+					.filter(t -> t != null && t._1 != null && t._2 != null);
 			ds.save(w, dd);
 		});
 	}

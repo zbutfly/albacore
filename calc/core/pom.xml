@@ -9,14 +9,6 @@
 	<artifactId>albacore-calc-core</artifactId>
 	<name>albacore-calc-core</name>
 	<dependencies>
-		<!-- fucking hbase-client old depends, methods closed in new version -->
-		<dependency>
-			<groupId>com.google.guava</groupId>
-			<artifactId>guava</artifactId>
-			<version>12.0.1</version>
-			<scope>provided</scope>
-		</dependency>
-		<!-- fucked -->
 		<dependency>
 			<groupId>org.scala-lang</groupId>
 			<artifactId>scala-library</artifactId>

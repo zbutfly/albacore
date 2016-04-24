@@ -19,6 +19,6 @@ public class FactorConfig<K, F extends Factor<F>> implements Serializable {
 	@Deprecated
 	public long batching = 0;
 	public Mechanism streaming;
-	public int expanding;
+	public float expanding;
 	public StorageLevel persisting;
 }
