@@ -79,7 +79,7 @@ class HbaseConfiguration<F extends Factor<F>> implements Serializable, Logable {
 	private Filter filterOne(FactorFilter filter) {
 		if (filter instanceof FactorFilter.ByField) {
 			Field field = Reflections.getDeclaredField(factor, ((FactorFilter.ByField<?>) filter).field);
-			String[] q = marshaller.parseField(field).split(":");
+			String[] q = marshaller.parseQualifier(field).split(":");
 			byte[][] qulifiers = new byte[][] { Bytes.toBytes(q[0]), Bytes.toBytes(q[1]) };
 			Func<Object, byte[]> conv = CONVERTERS.get(field.getType());
 			if (filter instanceof FactorFilter.ByFieldValue) {

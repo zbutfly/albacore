@@ -121,9 +121,9 @@ public abstract class DataSource<K, RK, RV, WK, WV> implements Serializable, Log
 			Configuration conf, Class<F> factor, float expandPartitions) {
 		final JavaPairRDD<RK, RV> records = sc.newAPIHadoopRDD(conf, ds.inputFormatClass, ds.keyClass, ds.valueClass);
 		ds.trace(() -> "Raw records read(ed) from " + ds.type + ": " + records.count());
-		JavaPairRDD<K, F> results = records.mapToPair(t -> ds.afterReading(t._1, t._2, factor));
-		if (expandPartitions > 1) results = results.repartition((int) Math.ceil(results.partitions().size() * expandPartitions));
-		return results;
+		final JavaPairRDD<K, F> results = records.mapToPair(t -> ds.afterReading(t._1, t._2, factor));
+		ds.trace(() -> "Raw records read(ed) from " + ds.type + ": " + results.count());
+		return (expandPartitions > 1) ? results.repartition((int) Math.ceil(results.partitions().size() * expandPartitions)) : results;
 	}
 
 	protected final <F extends Factor<F>> Tuple2<K, F> afterReading(RK key, RV value, Class<F> factor) {

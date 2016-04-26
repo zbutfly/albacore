@@ -11,6 +11,7 @@ import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
+import net.butfly.albacore.calculus.factor.modifier.Id;
 import net.butfly.albacore.calculus.factor.rds.RDS;
 import net.butfly.albacore.calculus.marshall.Marshaller;
 import scala.Tuple2;
@@ -30,7 +31,8 @@ public class ElasticDataSource extends DataSource<String, String, Map, String, O
 	@Override
 	public <V> Tuple2<String, Object> beforeWriting(String key, V value) {
 		if (null == value) return null;
-		Field f = ElasticDataDetail.findId(value.getClass());
+		@SuppressWarnings("unchecked")
+		Field f = marshaller.parse(value.getClass(), Id.class)._1();
 		if (null != f) {
 			f.setAccessible(true);
 			try {
@@ -42,10 +44,11 @@ public class ElasticDataSource extends DataSource<String, String, Map, String, O
 		return new Tuple2<>(null, value);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void save(JavaPairRDD<String, Object> rdd, DataDetail<?> dd) {
 		java.util.Map<String, String> m = new HashMap<>();
-		m.put("es.mapping.id", ((ElasticDataDetail) dd).idField);
+		m.put("es.mapping.id", marshaller.parse(dd.factorClass, Id.class)._2());
 		EsSpark.saveToEs(rdd.values().rdd(), dd.tables[0], JavaConverters.asScalaMapConverter(m).asScala());
 	}
 
