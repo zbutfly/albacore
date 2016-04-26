@@ -117,12 +117,12 @@ public abstract class DataSource<K, RK, RV, WK, WV> implements Serializable, Log
 		rdd.saveAsNewAPIHadoopFile("", keyClass, valueClass, outputFormatClass, dd.outputConfiguration(this));
 	}
 
-	protected static <K, F extends Factor<F>, RK, RV> JavaPairRDD<K, F> defaultRead(DataSource<K, RK, RV, ?, ?> ds, JavaSparkContext sc,
-			Configuration conf, Class<F> factor, float expandPartitions) {
-		final JavaPairRDD<RK, RV> records = sc.newAPIHadoopRDD(conf, ds.inputFormatClass, ds.keyClass, ds.valueClass);
-		ds.trace(() -> "Raw records read(ed) from " + ds.type + ": " + records.count());
-		final JavaPairRDD<K, F> results = records.mapToPair(t -> ds.afterReading(t._1, t._2, factor));
-		ds.trace(() -> "Raw records read(ed) from " + ds.type + ": " + results.count());
+	protected <F extends Factor<F>> JavaPairRDD<K, F> defaultRead(JavaSparkContext sc, Configuration conf, Class<F> factor,
+			float expandPartitions) {
+		final JavaPairRDD<RK, RV> records = sc.newAPIHadoopRDD(conf, inputFormatClass, keyClass, valueClass);
+		trace(() -> "Raw records read(ed) from " + type + ": " + records.count());
+		final JavaPairRDD<K, F> results = records.mapToPair(t -> afterReading(t._1, t._2, factor));
+		trace(() -> "Raw records read(ed) from " + type + ": " + results.count());
 		return (expandPartitions > 1) ? results.repartition((int) Math.ceil(results.partitions().size() * expandPartitions)) : results;
 	}
 

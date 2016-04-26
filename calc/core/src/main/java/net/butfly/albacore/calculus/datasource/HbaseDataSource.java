@@ -93,7 +93,7 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 		Configuration conf = HBaseConfiguration.create();
 		HbaseConfiguration<F> util = new HbaseConfiguration<F>(this.configFile, (HbaseMarshaller) this.marshaller, factor, detail.tables[0])
 				.init(conf);
-		return DataSource.defaultRead(this, calc.sc, util.filter(conf, filters), factor, expandPartitions);
+		return defaultRead(calc.sc, util.filter(conf, filters), factor, expandPartitions);
 	}
 
 	@Override
@@ -105,6 +105,6 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 		Configuration conf = HBaseConfiguration.create();
 		HbaseConfiguration<F> util = new HbaseConfiguration<F>(this.configFile, (HbaseMarshaller) this.marshaller, factor, detail.tables[0])
 				.init(conf);
-		return DataSource.defaultRead(this, calc.sc, util.filter(conf, new FactorFilter.Page<byte[]>(offset, limit)), factor, -1);
+		return defaultRead(calc.sc, util.filter(conf, new FactorFilter.Page<byte[]>(offset, limit)), factor, -1);
 	}
 }
