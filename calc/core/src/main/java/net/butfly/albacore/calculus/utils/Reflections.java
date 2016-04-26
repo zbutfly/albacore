@@ -24,6 +24,33 @@ public final class Reflections implements Serializable {
 
 	private Reflections() {}
 
+	public static <T> T get(Object obj, String field) {
+		return get(obj, Reflections.getDeclaredField(obj.getClass(), field));
+	}
+
+	@SuppressWarnings("unchecked")
+	public static <T> T get(Object obj, Field field) {
+		if (!field.isAccessible()) field.setAccessible(true);
+		try {
+			return (T) field.get(obj);
+		} catch (IllegalArgumentException | IllegalAccessException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	public static <T> void set(Object obj, String field, T value) {
+		set(obj, Reflections.getDeclaredField(obj.getClass(), field), value);
+	}
+
+	public static <T> void set(Object obj, Field field, T value) {
+		if (!field.isAccessible()) field.setAccessible(true);
+		try {
+			field.set(obj, value);
+		} catch (IllegalArgumentException | IllegalAccessException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
 	public static Field[] getDeclaredFields(Class<?> clazz) {
 		noneNull("", clazz);
 		Map<String, Field> fields = new HashMap<String, Field>();
@@ -105,11 +132,6 @@ public final class Reflections implements Serializable {
 		return classes;
 	}
 
-	public static void set(Object owner, Field field, Object value) throws IllegalArgumentException, IllegalAccessException {
-		field.setAccessible(true);
-		field.set(owner, value);
-	}
-
 	public static boolean isAny(Class<?> cl, Class<?>... target) {
 		for (Class<?> t : target)
 			if (t.isAssignableFrom(cl)) return true;
@@ -182,4 +204,5 @@ public final class Reflections implements Serializable {
 			} catch (IllegalArgumentException | IllegalAccessException e) {}
 		}
 	}
+
 }

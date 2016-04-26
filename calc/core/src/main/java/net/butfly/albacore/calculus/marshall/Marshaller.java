@@ -15,7 +15,6 @@ import com.google.common.base.CaseFormat;
 
 import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
-import scala.Tuple3;
 
 @SuppressWarnings("unchecked")
 public class Marshaller<FK, VK, VV> implements Serializable {
@@ -48,20 +47,19 @@ public class Marshaller<FK, VK, VV> implements Serializable {
 				: CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, f.getName());
 	}
 
-	public <V> Tuple3<Field, String, ? extends Annotation> parse(Class<V> c, Class<? extends Annotation>... annotation) {
+	public <V> Tuple2<Field, ? extends Annotation> parse(Class<V> c, Class<? extends Annotation>... annotation) {
 		for (Field f : Reflections.getDeclaredFields(c))
 			for (Class<? extends Annotation> a : annotation)
-				if (f.isAnnotationPresent(a)) return new Tuple3<>(f, parseQualifier(f), f.getAnnotation(a));
+				if (f.isAnnotationPresent(a)) return new Tuple2<>(f, f.getAnnotation(a));
 		return null;
 	}
 
-	public <V> Map<Field, Tuple2<String, ? extends Annotation>> parseAll(Class<V> c, Class<? extends Annotation>... annotation) {
-		Map<Field, Tuple2<String, ? extends Annotation>> fs = new HashMap<>();
+	public <V> Map<Field, Annotation> parseAll(Class<V> c, Class<? extends Annotation>... annotation) {
+		Map<Field, Annotation> fs = new HashMap<>();
 		for (Field f : Reflections.getDeclaredFields(c))
 			for (Class<? extends Annotation> a : annotation)
 				if (f.isAnnotationPresent(a)) {
-					Tuple2<String, ? extends Annotation> t = new Tuple2<>(parseQualifier(f), f.getAnnotation(a));
-					fs.put(f, t);
+					fs.put(f, f.getAnnotation(a));
 					break;
 				}
 		return fs;

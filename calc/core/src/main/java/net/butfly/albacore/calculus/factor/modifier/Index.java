@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
 public @interface Index {
 	String[] value() default {};
 
-	boolean ascending() default true;
+	boolean descending() default true;
 
 	boolean hashed() default false;
 }

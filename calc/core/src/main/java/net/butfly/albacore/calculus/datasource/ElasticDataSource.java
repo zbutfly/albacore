@@ -48,7 +48,7 @@ public class ElasticDataSource extends DataSource<String, String, Map, String, O
 	@Override
 	public void save(JavaPairRDD<String, Object> rdd, DataDetail<?> dd) {
 		java.util.Map<String, String> m = new HashMap<>();
-		m.put("es.mapping.id", marshaller.parse(dd.factorClass, Id.class)._2());
+		m.put("es.mapping.id", marshaller.parseQualifier(marshaller.parse(dd.factorClass, Id.class)._1));
 		EsSpark.saveToEs(rdd.values().rdd(), dd.tables[0], JavaConverters.asScalaMapConverter(m).asScala());
 	}
 
@@ -58,7 +58,8 @@ public class ElasticDataSource extends DataSource<String, String, Map, String, O
 		JavaPairRDD<String, Map<String, Object>> records = JavaPairRDD
 				.fromRDD(EsSpark.esRDD(calc.sc.sc(), baseUrl + detail.tables[0], filter(detail.filter, filters)), RDS.tag(), RDS.tag());
 		if (expandPartitions > 1) records = records.repartition((int) Math.ceil(records.partitions().size() * expandPartitions));
-		return records.mapToPair((Tuple2<String, Map<String, Object>> t) -> afterReading(t._1, t._2, factor));
+		return records.mapToPair((Tuple2<String, Map<String, Object>> t) -> new Tuple2<>(marshaller.unmarshallId(t._1),
+				marshaller.unmarshall(t._2, factor)));
 	}
 
 	private String filter(String filter, FactorFilter[] filters) {

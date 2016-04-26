@@ -74,13 +74,12 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 				MongoDatabase db = mclient.getDatabase(muri.getDatabase());
 				db.createCollection(detail.tables[0]);
 				MongoCollection<Document> col = db.getCollection(detail.tables[0]);
-				for (Map.Entry<Field, Tuple2<String, ? extends Annotation>> f : marshaller.parseAll(factor, Index.class).entrySet()) {
-					String q = marshaller.parseQualifier(f.getKey());
-					Index idx = (Index) f.getValue()._2;
+				for (Map.Entry<Field, ? extends Annotation> f : marshaller.parseAll(factor, Index.class).entrySet()) {
+					Index idx = (Index) f.getValue();
 					Object v = 1;
 					if (idx.hashed()) v = "hashed";
-					else if (!idx.ascending()) v = -1;
-					col.createIndex((Bson) BsonMarshaller.assembly(q, v));
+					else if (idx.descending()) v = -1;
+					col.createIndex((Bson) BsonMarshaller.assembly(marshaller.parseQualifier(f.getKey()), v));
 				}
 			}
 			return true;
@@ -134,7 +133,7 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 		mconf.setBoolean(MongoConfigUtil.INPUT_NOTIMEOUT, true);
 		// mconf.set("mongo.input.split.use_range_queries", "true");
 
-		return read(calc.sc, mconf, factor, expandPartitions);
+		return readByInputFormat(calc.sc, mconf, factor, expandPartitions);
 	}
 
 	private String fromBSON(List<BSONObject> ands) {

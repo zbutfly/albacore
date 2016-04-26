@@ -1,10 +1,12 @@
 package net.butfly.albacore.calculus.datasource;
 
 import java.io.Serializable;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.InputFormat;
@@ -19,8 +21,11 @@ import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
+import net.butfly.albacore.calculus.factor.modifier.Id;
+import net.butfly.albacore.calculus.factor.modifier.Key;
 import net.butfly.albacore.calculus.marshall.Marshaller;
 import net.butfly.albacore.calculus.utils.Logable;
+import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
 
 @SuppressWarnings("rawtypes")
@@ -117,16 +122,25 @@ public abstract class DataSource<K, RK, RV, WK, WV> implements Serializable, Log
 		rdd.saveAsNewAPIHadoopFile("", keyClass, valueClass, outputFormatClass, dd.outputConfiguration(this));
 	}
 
-	protected <F extends Factor<F>> JavaPairRDD<K, F> read(JavaSparkContext sc, Configuration conf, Class<F> factor,
+	@SuppressWarnings("unchecked")
+	protected <F extends Factor<F>> JavaPairRDD<K, F> readByInputFormat(JavaSparkContext sc, Configuration conf, Class<F> factor,
 			float expandPartitions) {
-		final JavaPairRDD<RK, RV> records = sc.newAPIHadoopRDD(conf, inputFormatClass, keyClass, valueClass);
-		trace(() -> "Raw records read(ed) from " + type + ": " + records.count());
-		final JavaPairRDD<K, F> results = records.mapToPair(t -> afterReading(t._1, t._2, factor));
-		trace(() -> "Raw records read(ed) from " + type + ": " + results.count());
+		JavaPairRDD<RK, RV> raw = sc.newAPIHadoopRDD(conf, inputFormatClass, keyClass, valueClass);
+		Set<Field> ids = marshaller.parseAll(factor, Id.class).keySet();
+		if (ids.size() > 1) error(() -> "Multiple @Id on " + factor.toString() + ", only use one (but randomized one).");
+		final String id = ids.isEmpty() ? null : new ArrayList<>(ids).get(0).getName();
+		Set<Field> keys = marshaller.parseAll(factor, Key.class).keySet();
+		if (keys.size() > 1) error(() -> "Multiple @Key on " + factor.toString() + ", only use one (but randomized one).");
+		final String key = keys.isEmpty() ? null : new ArrayList<>(keys).get(0).getName();
+		if (null != key && null == id)
+			throw new IllegalArgumentException("@Key defined but @Id not defined on " + factor.toString() + ", id will lose in mapping.");
+		final JavaPairRDD<K, F> results = raw.mapToPair(t -> {
+			F v = marshaller.unmarshall(t._2, factor);
+			K k = null == key ? marshaller.unmarshallId(t._1) : Reflections.get(v, key);
+			if (null != id) Reflections.set(v, id, marshaller.unmarshallId(t._1));;
+			return new Tuple2<>(k, v);
+		});
+		trace(() -> "Read(ed) from " + type + ": " + results.count());
 		return (expandPartitions > 1) ? results.repartition((int) Math.ceil(results.partitions().size() * expandPartitions)) : results;
-	}
-
-	protected final <F extends Factor<F>> Tuple2<K, F> afterReading(RK key, RV value, Class<F> factor) {
-		return new Tuple2<>(marshaller.unmarshallId(key), marshaller.unmarshall(value, factor));
 	}
 }
