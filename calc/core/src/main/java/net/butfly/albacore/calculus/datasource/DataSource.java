@@ -117,7 +117,7 @@ public abstract class DataSource<K, RK, RV, WK, WV> implements Serializable, Log
 		rdd.saveAsNewAPIHadoopFile("", keyClass, valueClass, outputFormatClass, dd.outputConfiguration(this));
 	}
 
-	protected <F extends Factor<F>> JavaPairRDD<K, F> defaultRead(JavaSparkContext sc, Configuration conf, Class<F> factor,
+	protected <F extends Factor<F>> JavaPairRDD<K, F> read(JavaSparkContext sc, Configuration conf, Class<F> factor,
 			float expandPartitions) {
 		final JavaPairRDD<RK, RV> records = sc.newAPIHadoopRDD(conf, inputFormatClass, keyClass, valueClass);
 		trace(() -> "Raw records read(ed) from " + type + ": " + records.count());

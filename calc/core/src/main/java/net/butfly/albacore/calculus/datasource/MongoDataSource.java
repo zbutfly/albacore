@@ -134,7 +134,7 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 		mconf.setBoolean(MongoConfigUtil.INPUT_NOTIMEOUT, true);
 		// mconf.set("mongo.input.split.use_range_queries", "true");
 
-		return defaultRead(calc.sc, mconf, factor, expandPartitions);
+		return read(calc.sc, mconf, factor, expandPartitions);
 	}
 
 	private String fromBSON(List<BSONObject> ands) {
