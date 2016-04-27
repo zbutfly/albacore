@@ -21,8 +21,6 @@ import net.butfly.albacore.calculus.utils.Reflections;
 
 public class HbaseMarshaller extends Marshaller<byte[], ImmutableBytesWritable, Result> {
 	private static final long serialVersionUID = -4529825710243214685L;
-	public static final String SCAN_LIMIT = "hbase.calculus.limit";
-	public static final String SCAN_OFFSET = "hbase.calculus.limit";
 
 	private String[] rows(Result result) {
 		List<String> rows = new ArrayList<>();
@@ -41,7 +39,7 @@ public class HbaseMarshaller extends Marshaller<byte[], ImmutableBytesWritable, 
 			throw new RuntimeException(e);
 		}
 		for (Field f : Reflections.getDeclaredFields(to)) {
-			String[] qulifier = parseField(f).split(":");
+			String[] qulifier = parseQualifier(f).split(":");
 			try {
 				Cell cell = from.getColumnLatestCell(Text.encode(qulifier[0]).array(), Text.encode(qulifier[1]).array());
 				if (cell != null) Reflections.set(t, f, fromBytes(f.getType(), CellUtil.cloneValue(cell)));
@@ -55,8 +53,8 @@ public class HbaseMarshaller extends Marshaller<byte[], ImmutableBytesWritable, 
 	}
 
 	@Override
-	public String parseField(Field f) {
-		String col = super.parseField(f);
+	public String parseQualifier(Field f) {
+		String col = super.parseQualifier(f);
 		Class<?> to = f.getDeclaringClass();
 		// XXX: field in parent class could not found annotation on sub-class.
 		String family = f.isAnnotationPresent(HbaseColumnFamily.class) ? f.getAnnotation(HbaseColumnFamily.class).value()

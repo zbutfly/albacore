@@ -1,6 +1,7 @@
 package net.butfly.albacore.calculus.factor;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -37,17 +38,10 @@ public final class Factors implements Serializable, Logable {
 	// private Map<String, FactorConfig<?, ?>> pool;
 
 	public Factors(Calculator calc) {
-		Factoring[] factorings;
-		if (calc.calculusClass.isAnnotationPresent(Factorings.class))
-			factorings = calc.calculusClass.getAnnotation(Factorings.class).value();
-		else if (calc.calculusClass.isAnnotationPresent(Factoring.class))
-			factorings = new Factoring[] { calc.calculusClass.getAnnotation(Factoring.class) };
-		else throw new IllegalArgumentException("Calculus " + calc.calculusClass.toString() + " has no @Factoring annotated.");
 		this.calc = calc;
-
 		FactorConfig<?, ?> batch = null;
 		Set<Class<?>> cl = new HashSet<>();
-		for (Factoring fing : factorings) {
+		for (Factoring fing : scanFactorings(calc.calculusClass)) {
 			if (CONFIGS.containsKey(fing.key())) throw new IllegalArgumentException("Conflictted factoring id: " + fing.key());
 			@SuppressWarnings("rawtypes")
 			Class fc = fing.factor();
@@ -58,7 +52,7 @@ public final class Factors implements Serializable, Logable {
 			conf.batching = fing.batching();
 			conf.streaming = fing.stockOnStreaming();
 			conf.expanding = fing.expanding();
-			conf.persisting = "".equals(fing.persisting()) ? null : StorageLevel.fromString(fing.persisting());
+			conf.persisting = StorageLevel.fromString(fing.persisting());
 			if (fing.batching() > 0) {
 				if (batch != null) throw new IllegalArgumentException("Only one batch stocking source supported, now found second: "
 						+ batch.factorClass.toString() + " and " + conf.factorClass.toString());
@@ -69,6 +63,26 @@ public final class Factors implements Serializable, Logable {
 		calc.sconf.registerKryoClasses(cl.toArray(new Class[cl.size()]));
 	}
 
+	private Collection<Factoring> scanFactorings(Class<?> c) {
+		Map<String, Factoring> fs = new HashMap<>();
+		if (null != c) {
+
+			if (c.isAnnotationPresent(Factorings.class)) {
+				for (Factoring f : c.getAnnotation(Factorings.class).value())
+					fs.putIfAbsent(f.key(), f);
+			} else if (c.isAnnotationPresent(Factoring.class)) {
+				Factoring f = c.getAnnotation(Factoring.class);
+				if (!fs.containsKey(f.key())) fs.put(f.key(), f);
+			}
+			for (Class<?> ci : c.getInterfaces())
+				for (Factoring f : scanFactorings(ci))
+					fs.putIfAbsent(f.key(), f);
+			for (Factoring f : scanFactorings(c.getSuperclass()))
+				fs.putIfAbsent(f.key(), f);
+		}
+		return fs.values();
+	}
+
 	public <K, F extends Factor<F>> PairRDS<K, F> get(String factoring, FactorFilter... filters) {
 		FactorConfig<K, F> config = (FactorConfig<K, F>) CONFIGS.get(factoring);
 		DataSource<K, ?, ?, ?, ?> ds = calc.dss.ds(config.dbid);
@@ -76,8 +90,7 @@ public final class Factors implements Serializable, Logable {
 		switch (calc.mode) {
 		case STOCKING:
 			if (config.batching <= 0) {
-				PairRDS<K, F> p = new PairRDS<K, F>(ds.stocking(calc, config.factorClass, d, filters));
-				if (config.expanding > 1) p = p.repartition(p.partitions() * config.expanding);
+				PairRDS<K, F> p = new PairRDS<K, F>(ds.stocking(calc, config.factorClass, d, config.expanding, filters));
 				if (config.persisting != null) p = p.persist(config.persisting);
 				return p;
 			} else return new PairRDS<K, F>(RDDDStream.bpstream(calc.ssc.ssc(), config.batching,
@@ -88,11 +101,11 @@ public final class Factors implements Serializable, Logable {
 			case STOCKING:
 				switch (config.streaming) {
 				case CONST:
-					return new PairRDS<K, F>(
-							RDDDStream.pstream(calc.ssc.ssc(), Mechanism.CONST, () -> ds.stocking(calc, config.factorClass, d, filters)));
+					return new PairRDS<K, F>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.CONST,
+							() -> ds.stocking(calc, config.factorClass, d, -1, filters)));
 				case FRESH:
-					return new PairRDS<K, F>(
-							RDDDStream.pstream(calc.ssc.ssc(), Mechanism.FRESH, () -> ds.stocking(calc, config.factorClass, d, filters)));
+					return new PairRDS<K, F>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.FRESH,
+							() -> ds.stocking(calc, config.factorClass, d, -1, filters)));
 				default:
 					throw new UnsupportedOperationException();
 				}

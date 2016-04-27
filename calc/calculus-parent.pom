@@ -5,6 +5,7 @@
 		<groupId>net.butfly.albacore</groupId>
 		<artifactId>albacore-calc-deps</artifactId>
 		<version>1.0.0-SNAPSHOT</version>
+		<relativePath>./calculus-deps.pom</relativePath>
 	</parent>
 	<artifactId>albacore-calculus</artifactId>
 	<version>1.0.0-SNAPSHOT</version>

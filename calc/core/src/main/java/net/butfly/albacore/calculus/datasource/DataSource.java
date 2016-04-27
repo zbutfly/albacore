@@ -1,10 +1,12 @@
 package net.butfly.albacore.calculus.datasource;
 
 import java.io.Serializable;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.InputFormat;
@@ -19,8 +21,11 @@ import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
+import net.butfly.albacore.calculus.factor.modifier.Id;
+import net.butfly.albacore.calculus.factor.modifier.Key;
 import net.butfly.albacore.calculus.marshall.Marshaller;
 import net.butfly.albacore.calculus.utils.Logable;
+import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
 
 @SuppressWarnings("rawtypes")
@@ -67,7 +72,7 @@ public abstract class DataSource<K, RK, RV, WK, WV> implements Serializable, Log
 		return "CalculatorDataSource:" + this.type;
 	}
 
-	public <F extends Factor<F>> JavaPairRDD<K, F> stocking(Calculator calc, Class<F> factor, DataDetail<F> detail,
+	public <F extends Factor<F>> JavaPairRDD<K, F> stocking(Calculator calc, Class<F> factor, DataDetail<F> detail, float expandPartitions,
 			FactorFilter... filters) {
 		throw new UnsupportedOperationException("Unsupportted stocking mode: " + type + " on " + factor.toString());
 	}
@@ -103,27 +108,40 @@ public abstract class DataSource<K, RK, RV, WK, WV> implements Serializable, Log
 	protected FactorFilter[] adddebug(FactorFilter[] filters) {
 		List<FactorFilter> l = new ArrayList<>(Arrays.asList(filters));
 		if (debugRandomChance > 0) {
-			error(() -> "DataSource DEBUGGING, random sampling results of " + debugRandomChance);
+			error(() -> "DataSource [" + type + "] debugging, sampling results of chance: " + debugRandomChance);
 			l.add(new FactorFilter.Random(debugRandomChance));
 		}
 		if (debugLimit > 0) {
-			error(() -> "Hbase debugging, chance results in " + debugLimit);
+			error(() -> "DataSource [" + type + "] debugging, limiting results in: " + debugLimit);
 			l.add(new FactorFilter.Limit(debugLimit));
 		}
 		return l.toArray(new FactorFilter[l.size()]);
 	}
 
 	public void save(JavaPairRDD<WK, WV> rdd, DataDetail<?> dd) {
+		trace(() -> "Writing to " + type + ": " + rdd.count());
 		rdd.saveAsNewAPIHadoopFile("", keyClass, valueClass, outputFormatClass, dd.outputConfiguration(this));
 	}
 
-	protected static <K, F extends Factor<F>, RK, RV> JavaPairRDD<K, F> defaultRead(DataSource<K, RK, RV, ?, ?> ds, JavaSparkContext sc,
-			Configuration conf, Class<F> factor) {
-		return sc.newAPIHadoopRDD(conf, ds.inputFormatClass, ds.keyClass, ds.valueClass).mapToPair(t -> ds.afterReading(t._1, t._2,
-				factor));
-	}
-
-	protected final <F extends Factor<F>> Tuple2<K, F> afterReading(RK key, RV value, Class<F> factor) {
-		return new Tuple2<>(marshaller.unmarshallId(key), marshaller.unmarshall(value, factor));
+	@SuppressWarnings("unchecked")
+	protected <F extends Factor<F>> JavaPairRDD<K, F> readByInputFormat(JavaSparkContext sc, Configuration conf, Class<F> factor,
+			float expandPartitions) {
+		JavaPairRDD<RK, RV> raw = sc.newAPIHadoopRDD(conf, inputFormatClass, keyClass, valueClass);
+		Set<Field> ids = marshaller.parseAll(factor, Id.class).keySet();
+		if (ids.size() > 1) error(() -> "Multiple @Id on " + factor.toString() + ", only use one (but randomized one).");
+		final String id = ids.isEmpty() ? null : new ArrayList<>(ids).get(0).getName();
+		Set<Field> keys = marshaller.parseAll(factor, Key.class).keySet();
+		if (keys.size() > 1) error(() -> "Multiple @Key on " + factor.toString() + ", only use one (but randomized one).");
+		final String key = keys.isEmpty() ? null : new ArrayList<>(keys).get(0).getName();
+		if (null != key && null == id)
+			throw new IllegalArgumentException("@Key defined but @Id not defined on " + factor.toString() + ", id will lose in mapping.");
+		final JavaPairRDD<K, F> results = raw.mapToPair(t -> {
+			F v = marshaller.unmarshall(t._2, factor);
+			K k = null == key ? marshaller.unmarshallId(t._1) : Reflections.get(v, key);
+			if (null != id) Reflections.set(v, id, marshaller.unmarshallId(t._1));;
+			return new Tuple2<>(k, v);
+		});
+		trace(() -> "Read(ed) from " + type + ": " + results.count());
+		return (expandPartitions > 1) ? results.repartition((int) Math.ceil(results.partitions().size() * expandPartitions)) : results;
 	}
 }

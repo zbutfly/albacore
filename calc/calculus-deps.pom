@@ -12,10 +12,11 @@
 	<packaging>pom</packaging>
 	<name>albacore-calc-deps</name>
 	<properties>
+		<deps.version.cdh>5.7.0</deps.version.cdh>
 		<deps.version.scala>2.10</deps.version.scala>
 		<deps.version.scala.lib>${deps.version.scala}.6</deps.version.scala.lib>
-		<deps.version.hbase>1.0.0-cdh5.5.2</deps.version.hbase>
-		<deps.version.spark>1.5.0-cdh5.5.2</deps.version.spark>
+		<deps.version.hbase>1.2.0-cdh${deps.version.cdh}</deps.version.hbase>
+		<deps.version.spark>1.6.0-cdh${deps.version.cdh}</deps.version.spark>
 		<deps.version.jackson>2.7.3</deps.version.jackson>
 	</properties>
 	<!-- <properties> -->
@@ -27,6 +28,20 @@
 	<!-- <deps.version.jackson>2.7.3</deps.version.jackson> -->
 	<!-- </properties> -->
 	<dependencies>
+		<!-- fucking hbase-client old depends, methods closed in new version -->
+		<dependency>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+			<version>19.0</version><!-- 12.0.1 -->
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.google.protobuf</groupId>
+			<artifactId>protobuf-java</artifactId>
+			<version>2.6.1</version><!-- 3.0.0-beta-2 -->
+			<scope>provided</scope>
+		</dependency>
+		<!-- fucked -->
 		<dependency>
 			<groupId>org.apache.spark</groupId>
 			<artifactId>spark-core_${deps.version.scala}</artifactId>
@@ -80,6 +95,10 @@
 			<artifactId>elasticsearch-hadoop</artifactId>
 			<version>2.3.0</version>
 			<exclusions>
+				<exclusion>
+					<groupId>com.googlecode.disruptor</groupId>
+					<artifactId>disruptor</artifactId>
+				</exclusion>
 				<exclusion>
 					<artifactId>log4j-over-slf4j</artifactId>
 					<groupId>org.slf4j</groupId>

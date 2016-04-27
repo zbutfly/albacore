@@ -1,5 +1,6 @@
 package net.butfly.albacore.calculus.datasource;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -14,8 +15,6 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.CaseFormat;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import com.mongodb.client.MongoCollection;
@@ -31,8 +30,8 @@ import com.mongodb.hadoop.util.MongoConfigUtil;
 import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
-import net.butfly.albacore.calculus.factor.Index;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
+import net.butfly.albacore.calculus.factor.modifier.Index;
 import net.butfly.albacore.calculus.marshall.MongoMarshaller;
 import net.butfly.albacore.calculus.marshall.bson.BsonMarshaller;
 import net.butfly.albacore.calculus.utils.Reflections;
@@ -65,7 +64,7 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 		return uri;
 	}
 
-	@SuppressWarnings({ "deprecation" })
+	@SuppressWarnings({ "deprecation", "unchecked" })
 	@Override
 	public <F> boolean confirm(Class<F> factor, DataDetail<F> detail) {
 		MongoClientURI muri = new MongoClientURI(getUri());
@@ -75,12 +74,13 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 				MongoDatabase db = mclient.getDatabase(muri.getDatabase());
 				db.createCollection(detail.tables[0]);
 				MongoCollection<Document> col = db.getCollection(detail.tables[0]);
-				for (Field f : Reflections.getDeclaredFields(factor))
-					if (f.isAnnotationPresent(Index.class)) {
-						String colname = f.isAnnotationPresent(JsonProperty.class) ? f.getAnnotation(JsonProperty.class).value()
-								: CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, f.getName());
-						col.createIndex((Bson) BsonMarshaller.assembly(colname, 1));
-					}
+				for (Map.Entry<Field, ? extends Annotation> f : marshaller.parseAll(factor, Index.class).entrySet()) {
+					Index idx = (Index) f.getValue();
+					Object v = 1;
+					if (idx.hashed()) v = "hashed";
+					else if (idx.descending()) v = -1;
+					col.createIndex((Bson) BsonMarshaller.assembly(marshaller.parseQualifier(f.getKey()), v));
+				}
 			}
 			return true;
 		} finally {
@@ -90,14 +90,14 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 
 	@Override
 	public <F extends Factor<F>> JavaPairRDD<Object, F> stocking(Calculator calc, Class<F> factor, DataDetail<F> detail,
-			FactorFilter... filters) {
+			float expandPartitions, FactorFilter... filters) {
 		debug(() -> "Stocking begin: " + factor.toString() + ", from table: " + detail.tables[0] + ".");
 		Configuration mconf = new Configuration();
 		mconf.setClass(MongoConfigUtil.JOB_INPUT_FORMAT, MongoInputFormat.class, InputFormat.class);
 		MongoClientURI uri = new MongoClientURI(this.uri);
 		// mconf.set(MongoConfigUtil.INPUT_URI, uri.toString());
-		mconf.set(MongoConfigUtil.INPUT_URI, new MongoClientURIBuilder(uri).collection(uri.getDatabase(), detail.tables[0]).build()
-				.toString());
+		mconf.set(MongoConfigUtil.INPUT_URI,
+				new MongoClientURIBuilder(uri).collection(uri.getDatabase(), detail.tables[0]).build().toString());
 		List<BSONObject> ands = new ArrayList<>();
 		if (detail.filter != null) ands.add(((MongoMarshaller) this.marshaller).bsonFromJSON(detail.filter));
 		for (FactorFilter f : filters) {
@@ -111,8 +111,8 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 			} else if (f instanceof FactorFilter.Sort) {
 				warn(() -> "MongoDB query sort set as [" + ((FactorFilter.Sort) f).field + ":" + ((FactorFilter.Sort) f).asc
 						+ "], maybe debug...");
-				mconf.set(MongoConfigUtil.INPUT_SORT, ((MongoMarshaller) this.marshaller).jsonFromBSON(BsonMarshaller.assembly(
-						((FactorFilter.Sort) f).field, ((FactorFilter.Sort) f).asc ? 1 : -1)));
+				mconf.set(MongoConfigUtil.INPUT_SORT, ((MongoMarshaller) this.marshaller)
+						.jsonFromBSON(BsonMarshaller.assembly(((FactorFilter.Sort) f).field, ((FactorFilter.Sort) f).asc ? 1 : -1)));
 			} else ands.add(filter(factor, f));
 		}
 		String inputquery = fromBSON(ands);
@@ -123,16 +123,17 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 				mconf.setClass(MongoConfigUtil.MONGO_SPLITTER_CLASS, MongoPaginatingSplitter.class, MongoSplitter.class);
 				info(() -> "Use optimized spliter: " + MongoPaginatingSplitter.class.toString());
 			}
-			trace(() -> "Run mongodb filter on " + factor.toString() + ": " + (inputquery.length() <= 200 || calc.debug ? inputquery
-					: inputquery.substring(0, 100) + "...(too long string eliminated)") + (mconf.get(MongoConfigUtil.INPUT_LIMIT) == null
-							? "" : ", chance: " + mconf.get(MongoConfigUtil.INPUT_LIMIT)) + (mconf.get(MongoConfigUtil.INPUT_SKIP) == null
-									? "" : ", skip: " + mconf.get(MongoConfigUtil.INPUT_SKIP)) + ".");
+			trace(() -> "Run mongodb filter on " + factor.toString() + ": "
+					+ (inputquery.length() <= 200 || calc.debug ? inputquery
+							: inputquery.substring(0, 100) + "...(too long string eliminated)")
+					+ (mconf.get(MongoConfigUtil.INPUT_LIMIT) == null ? "" : ", chance: " + mconf.get(MongoConfigUtil.INPUT_LIMIT))
+					+ (mconf.get(MongoConfigUtil.INPUT_SKIP) == null ? "" : ", skip: " + mconf.get(MongoConfigUtil.INPUT_SKIP)) + ".");
 		}
 		// conf.mconf.set(MongoConfigUtil.INPUT_FIELDS
 		mconf.setBoolean(MongoConfigUtil.INPUT_NOTIMEOUT, true);
 		// mconf.set("mongo.input.split.use_range_queries", "true");
 
-		return DataSource.defaultRead(this, calc.sc, mconf, factor);
+		return readByInputFormat(calc.sc, mconf, factor, expandPartitions);
 	}
 
 	private String fromBSON(List<BSONObject> ands) {
@@ -161,13 +162,13 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 
 	private BSONObject filter(Class<?> mapperClass, FactorFilter filter) {
 		if (filter instanceof FactorFilter.ByField) {
-			String col = marshaller.parseField(Reflections.getDeclaredField(mapperClass, ((FactorFilter.ByField<?>) filter).field));
-			if (filter instanceof FactorFilter.ByFieldValue) return BsonMarshaller.assembly(col, BsonMarshaller.assembly(ops.get(filter
-					.getClass()), ((FactorFilter.ByFieldValue<?>) filter).value));
-			if (filter.getClass().equals(FactorFilter.In.class)) return BsonMarshaller.assembly(col, BsonMarshaller.assembly("$in",
-					((FactorFilter.In<?>) filter).values));
-			if (filter.getClass().equals(FactorFilter.Regex.class)) return BsonMarshaller.assembly(col, BsonMarshaller.assembly("$regex",
-					((FactorFilter.Regex) filter).regex));
+			String col = marshaller.parseQualifier(Reflections.getDeclaredField(mapperClass, ((FactorFilter.ByField<?>) filter).field));
+			if (filter instanceof FactorFilter.ByFieldValue) return BsonMarshaller.assembly(col,
+					BsonMarshaller.assembly(ops.get(filter.getClass()), ((FactorFilter.ByFieldValue<?>) filter).value));
+			if (filter.getClass().equals(FactorFilter.In.class))
+				return BsonMarshaller.assembly(col, BsonMarshaller.assembly("$in", ((FactorFilter.In<?>) filter).values));
+			if (filter.getClass().equals(FactorFilter.Regex.class))
+				return BsonMarshaller.assembly(col, BsonMarshaller.assembly("$regex", ((FactorFilter.Regex) filter).regex));
 		} else {
 			if (filter.getClass().equals(FactorFilter.And.class)) {
 				List<BSONObject> ands = new ArrayList<>();
@@ -186,7 +187,8 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 
 	@Override
 	public <V> Tuple2<ObjectId, MongoUpdateWritable> beforeWriting(Object key, V value) {
-		return new Tuple2<ObjectId, MongoUpdateWritable>(new ObjectId(), new MongoUpdateWritable(BsonMarshaller.assembly("_id",
-				this.marshaller.marshallId(key)), BsonMarshaller.assembly("$set", marshaller.marshall(value)), true, true));
+		return new Tuple2<ObjectId, MongoUpdateWritable>(new ObjectId(),
+				new MongoUpdateWritable(BsonMarshaller.assembly("_id", this.marshaller.marshallId(key)),
+						BsonMarshaller.assembly("$set", marshaller.marshall(value)), true, true));
 	}
 }

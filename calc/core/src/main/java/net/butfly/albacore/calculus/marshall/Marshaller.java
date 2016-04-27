@@ -1,8 +1,11 @@
 package net.butfly.albacore.calculus.marshall;
 
 import java.io.Serializable;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +14,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.CaseFormat;
 
 import net.butfly.albacore.calculus.utils.Reflections;
+import scala.Tuple2;
 
 @SuppressWarnings("unchecked")
 public class Marshaller<FK, VK, VV> implements Serializable {
@@ -37,9 +41,27 @@ public class Marshaller<FK, VK, VV> implements Serializable {
 		throw new UnsupportedOperationException();
 	}
 
-	public String parseField(Field f) {
+	public String parseQualifier(Field f) {
 		Reflections.noneNull("", f);
 		return f.isAnnotationPresent(JsonProperty.class) ? f.getAnnotation(JsonProperty.class).value()
 				: CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, f.getName());
+	}
+
+	public <V> Tuple2<Field, ? extends Annotation> parse(Class<V> c, Class<? extends Annotation>... annotation) {
+		for (Field f : Reflections.getDeclaredFields(c))
+			for (Class<? extends Annotation> a : annotation)
+				if (f.isAnnotationPresent(a)) return new Tuple2<>(f, f.getAnnotation(a));
+		return null;
+	}
+
+	public <V> Map<Field, Annotation> parseAll(Class<V> c, Class<? extends Annotation>... annotation) {
+		Map<Field, Annotation> fs = new HashMap<>();
+		for (Field f : Reflections.getDeclaredFields(c))
+			for (Class<? extends Annotation> a : annotation)
+				if (f.isAnnotationPresent(a)) {
+					fs.put(f, f.getAnnotation(a));
+					break;
+				}
+		return fs;
 	}
 }
