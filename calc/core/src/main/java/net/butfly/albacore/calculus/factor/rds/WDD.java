@@ -1,4 +1,4 @@
-package net.butfly.albacore.calculus.factor.wrapper;
+package net.butfly.albacore.calculus.factor.rds;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -19,7 +19,6 @@ import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.dstream.DStream;
 
 import net.butfly.albacore.calculus.Mode;
-import net.butfly.albacore.calculus.factor.FSupport;
 import net.butfly.albacore.calculus.streaming.RDDDStream;
 import net.butfly.albacore.calculus.streaming.RDDDStream.Mechanism;
 import net.butfly.albacore.calculus.utils.Reflections;
@@ -52,7 +51,7 @@ public class WDD<T> implements Wrapped<T> {
 	}
 
 	public WDD(SparkContext sc, List<T> t) {
-		this(sc.parallelize(JavaConversions.asScalaBuffer(t).seq(), sc.defaultParallelism(), FSupport.tag()));
+		this(sc.parallelize(JavaConversions.asScalaBuffer(t).seq(), sc.defaultParallelism(), RDSupport.tag()));
 	}
 
 	@Override
@@ -169,7 +168,7 @@ public class WDD<T> implements Wrapped<T> {
 
 	@Override
 	public RDD<T> rdd() {
-		return FSupport.union(rdds);
+		return RDSupport.union(rdds);
 	}
 
 	@Override

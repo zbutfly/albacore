@@ -1,4 +1,4 @@
-package net.butfly.albacore.calculus.factor.wrapper;
+package net.butfly.albacore.calculus.factor.rds;
 
 import java.util.Collection;
 import java.util.Map;
@@ -16,17 +16,16 @@ import com.google.common.base.Optional;
 
 import net.butfly.albacore.calculus.datasource.DataDetail;
 import net.butfly.albacore.calculus.datasource.DataSource;
-import net.butfly.albacore.calculus.factor.FSupport;
 import scala.Tuple2;
 import scala.reflect.ClassTag;
 
 public interface PairWrapped<K, V> extends Wrapped<Tuple2<K, V>> {
 	public default ClassTag<V> v() {
-		return FSupport.tag();
+		return RDSupport.tag();
 	}
 
 	public default ClassTag<K> k() {
-		return FSupport.tag();
+		return RDSupport.tag();
 	}
 
 	public <RK, RV, WK, WV> void save(DataSource<K, RK, RV, WK, WV> ds, DataDetail<V> dd);

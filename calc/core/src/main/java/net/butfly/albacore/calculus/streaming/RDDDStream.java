@@ -14,7 +14,7 @@ import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.dstream.InputDStream;
 
-import net.butfly.albacore.calculus.factor.FSupport;
+import net.butfly.albacore.calculus.factor.rds.RDSupport;
 import net.butfly.albacore.calculus.lambda.Func0;
 import net.butfly.albacore.calculus.lambda.Func2;
 import scala.Option;
@@ -30,7 +30,7 @@ public abstract class RDDDStream<T> extends InputDStream<T> {
 	protected RDD<T> current;
 
 	RDDDStream(StreamingContext ssc) {
-		super(ssc, FSupport.tag());
+		super(ssc, RDSupport.tag());
 		this.sc = ssc.sc();
 	}
 
@@ -66,7 +66,7 @@ public abstract class RDDDStream<T> extends InputDStream<T> {
 	public static <K, V> JavaPairDStream<K, V> pstream(StreamingContext ssc, Mechanism mechanism, Func0<JavaPairRDD<K, V>> rdd) {
 		try {
 			return JavaPairDStream.fromPairDStream(new RDDInputDStream<Tuple2<K, V>>(ssc, mechanism, rdd.call().map(t -> t)::rdd),
-					FSupport.tag(), FSupport.tag());
+					RDSupport.tag(), RDSupport.tag());
 		} catch (Exception ex) {
 			throw new RuntimeException(ex);
 		}
@@ -77,25 +77,25 @@ public abstract class RDDDStream<T> extends InputDStream<T> {
 			Comparator<K> comparator) {
 		try {
 			return JavaPairDStream.fromPairDStream(
-					new RDDBatchInputDStream<K, V>(ssc, batch, (limit, offset) -> batcher.call(limit, offset).rdd(), comparator), FSupport.tag(),
-					FSupport.tag());
+					new RDDBatchInputDStream<K, V>(ssc, batch, (limit, offset) -> batcher.call(limit, offset).rdd(), comparator), RDSupport.tag(),
+					RDSupport.tag());
 		} catch (Exception ex) {
 			throw new RuntimeException(ex);
 		}
 	}
 
 	public static <R> JavaDStream<R> stream(StreamingContext ssc, Mechanism mechanism, Func0<JavaRDD<R>> rdd) {
-		return JavaDStream.fromDStream(new RDDInputDStream<R>(ssc, mechanism, rdd.call()::rdd), FSupport.tag());
+		return JavaDStream.fromDStream(new RDDInputDStream<R>(ssc, mechanism, rdd.call()::rdd), RDSupport.tag());
 	}
 
 	@SafeVarargs
 	public static <R> JavaRDD<R> rddValue(SparkContext sc, R... r) {
-		return JavaRDD.fromRDD(sc.parallelize(JavaConversions.asScalaBuffer(Arrays.asList(r)).seq(), sc.defaultParallelism(), FSupport.tag()),
-				FSupport.tag());
+		return JavaRDD.fromRDD(sc.parallelize(JavaConversions.asScalaBuffer(Arrays.asList(r)).seq(), sc.defaultParallelism(), RDSupport.tag()),
+				RDSupport.tag());
 	}
 
 	public static <R> JavaRDD<R> rddList(SparkContext sc, List<R> rs) {
-		return JavaRDD.fromRDD(sc.parallelize(JavaConversions.asScalaBuffer(rs).seq(), sc.defaultParallelism(), FSupport.tag()), FSupport.tag());
+		return JavaRDD.fromRDD(sc.parallelize(JavaConversions.asScalaBuffer(rs).seq(), sc.defaultParallelism(), RDSupport.tag()), RDSupport.tag());
 	}
 
 	@SuppressWarnings("unchecked")

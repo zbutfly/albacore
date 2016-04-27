@@ -1,4 +1,4 @@
-package net.butfly.albacore.calculus.factor.wrapper;
+package net.butfly.albacore.calculus.factor.rds;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -16,7 +16,6 @@ import org.apache.spark.streaming.StreamingContext;
 import org.apache.spark.streaming.dstream.DStream;
 
 import net.butfly.albacore.calculus.Mode;
-import net.butfly.albacore.calculus.factor.FSupport;
 import scala.Tuple2;
 import scala.reflect.ClassTag;
 
@@ -40,7 +39,7 @@ public interface Wrapped<T> extends Serializable {
 	};
 
 	public default ClassTag<T> classTag() {
-		return FSupport.tag();
+		return RDSupport.tag();
 	}
 
 	public T reduce(Function2<T, T, T> func);

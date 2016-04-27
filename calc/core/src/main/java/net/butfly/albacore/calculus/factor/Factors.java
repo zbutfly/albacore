@@ -23,7 +23,7 @@ import net.butfly.albacore.calculus.factor.Factor.Stocking;
 import net.butfly.albacore.calculus.factor.Factor.Streaming;
 import net.butfly.albacore.calculus.factor.Factoring.Factorings;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
-import net.butfly.albacore.calculus.factor.wrapper.PairRDS;
+import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.streaming.RDDDStream;
 import net.butfly.albacore.calculus.streaming.RDDDStream.Mechanism;
 import net.butfly.albacore.calculus.utils.Logable;

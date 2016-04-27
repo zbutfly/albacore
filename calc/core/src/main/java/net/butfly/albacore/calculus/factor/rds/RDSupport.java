@@ -1,4 +1,4 @@
-package net.butfly.albacore.calculus.factor;
+package net.butfly.albacore.calculus.factor.rds;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -15,7 +15,7 @@ import org.apache.spark.streaming.dstream.DStream;
 import scala.reflect.ClassTag;
 import scala.reflect.ManifestFactory;
 
-public interface FSupport {
+public interface RDSupport {
 	static <T> RDD<T> union(Collection<RDD<T>> r) {
 		if (r == null || r.size() == 0) return null;
 		Iterator<RDD<T>> it = r.iterator();

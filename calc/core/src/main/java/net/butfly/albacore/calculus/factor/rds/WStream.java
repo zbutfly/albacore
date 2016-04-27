@@ -1,4 +1,4 @@
-package net.butfly.albacore.calculus.factor.wrapper;
+package net.butfly.albacore.calculus.factor.rds;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -17,7 +17,6 @@ import org.apache.spark.streaming.api.java.JavaDStreamLike;
 import org.apache.spark.streaming.dstream.DStream;
 
 import net.butfly.albacore.calculus.Mode;
-import net.butfly.albacore.calculus.factor.FSupport;
 import net.butfly.albacore.calculus.streaming.RDDDStream;
 import net.butfly.albacore.calculus.streaming.RDDDStream.Mechanism;
 import scala.Tuple2;
@@ -149,7 +148,7 @@ public class WStream<T> implements Wrapped<T> {
 
 	@Override
 	public RDD<T> rdd() {
-		return FSupport.union(rdds());
+		return RDSupport.union(rdds());
 	}
 
 	@Override
