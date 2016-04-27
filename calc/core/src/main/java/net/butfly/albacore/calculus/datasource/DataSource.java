@@ -30,7 +30,7 @@ import scala.Tuple2;
 
 @SuppressWarnings("rawtypes")
 public abstract class DataSource<K, RK, RV, WK, WV> implements Serializable, Logable {
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = -1L;
 	protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 	protected final Factor.Type type;
 	protected final Marshaller<K, RK, RV> marshaller;

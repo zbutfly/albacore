@@ -143,7 +143,7 @@ public interface FactorFilter extends Serializable {
 	}
 
 	public static final class Limit implements FactorFilter {
-		private static final long serialVersionUID = -2980235677478896288L;
+		private static final long serialVersionUID = 6389298147357096849L;
 		public long limit;
 
 		public Limit(long limit) {
