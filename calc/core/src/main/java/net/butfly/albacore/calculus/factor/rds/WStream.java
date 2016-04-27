@@ -80,7 +80,9 @@ public class WStream<T> implements Wrapped<T> {
 
 	@Override
 	public void foreach(VoidFunction<T> consumer) {
-		JavaDStream.fromDStream(dstream, classTag()).foreachRDD(rdd -> rdd.foreach(consumer));
+		JavaDStream.fromDStream(dstream, classTag()).foreachRDD(rdd -> {
+			rdd.foreach(consumer);
+		});
 	}
 
 	@Override
