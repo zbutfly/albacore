@@ -19,7 +19,7 @@ import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.dstream.DStream;
 
 import net.butfly.albacore.calculus.Mode;
-import net.butfly.albacore.calculus.factor.rds.RDS;
+import net.butfly.albacore.calculus.factor.FSupport;
 import net.butfly.albacore.calculus.streaming.RDDDStream;
 import net.butfly.albacore.calculus.streaming.RDDDStream.Mechanism;
 import net.butfly.albacore.calculus.utils.Reflections;
@@ -52,7 +52,7 @@ public class WDD<T> implements Wrapped<T> {
 	}
 
 	public WDD(SparkContext sc, List<T> t) {
-		this(sc.parallelize(JavaConversions.asScalaBuffer(t).seq(), sc.defaultParallelism(), RDS.tag()));
+		this(sc.parallelize(JavaConversions.asScalaBuffer(t).seq(), sc.defaultParallelism(), FSupport.tag()));
 	}
 
 	@Override
@@ -71,7 +71,7 @@ public class WDD<T> implements Wrapped<T> {
 	@Override
 	public WDD<T> repartition(float ratio) {
 		return new WDD<T>(Reflections.transform(rdds,
-				rdd -> JavaRDD.fromRDD(rdd, RDS.tag()).repartition((int) Math.ceil(rdd.getNumPartitions() * ratio)).rdd()));
+				rdd -> JavaRDD.fromRDD(rdd, classTag()).repartition((int) Math.ceil(rdd.getNumPartitions() * ratio)).rdd()));
 	}
 
 	@Override
@@ -109,16 +109,16 @@ public class WDD<T> implements Wrapped<T> {
 	@Override
 	public void foreach(VoidFunction<T> consumer) {
 		for (RDD<T> rdd : rdds)
-			JavaRDD.fromRDD(rdd, RDS.tag()).foreach(consumer);;
+			JavaRDD.fromRDD(rdd, classTag()).foreach(consumer);;
 	}
 
 	@Override
 	public Wrapped<T> union(Wrapped<T> other) {
-		if (Wrapper.class.isAssignableFrom(other.getClass())) return union(((Wrapper<T>) other).wrapped);
+		if (RDS.class.isAssignableFrom(other.getClass())) return union(((RDS<T>) other).wrapped);
 		List<RDD<T>> nrdds = new ArrayList<>(rdds);
 		if (WDD.class.isAssignableFrom(other.getClass())) nrdds.addAll(((WDD<T>) other).rdds);
 		else if (WStream.class.isAssignableFrom(other.getClass()))
-			JavaDStream.fromDStream(((WStream<T>) other).dstream, RDS.tag()).transform(r -> {
+			JavaDStream.fromDStream(((WStream<T>) other).dstream, classTag()).transform(r -> {
 				nrdds.add(r.rdd());
 				return null;
 			});
@@ -129,18 +129,17 @@ public class WDD<T> implements Wrapped<T> {
 
 	@Override
 	public WDD<T> filter(Function<T, Boolean> func) {
-		return new WDD<T>(Reflections.transform(rdds, r -> JavaRDD.fromRDD(r, RDS.tag()).filter(func).rdd()));
+		return new WDD<T>(Reflections.transform(rdds, r -> JavaRDD.fromRDD(r, classTag()).filter(func).rdd()));
 	}
 
 	@Override
 	public <K2, V2> WDD<Tuple2<K2, V2>> mapToPair(PairFunction<T, K2, V2> func) {
-		return new WDD<Tuple2<K2, V2>>(
-				Reflections.transform(rdds, (RDD<T> rdd) -> JavaRDD.fromRDD(rdd, RDS.tag()).mapToPair(func).rdd()));
+		return new WDD<Tuple2<K2, V2>>(Reflections.transform(rdds, (RDD<T> rdd) -> JavaRDD.fromRDD(rdd, classTag()).mapToPair(func).rdd()));
 	}
 
 	@Override
 	public final <T1> WDD<T1> map(Function<T, T1> func) {
-		return new WDD<T1>(Reflections.transform(rdds, rdd -> JavaRDD.fromRDD(rdd, RDS.tag()).map(func).rdd()));
+		return new WDD<T1>(Reflections.transform(rdds, rdd -> JavaRDD.fromRDD(rdd, classTag()).map(func).rdd()));
 	}
 
 	@Override
@@ -151,8 +150,8 @@ public class WDD<T> implements Wrapped<T> {
 	@Override
 	public final T reduce(Function2<T, T, T> func) {
 		return JavaRDD.fromRDD(sc.parallelize(
-				JavaConversions.asScalaBuffer(Reflections.transform(rdds, rdd -> JavaRDD.fromRDD(rdd, RDS.tag()).reduce(func))).seq(),
-				sc.defaultMinPartitions(), RDS.tag()), RDS.tag()).reduce(func);
+				JavaConversions.asScalaBuffer(Reflections.transform(rdds, rdd -> JavaRDD.fromRDD(rdd, classTag()).reduce(func))).seq(),
+				sc.defaultMinPartitions(), classTag()), classTag()).reduce(func);
 	}
 
 	@Override
@@ -170,7 +169,7 @@ public class WDD<T> implements Wrapped<T> {
 
 	@Override
 	public RDD<T> rdd() {
-		return RDS.union(rdds);
+		return FSupport.union(rdds);
 	}
 
 	@Override

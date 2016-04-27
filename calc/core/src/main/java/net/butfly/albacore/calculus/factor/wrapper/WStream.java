@@ -17,7 +17,7 @@ import org.apache.spark.streaming.api.java.JavaDStreamLike;
 import org.apache.spark.streaming.dstream.DStream;
 
 import net.butfly.albacore.calculus.Mode;
-import net.butfly.albacore.calculus.factor.rds.RDS;
+import net.butfly.albacore.calculus.factor.FSupport;
 import net.butfly.albacore.calculus.streaming.RDDDStream;
 import net.butfly.albacore.calculus.streaming.RDDDStream.Mechanism;
 import scala.Tuple2;
@@ -48,7 +48,7 @@ public class WStream<T> implements Wrapped<T> {
 
 	@Override
 	public WStream<T> repartition(float ratio) {
-		return new WStream<T>(JavaDStream.fromDStream(dstream, RDS.tag())
+		return new WStream<T>(JavaDStream.fromDStream(dstream, classTag())
 				.transform((Function<JavaRDD<T>, JavaRDD<T>>) rdd -> rdd.repartition((int) Math.ceil(rdd.partitions().size() * ratio))));
 	}
 
@@ -74,37 +74,37 @@ public class WStream<T> implements Wrapped<T> {
 
 	@Override
 	public void foreachRDD(VoidFunction<JavaRDD<T>> consumer) {
-		JavaDStream.fromDStream(dstream, RDS.tag()).foreachRDD(rdd -> {
+		JavaDStream.fromDStream(dstream, classTag()).foreachRDD(rdd -> {
 			consumer.call(rdd);
 		});
 	}
 
 	@Override
 	public void foreach(VoidFunction<T> consumer) {
-		JavaDStream.fromDStream(dstream, RDS.tag()).foreachRDD(rdd -> rdd.foreach(consumer));
+		JavaDStream.fromDStream(dstream, classTag()).foreachRDD(rdd -> rdd.foreach(consumer));
 	}
 
 	@Override
 	public Wrapped<T> union(Wrapped<T> other) {
 		if (WDD.class.isAssignableFrom(other.getClass())) return new WStream<T>(
-				dstream.union(RDDDStream.stream(ssc, Mechanism.CONST, () -> JavaRDD.fromRDD(other.rdd(), RDS.tag())).dstream()));
+				dstream.union(RDDDStream.stream(ssc, Mechanism.CONST, () -> JavaRDD.fromRDD(other.rdd(), classTag())).dstream()));
 		else if (WStream.class.isAssignableFrom(other.getClass())) return new WStream<T>(dstream.union(((WStream<T>) other).dstream));
 		else throw new IllegalArgumentException();
 	}
 
 	@Override
 	public WStream<T> filter(Function<T, Boolean> func) {
-		return new WStream<T>(JavaDStream.fromDStream(dstream, RDS.tag()).filter(func).dstream());
+		return new WStream<T>(JavaDStream.fromDStream(dstream, classTag()).filter(func).dstream());
 	}
 
 	@Override
 	public <K2, V2> WStream<Tuple2<K2, V2>> mapToPair(PairFunction<T, K2, V2> func) {
-		return new WStream<Tuple2<K2, V2>>(JavaDStream.fromDStream(dstream, RDS.tag()).mapToPair(func));
+		return new WStream<Tuple2<K2, V2>>(JavaDStream.fromDStream(dstream, classTag()).mapToPair(func));
 	}
 
 	@Override
 	public final <T1> WStream<T1> map(Function<T, T1> func) {
-		return new WStream<T1>(JavaDStream.fromDStream(dstream, RDS.tag()).map(func).dstream());
+		return new WStream<T1>(JavaDStream.fromDStream(dstream, classTag()).map(func).dstream());
 	}
 
 	@Override
@@ -126,7 +126,7 @@ public class WStream<T> implements Wrapped<T> {
 	@Override
 	public final T reduce(Function2<T, T, T> func) {
 		List<T> rr = new ArrayList<>();
-		JavaDStream.fromDStream(dstream, RDS.tag()).reduce(func).foreachRDD(rdd -> {
+		JavaDStream.fromDStream(dstream, classTag()).reduce(func).foreachRDD(rdd -> {
 			rr.add(rdd.first());
 		});
 		if (rr.isEmpty()) return null;
@@ -136,7 +136,7 @@ public class WStream<T> implements Wrapped<T> {
 	@Override
 	public final long count() {
 		long[] rr = new long[] { 0 };
-		JavaDStream.fromDStream(dstream, RDS.tag()).count().foreachRDD(rdd -> {
+		JavaDStream.fromDStream(dstream, classTag()).count().foreachRDD(rdd -> {
 			rr[0] += rdd.first();
 		});
 		return rr[0];
@@ -149,7 +149,7 @@ public class WStream<T> implements Wrapped<T> {
 
 	@Override
 	public RDD<T> rdd() {
-		return RDS.union(rdds());
+		return FSupport.union(rdds());
 	}
 
 	@Override
@@ -161,7 +161,7 @@ public class WStream<T> implements Wrapped<T> {
 
 	@Override
 	public <S> WDD<T> sortBy(Function<T, S> comp) {
-		JavaRDD<T> rdd = JavaRDD.fromRDD(rdd(), RDS.tag());
+		JavaRDD<T> rdd = JavaRDD.fromRDD(rdd(), classTag());
 		return new WDD<T>(rdd.sortBy(comp, true, rdd.partitions().size()));
 	}
 

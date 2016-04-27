@@ -6,7 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.butfly.albacore.calculus.factor.Factors;
-import net.butfly.albacore.calculus.factor.rds.PairRDS;
+import net.butfly.albacore.calculus.factor.wrapper.PairRDS;
 import net.butfly.albacore.calculus.functor.Functor;
 import net.butfly.albacore.calculus.utils.Logable;
 
