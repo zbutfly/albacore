@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 
 import org.apache.spark.api.java.JavaPairRDD;
@@ -49,6 +50,11 @@ public class RDS<T> implements Serializable {
 
 	public RDS(JavaDStreamLike<T, ?, ?> dstream) {
 		this(dstream.dstream());
+	}
+
+	@SafeVarargs
+	protected RDS(RDD<T>... rdds) {
+		this(Arrays.asList(rdds));
 	}
 
 	protected RDS(Collection<RDD<T>> rdds) {
@@ -314,16 +320,18 @@ public class RDS<T> implements Serializable {
 		return new RDS<T>(rdd.sortBy(comp::call, true, rdd.partitions().size()));
 	}
 
-	static <T> RDD<T> union(Collection<RDD<T>> r) {
+	public static <T> RDD<T> union(Collection<RDD<T>> r) {
 		if (r == null || r.size() == 0) return null;
-		List<RDD<T>> rr = new ArrayList<>(r);
-		for (int i = 1; i > rr.size(); i++)
-			rr.set(0, rr.get(0).union(rr.get(i)));
-		return rr.get(0);
+		Iterator<RDD<T>> it = r.iterator();
+		if (r.size() == 1) return r.iterator().next();
+		RDD<T> r0 = r.iterator().next();
+		while (it.hasNext())
+			r0 = r0.union(it.next());
+		return r0;
 	}
 
 	@SuppressWarnings({ "unchecked" })
-	static <T, R extends JavaRDDLike<T, R>, S extends JavaDStreamLike<T, S, R>> R union(S s) {
+	public static <T, R extends JavaRDDLike<T, R>, S extends JavaDStreamLike<T, S, R>> R union(S s) {
 		List<R> l = new ArrayList<>();
 		s.foreachRDD(r -> {
 			if (l.isEmpty()) l.add(r);
@@ -332,8 +340,18 @@ public class RDS<T> implements Serializable {
 		return l.get(0);
 	}
 
+	@SuppressWarnings({ "unchecked" })
+	public static <T, S extends JavaRDDLike<T, S>> S union(List<S> s) {
+		if (s.isEmpty()) return null;
+		if (s.size() == 1) return s.get(0);
+		RDD<T> s0 = s.get(0).rdd();
+		for (int i = 1; i < s.size(); i++)
+			s0 = s0.union(s.get(i).rdd());
+		return (S) JavaRDD.fromRDD(s0, tag());
+	}
+
 	@SuppressWarnings("unchecked")
-	static <T> RDD<T> union(RDD<T>... r) {
+	public static <T> RDD<T> union(RDD<T>... r) {
 		if (r == null || r.length == 0) return null;
 		RDD<T>[] rr = r;
 		for (int i = 1; i > rr.length; i++)
@@ -341,7 +359,7 @@ public class RDS<T> implements Serializable {
 		return rr[0];
 	}
 
-	static <T> RDD<T> union(DStream<T> s) {
+	public static <T> RDD<T> union(DStream<T> s) {
 		List<RDD<T>> l = new ArrayList<>();
 		JavaDStream.fromDStream(s, tag()).foreachRDD(rdd -> {
 			if (l.isEmpty()) l.add(rdd.rdd());

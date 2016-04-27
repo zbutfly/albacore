@@ -293,12 +293,6 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 		}
 	}
 
-	@Override
-	public <S> PairRDS<K, V> sortBy(Func<Tuple2<K, V>, S> comp) {
-		JavaRDD<Tuple2<K, V>> rdd = rdd();
-		return new PairRDS<K, V>(rdd().sortBy(comp::call, true, rdd.partitions().size()));
-	}
-
 	public PairRDS<K, V> sortByKey(boolean asc) {
 		return new PairRDS<>(pairRDD().sortByKey(asc));
 	}
@@ -317,11 +311,6 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 		@SuppressWarnings("unchecked")
 		Ordering<K> c = (Ordering<K>) Ordering.natural();
 		return this.reduce((t1, t2) -> (c.compare(t1._1, t2._1) < 0 ? t1 : t2))._1;
-	}
-
-	@Override
-	public PairRDS<K, V> filter(Func<Tuple2<K, V>, Boolean> func) {
-		return from(super.filter(func));
 	}
 
 	public PairRDS<K, V> filter(Func2<K, V, Boolean> func) {
@@ -344,20 +333,30 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 	}
 
 	public PairRDS<K, V> repartition(float ratio, boolean rehash) {
-		if (!rehash) return from(super.repartition(ratio));
+		if (!rehash) return repartition(ratio);
 		switch (type) {
 		case RDD:
-			List<RDD<Tuple2<K, V>>> r = Reflections.transform(rdds, rdd -> JavaPairRDD.fromRDD(rdd, tag(), tag())
-					.partitionBy(new HashPartitioner((int) Math.ceil(rdd.getNumPartitions() * ratio))).rdd());
-			return new PairRDS<K, V>(r);
+			return new PairRDS<K, V>(Reflections.transform(rdds, rdd -> JavaPairRDD.fromRDD(rdd, tag(), tag())
+					.partitionBy(new HashPartitioner((int) Math.ceil(rdd.getNumPartitions() * ratio))).rdd()));
 		case DSTREAM:
-			JavaPairDStream<K, V> ds = JavaPairDStream.fromPairDStream(dstream, tag(), tag())
+			return new PairRDS<K, V>(JavaPairDStream.fromPairDStream(dstream, tag(), tag())
 					.transformToPair((Function<JavaPairRDD<K, V>, JavaPairRDD<K, V>>) rdd -> rdd
-							.partitionBy(new HashPartitioner((int) Math.ceil(rdd.partitions().size() * ratio))));
-			return new PairRDS<K, V>(ds.dstream());
+							.partitionBy(new HashPartitioner((int) Math.ceil(rdd.partitions().size() * ratio))))
+					.dstream());
 		default:
 			throw new IllegalArgumentException();
 		}
+	}
+
+	@Override
+	public PairRDS<K, V> filter(Func<Tuple2<K, V>, Boolean> func) {
+		return from(super.filter(func));
+	}
+
+	@Override
+	public <S> PairRDS<K, V> sortBy(Func<Tuple2<K, V>, S> comp) {
+		JavaRDD<Tuple2<K, V>> rdd = rdd();
+		return new PairRDS<K, V>(rdd().sortBy(comp::call, true, rdd.partitions().size()));
 	}
 
 	@Override

@@ -152,6 +152,16 @@ public final class Reflections implements Serializable {
 		return types;
 	}
 
+	@SafeVarargs
+	public static <T, R> List<R> transform(Func<T, R> trans, T... original) {
+		if (original == null) return null;
+		List<R> r = new ArrayList<>(original.length);
+		for (T t : original) {
+			r.add(trans.call(t));
+		}
+		return r;
+	}
+
 	public static <T, R> List<R> transform(Collection<T> original, Func<T, R> trans) {
 		if (original == null) return null;
 		List<R> r = new ArrayList<>(original.size());
