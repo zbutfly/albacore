@@ -33,5 +33,5 @@ public @interface Factoring {
 
 	float expanding() default 1;
 
-	String persisting() default "";
+	String persisting() default "NONE";
 }

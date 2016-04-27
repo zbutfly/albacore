@@ -1,6 +1,7 @@
 package net.butfly.albacore.calculus.factor;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -37,17 +38,10 @@ public final class Factors implements Serializable, Logable {
 	// private Map<String, FactorConfig<?, ?>> pool;
 
 	public Factors(Calculator calc) {
-		Factoring[] factorings;
-		if (calc.calculusClass.isAnnotationPresent(Factorings.class))
-			factorings = calc.calculusClass.getAnnotation(Factorings.class).value();
-		else if (calc.calculusClass.isAnnotationPresent(Factoring.class))
-			factorings = new Factoring[] { calc.calculusClass.getAnnotation(Factoring.class) };
-		else throw new IllegalArgumentException("Calculus " + calc.calculusClass.toString() + " has no @Factoring annotated.");
 		this.calc = calc;
-
 		FactorConfig<?, ?> batch = null;
 		Set<Class<?>> cl = new HashSet<>();
-		for (Factoring fing : factorings) {
+		for (Factoring fing : scanFactorings(calc.calculusClass)) {
 			if (CONFIGS.containsKey(fing.key())) throw new IllegalArgumentException("Conflictted factoring id: " + fing.key());
 			@SuppressWarnings("rawtypes")
 			Class fc = fing.factor();
@@ -58,7 +52,7 @@ public final class Factors implements Serializable, Logable {
 			conf.batching = fing.batching();
 			conf.streaming = fing.stockOnStreaming();
 			conf.expanding = fing.expanding();
-			conf.persisting = "".equals(fing.persisting()) ? null : StorageLevel.fromString(fing.persisting());
+			conf.persisting = StorageLevel.fromString(fing.persisting());
 			if (fing.batching() > 0) {
 				if (batch != null) throw new IllegalArgumentException("Only one batch stocking source supported, now found second: "
 						+ batch.factorClass.toString() + " and " + conf.factorClass.toString());
@@ -67,6 +61,26 @@ public final class Factors implements Serializable, Logable {
 			CONFIGS.put(fing.key(), conf);
 		}
 		calc.sconf.registerKryoClasses(cl.toArray(new Class[cl.size()]));
+	}
+
+	private Collection<Factoring> scanFactorings(Class<?> c) {
+		Map<String, Factoring> fs = new HashMap<>();
+		if (null != c) {
+
+			if (c.isAnnotationPresent(Factorings.class)) {
+				for (Factoring f : c.getAnnotation(Factorings.class).value())
+					fs.putIfAbsent(f.key(), f);
+			} else if (c.isAnnotationPresent(Factoring.class)) {
+				Factoring f = c.getAnnotation(Factoring.class);
+				if (!fs.containsKey(f.key())) fs.put(f.key(), f);
+			}
+			for (Class<?> ci : c.getInterfaces())
+				for (Factoring f : scanFactorings(ci))
+					fs.putIfAbsent(f.key(), f);
+			for (Factoring f : scanFactorings(c.getSuperclass()))
+				fs.putIfAbsent(f.key(), f);
+		}
+		return fs.values();
 	}
 
 	public <K, F extends Factor<F>> PairRDS<K, F> get(String factoring, FactorFilter... filters) {

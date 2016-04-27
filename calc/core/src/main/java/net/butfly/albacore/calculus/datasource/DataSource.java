@@ -108,17 +108,18 @@ public abstract class DataSource<K, RK, RV, WK, WV> implements Serializable, Log
 	protected FactorFilter[] adddebug(FactorFilter[] filters) {
 		List<FactorFilter> l = new ArrayList<>(Arrays.asList(filters));
 		if (debugRandomChance > 0) {
-			error(() -> "DataSource DEBUGGING, random sampling results of " + debugRandomChance);
+			error(() -> "DataSource [" + type + "] debugging, sampling results of chance: " + debugRandomChance);
 			l.add(new FactorFilter.Random(debugRandomChance));
 		}
 		if (debugLimit > 0) {
-			error(() -> "Hbase debugging, chance results in " + debugLimit);
+			error(() -> "DataSource [" + type + "] debugging, limiting results in: " + debugLimit);
 			l.add(new FactorFilter.Limit(debugLimit));
 		}
 		return l.toArray(new FactorFilter[l.size()]);
 	}
 
 	public void save(JavaPairRDD<WK, WV> rdd, DataDetail<?> dd) {
+		trace(() -> "Writing to " + type + ": " + rdd.count());
 		rdd.saveAsNewAPIHadoopFile("", keyClass, valueClass, outputFormatClass, dd.outputConfiguration(this));
 	}
 
