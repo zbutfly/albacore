@@ -16,6 +16,7 @@ import org.apache.spark.api.java.JavaRDDLike;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
+import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.rdd.EmptyRDD;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.storage.StorageLevel;
@@ -43,18 +44,12 @@ import scala.reflect.ClassTag;
 public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 	private static final long serialVersionUID = 2213547213519725138L;
 
-	protected PairRDS() {}
-
-	@Override
-	protected PairRDS<K, V> init(DStream<Tuple2<K, V>> dstream) {
-		super.init(dstream);
-		return this;
+	protected PairRDS(DStream<Tuple2<K, V>> dstream) {
+		super(dstream);
 	}
 
-	@Override
-	protected PairRDS<K, V> init(Collection<RDD<Tuple2<K, V>>> rdds) {
-		super.init(rdds);
-		return this;
+	protected PairRDS(Collection<RDD<Tuple2<K, V>>> rdds) {
+		super(rdds);
 	}
 
 	@SafeVarargs
@@ -78,9 +73,9 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 	public static <K, V> PairRDS<K, V> from(RDS<Tuple2<K, V>> rds) {
 		switch (rds.type) {
 		case RDD:
-			return new PairRDS<K, V>().init(rds.rdds);
+			return new PairRDS<K, V>(rds.rdds);
 		case DSTREAM:
-			return new PairRDS<K, V>().init(rds.dstream);
+			return new PairRDS<K, V>(rds.dstream);
 		default:
 			throw new IllegalArgumentException();
 		}
@@ -105,10 +100,7 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 				consumer.call(JavaPairRDD.fromRDD(rdd, tag(), tag()));
 			break;
 		case DSTREAM:
-			JavaPairDStream.fromPairDStream(dstream, tag(), tag()).foreachRDD((Function<JavaPairRDD<K, V>, Void>) rdd -> {
-				consumer.call(rdd);
-				return null;
-			});
+			JavaPairDStream.fromPairDStream(dstream, tag(), tag()).foreachRDD(consumer::call);
 			break;
 		}
 	}
@@ -120,10 +112,7 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 				JavaPairRDD.fromRDD(rdd, tag(), tag()).foreach(t -> consumer.call(t._1, t._2));
 			break;
 		case DSTREAM:
-			JavaPairDStream.fromPairDStream(dstream, tag(), tag()).foreachRDD((Function<JavaPairRDD<K, V>, Void>) rdd -> {
-				rdd.foreach(t -> consumer.call(t._1, t._2));
-				return null;
-			});
+			JavaPairDStream.fromPairDStream(dstream, tag(), tag()).foreachRDD(rdd -> rdd.foreach(t -> consumer.call(t._1, t._2)));
 			break;
 		}
 	}
@@ -296,10 +285,8 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 		case DSTREAM:
 			List<RDD<Tuple2<K, V>>> rs = new ArrayList<>();
 			rs.add(new EmptyRDD<Tuple2<K, V>>(dstream.ssc().sc(), tag()));
-			JavaPairDStream.fromPairDStream(dstream, tag(), tag()).foreachRDD((Function<JavaPairRDD<K, V>, Void>) rdd -> {
-				rs.set(0, rs.get(0).union(rdd.rdd()));
-				return null;
-			});
+			JavaPairDStream.fromPairDStream(dstream, tag(), tag())
+					.foreachRDD((VoidFunction<JavaPairRDD<K, V>>) (final JavaPairRDD<K, V> rdd) -> rs.set(0, rs.get(0).union(rdd.rdd())));
 			return JavaPairRDD.fromRDD(rs.get(0), tag(), tag());
 		default:
 			throw new IllegalArgumentException();
@@ -344,7 +331,7 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 	public final <K2, V2> PairRDS<K2, V2> mapPair(PairFunc<Tuple2<K, V>, K2, V2> func) {
 		switch (type) {
 		case RDD:
-			return new PairRDS<K2, V2>().init(RDS.trans(rdds, rdd -> JavaRDD.fromRDD(rdd, tag()).mapToPair(func::call).rdd()));
+			return new PairRDS<K2, V2>(Reflections.transform(rdds, rdd -> JavaRDD.fromRDD(rdd, tag()).mapToPair(func::call).rdd()));
 		case DSTREAM:
 			return new PairRDS<K2, V2>(JavaDStream.fromDStream(dstream, tag()).mapToPair(func::call));
 		default:
@@ -361,13 +348,13 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> {
 		switch (type) {
 		case RDD:
 			List<RDD<Tuple2<K, V>>> r = Reflections.transform(rdds, rdd -> JavaPairRDD.fromRDD(rdd, tag(), tag())
-					.partitionBy(new HashPartitioner((int) Math.ceil(rdd.partitions().length * ratio))).rdd());
-			return new PairRDS<K, V>().init(r);
+					.partitionBy(new HashPartitioner((int) Math.ceil(rdd.getNumPartitions() * ratio))).rdd());
+			return new PairRDS<K, V>(r);
 		case DSTREAM:
 			JavaPairDStream<K, V> ds = JavaPairDStream.fromPairDStream(dstream, tag(), tag())
 					.transformToPair((Function<JavaPairRDD<K, V>, JavaPairRDD<K, V>>) rdd -> rdd
 							.partitionBy(new HashPartitioner((int) Math.ceil(rdd.partitions().size() * ratio))));
-			return new PairRDS<K, V>().init(ds.dstream());
+			return new PairRDS<K, V>(ds.dstream());
 		default:
 			throw new IllegalArgumentException();
 		}
