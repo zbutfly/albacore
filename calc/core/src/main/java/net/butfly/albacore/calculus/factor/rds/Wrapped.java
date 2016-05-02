@@ -13,6 +13,7 @@ import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.storage.StorageLevel;
 import org.apache.spark.streaming.StreamingContext;
+import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.dstream.DStream;
 
 import net.butfly.albacore.calculus.Mode;
@@ -20,11 +21,17 @@ import scala.Tuple2;
 import scala.reflect.ClassTag;
 
 public interface Wrapped<T> extends Serializable {
-	public boolean isEmpty();
+	public default boolean isEmpty() {
+		return this.wrapped().isEmpty();
+	}
 
-	public int getNumPartitions();
+	public default int getNumPartitions() {
+		return wrapped().getNumPartitions();
+	}
 
-	public long count();
+	public default long count() {
+		return wrapped().count();
+	}
 
 	public void foreachRDD(VoidFunction<JavaRDD<T>> consumer);
 
@@ -88,5 +95,13 @@ public interface Wrapped<T> extends Serializable {
 		}
 		return null;
 
+	}
+
+	public default JavaRDD<T> jrdd() {
+		return JavaRDD.fromRDD(rdd(), classTag());
+	}
+
+	public default JavaDStream<T> jdstream(StreamingContext ssc) {
+		return JavaDStream.fromDStream(dstream(ssc), classTag());
 	}
 }

@@ -46,21 +46,6 @@ public class RDS<T> implements Wrapped<T> {
 	}
 
 	@Override
-	public boolean isEmpty() {
-		return wrapped().isEmpty();
-	}
-
-	@Override
-	public int getNumPartitions() {
-		return wrapped().getNumPartitions();
-	}
-
-	@Override
-	public long count() {
-		return wrapped().count();
-	}
-
-	@Override
 	public void foreachRDD(VoidFunction<JavaRDD<T>> consumer) {
 		wrapped().foreachRDD(consumer);
 	}

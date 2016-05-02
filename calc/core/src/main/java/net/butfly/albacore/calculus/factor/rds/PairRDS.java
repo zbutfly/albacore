@@ -1,7 +1,6 @@
 package net.butfly.albacore.calculus.factor.rds;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,7 +28,6 @@ import com.google.common.collect.Ordering;
 import net.butfly.albacore.calculus.Mode;
 import net.butfly.albacore.calculus.datasource.DataDetail;
 import net.butfly.albacore.calculus.datasource.DataSource;
-import net.butfly.albacore.calculus.factor.rds.RDS;
 import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
 
@@ -38,13 +36,8 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> implements PairWrapped<K, V
 
 	protected PairRDS() {}
 
-	@SafeVarargs
-	public PairRDS(JavaPairRDD<K, V>... rdd) {
-		this(Arrays.asList(rdd));
-	}
-
-	public PairRDS(List<JavaPairRDD<K, V>> rdds) {
-		super(new WDD<Tuple2<K, V>>(Reflections.transform(rdds, r -> r.rdd())));
+	public PairRDS(JavaPairRDD<K, V> rdd) {
+		super(new WDD<Tuple2<K, V>>(rdd));
 	}
 
 	public PairRDS(JavaPairDStream<K, V> dstream) {
@@ -123,8 +116,8 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> implements PairWrapped<K, V
 		if (!rehash) return repartition(ratio);
 		switch (mode()) {
 		case STOCKING:
-			return new PairRDS<K, V>(Reflections.transform(rdds(), rdd -> JavaPairRDD.fromRDD(rdd, k(), v())
-					.partitionBy(new HashPartitioner((int) Math.ceil(rdd.getNumPartitions() * ratio)))));
+			return new PairRDS<K, V>(
+					JavaPairRDD.fromRDD(rdd(), k(), v()).partitionBy(new HashPartitioner((int) Math.ceil(getNumPartitions() * ratio))));
 		case STREAMING:
 			JavaPairDStream<K, V> ds = JavaPairDStream.fromPairDStream(dstream(Wrapped.ssc(this)), k(), v())
 					.transformToPair((Function<JavaPairRDD<K, V>, JavaPairRDD<K, V>>) rdd -> rdd
@@ -193,7 +186,7 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> implements PairWrapped<K, V
 	public final <K2, V2> PairRDS<K2, V2> mapToPair(PairFunction<Tuple2<K, V>, K2, V2> func) {
 		switch (mode()) {
 		case STOCKING:
-			return new PairRDS<K2, V2>(Reflections.transform(rdds(), rdd -> JavaPairRDD.fromRDD(rdd, k(), v()).mapToPair(func::call)));
+			return new PairRDS<K2, V2>(JavaPairRDD.fromRDD(rdd(), k(), v()).mapToPair(func::call));
 		case STREAMING:
 			return new PairRDS<K2, V2>(JavaPairDStream.fromPairDStream(dstream(Wrapped.ssc(this)), k(), v()).mapToPair(func::call));
 		default:
@@ -214,8 +207,8 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> implements PairWrapped<K, V
 
 	@Override
 	public <V2> PairRDS<K, Tuple2<V, V2>> join(Wrapped<Tuple2<K, V2>> other, int numPartitions) {
-		if (mode() == Mode.STOCKING && other.mode() == Mode.STOCKING) return new PairRDS<>(
-				JavaPairRDD.fromRDD(rdd(), k(), v()).join(JavaPairRDD.fromRDD(other.rdd(), RDSupport.tag(), RDSupport.tag()), numPartitions));
+		if (mode() == Mode.STOCKING && other.mode() == Mode.STOCKING) return new PairRDS<>(JavaPairRDD.fromRDD(rdd(), k(), v())
+				.join(JavaPairRDD.fromRDD(other.rdd(), RDSupport.tag(), RDSupport.tag()), numPartitions));
 		else {
 			StreamingContext ssc = Wrapped.ssc(this, other);
 			return new PairRDS<>(JavaPairDStream.fromPairDStream(wrapped().dstream(ssc), k(), v())
