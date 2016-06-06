@@ -57,7 +57,7 @@ public class ElasticDataSource extends DataSource<String, String, Map, String, O
 			float expandPartitions, FactorFilter... filters) {
 		JavaPairRDD<String, Map<String, Object>> records = JavaPairRDD
 				.fromRDD(EsSpark.esRDD(calc.sc.sc(), baseUrl + detail.tables[0], filter(detail.filter, filters)), RDSupport.tag(), RDSupport.tag());
-		if (expandPartitions > 1) records = records.repartition((int) Math.ceil(records.partitions().size() * expandPartitions));
+		if (expandPartitions > 1) records = records.repartition((int) Math.ceil(records.getNumPartitions() * expandPartitions));
 		return records.mapToPair((Tuple2<String, Map<String, Object>> t) -> new Tuple2<>(marshaller.unmarshallId(t._1),
 				marshaller.unmarshall(t._2, factor)));
 	}

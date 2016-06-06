@@ -1,8 +1,8 @@
 package net.butfly.albacore.calculus.factor.rds;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.function.Function;
@@ -32,7 +32,7 @@ public interface PairWrapped<K, V> extends Wrapped<Tuple2<K, V>> {
 
 	public Map<K, V> collectAsMap();
 
-	public Set<K> collectKeys();
+	public List<K> collectKeys();
 
 	public void foreachPairRDD(VoidFunction<JavaPairRDD<K, V>> consumer);
 
@@ -42,11 +42,11 @@ public interface PairWrapped<K, V> extends Wrapped<Tuple2<K, V>> {
 
 	public PairRDS<K, V> reduceByKey(Function2<V, V, V> func);
 
-	public PairRDS<K, V> reduceByKey(Function2<V, V, V> func, int numPartitions);
+	public PairRDS<K, V> reduceByKey(Function2<V, V, V> func, float ratioPartitions);
 
 	public <V2> PairRDS<K, Tuple2<V, V2>> join(Wrapped<Tuple2<K, V2>> other);
 
-	public <V2> PairRDS<K, Tuple2<V, V2>> join(Wrapped<Tuple2<K, V2>> other, int numPartitions);
+	public <V2> PairRDS<K, Tuple2<V, V2>> join(Wrapped<Tuple2<K, V2>> other, float ratioPartitions);
 
 	public <V2> PairRDS<K, Tuple2<V, Optional<V2>>> leftOuterJoin(Wrapped<Tuple2<K, V2>> other);
 

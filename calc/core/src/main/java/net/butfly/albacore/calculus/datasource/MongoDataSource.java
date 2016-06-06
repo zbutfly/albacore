@@ -40,19 +40,17 @@ import scala.Tuple2;
 public class MongoDataSource extends DataSource<Object, Object, BSONObject, ObjectId, MongoUpdateWritable> {
 	private static final long serialVersionUID = -2617369621178264387L;
 	final String uri;
-	private final boolean optimize;
 
-	public MongoDataSource(String uri, MongoMarshaller marshaller, String suffix, boolean validate, boolean optimize) {
+	public MongoDataSource(String uri, MongoMarshaller marshaller, String suffix, boolean validate) {
 		super(Type.MONGODB, validate, null == marshaller ? new MongoMarshaller() : marshaller, Object.class, BSONObject.class,
 				MongoOutputFormat.class, MongoInputFormat.class);
 		super.suffix = suffix;
 		this.uri = uri;
-		this.optimize = optimize;
 
 	}
 
-	public MongoDataSource(String uri, String suffix, boolean validate, boolean optimize) {
-		this(uri, new MongoMarshaller(), suffix, validate, optimize);
+	public MongoDataSource(String uri, String suffix, boolean validate) {
+		this(uri, new MongoMarshaller(), suffix, validate);
 	}
 
 	@Override
@@ -118,11 +116,11 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 		String inputquery = fromBSON(ands);
 		if (null != inputquery) {
 			mconf.set(MongoConfigUtil.INPUT_QUERY, inputquery);
-			if (this.optimize) {
-				mconf.setBoolean(MongoConfigUtil.SPLITS_USE_RANGEQUERY, true);
-				mconf.setClass(MongoConfigUtil.MONGO_SPLITTER_CLASS, MongoPaginatingSplitter.class, MongoSplitter.class);
-				info(() -> "Use optimized spliter: " + MongoPaginatingSplitter.class.toString());
-			}
+			// if (this.optimize) {
+			mconf.setBoolean(MongoConfigUtil.SPLITS_USE_RANGEQUERY, true);
+			mconf.setClass(MongoConfigUtil.MONGO_SPLITTER_CLASS, MongoPaginatingSplitter.class, MongoSplitter.class);
+			debug(() -> "Use optimized spliter: " + MongoPaginatingSplitter.class.toString());
+			// }
 			trace(() -> "Run mongodb filter on " + factor.toString() + ": "
 					+ (inputquery.length() <= 200 || calc.debug ? inputquery
 							: inputquery.substring(0, 100) + "...(too long string eliminated)")

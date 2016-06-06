@@ -57,7 +57,6 @@ public class Calculator implements Logable, Serializable {
 	public Mode mode;
 	public Class<Calculus> calculusClass;
 	private String appname;
-	private boolean optimizeMongo;
 
 	public static void main(String... args) {
 		final Properties props = new Properties();
@@ -104,7 +103,6 @@ public class Calculator implements Logable, Serializable {
 	private Calculator(Properties props) {
 		mode = Mode.valueOf(props.getProperty("calculus.mode", "STREAMING").toUpperCase());
 		debug = Boolean.valueOf(props.getProperty("calculus.debug", "false").toLowerCase());
-		optimizeMongo = Boolean.valueOf(props.getProperty("calculus.mongo.optimize", "true").toLowerCase());
 		if (debug) error(() -> "Running in DEBUG mode, slowly!!!!!");
 		if (mode == Mode.STOCKING && props.containsKey("calculus.spark.duration.seconds"))
 			warn(() -> "Stocking does not support duration, but duration may be set by calculator for batching.");
@@ -175,7 +173,7 @@ public class Calculator implements Logable, Serializable {
 				break;
 			case MONGODB:
 				ds = new MongoDataSource(dbprops.getProperty("uri"), (MongoMarshaller) m, dbprops.getProperty("output.suffix"),
-						Boolean.parseBoolean(dbprops.getProperty("validate", "true")), this.optimizeMongo);
+						Boolean.parseBoolean(dbprops.getProperty("validate", "true")));
 				break;
 			case KAFKA:
 				ds = new KafkaDataSource(dbprops.getProperty("servers"), dbprops.getProperty("root"),
