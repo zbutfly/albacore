@@ -8,7 +8,7 @@ import org.apache.spark.rdd.RDD;
 import org.apache.spark.streaming.StreamingContext;
 import org.apache.spark.streaming.Time;
 
-import net.butfly.albacore.calculus.factor.rds.RDS;
+import net.butfly.albacore.calculus.factor.rds.RDSupport;
 import scala.Option;
 import scala.Tuple2;
 
@@ -33,10 +33,10 @@ class RDDBatchInputDStream<K, V> extends RDDDStream<Tuple2<K, V>> {
 		load();
 		// results exclude last item on prev batch
 		if (null != offset)
-			current = JavaRDD.fromRDD(current, RDS.tag()).subtract(RDDDStream.rddValue(sc, new Tuple2<K, V>(offset, null))).rdd();
+			current = JavaRDD.fromRDD(current, RDSupport.tag()).subtract(RDDDStream.rddValue(sc, new Tuple2<K, V>(offset, null))).rdd();
 		if (current.isEmpty()) ssc.stop(true, true);
 		// next skip is last item this time
-		else offset = JavaRDD.fromRDD(current, RDS.tag())
+		else offset = JavaRDD.fromRDD(current, RDSupport.tag())
 				.treeReduce((final Tuple2<K, V> t1, final Tuple2<K, V> t2) -> comparator.compare(t1._1, t2._1) < 0 ? t1 : t2)._1;
 		return super.compute(time);
 	}
