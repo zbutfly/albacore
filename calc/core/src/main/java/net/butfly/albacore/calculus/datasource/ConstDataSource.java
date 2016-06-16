@@ -40,7 +40,7 @@ public class ConstDataSource extends DataSource<String, Void, String, Void, Stri
 		String[] values = this.values;
 		if (values == null) values = new String[0];
 		JavaRDD<String> records = calc.sc.parallelize(Arrays.asList(values));
-		if (expandPartitions > 1) records = records.repartition((int) Math.ceil(records.partitions().size() * expandPartitions));
+		if (expandPartitions > 1) records = records.repartition((int) Math.ceil(records.getNumPartitions() * expandPartitions));
 		return records.mapToPair(
 				(final String t) -> null == t ? null : new Tuple2<>(UUID.randomUUID().toString(), (F) Reflections.construct(factor, t)));
 	}

@@ -5,7 +5,6 @@ import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -67,15 +66,15 @@ class HbaseConfiguration<F extends Factor<F>> implements Serializable, Logable {
 				conf.set(TableInputFormat.SCAN, Base64.encodeBytes(ProtobufUtil.toScan(createScan().setFilter(fl)).toByteArray()));
 				return conf;
 			}
-			conf.set(TableInputFormat.SCAN, Base64.encodeBytes(ProtobufUtil.toScan(createScan().setFilter(filterOne(filters[0])))
-					.toByteArray()));
+			conf.set(TableInputFormat.SCAN,
+					Base64.encodeBytes(ProtobufUtil.toScan(createScan().setFilter(filterOne(filters[0]))).toByteArray()));
 			return conf;
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings("rawtypes")
 	private Filter filterOne(FactorFilter filter) {
 		if (filter instanceof FactorFilter.ByField) {
 			Field field = Reflections.getDeclaredField(factor, ((FactorFilter.ByField<?>) filter).field);
@@ -83,8 +82,8 @@ class HbaseConfiguration<F extends Factor<F>> implements Serializable, Logable {
 			byte[][] qulifiers = new byte[][] { Bytes.toBytes(q[0]), Bytes.toBytes(q[1]) };
 			Func<Object, byte[]> conv = CONVERTERS.get(field.getType());
 			if (filter instanceof FactorFilter.ByFieldValue) {
-				if (!ops.containsKey(filter.getClass())) throw new UnsupportedOperationException("Unsupportted filter: " + filter
-						.getClass());
+				if (!ops.containsKey(filter.getClass()))
+					throw new UnsupportedOperationException("Unsupportted filter: " + filter.getClass());
 				Object value = ((FactorFilter.ByFieldValue<?>) filter).value;
 				byte[] val = conv.call(value);
 				SingleColumnValueFilter f = new SingleColumnValueFilter(qulifiers[0], qulifiers[1], ops.get(filter.getClass()), val);
@@ -92,10 +91,10 @@ class HbaseConfiguration<F extends Factor<F>> implements Serializable, Logable {
 				return f;
 			}
 			if (filter.getClass().equals(FactorFilter.In.class)) {
-				@SuppressWarnings("rawtypes")
-				Collection<Object> values = ((FactorFilter.In) filter).values;
-				return new SingleColumnInValuesFilter(qulifiers[0], qulifiers[1], Reflections.transform(values, conv::call).toArray(
-						new byte[0][]));
+				FilterList fl = new FilterList(Operator.MUST_PASS_ONE);
+				for (Object v : ((FactorFilter.In) filter).values)
+					fl.addFilter(new SingleColumnValueFilter(qulifiers[0], qulifiers[1], CompareOp.EQUAL, conv.call(v)));
+				return fl;
 			}
 			if (filter.getClass().equals(FactorFilter.Regex.class)) {
 				SingleColumnValueFilter f = new SingleColumnValueFilter(qulifiers[0], qulifiers[1], CompareOp.EQUAL,

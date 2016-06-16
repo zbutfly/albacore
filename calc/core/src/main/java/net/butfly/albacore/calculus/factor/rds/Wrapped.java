@@ -1,7 +1,6 @@
 package net.butfly.albacore.calculus.factor.rds;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -17,10 +16,11 @@ import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.dstream.DStream;
 
 import net.butfly.albacore.calculus.Mode;
+import net.butfly.albacore.calculus.utils.Logable;
 import scala.Tuple2;
 import scala.reflect.ClassTag;
 
-public interface Wrapped<T> extends Serializable {
+public interface Wrapped<T> extends Serializable, Logable {
 	public default boolean isEmpty() {
 		return this.wrapped().isEmpty();
 	}
@@ -40,9 +40,7 @@ public interface Wrapped<T> extends Serializable {
 	public T first();
 
 	public default List<T> collect() {
-		List<T> r = new ArrayList<>();
-		foreach(r::add);
-		return r;
+		return jrdd().collect();
 	};
 
 	public default ClassTag<T> classTag() {

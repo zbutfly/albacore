@@ -48,7 +48,7 @@ public class WStream<T> implements Wrapped<T> {
 	@Override
 	public WStream<T> repartition(float ratio) {
 		return new WStream<T>(JavaDStream.fromDStream(dstream, classTag())
-				.transform((Function<JavaRDD<T>, JavaRDD<T>>) rdd -> rdd.repartition((int) Math.ceil(rdd.partitions().size() * ratio))));
+				.transform((Function<JavaRDD<T>, JavaRDD<T>>) rdd -> rdd.repartition((int) Math.ceil(rdd.getNumPartitions() * ratio))));
 	}
 
 	@Override
@@ -163,7 +163,7 @@ public class WStream<T> implements Wrapped<T> {
 	@Override
 	public <S> WDD<T> sortBy(Function<T, S> comp) {
 		JavaRDD<T> rdd = JavaRDD.fromRDD(rdd(), classTag());
-		return new WDD<T>(rdd.sortBy(comp, true, rdd.partitions().size()));
+		return new WDD<T>(rdd.sortBy(comp, true, rdd.getNumPartitions()));
 	}
 
 	@Override

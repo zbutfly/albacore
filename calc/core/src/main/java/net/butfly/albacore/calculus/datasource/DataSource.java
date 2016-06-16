@@ -14,6 +14,7 @@ import org.apache.hadoop.mapreduce.OutputFormat;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
+import org.apache.spark.util.SizeEstimator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -127,6 +128,7 @@ public abstract class DataSource<K, RK, RV, WK, WV> implements Serializable, Log
 	protected <F extends Factor<F>> JavaPairRDD<K, F> readByInputFormat(JavaSparkContext sc, Configuration conf, Class<F> factor,
 			float expandPartitions) {
 		JavaPairRDD<RK, RV> raw = sc.newAPIHadoopRDD(conf, inputFormatClass, keyClass, valueClass);
+		debug(()->"Loading from datasource finished: " + SizeEstimator.estimate(raw) + " bytes (estimate).");
 		Set<Field> ids = marshaller.parseAll(factor, Id.class).keySet();
 		if (ids.size() > 1) error(() -> "Multiple @Id on " + factor.toString() + ", only use one (but randomized one).");
 		final String id = ids.isEmpty() ? null : new ArrayList<>(ids).get(0).getName();
@@ -141,7 +143,6 @@ public abstract class DataSource<K, RK, RV, WK, WV> implements Serializable, Log
 			if (null != id) Reflections.set(v, id, marshaller.unmarshallId(t._1));;
 			return new Tuple2<>(k, v);
 		});
-		trace(() -> "Read(ed) from " + type + ": " + results.count());
-		return (expandPartitions > 1) ? results.repartition((int) Math.ceil(results.partitions().size() * expandPartitions)) : results;
+		return (expandPartitions > 1) ? results.repartition((int) Math.ceil(results.getNumPartitions() * expandPartitions)) : results;
 	}
 }
