@@ -20,4 +20,16 @@
 		<nature>org.eclipse.m2e.core.maven2Nature</nature>
 		<nature>org.eclipse.jdt.core.javanature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>calculus-deps.pom</name>
+			<type>1</type>
+			<location>C:/Workspaces/albacore/calc/calculus-deps.pom</location>
+		</link>
+		<link>
+			<name>calculus-parent.pom</name>
+			<type>1</type>
+			<location>C:/Workspaces/albacore/calc/calculus-parent.pom</location>
+		</link>
+	</linkedResources>
 </projectDescription>

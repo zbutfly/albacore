@@ -12,27 +12,23 @@
 	<packaging>pom</packaging>
 	<name>albacore-calc-deps</name>
 	<properties>
-		<deps.version.cdh>5.7.0</deps.version.cdh>
 		<deps.version.scala>2.10</deps.version.scala>
 		<deps.version.scala.lib>${deps.version.scala}.6</deps.version.scala.lib>
+<!-- 		<deps.version.hbase>1.2.0</deps.version.hbase> -->
+<!-- 		<deps.version.spark>1.6.1</deps.version.spark> -->
+<!-- 		<deps.version.jackson>2.7.3</deps.version.jackson> -->
+
+		<deps.version.cdh>5.7.0</deps.version.cdh>
 		<deps.version.hbase>1.2.0-cdh${deps.version.cdh}</deps.version.hbase>
 		<deps.version.spark>1.6.0-cdh${deps.version.cdh}</deps.version.spark>
 		<deps.version.jackson>2.7.3</deps.version.jackson>
 	</properties>
-	<!-- <properties> -->
-	<!-- <deps.version.scala>2.11</deps.version.scala> -->
-	<!-- <deps.version.scala.lib>2.12.0-M3-dc9effe</deps.version.scala.lib> -->
-	<!-- ${deps.version.scala}.8 -->
-	<!-- <deps.version.spark>1.6.1</deps.version.spark> -->
-	<!-- <deps.version.hbase>1.2.0</deps.version.hbase> -->
-	<!-- <deps.version.jackson>2.7.3</deps.version.jackson> -->
-	<!-- </properties> -->
 	<dependencies>
 		<!-- fucking hbase-client old depends, methods closed in new version -->
 		<dependency>
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
-			<version>19.0</version><!-- 12.0.1 -->
+			<version>12.0.1</version><!-- 12.0.1 -->
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
