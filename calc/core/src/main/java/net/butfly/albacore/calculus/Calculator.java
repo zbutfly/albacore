@@ -114,7 +114,7 @@ public class Calculator implements Logable, Serializable {
 		try {
 			calculusClass = (Class<Calculus>) Class.forName(props.getProperty("calculus.class"));
 		} catch (ClassNotFoundException e) {
-			throw new IllegalArgumentException("Calculus " + props.getProperty("calculus.class") + "not found or not calculus.", e);
+			throw new IllegalArgumentException("Calculus " + props.getProperty("calculus.class") + " not found or not calculus.", e);
 		}
 		this.appname = props.getProperty("calculus.app.name", "Calculuses:" + calculusClass.getSimpleName());
 		// dadatabse configurations parsing

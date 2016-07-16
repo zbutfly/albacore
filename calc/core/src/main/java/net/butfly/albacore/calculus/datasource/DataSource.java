@@ -128,7 +128,7 @@ public abstract class DataSource<K, RK, RV, WK, WV> implements Serializable, Log
 	protected <F extends Factor<F>> JavaPairRDD<K, F> readByInputFormat(JavaSparkContext sc, Configuration conf, Class<F> factor,
 			float expandPartitions) {
 		JavaPairRDD<RK, RV> raw = sc.newAPIHadoopRDD(conf, inputFormatClass, keyClass, valueClass);
-		debug(()->"Loading from datasource finished: " + SizeEstimator.estimate(raw) + " bytes (estimate).");
+		debug(() -> "Loading from datasource finished: " + SizeEstimator.estimate(raw) + " bytes (estimate).");
 		Set<Field> ids = marshaller.parseAll(factor, Id.class).keySet();
 		if (ids.size() > 1) error(() -> "Multiple @Id on " + factor.toString() + ", only use one (but randomized one).");
 		final String id = ids.isEmpty() ? null : new ArrayList<>(ids).get(0).getName();
