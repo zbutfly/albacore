@@ -5,6 +5,7 @@
 		<groupId>net.butfly.albacore</groupId>
 		<artifactId>albacore-calc-parent</artifactId>
 		<version>1.0.0-SNAPSHOT</version>
+		<relativePath>../calculus-parent.pom</relativePath>
 	</parent>
 	<artifactId>albacore-calc-core</artifactId>
 	<name>albacore-calc-core</name>

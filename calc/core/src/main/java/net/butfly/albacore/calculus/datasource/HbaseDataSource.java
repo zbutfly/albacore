@@ -88,8 +88,8 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 	@Override
 	public <F extends Factor<F>> JavaPairRDD<byte[], F> stocking(Calculator calc, Class<F> factor, DataDetail<F> detail,
 			float expandPartitions, FactorFilter... filters) {
-		if (calc.debug && debugLimit > 0 && debugRandomChance > 0) filters = adddebug(filters);
-		debug(() -> "Scaning begin: " + factor.toString() + ", from table: " + detail.tables[0] + ".");
+		if (calc.debug && debugLimit > 0 && debugRandomChance > 0) filters = enableDebug(filters);
+		debug(() -> "Scaning begin: " + factor.toString() + " from table: " + detail.tables[0] + ".");
 		Configuration conf = HBaseConfiguration.create();
 		HbaseConfiguration<F> util = new HbaseConfiguration<F>(this.configFile, (HbaseMarshaller) this.marshaller, factor, detail.tables[0])
 				.init(conf);
@@ -100,7 +100,7 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 	@Deprecated
 	public <F extends Factor<F>> JavaPairRDD<byte[], F> batching(Calculator calc, Class<F> factor, long limit, byte[] offset,
 			DataDetail<F> detail, FactorFilter... filters) {
-		debug(() -> "Scaning begin: " + factor.toString() + ", from table: " + detail.tables[0] + ".");
+		debug(() -> "Scaning begin: " + factor.toString() + " from table: " + detail.tables[0] + ".");
 		error(() -> "Batching mode is not supported now... BUG!!!!!");
 		Configuration conf = HBaseConfiguration.create();
 		HbaseConfiguration<F> util = new HbaseConfiguration<F>(this.configFile, (HbaseMarshaller) this.marshaller, factor, detail.tables[0])

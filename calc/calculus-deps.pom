@@ -14,13 +14,8 @@
 	<properties>
 		<deps.version.scala>2.10</deps.version.scala>
 		<deps.version.scala.lib>${deps.version.scala}.6</deps.version.scala.lib>
-<!-- 		<deps.version.hbase>1.2.0</deps.version.hbase> -->
-<!-- 		<deps.version.spark>1.6.1</deps.version.spark> -->
-<!-- 		<deps.version.jackson>2.7.3</deps.version.jackson> -->
-
-		<deps.version.cdh>5.7.0</deps.version.cdh>
-		<deps.version.hbase>1.2.0-cdh${deps.version.cdh}</deps.version.hbase>
-		<deps.version.spark>1.6.0-cdh${deps.version.cdh}</deps.version.spark>
+		<deps.version.hbase>1.2.1</deps.version.hbase>
+		<deps.version.spark>1.6.2</deps.version.spark>
 		<deps.version.jackson>2.7.3</deps.version.jackson>
 	</properties>
 	<dependencies>
@@ -71,6 +66,12 @@
 		<dependency>
 			<groupId>org.apache.spark</groupId>
 			<artifactId>spark-streaming-kafka_${deps.version.scala}</artifactId>
+			<version>${deps.version.spark}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.spark</groupId>
+			<artifactId>spark-hive_${deps.version.scala}</artifactId>
 			<version>${deps.version.spark}</version>
 			<scope>provided</scope>
 		</dependency>

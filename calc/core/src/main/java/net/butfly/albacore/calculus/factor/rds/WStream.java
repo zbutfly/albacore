@@ -21,6 +21,13 @@ import net.butfly.albacore.calculus.streaming.RDDDStream;
 import net.butfly.albacore.calculus.streaming.RDDDStream.Mechanism;
 import scala.Tuple2;
 
+/**
+ * Wrapper of DStream
+ * 
+ * @author butfly
+ *
+ * @param <T>
+ */
 public class WStream<T> implements Wrapped<T> {
 	private static final long serialVersionUID = 8010123164729388602L;
 	final protected StreamingContext ssc;
@@ -47,8 +54,8 @@ public class WStream<T> implements Wrapped<T> {
 
 	@Override
 	public WStream<T> repartition(float ratio) {
-		return new WStream<T>(JavaDStream.fromDStream(dstream, classTag())
-				.transform((Function<JavaRDD<T>, JavaRDD<T>>) rdd -> rdd.repartition((int) Math.ceil(rdd.getNumPartitions() * ratio))));
+		return new WStream<T>(JavaDStream.fromDStream(dstream, classTag()).transform((Function<JavaRDD<T>, JavaRDD<T>>) rdd -> rdd
+				.repartition((int) Math.ceil(rdd.getNumPartitions() * ratio))));
 	}
 
 	@Override
@@ -87,8 +94,8 @@ public class WStream<T> implements Wrapped<T> {
 
 	@Override
 	public Wrapped<T> union(Wrapped<T> other) {
-		if (WDD.class.isAssignableFrom(other.getClass())) return new WStream<T>(
-				dstream.union(RDDDStream.stream(ssc, Mechanism.CONST, () -> JavaRDD.fromRDD(other.rdd(), classTag())).dstream()));
+		if (WDD.class.isAssignableFrom(other.getClass())) return new WStream<T>(dstream.union(RDDDStream.stream(ssc, Mechanism.CONST,
+				() -> JavaRDD.fromRDD(other.rdd(), classTag())).dstream()));
 		else if (WStream.class.isAssignableFrom(other.getClass())) return new WStream<T>(dstream.union(((WStream<T>) other).dstream));
 		else throw new IllegalArgumentException();
 	}

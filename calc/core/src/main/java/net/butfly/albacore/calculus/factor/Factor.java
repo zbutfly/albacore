@@ -10,7 +10,7 @@ public interface Factor<F extends Factor<F>> extends Serializable {
 	public static final String NOT_DEFINED = "";
 
 	public enum Type {
-		CONSTAND_TO_CONSOLE, HBASE, MONGODB, KAFKA, ELASTIC
+		CONSTAND_TO_CONSOLE, HBASE, MONGODB, KAFKA, ELASTIC, HIVE
 	}
 
 	@Retention(RetentionPolicy.RUNTIME)
