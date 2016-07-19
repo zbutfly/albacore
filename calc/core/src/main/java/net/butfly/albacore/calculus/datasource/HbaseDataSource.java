@@ -2,6 +2,7 @@ package net.butfly.albacore.calculus.datasource;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -14,9 +15,13 @@ import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.filter.Filter;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
 import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
+import org.apache.hadoop.hbase.protobuf.ProtobufUtil;
+import org.apache.hadoop.hbase.util.Base64;
 import org.apache.spark.api.java.JavaPairRDD;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -26,6 +31,7 @@ import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
+import net.butfly.albacore.calculus.factor.filter.HbaseBuilder;
 import net.butfly.albacore.calculus.marshall.HbaseMarshaller;
 import net.butfly.albacore.calculus.utils.Reflections;
 
@@ -90,10 +96,9 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 			float expandPartitions, FactorFilter... filters) {
 		if (calc.debug && debugLimit > 0 && debugRandomChance > 0) filters = enableDebug(filters);
 		debug(() -> "Scaning begin: " + factor.toString() + " from table: " + detail.tables[0] + ".");
-		Configuration conf = HBaseConfiguration.create();
-		HbaseConfiguration<F> util = new HbaseConfiguration<F>(this.configFile, (HbaseMarshaller) this.marshaller, factor, detail.tables[0])
-				.init(conf);
-		return readByInputFormat(calc.sc, util.filter(conf, filters), factor, expandPartitions);
+		return readByInputFormat(calc.sc,
+				addHbaseFilter(new HbaseBuilder<F>(factor, (HbaseMarshaller) this.marshaller), createHbaseConf(detail.tables[0]), filters),
+				factor, expandPartitions);
 	}
 
 	@Override
@@ -102,9 +107,45 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 			DataDetail<F> detail, FactorFilter... filters) {
 		debug(() -> "Scaning begin: " + factor.toString() + " from table: " + detail.tables[0] + ".");
 		error(() -> "Batching mode is not supported now... BUG!!!!!");
-		Configuration conf = HBaseConfiguration.create();
-		HbaseConfiguration<F> util = new HbaseConfiguration<F>(this.configFile, (HbaseMarshaller) this.marshaller, factor, detail.tables[0])
-				.init(conf);
-		return readByInputFormat(calc.sc, util.filter(conf, new FactorFilter.Page<byte[]>(offset, limit)), factor, -1);
+		return readByInputFormat(calc.sc, addHbaseFilter(new HbaseBuilder<F>(factor, (HbaseMarshaller) this.marshaller),
+				createHbaseConf(detail.tables[0]), new FactorFilter.Page<byte[]>(offset, limit)), factor, -1);
+	}
+
+	private Configuration createHbaseConf(String table) {
+		Configuration hconf = HBaseConfiguration.create();
+		try {
+			hconf.addResource(Calculator.scanInputStream(configFile));
+		} catch (IOException e) {
+			throw new RuntimeException("HBase configuration invalid.", e);
+		}
+		hconf.set(TableInputFormat.INPUT_TABLE, table);
+		return hconf;
+	}
+
+	private Configuration addHbaseFilter(HbaseBuilder<?> builder, Configuration conf, FactorFilter... filters) {
+		if (filters.length == 0) return conf;
+		Scan sc = new Scan();
+		try {
+			sc.setCaching(-1);
+			sc.setCacheBlocks(false);
+			// sc.setSmall(true);
+		} catch (Throwable th) {
+			// XXX
+			try {
+				sc.getClass().getMethod("setCacheBlocks", boolean.class).invoke(sc, false);
+				// sc.getClass().getMethod("setSmall",
+				// boolean.class).invoke(sc,
+				// false);
+				sc.getClass().getMethod("setCaching", int.class).invoke(sc, -1);
+			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
+					| SecurityException e) {}
+		}
+		try {
+			Filter f = builder.filter(filters);
+			if (null != f) conf.set(TableInputFormat.SCAN, Base64.encodeBytes(ProtobufUtil.toScan(sc.setFilter(f)).toByteArray()));
+			return conf;
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 }

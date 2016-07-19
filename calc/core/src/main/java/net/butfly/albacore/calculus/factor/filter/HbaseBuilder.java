@@ -1,15 +1,10 @@
-package net.butfly.albacore.calculus.datasource;
+package net.butfly.albacore.calculus.factor.filter;
 
-import java.io.IOException;
-import java.io.Serializable;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.filter.CompareFilter.CompareOp;
 import org.apache.hadoop.hbase.filter.Filter;
 import org.apache.hadoop.hbase.filter.FilterList;
@@ -18,82 +13,56 @@ import org.apache.hadoop.hbase.filter.PageFilter;
 import org.apache.hadoop.hbase.filter.RandomRowFilter;
 import org.apache.hadoop.hbase.filter.RegexStringComparator;
 import org.apache.hadoop.hbase.filter.SingleColumnValueFilter;
-import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
-import org.apache.hadoop.hbase.protobuf.ProtobufUtil;
-import org.apache.hadoop.hbase.util.Base64;
 import org.apache.hadoop.hbase.util.Bytes;
 
-import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
-import net.butfly.albacore.calculus.factor.filter.FactorFilter;
 import net.butfly.albacore.calculus.lambda.Func;
 import net.butfly.albacore.calculus.marshall.HbaseMarshaller;
-import net.butfly.albacore.calculus.utils.Logable;
 import net.butfly.albacore.calculus.utils.Reflections;
 
-class HbaseConfiguration<F extends Factor<F>> implements Serializable, Logable {
-	private static final long serialVersionUID = 2314819561624610201L;
-	private final String table;
-	private final Class<F> factor;
-	private final String configFile;
-	private final HbaseMarshaller marshaller;
+public class HbaseBuilder<F extends Factor<F>> extends Builder<Filter, byte[], F> {
+	private static final long serialVersionUID = 8586300137478563435L;
 
-	public HbaseConfiguration(String configFile, HbaseMarshaller marshaller, Class<F> factor, String table) {
-		super();
-		this.configFile = configFile;
-		this.marshaller = marshaller;
-		this.table = table;
-		this.factor = factor;
+	public HbaseBuilder(Class<F> factor, HbaseMarshaller marshaller) {
+		super(factor, marshaller);
 	}
 
-	public HbaseConfiguration<F> init(Configuration hconf) {
-		try {
-			hconf.addResource(Calculator.scanInputStream(configFile));
-		} catch (IOException e) {
-			throw new RuntimeException("HBase configuration invalid.", e);
+	@Override
+	public Filter filter(FactorFilter... filter) {
+		if (filter.length == 0) return null;
+		if (filter.length == 1) return filterOne(filter[0]);
+		FilterList fl = new FilterList(Operator.MUST_PASS_ALL);
+		for (FactorFilter f : filter) {
+			Filter q = filterOne(f);
+			if (null != q) fl.addFilter(q);
 		}
-		hconf.set(TableInputFormat.INPUT_TABLE, table);
-		return this;
+		return fl;
 	}
 
-	public Configuration filter(Configuration conf, FactorFilter... filters) {
-		if (filters.length == 0) return conf;
-		try {
-			if (filters.length > 1) {
-				FilterList fl = new FilterList(Operator.MUST_PASS_ALL);
-				for (FactorFilter f : filters)
-					if (f != null) fl.addFilter(filterOne(f));
-				conf.set(TableInputFormat.SCAN, Base64.encodeBytes(ProtobufUtil.toScan(createScan().setFilter(fl)).toByteArray()));
-				return conf;
-			}
-			conf.set(TableInputFormat.SCAN,
-					Base64.encodeBytes(ProtobufUtil.toScan(createScan().setFilter(filterOne(filters[0]))).toByteArray()));
-			return conf;
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
+	@Override
+	protected byte[] expression(Class<?> type, Object value) {
+		return CONVERTERS.get(type).call(value);
 	}
 
 	@SuppressWarnings("rawtypes")
-	private Filter filterOne(FactorFilter filter) {
+	@Override
+	protected Filter filterOne(FactorFilter filter) {
 		if (filter instanceof FactorFilter.ByField) {
 			Field field = Reflections.getDeclaredField(factor, ((FactorFilter.ByField<?>) filter).field);
 			String[] q = marshaller.parseQualifier(field).split(":");
 			byte[][] qulifiers = new byte[][] { Bytes.toBytes(q[0]), Bytes.toBytes(q[1]) };
-			Func<Object, byte[]> conv = CONVERTERS.get(field.getType());
 			if (filter instanceof FactorFilter.ByFieldValue) {
 				if (!ops.containsKey(filter.getClass()))
 					throw new UnsupportedOperationException("Unsupportted filter: " + filter.getClass());
-				Object value = ((FactorFilter.ByFieldValue<?>) filter).value;
-				byte[] val = conv.call(value);
-				SingleColumnValueFilter f = new SingleColumnValueFilter(qulifiers[0], qulifiers[1], ops.get(filter.getClass()), val);
+				SingleColumnValueFilter f = new SingleColumnValueFilter(qulifiers[0], qulifiers[1], ops.get(filter.getClass()),
+						expression(field.getType(), ((FactorFilter.ByFieldValue<?>) filter).value));
 				f.setFilterIfMissing(true);
 				return f;
 			}
 			if (filter.getClass().equals(FactorFilter.In.class)) {
 				FilterList fl = new FilterList(Operator.MUST_PASS_ONE);
 				for (Object v : ((FactorFilter.In) filter).values)
-					fl.addFilter(new SingleColumnValueFilter(qulifiers[0], qulifiers[1], CompareOp.EQUAL, conv.call(v)));
+					fl.addFilter(new SingleColumnValueFilter(qulifiers[0], qulifiers[1], CompareOp.EQUAL, expression(field.getType(), v)));
 				return fl;
 			}
 			if (filter.getClass().equals(FactorFilter.Regex.class)) {
@@ -108,13 +77,13 @@ class HbaseConfiguration<F extends Factor<F>> implements Serializable, Logable {
 		if (filter.getClass().equals(FactorFilter.And.class)) {
 			FilterList ands = new FilterList(Operator.MUST_PASS_ALL);
 			for (FactorFilter f : ((FactorFilter.And) filter).filters)
-				ands.addFilter(filterOne(f));
+				ands.addFilter(filter(f));
 			return ands;
 		}
 		if (filter.getClass().equals(FactorFilter.Or.class)) {
 			FilterList ors = new FilterList(Operator.MUST_PASS_ONE);
 			for (FactorFilter f : ((FactorFilter.And) filter).filters)
-				ors.addFilter(filterOne(f));
+				ors.addFilter(filter(f));
 			return ors;
 		}
 
@@ -130,29 +99,8 @@ class HbaseConfiguration<F extends Factor<F>> implements Serializable, Logable {
 		ops.put(FactorFilter.LessOrEqual.class, CompareOp.LESS_OR_EQUAL);
 		ops.put(FactorFilter.GreaterOrEqual.class, CompareOp.GREATER_OR_EQUAL);
 	}
-
-	private static Scan createScan() {
-		Scan sc = new Scan();
-		try {
-			sc.setCaching(-1);
-			sc.setCacheBlocks(false);
-			// sc.setSmall(true);
-		} catch (Throwable th) {
-			// XXX
-			try {
-				sc.getClass().getMethod("setCacheBlocks", boolean.class).invoke(sc, false);
-				// sc.getClass().getMethod("setSmall", boolean.class).invoke(sc,
-				// false);
-				sc.getClass().getMethod("setCaching", int.class).invoke(sc, -1);
-			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
-					| SecurityException e) {}
-		}
-		return sc;
-	}
-
 	@SuppressWarnings("rawtypes")
 	private static final Map<Class, Func<Object, byte[]>> CONVERTERS = new HashMap<>();
-
 	static {
 		CONVERTERS.put(String.class, val -> null == val ? null : Bytes.toBytes((String) val));
 		CONVERTERS.put(Integer.class, val -> null == val ? null : Bytes.toBytes((Integer) val));
@@ -163,6 +111,13 @@ class HbaseConfiguration<F extends Factor<F>> implements Serializable, Logable {
 		CONVERTERS.put(Short.class, val -> null == val ? null : Bytes.toBytes((Short) val));
 		CONVERTERS.put(Byte.class, val -> null == val ? null : Bytes.toBytes((Byte) val));
 		CONVERTERS.put(BigDecimal.class, val -> null == val ? null : Bytes.toBytes((BigDecimal) val));
-	}
 
+		CONVERTERS.put(int.class, CONVERTERS.get(Integer.class));
+		CONVERTERS.put(boolean.class, CONVERTERS.get(Boolean.class));
+		CONVERTERS.put(long.class, CONVERTERS.get(Long.class));
+		CONVERTERS.put(double.class, CONVERTERS.get(Double.class));
+		CONVERTERS.put(float.class, CONVERTERS.get(Float.class));
+		CONVERTERS.put(short.class, CONVERTERS.get(Short.class));
+		CONVERTERS.put(byte.class, CONVERTERS.get(Byte.class));
+	}
 }
