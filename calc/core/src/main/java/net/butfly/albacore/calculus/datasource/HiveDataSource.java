@@ -44,10 +44,11 @@ public class HiveDataSource extends DataSource<Object, Row, Row, Object, Row> {
 		String hqlstr = b.finalize(hql).toString();
 		debug(() -> "Hive HQL parsed into: \n\t" + hqlstr);
 		DataFrame df = this.context.sql(hqlstr);
+
 		JavaRDD<Row> rows = df.javaRDD();
 		if (expandPartitions > 1) rows = rows.repartition((int) Math.ceil(rows.getNumPartitions() * expandPartitions));
 		@SuppressWarnings("unchecked")
-		String key = marshaller.parseQualifier(marshaller.parse(factor, Key.class)._1);
+		String key = ((HiveMarshaller) marshaller).parseQualifier(factor, marshaller.parse(factor, Key.class)._1, df.schema().fieldNames());
 		return rows.mapToPair(row -> new Tuple2<Object, F>(row.get(row.fieldIndex(key)), marshaller.unmarshall(row, factor)));
 	}
 }
