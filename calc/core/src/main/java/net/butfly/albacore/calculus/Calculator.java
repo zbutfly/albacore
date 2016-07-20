@@ -28,11 +28,13 @@ import net.butfly.albacore.calculus.datasource.ConstDataSource;
 import net.butfly.albacore.calculus.datasource.DataSource;
 import net.butfly.albacore.calculus.datasource.DataSource.DataSources;
 import net.butfly.albacore.calculus.datasource.HbaseDataSource;
+import net.butfly.albacore.calculus.datasource.HiveDataSource;
 import net.butfly.albacore.calculus.datasource.KafkaDataSource;
 import net.butfly.albacore.calculus.datasource.MongoDataSource;
 import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.factor.Factors;
 import net.butfly.albacore.calculus.marshall.HbaseMarshaller;
+import net.butfly.albacore.calculus.marshall.HiveMarshaller;
 import net.butfly.albacore.calculus.marshall.KafkaMarshaller;
 import net.butfly.albacore.calculus.marshall.Marshaller;
 import net.butfly.albacore.calculus.marshall.MongoMarshaller;
@@ -75,13 +77,7 @@ public class Calculator implements Logable, Serializable {
 		for (Object key : props.keySet())
 			System.setProperty(key.toString(), props.getProperty(key.toString()));
 		Calculator c = new Calculator(props);
-		c.spark().calculate().end();
-	}
-
-	private Calculator spark() {
-		sc = new JavaSparkContext(sconf);
-		if (mode == Mode.STREAMING) ssc = new JavaStreamingContext(sc, Durations.seconds(dura));
-		return this;
+		c.calculate().end();
 	}
 
 	private Calculator end() {
@@ -127,6 +123,8 @@ public class Calculator implements Logable, Serializable {
 		if (props.containsKey("calculus.spark.jars")) sconf.setJars(props.getProperty("calculus.spark.jars").split(","));
 		if (props.containsKey("calculus.spark.home")) sconf.setSparkHome(props.getProperty("calculus.spark.home"));
 		if (debug) sconf.set("spark.testing", "true");
+		sc = new JavaSparkContext(sconf);
+		if (mode == Mode.STREAMING) ssc = new JavaStreamingContext(sc, Durations.seconds(dura));
 		parseDatasources(subprops(props, "calculus.ds."));
 		debug(() -> "Running " + calculusClass.getSimpleName());
 	}
@@ -165,6 +163,9 @@ public class Calculator implements Logable, Serializable {
 			Type type = Type.valueOf(dbprops.getProperty("type"));
 			DataSource<?, ?, ?, ?, ?> ds = null;
 			switch (type) {
+			case HIVE:
+				ds = new HiveDataSource(dbprops.getProperty("schema"), (HiveMarshaller) m, this.sc);
+				break;
 			case CONSTAND_TO_CONSOLE:
 				ds = new ConstDataSource(dbprops.getProperty("values").split(","));
 				break;

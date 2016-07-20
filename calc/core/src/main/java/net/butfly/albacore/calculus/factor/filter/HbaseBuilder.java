@@ -59,7 +59,7 @@ public class HbaseBuilder<F extends Factor<F>> extends Builder<Filter, byte[], F
 				f.setFilterIfMissing(true);
 				return f;
 			}
-			if (filter.getClass().equals(FactorFilter.In.class)) {
+			if (filter.getClass().equals(FactorFilter.In.class) && ((FactorFilter.In) filter).values.size() > 0) {
 				FilterList fl = new FilterList(Operator.MUST_PASS_ONE);
 				for (Object v : ((FactorFilter.In) filter).values)
 					fl.addFilter(new SingleColumnValueFilter(qulifiers[0], qulifiers[1], CompareOp.EQUAL, expression(field.getType(), v)));
@@ -74,13 +74,13 @@ public class HbaseBuilder<F extends Factor<F>> extends Builder<Filter, byte[], F
 		}
 		if (filter.getClass().equals(FactorFilter.Limit.class)) return new PageFilter(((FactorFilter.Limit) filter).limit);
 		if (filter.getClass().equals(FactorFilter.Random.class)) return new RandomRowFilter(((FactorFilter.Random) filter).chance);
-		if (filter.getClass().equals(FactorFilter.And.class)) {
+		if (filter.getClass().equals(FactorFilter.And.class) && ((FactorFilter.And) filter).filters.size() > 0) {
 			FilterList ands = new FilterList(Operator.MUST_PASS_ALL);
 			for (FactorFilter f : ((FactorFilter.And) filter).filters)
 				ands.addFilter(filter(f));
 			return ands;
 		}
-		if (filter.getClass().equals(FactorFilter.Or.class)) {
+		if (filter.getClass().equals(FactorFilter.Or.class) && ((FactorFilter.Or) filter).filters.size() > 0) {
 			FilterList ors = new FilterList(Operator.MUST_PASS_ONE);
 			for (FactorFilter f : ((FactorFilter.And) filter).filters)
 				ors.addFilter(filter(f));

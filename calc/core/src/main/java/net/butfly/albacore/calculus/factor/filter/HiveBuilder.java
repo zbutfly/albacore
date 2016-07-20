@@ -13,11 +13,19 @@ import net.butfly.albacore.calculus.utils.Reflections;
 public class HiveBuilder<F extends Factor<F>> extends Builder<String, String, F> {
 	private static final long serialVersionUID = -5901254740507977704L;
 	long limit = -1;
-	long skip = -1;
+	long offset = -1;
 	double random = -1;
 
 	public HiveBuilder(Class<F> factor, HiveMarshaller marshaller) {
 		super(factor, marshaller);
+	}
+
+	public StringBuilder finalize(StringBuilder hql) {
+		if (random >= 0)
+			hql.insert(0, "select * from (").append(") where rand() <= + ").append(random).append(" distribute by rand() sort by rand");
+		if (offset >= 0) hql.insert(0, "select *, row_number() over () as hivern from (").append(") where hivern >= ").append(offset);
+		if (limit >= 0) hql.append(" limit ").append(limit);
+		return hql;
 	}
 
 	@Override
@@ -26,7 +34,6 @@ public class HiveBuilder<F extends Factor<F>> extends Builder<String, String, F>
 		StringBuilder hql = new StringBuilder(" where ");
 		if (filters.length == 1) hql.append("(").append(filterOne(filters[0])).append(")");
 		else hql.append("(").append(filterOne(new FactorFilter.And(filters))).append(")");
-		if (limit >= 0) hql.append(" limit ").append(limit);
 		return hql.toString();
 	}
 
@@ -42,6 +49,10 @@ public class HiveBuilder<F extends Factor<F>> extends Builder<String, String, F>
 			this.limit = ((FactorFilter.Limit) filter).limit;
 			return null;
 		}
+		if (filter.getClass().equals(FactorFilter.Skip.class)) {
+			this.offset = ((FactorFilter.Skip) filter).skip + 1;
+			return null;
+		}
 		if (filter.getClass().equals(FactorFilter.Random.class)) {
 			this.random = ((FactorFilter.Random) filter).chance;
 			return null;
@@ -53,10 +64,9 @@ public class HiveBuilder<F extends Factor<F>> extends Builder<String, String, F>
 			if (filter instanceof FactorFilter.ByFieldValue) {
 				if (!ops.containsKey(filter.getClass()))
 					throw new UnsupportedOperationException("Unsupportted filter: " + filter.getClass());
-				return q.append(qulifier).append(ops.get(filter.getClass()))
-						.append(expression(field.getType(), ((FactorFilter.ByFieldValue<?>) filter).value)).toString();
-			}
-			if (filter.getClass().equals(FactorFilter.In.class)) {
+				q.append(qulifier).append(ops.get(filter.getClass()))
+						.append(expression(field.getType(), ((FactorFilter.ByFieldValue<?>) filter).value));
+			} else if (filter.getClass().equals(FactorFilter.In.class) && ((FactorFilter.In) filter).values.size() > 0) {
 				q.append(" in (");
 				boolean first = true;
 				for (Object v : ((FactorFilter.In) filter).values) {
@@ -64,10 +74,10 @@ public class HiveBuilder<F extends Factor<F>> extends Builder<String, String, F>
 					else first = false;
 					q.append(expression(field.getType(), v));
 				}
-				return q.append(")").toString();
-			}
-		}
-		if (filter.getClass().equals(FactorFilter.And.class)) {
+				q.append(")");
+			} else if (filter.getClass().equals(FactorFilter.Regex.class)) q.append(qulifier).append(" rlike \"")
+					.append(((FactorFilter.Regex) filter).regex.toString().replaceAll("\\\\", "\\\\\\\\")).append("\"");
+		} else if (filter.getClass().equals(FactorFilter.And.class) && ((FactorFilter.And) filter).filters.size() > 0) {
 			boolean first = true;
 			for (FactorFilter f : ((FactorFilter.And) filter).filters) {
 				if (null == f) continue;
@@ -75,9 +85,7 @@ public class HiveBuilder<F extends Factor<F>> extends Builder<String, String, F>
 				else first = false;
 				q.append(filterOne(f));
 			}
-			return q.toString();
-		}
-		if (filter.getClass().equals(FactorFilter.Or.class)) {
+		} else if (filter.getClass().equals(FactorFilter.Or.class) && ((FactorFilter.Or) filter).filters.size() > 0) {
 			boolean first = true;
 			for (FactorFilter f : ((FactorFilter.And) filter).filters) {
 				if (null == f) continue;
@@ -85,10 +93,8 @@ public class HiveBuilder<F extends Factor<F>> extends Builder<String, String, F>
 				else first = false;
 				q.append(filterOne(f));
 			}
-			return q.toString();
-		}
-
-		throw new UnsupportedOperationException("Unsupportted filter: " + filter.getClass());
+		} else logger.warn("Unsupportted filter: " + filter.getClass() + ", ignored in hive.");
+		return q.length() > 0 ? q.toString() : null;
 	}
 
 	private static final Map<Class<? extends FactorFilter>, String> ops = new HashMap<>();

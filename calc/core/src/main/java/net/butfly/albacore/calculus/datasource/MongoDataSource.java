@@ -104,7 +104,7 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 				warn(() -> "MongoDB query chance set as [" + ((FactorFilter.Limit) f).limit + "], maybe debug...");
 				mconf.setLong(MongoConfigUtil.INPUT_LIMIT, ((FactorFilter.Limit) f).limit);
 			} else if (f instanceof FactorFilter.Skip) {
-				warn(() -> "MongoDB query skip set as [" + ((FactorFilter.Skip) f).skip + "], maybe debug...");
+				warn(() -> "MongoDB query offset set as [" + ((FactorFilter.Skip) f).skip + "], maybe debug...");
 				mconf.setLong(MongoConfigUtil.INPUT_SKIP, ((FactorFilter.Skip) f).skip);
 			} else if (f instanceof FactorFilter.Sort) {
 				warn(() -> "MongoDB query sort set as [" + ((FactorFilter.Sort) f).field + ":" + ((FactorFilter.Sort) f).asc
@@ -125,7 +125,7 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 					+ (inputquery.length() <= 200 || calc.debug ? inputquery
 							: inputquery.substring(0, 100) + "...(too long string eliminated)")
 					+ (mconf.get(MongoConfigUtil.INPUT_LIMIT) == null ? "" : ", chance: " + mconf.get(MongoConfigUtil.INPUT_LIMIT))
-					+ (mconf.get(MongoConfigUtil.INPUT_SKIP) == null ? "" : ", skip: " + mconf.get(MongoConfigUtil.INPUT_SKIP)) + ".");
+					+ (mconf.get(MongoConfigUtil.INPUT_SKIP) == null ? "" : ", offset: " + mconf.get(MongoConfigUtil.INPUT_SKIP)) + ".");
 		}
 		// conf.mconf.set(MongoConfigUtil.INPUT_FIELDS
 		mconf.setBoolean(MongoConfigUtil.INPUT_NOTIMEOUT, true);

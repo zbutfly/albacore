@@ -18,22 +18,18 @@ import scala.Tuple2;
 
 public class HiveDataSource extends DataSource<Object, Row, Row, Object, Row> {
 	private static final long serialVersionUID = 2229814193461610013L;
-	final String configFile;
-	final HiveContext context;
+	public final HiveContext context;
+	public final String schema;
 
-	public HiveDataSource(String configFile, HiveMarshaller marshaller, JavaSparkContext sc) {
+	public HiveDataSource(String schema, HiveMarshaller marshaller, JavaSparkContext sc) {
 		super(Type.HIVE, false, null == marshaller ? new HiveMarshaller() : marshaller, Row.class, Row.class, null, null);
-		this.configFile = configFile;
+		this.schema = schema;
 		this.context = new HiveContext(sc.sc());
 	}
 
 	@Override
 	public String toString() {
-		return super.toString() + ":" + this.configFile;
-	}
-
-	public String getConfigFile() {
-		return configFile;
+		return super.toString();
 	}
 
 	@Override
@@ -42,9 +38,12 @@ public class HiveDataSource extends DataSource<Object, Row, Row, Object, Row> {
 		if (calc.debug && debugLimit > 0 && debugRandomChance > 0) filters = enableDebug(filters);
 		debug(() -> "Scaning begin: " + factor.toString() + " from table: " + detail.tables[0] + ".");
 		StringBuilder hql = new StringBuilder("select * from ").append(detail.tables[0]);
-		String q = new HiveBuilder<F>(factor, (HiveMarshaller) marshaller).filter(filters);
+		HiveBuilder<F> b = new HiveBuilder<F>(factor, (HiveMarshaller) marshaller);
+		String q = b.filter(filters);
 		if (null != q) hql.append(q);
-		DataFrame df = this.context.sql(hql.toString());
+		String hqlstr = b.finalize(hql).toString();
+		debug(() -> "Hive HQL parsed into: \n\t" + hqlstr);
+		DataFrame df = this.context.sql(hqlstr);
 		JavaRDD<Row> rows = df.javaRDD();
 		if (expandPartitions > 1) rows = rows.repartition((int) Math.ceil(rows.getNumPartitions() * expandPartitions));
 		@SuppressWarnings("unchecked")

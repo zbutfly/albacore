@@ -17,6 +17,7 @@ import net.butfly.albacore.calculus.datasource.DataDetail;
 import net.butfly.albacore.calculus.datasource.DataSource;
 import net.butfly.albacore.calculus.datasource.HbaseDataDetail;
 import net.butfly.albacore.calculus.datasource.HiveDataDetail;
+import net.butfly.albacore.calculus.datasource.HiveDataSource;
 import net.butfly.albacore.calculus.datasource.KafkaDataDetail;
 import net.butfly.albacore.calculus.datasource.MongoDataDetail;
 import net.butfly.albacore.calculus.datasource.MongoDataSource;
@@ -94,18 +95,19 @@ public final class Factors implements Serializable, Logable {
 				PairRDS<K, F> p = new PairRDS<K, F>(ds.stocking(calc, config.factorClass, d, config.expanding, filters));
 				if (config.persisting != null) p = p.persist(config.persisting);
 				return p;
-			} else return new PairRDS<K, F>(RDDDStream.bpstream(calc.ssc.ssc(), config.batching, (final Long limit, final K offset) -> ds
-					.batching(calc, config.factorClass, limit, offset, d, filters), ds.marshaller().comparator()));
+			} else return new PairRDS<K, F>(RDDDStream.bpstream(calc.ssc.ssc(), config.batching,
+					(final Long limit, final K offset) -> ds.batching(calc, config.factorClass, limit, offset, d, filters),
+					ds.marshaller().comparator()));
 		case STREAMING:
 			switch (config.mode) {
 			case STOCKING:
 				switch (config.streaming) {
 				case CONST:
-					return new PairRDS<K, F>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.CONST, () -> ds.stocking(calc, config.factorClass,
-							d, -1, filters)));
+					return new PairRDS<K, F>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.CONST,
+							() -> ds.stocking(calc, config.factorClass, d, -1, filters)));
 				case FRESH:
-					return new PairRDS<K, F>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.FRESH, () -> ds.stocking(calc, config.factorClass,
-							d, -1, filters)));
+					return new PairRDS<K, F>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.FRESH,
+							() -> ds.stocking(calc, config.factorClass, d, -1, filters)));
 				default:
 					throw new UnsupportedOperationException();
 				}
@@ -145,22 +147,23 @@ public final class Factors implements Serializable, Logable {
 			config.dbid = s.source();
 			switch (s.type()) {
 			case HBASE:
-				if (null == s.table() || s.table().length == 0) throw new IllegalArgumentException("Table not defined for factor " + factor
-						.toString());
+				if (null == s.table() || s.table().length == 0)
+					throw new IllegalArgumentException("Table not defined for factor " + factor.toString());
 				config.detail = new HbaseDataDetail<F>(factor, s.table());
 				config.keyClass = (Class<K>) byte[].class;
 				break;
 			case HIVE:
-				if (null == s.table() || s.table().length == 0) throw new IllegalArgumentException("Table not defined for factor " + factor
-						.toString());
-				config.detail = new HiveDataDetail<F>(factor, s.table());
+				if (null == s.table() || s.table().length == 0)
+					throw new IllegalArgumentException("Table not defined for factor " + factor.toString());
+				HiveDataSource hvds = calc.dss.ds(config.dbid);
+				config.detail = new HiveDataDetail<F>(factor, hvds.schema, s.table());
 				config.keyClass = (Class<K>) byte[].class;
 				break;
 			case MONGODB:
-				if (null == s.table() || s.table().length == 0) throw new IllegalArgumentException("Table not defined for factor " + factor
-						.toString());
-				MongoDataSource ds = calc.dss.ds(config.dbid);
-				String suffix = ds.suffix;
+				if (null == s.table() || s.table().length == 0)
+					throw new IllegalArgumentException("Table not defined for factor " + factor.toString());
+				MongoDataSource mgds = calc.dss.ds(config.dbid);
+				String suffix = mgds.suffix;
 				if (null != suffix) {
 					String[] nt = new String[s.table().length];
 					for (int i = 0; i < s.table().length; i++) {
