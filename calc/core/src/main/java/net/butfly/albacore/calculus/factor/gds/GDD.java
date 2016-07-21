@@ -15,7 +15,7 @@ import org.apache.spark.streaming.StreamingContext;
 import org.apache.spark.streaming.dstream.DStream;
 
 import net.butfly.albacore.calculus.Mode;
-import net.butfly.albacore.calculus.factor.rds.Wrapped;
+import net.butfly.albacore.calculus.factor.rds.internal.Wrapped;
 import scala.Tuple2;
 
 @Deprecated

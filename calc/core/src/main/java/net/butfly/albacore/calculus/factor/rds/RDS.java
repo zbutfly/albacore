@@ -14,8 +14,17 @@ import org.apache.spark.streaming.StreamingContext;
 import org.apache.spark.streaming.dstream.DStream;
 
 import net.butfly.albacore.calculus.Mode;
+import net.butfly.albacore.calculus.factor.rds.internal.WDD;
+import net.butfly.albacore.calculus.factor.rds.internal.Wrapped;
 import scala.Tuple2;
 
+/**
+ * Single including any implementation of spark data.
+ * 
+ * @author zx
+ *
+ * @param <T>
+ */
 public class RDS<T> implements Wrapped<T> {
 	private static final long serialVersionUID = -1898959212702322579L;
 	protected Wrapped<T> wrapped;

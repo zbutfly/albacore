@@ -7,7 +7,7 @@ import java.util.Map;
 
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.lambda.Func;
-import net.butfly.albacore.calculus.marshall.HiveMarshaller;
+import net.butfly.albacore.calculus.marshall.RowMarshaller;
 import net.butfly.albacore.calculus.utils.Reflections;
 
 public class HiveBuilder<F extends Factor<F>> extends Builder<String, String, F> {
@@ -16,7 +16,7 @@ public class HiveBuilder<F extends Factor<F>> extends Builder<String, String, F>
 	long offset = -1;
 	double random = -1;
 
-	public HiveBuilder(Class<F> factor, HiveMarshaller marshaller) {
+	public HiveBuilder(Class<F> factor, RowMarshaller marshaller) {
 		super(factor, marshaller);
 	}
 
@@ -45,6 +45,7 @@ public class HiveBuilder<F extends Factor<F>> extends Builder<String, String, F>
 	@SuppressWarnings("rawtypes")
 	@Override
 	protected String filterOne(FactorFilter filter) {
+		if (null == filter) return null;
 		if (filter.getClass().equals(FactorFilter.Limit.class)) {
 			this.limit = ((FactorFilter.Limit) filter).limit;
 			return null;
@@ -80,18 +81,19 @@ public class HiveBuilder<F extends Factor<F>> extends Builder<String, String, F>
 		} else if (filter.getClass().equals(FactorFilter.And.class) && ((FactorFilter.And) filter).filters.size() > 0) {
 			boolean first = true;
 			for (FactorFilter f : ((FactorFilter.And) filter).filters) {
-				if (null == f) continue;
+				String qq = filterOne(f);
+				if (null == f || null == qq) continue;
 				if (!first) q.append(" and ");
 				else first = false;
-				q.append(filterOne(f));
+				q.append(qq);
 			}
 		} else if (filter.getClass().equals(FactorFilter.Or.class) && ((FactorFilter.Or) filter).filters.size() > 0) {
 			boolean first = true;
 			for (FactorFilter f : ((FactorFilter.And) filter).filters) {
-				if (null == f) continue;
+				String qq = filterOne(f);
+				if (null == f || null == qq) continue;
 				if (!first) q.append(" or ");
 				else first = false;
-				q.append(filterOne(f));
 			}
 		} else logger.warn("Unsupportted filter: " + filter.getClass() + ", ignored in hive.");
 		return q.length() > 0 ? q.toString() : null;

@@ -94,7 +94,7 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 	@Override
 	public <F extends Factor<F>> JavaPairRDD<byte[], F> stocking(Calculator calc, Class<F> factor, DataDetail<F> detail,
 			float expandPartitions, FactorFilter... filters) {
-		if (calc.debug && debugLimit > 0 && debugRandomChance > 0) filters = enableDebug(filters);
+		if (calc.debug) filters = enableDebug(filters);
 		debug(() -> "Scaning begin: " + factor.toString() + " from table: " + detail.tables[0] + ".");
 		return readByInputFormat(calc.sc,
 				addHbaseFilter(new HbaseBuilder<F>(factor, (HbaseMarshaller) this.marshaller), createHbaseConf(detail.tables[0]), filters),

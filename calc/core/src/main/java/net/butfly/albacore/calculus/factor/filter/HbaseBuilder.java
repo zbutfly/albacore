@@ -47,6 +47,7 @@ public class HbaseBuilder<F extends Factor<F>> extends Builder<Filter, byte[], F
 	@SuppressWarnings("rawtypes")
 	@Override
 	protected Filter filterOne(FactorFilter filter) {
+		if (null == filter) return null;
 		if (filter instanceof FactorFilter.ByField) {
 			Field field = Reflections.getDeclaredField(factor, ((FactorFilter.ByField<?>) filter).field);
 			String[] q = marshaller.parseQualifier(field).split(":");

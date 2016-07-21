@@ -136,8 +136,8 @@ public abstract class DataSource<FactorKey, InputKey, InputValue, OutputKey, Out
 		Set<Field> keys = marshaller.parseAll(factor, Key.class).keySet();
 		if (keys.size() > 1) error(() -> "Multiple @Key on " + factor.toString() + ", only use one (but randomized one).");
 		final String key = keys.isEmpty() ? null : new ArrayList<>(keys).get(0).getName();
-		if (null != key && null == id) throw new IllegalArgumentException("@Key defined but @Id not defined on " + factor.toString()
-				+ ", id will lose in mapping.");
+		if (null != key && null == id)
+			throw new IllegalArgumentException("@Key defined but @Id not defined on " + factor.toString() + ", id will lose in mapping.");
 		final JavaPairRDD<FactorKey, F> results = raw.mapToPair(t -> {
 			F v = marshaller.unmarshall(t._2, factor);
 			FactorKey k = null == key ? marshaller.unmarshallId(t._1) : Reflections.get(v, key);

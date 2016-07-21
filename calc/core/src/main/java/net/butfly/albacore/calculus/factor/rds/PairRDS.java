@@ -26,9 +26,22 @@ import com.google.common.collect.Ordering;
 import net.butfly.albacore.calculus.Mode;
 import net.butfly.albacore.calculus.datasource.DataDetail;
 import net.butfly.albacore.calculus.datasource.DataSource;
+import net.butfly.albacore.calculus.factor.rds.internal.PairWrapped;
+import net.butfly.albacore.calculus.factor.rds.internal.RDSupport;
+import net.butfly.albacore.calculus.factor.rds.internal.WDD;
+import net.butfly.albacore.calculus.factor.rds.internal.WStream;
+import net.butfly.albacore.calculus.factor.rds.internal.Wrapped;
 import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
 
+/**
+ * Single including any implementation of spark data.
+ * 
+ * @author zx
+ *
+ * @param <K>
+ * @param <V>
+ */
 public class PairRDS<K, V> extends RDS<Tuple2<K, V>> implements PairWrapped<K, V> {
 	private static final long serialVersionUID = 7112147100603052906L;
 
@@ -246,7 +259,7 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> implements PairWrapped<K, V
 			return new PairRDS<K, Iterable<V>>(RDSupport.union(l));
 		case STREAMING:
 			return new PairRDS<K, Iterable<V>>(
-					JavaPairDStream.fromPairDStream(((WStream<Tuple2<K, V>>) wrapped()).dstream, k(), v()).groupByKey());
+					JavaPairDStream.fromPairDStream(((WStream<Tuple2<K, V>>) wrapped()).dstream(), k(), v()).groupByKey());
 		default:
 			throw new IllegalArgumentException();
 		}
@@ -260,7 +273,7 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> implements PairWrapped<K, V
 			foreachPairRDD(rdd -> l.add(rdd.reduceByKey(func)));
 			return new PairRDS<K, V>(RDSupport.union(l));
 		case STREAMING:
-			DStream<Tuple2<K, V>> ds = ((WStream<Tuple2<K, V>>) wrapped()).dstream;
+			DStream<Tuple2<K, V>> ds = ((WStream<Tuple2<K, V>>) wrapped()).dstream();
 			return new PairRDS<K, V>(JavaPairDStream.fromPairDStream(ds, k(), v()).reduceByKey(func));
 		default:
 			throw new IllegalArgumentException();
@@ -278,7 +291,7 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> implements PairWrapped<K, V
 			foreachPairRDD(rdd -> l.add(rdd.reduceByKey(func, minpnum)));
 			return new PairRDS<K, V>(RDSupport.union(l));
 		case STREAMING:
-			DStream<Tuple2<K, V>> ds = ((WStream<Tuple2<K, V>>) wrapped()).dstream;
+			DStream<Tuple2<K, V>> ds = ((WStream<Tuple2<K, V>>) wrapped()).dstream();
 			return new PairRDS<K, V>(JavaPairDStream.fromPairDStream(ds, k(), v()).reduceByKey(func, minpnum));
 		default:
 			throw new IllegalArgumentException();

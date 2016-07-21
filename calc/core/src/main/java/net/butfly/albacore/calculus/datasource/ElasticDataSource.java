@@ -12,7 +12,7 @@ import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
 import net.butfly.albacore.calculus.factor.modifier.Id;
-import net.butfly.albacore.calculus.factor.rds.RDSupport;
+import net.butfly.albacore.calculus.factor.rds.internal.RDSupport;
 import net.butfly.albacore.calculus.marshall.Marshaller;
 import scala.Tuple2;
 import scala.collection.JavaConverters;

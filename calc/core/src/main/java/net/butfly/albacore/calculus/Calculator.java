@@ -34,7 +34,7 @@ import net.butfly.albacore.calculus.datasource.MongoDataSource;
 import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.factor.Factors;
 import net.butfly.albacore.calculus.marshall.HbaseMarshaller;
-import net.butfly.albacore.calculus.marshall.HiveMarshaller;
+import net.butfly.albacore.calculus.marshall.RowMarshaller;
 import net.butfly.albacore.calculus.marshall.KafkaMarshaller;
 import net.butfly.albacore.calculus.marshall.Marshaller;
 import net.butfly.albacore.calculus.marshall.MongoMarshaller;
@@ -164,7 +164,7 @@ public class Calculator implements Logable, Serializable {
 			DataSource<?, ?, ?, ?, ?> ds = null;
 			switch (type) {
 			case HIVE:
-				ds = new HiveDataSource(dbprops.getProperty("schema"), (HiveMarshaller) m, this.sc);
+				ds = new HiveDataSource(dbprops.getProperty("schema"), (RowMarshaller) m, this.sc);
 				break;
 			case CONSTAND_TO_CONSOLE:
 				ds = new ConstDataSource(dbprops.getProperty("values").split(","));
