@@ -1,9 +1,7 @@
 package net.butfly.albacore.calculus.factor.rds.internal;
 
-import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -37,6 +35,7 @@ import net.butfly.albacore.calculus.streaming.RDDDStream.Mechanism;
 import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
 import scala.collection.JavaConversions;
+import scala.reflect.ClassTag;
 import scala.runtime.AbstractFunction1;
 
 /**
@@ -53,7 +52,6 @@ public class WrappedDataset<K, V> implements PairWrapped<K, V> {
 		this.dataset = dataset;
 	}
 
-	@SuppressWarnings("unchecked")
 	public WrappedDataset(SQLContext ssc, RDD<V> rdd) {
 		dataset = ssc.createDataset(rdd, Encoders.kryo(rdd.elementClassTag()));
 	}
@@ -151,7 +149,6 @@ public class WrappedDataset<K, V> implements PairWrapped<K, V> {
 		return new WrappedRDD<T1>(jrdd().map(func).rdd());
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public final Tuple2<K, V> first() {
 		V v = dataset.first();
@@ -178,13 +175,14 @@ public class WrappedDataset<K, V> implements PairWrapped<K, V> {
 
 	@Override
 	public RDD<Tuple2<K, V>> rdd() {
+		ClassTag<K> kt = RDSupport.tag();
+		ClassTag<V> vt = RDSupport.tag();
 		return dataset.map(new AbstractFunction1<V, Tuple2<K, V>>() {
-			@SuppressWarnings("unchecked")
 			@Override
 			public Tuple2<K, V> apply(V v) {
 				return new Tuple2<>(key(v), v);
 			}
-		}, Encoders.tuple(Encoders.kryo(k), Encoders.kryo(v)));
+		}, Encoders.tuple(Encoders.kryo(kt), Encoders.kryo(vt))).rdd();
 	}
 
 	@Override
@@ -208,13 +206,11 @@ public class WrappedDataset<K, V> implements PairWrapped<K, V> {
 		throw new NotImplementedException();
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public Map<K, V> collectAsMap() {
 		return Reflections.transMapping(dataset.collectAsList(), v -> new Tuple2<K, V>(key(v), v));
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public List<K> collectKeys() {
 		return Reflections.transform(dataset.collectAsList(), v -> key(v));
