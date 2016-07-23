@@ -11,7 +11,7 @@ import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
 import net.butfly.albacore.calculus.factor.filter.HiveBuilder;
 import net.butfly.albacore.calculus.factor.modifier.Key;
-import net.butfly.albacore.calculus.factor.rds.internal.PairWrapped;
+import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.factor.rds.internal.WrappedDataFrame;
 import net.butfly.albacore.calculus.marshall.RowMarshaller;
 
@@ -33,7 +33,7 @@ public class HiveDataSource extends DataSource<Object, Row, Row, Object, Row> {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <F extends Factor<F>> PairWrapped<Object, F> stocking(Calculator calc, Class<F> factor, DataDetail<F> detail,
+	public <F extends Factor<F>> PairRDS<Object, F> stocking(Calculator calc, Class<F> factor, DataDetail<F> detail,
 			float expandPartitions, FactorFilter... filters) {
 		if (calc.debug) filters = enableDebug(filters);
 		debug(() -> "Scaning begin: " + factor.toString() + " from table: " + detail.tables[0] + ".");
@@ -59,6 +59,6 @@ public class HiveDataSource extends DataSource<Object, Row, Row, Object, Row> {
 //				return JavaConversions.asScalaIterator(list.iterator());
 //			}
 //		}, RDSupport.tag());
-		return new WrappedDataFrame<Object, F>(df, Object.class, factor);
+		return new PairRDS<>(new WrappedDataFrame<>(df, Object.class, factor));
 	}
 }

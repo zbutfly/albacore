@@ -26,6 +26,7 @@ import net.butfly.albacore.calculus.factor.modifier.Id;
 import net.butfly.albacore.calculus.factor.modifier.Key;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.factor.rds.internal.PairWrapped;
+import net.butfly.albacore.calculus.factor.rds.internal.WrappedRDD;
 import net.butfly.albacore.calculus.marshall.Marshaller;
 import net.butfly.albacore.calculus.utils.Logable;
 import net.butfly.albacore.calculus.utils.Reflections;
@@ -75,7 +76,7 @@ public abstract class DataSource<FK, InK, InV, OutK, OutV> implements Serializab
 		return "CalculatorDataSource:" + this.type;
 	}
 
-	public <F extends Factor<F>> PairWrapped<FK, F> stocking(Calculator calc, Class<F> factor, DataDetail<F> detail, float expandPartitions,
+	public <F extends Factor<F>> PairRDS<FK, F> stocking(Calculator calc, Class<F> factor, DataDetail<F> detail, float expandPartitions,
 			FactorFilter... filters) {
 		throw new UnsupportedOperationException("Unsupportted stocking mode: " + type + " on " + factor.toString());
 	}
@@ -127,7 +128,7 @@ public abstract class DataSource<FK, InK, InV, OutK, OutV> implements Serializab
 	}
 
 	@SuppressWarnings("unchecked")
-	protected <F extends Factor<F>> PairWrapped<FK, F> readByInputFormat(JavaSparkContext sc, Configuration conf, Class<F> factor,
+	protected <F extends Factor<F>> PairRDS<FK, F> readByInputFormat(JavaSparkContext sc, Configuration conf, Class<F> factor,
 			float expandPartitions) {
 		JavaPairRDD<InK, InV> raw = sc.newAPIHadoopRDD(conf, inputFormatClass, keyClass, valueClass);
 		debug(() -> "Loading from datasource finished: " + SizeEstimator.estimate(raw) + " bytes (estimate).");
@@ -146,6 +147,6 @@ public abstract class DataSource<FK, InK, InV, OutK, OutV> implements Serializab
 			return new Tuple2<>(k, v);
 		});
 		results = (expandPartitions > 1) ? results.repartition((int) Math.ceil(results.getNumPartitions() * expandPartitions)) : results;
-		return new PairRDS<>(results);
+		return new PairRDS<>(new WrappedRDD<>(results));
 	}
 }

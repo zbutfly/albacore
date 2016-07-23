@@ -31,6 +31,7 @@ import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
 import net.butfly.albacore.calculus.factor.filter.HbaseBuilder;
+import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.factor.rds.internal.PairWrapped;
 import net.butfly.albacore.calculus.marshall.HbaseMarshaller;
 import net.butfly.albacore.calculus.utils.Reflections;
@@ -92,7 +93,7 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 	}
 
 	@Override
-	public <F extends Factor<F>> PairWrapped<byte[], F> stocking(Calculator calc, Class<F> factor, DataDetail<F> detail,
+	public <F extends Factor<F>> PairRDS<byte[], F> stocking(Calculator calc, Class<F> factor, DataDetail<F> detail,
 			float expandPartitions, FactorFilter... filters) {
 		if (calc.debug) filters = enableDebug(filters);
 		debug(() -> "Scaning begin: " + factor.toString() + " from table: " + detail.tables[0] + ".");

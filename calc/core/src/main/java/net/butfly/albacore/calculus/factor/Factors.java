@@ -26,7 +26,7 @@ import net.butfly.albacore.calculus.factor.Factor.Streaming;
 import net.butfly.albacore.calculus.factor.Factoring.Factorings;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
-import net.butfly.albacore.calculus.factor.rds.internal.PairWrapped;
+import net.butfly.albacore.calculus.factor.rds.internal.WrappedDStream;
 import net.butfly.albacore.calculus.streaming.RDDDStream;
 import net.butfly.albacore.calculus.streaming.RDDDStream.Mechanism;
 import net.butfly.albacore.calculus.utils.Logable;
@@ -86,34 +86,34 @@ public final class Factors implements Serializable, Logable {
 		return fs.values();
 	}
 
-	public <K, F extends Factor<F>> PairWrapped<K, F> get(String factoring, FactorFilter... filters) {
+	public <K, F extends Factor<F>> PairRDS<K, F> get(String factoring, FactorFilter... filters) {
 		FactorConfig<K, F> config = (FactorConfig<K, F>) CONFIGS.get(factoring);
 		DataSource<K, ?, ?, ?, ?> ds = calc.dss.ds(config.dbid);
 		DataDetail<F> d = config.detail;
 		switch (calc.mode) {
 		case STOCKING:
 			if (config.batching <= 0) {
-				PairWrapped<K, F> p = ds.stocking(calc, config.factorClass, d, config.expanding, filters);
+				PairRDS<K, F> p = ds.stocking(calc, config.factorClass, d, config.expanding, filters);
 				if (config.persisting != null) p = p.persist(config.persisting);
 				return p;
-			} else return new PairRDS<K, F>(RDDDStream.bpstream(calc.ssc.ssc(), config.batching,
+			} else return new PairRDS<K, F>(new WrappedDStream<>(RDDDStream.bpstream(calc.ssc.ssc(), config.batching,
 					(final Long limit, final K offset) -> ds.batching(calc, config.factorClass, limit, offset, d, filters),
-					ds.marshaller().comparator()));
+					ds.marshaller().comparator())));
 		case STREAMING:
 			switch (config.mode) {
 			case STOCKING:
 				switch (config.streaming) {
 				case CONST:
-					return new PairRDS<K, F>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.CONST,
-							() -> ds.stocking(calc, config.factorClass, d, -1, filters)));
+					return new PairRDS<K, F>(new WrappedDStream<>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.CONST,
+							() -> ds.stocking(calc, config.factorClass, d, -1, filters))));
 				case FRESH:
-					return new PairRDS<K, F>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.FRESH,
-							() -> ds.stocking(calc, config.factorClass, d, -1, filters)));
+					return new PairRDS<K, F>(new WrappedDStream<>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.FRESH,
+							() -> ds.stocking(calc, config.factorClass, d, -1, filters))));
 				default:
 					throw new UnsupportedOperationException();
 				}
 			case STREAMING:
-				return new PairRDS<K, F>(ds.streaming(calc, config.factorClass, d, filters));
+				return new PairRDS<K, F>(new WrappedDStream<>(ds.streaming(calc, config.factorClass, d, filters)));
 			}
 		default:
 			throw new UnsupportedOperationException();

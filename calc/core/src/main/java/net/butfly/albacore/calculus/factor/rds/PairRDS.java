@@ -8,7 +8,6 @@ import java.util.Map;
 
 import org.apache.spark.HashPartitioner;
 import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
@@ -29,9 +28,9 @@ import net.butfly.albacore.calculus.datasource.DataDetail;
 import net.butfly.albacore.calculus.datasource.DataSource;
 import net.butfly.albacore.calculus.factor.rds.internal.PairWrapped;
 import net.butfly.albacore.calculus.factor.rds.internal.RDSupport;
-import net.butfly.albacore.calculus.factor.rds.internal.WrappedRDD;
-import net.butfly.albacore.calculus.factor.rds.internal.WrappedDStream;
 import net.butfly.albacore.calculus.factor.rds.internal.Wrapped;
+import net.butfly.albacore.calculus.factor.rds.internal.WrappedDStream;
+import net.butfly.albacore.calculus.factor.rds.internal.WrappedRDD;
 import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
 
@@ -43,22 +42,22 @@ import scala.Tuple2;
  * @param <K>
  * @param <V>
  */
-public class PairRDS<K, V> extends RDS<Tuple2<K, V>> implements PairWrapped<K, V> {
+public final class PairRDS<K, V> extends RDS<Tuple2<K, V>> implements PairWrapped<K, V> {
 	private static final long serialVersionUID = 7112147100603052906L;
 
 	protected PairRDS() {}
 
-	public PairRDS(JavaPairRDD<K, V> rdd) {
-		super(new WrappedRDD<Tuple2<K, V>>(rdd));
-	}
-
-	public PairRDS(JavaRDD<Tuple2<K, V>> rdd) {
-		super(new WrappedRDD<Tuple2<K, V>>(rdd));
-	}
-
-	public PairRDS(JavaPairDStream<K, V> dstream) {
-		super(new WrappedDStream<Tuple2<K, V>>(dstream));
-	}
+	// protected PairRDS(JavaRDD<Tuple2<K, V>> rdd) {
+	// super(new WrappedRDD<>(rdd));
+	// }
+	//
+	// protected PairRDS(JavaPairRDD<K, V> rdd) {
+	// super(new WrappedRDD<Tuple2<K, V>>(rdd));
+	// }
+	//
+	// protected PairRDS(JavaPairDStream<K, V> dstream) {
+	// super(new WrappedDStream<>(dstream));
+	// }
 
 	public PairRDS(Wrapped<Tuple2<K, V>> wrapped) {
 		super(wrapped);
@@ -130,13 +129,13 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> implements PairWrapped<K, V
 		if (!rehash) return repartition(ratioPartitions);
 		switch (mode()) {
 		case STOCKING:
-			return new PairRDS<K, V>(JavaPairRDD.fromRDD(rdd(), k(), v())
-					.partitionBy(new HashPartitioner((int) Math.ceil(getNumPartitions() * ratioPartitions))));
+			return new PairRDS<>(new WrappedRDD<>(JavaPairRDD.fromRDD(rdd(), k(), v())
+					.partitionBy(new HashPartitioner((int) Math.ceil(getNumPartitions() * ratioPartitions)))));
 		case STREAMING:
 			JavaPairDStream<K, V> ds = JavaPairDStream.fromPairDStream(dstream(Wrapped.ssc(this)), k(), v())
 					.transformToPair((Function<JavaPairRDD<K, V>, JavaPairRDD<K, V>>) rdd -> rdd
 							.partitionBy(new HashPartitioner((int) Math.ceil(rdd.getNumPartitions() * ratioPartitions))));
-			return new PairRDS<K, V>(ds);
+			return new PairRDS<>(new WrappedDStream<>(ds));
 		default:
 			throw new IllegalArgumentException();
 		}
@@ -144,7 +143,7 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> implements PairWrapped<K, V
 
 	@Override
 	public PairRDS<K, V> repartition(float ratioPartitions) {
-		return new PairRDS<K, V>(wrapped().repartition(ratioPartitions));
+		return new PairRDS<>(wrapped().repartition(ratioPartitions));
 	}
 
 	@Override
@@ -169,7 +168,7 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> implements PairWrapped<K, V
 
 	@Override
 	public PairRDS<K, V> sortByKey(boolean asc) {
-		return new PairRDS<>(pairRDD().sortByKey(asc));
+		return new PairRDS<>(new WrappedRDD<>(pairRDD().sortByKey(asc)));
 	}
 
 	@Override
@@ -178,7 +177,7 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> implements PairWrapped<K, V
 	}
 
 	public PairRDS<K, V> union(PairWrapped<K, V> other) {
-		return new PairRDS<K, V>(wrapped.union(other));
+		return new PairRDS<>(wrapped.union(other));
 	}
 
 	@Override
@@ -200,9 +199,10 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> implements PairWrapped<K, V
 	public final <K2, V2> PairRDS<K2, V2> mapToPair(PairFunction<Tuple2<K, V>, K2, V2> func) {
 		switch (mode()) {
 		case STOCKING:
-			return new PairRDS<K2, V2>(JavaPairRDD.fromRDD(rdd(), k(), v()).mapToPair(func::call));
+			return new PairRDS<>(new WrappedRDD<>(JavaPairRDD.fromRDD(rdd(), k(), v()).mapToPair(func::call)));
 		case STREAMING:
-			return new PairRDS<K2, V2>(JavaPairDStream.fromPairDStream(dstream(Wrapped.ssc(this)), k(), v()).mapToPair(func::call));
+			return new PairRDS<>(
+					new WrappedDStream<>(JavaPairDStream.fromPairDStream(dstream(Wrapped.ssc(this)), k(), v()).mapToPair(func::call)));
 		default:
 			throw new IllegalArgumentException();
 		}
@@ -210,12 +210,12 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> implements PairWrapped<K, V
 
 	@Override
 	public <V2> PairRDS<K, Tuple2<V, V2>> join(Wrapped<Tuple2<K, V2>> other) {
-		if (mode() == Mode.STOCKING && other.mode() == Mode.STOCKING) return new PairRDS<>(
-				JavaPairRDD.fromRDD(rdd(), k(), v()).join(JavaPairRDD.fromRDD(other.rdd(), RDSupport.tag(), RDSupport.tag())));
+		if (mode() == Mode.STOCKING && other.mode() == Mode.STOCKING) return new PairRDS<>(new WrappedRDD<>(
+				JavaPairRDD.fromRDD(rdd(), k(), v()).join(JavaPairRDD.fromRDD(other.rdd(), RDSupport.tag(), RDSupport.tag()))));
 		else {
 			StreamingContext ssc = Wrapped.ssc(this, other);
-			return new PairRDS<>(JavaPairDStream.fromPairDStream(wrapped().dstream(ssc), k(), v())
-					.join(JavaPairDStream.fromPairDStream(other.wrapped().dstream(ssc), RDSupport.tag(), RDSupport.tag())));
+			return new PairRDS<>(new WrappedDStream<>(JavaPairDStream.fromPairDStream(wrapped().dstream(ssc), k(), v())
+					.join(JavaPairDStream.fromPairDStream(other.wrapped().dstream(ssc), RDSupport.tag(), RDSupport.tag()))));
 		}
 	}
 
@@ -225,33 +225,34 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> implements PairWrapped<K, V
 		// two stream, use 10 for devel testing.
 		if (pnum <= 0) pnum = ((int) Math.ceil(ratioPartitions)) * 10;
 		if (mode() == Mode.STOCKING && other.mode() == Mode.STOCKING) {
-			return new PairRDS<>(pairRDD().join(JavaPairRDD.fromRDD(other.rdd(), RDSupport.tag(), RDSupport.tag()), pnum));
+			return new PairRDS<>(
+					new WrappedRDD<>(pairRDD().join(JavaPairRDD.fromRDD(other.rdd(), RDSupport.tag(), RDSupport.tag()), pnum)));
 		} else {
 			StreamingContext ssc = Wrapped.ssc(this, other);
-			return new PairRDS<>(JavaPairDStream.fromPairDStream(wrapped().dstream(ssc), k(), v())
-					.join(JavaPairDStream.fromPairDStream(other.wrapped().dstream(ssc), RDSupport.tag(), RDSupport.tag()), pnum));
+			return new PairRDS<>(new WrappedDStream<>(JavaPairDStream.fromPairDStream(wrapped().dstream(ssc), k(), v())
+					.join(JavaPairDStream.fromPairDStream(other.wrapped().dstream(ssc), RDSupport.tag(), RDSupport.tag()), pnum)));
 		}
 	}
 
 	@Override
 	public <V2> PairRDS<K, Tuple2<V, Optional<V2>>> leftOuterJoin(Wrapped<Tuple2<K, V2>> other) {
-		if (mode() == Mode.STOCKING && other.mode() == Mode.STOCKING) return new PairRDS<>(
-				JavaPairRDD.fromRDD(rdd(), k(), v()).leftOuterJoin(JavaPairRDD.fromRDD(other.rdd(), RDSupport.tag(), RDSupport.tag())));
+		if (mode() == Mode.STOCKING && other.mode() == Mode.STOCKING) return new PairRDS<>(new WrappedRDD<>(
+				JavaPairRDD.fromRDD(rdd(), k(), v()).leftOuterJoin(JavaPairRDD.fromRDD(other.rdd(), RDSupport.tag(), RDSupport.tag()))));
 		else {
 			StreamingContext ssc = Wrapped.ssc(this, other);
-			return new PairRDS<>(JavaPairDStream.fromPairDStream(wrapped().dstream(ssc), k(), v())
-					.leftOuterJoin(JavaPairDStream.fromPairDStream(other.wrapped().dstream(ssc), RDSupport.tag(), RDSupport.tag())));
+			return new PairRDS<>(new WrappedDStream<>(JavaPairDStream.fromPairDStream(wrapped().dstream(ssc), k(), v())
+					.leftOuterJoin(JavaPairDStream.fromPairDStream(other.wrapped().dstream(ssc), RDSupport.tag(), RDSupport.tag()))));
 		}
 	}
 
 	@Override
 	public <V2> PairRDS<K, Tuple2<V, Optional<V2>>> leftOuterJoin(Wrapped<Tuple2<K, V2>> other, int numPartitions) {
-		if (mode() == Mode.STOCKING && other.mode() == Mode.STOCKING) return new PairRDS<>(
-				JavaPairRDD.fromRDD(rdd(), k(), v()).leftOuterJoin(JavaPairRDD.fromRDD(other.rdd(), RDSupport.tag(), RDSupport.tag())));
+		if (mode() == Mode.STOCKING && other.mode() == Mode.STOCKING) return new PairRDS<>(new WrappedRDD<>(
+				JavaPairRDD.fromRDD(rdd(), k(), v()).leftOuterJoin(JavaPairRDD.fromRDD(other.rdd(), RDSupport.tag(), RDSupport.tag()))));
 		else {
 			StreamingContext ssc = Wrapped.ssc(this, other);
-			return new PairRDS<>(JavaPairDStream.fromPairDStream(wrapped().dstream(ssc), k(), v())
-					.leftOuterJoin(JavaPairDStream.fromPairDStream(other.wrapped().dstream(ssc), RDSupport.tag(), RDSupport.tag())));
+			return new PairRDS<>(new WrappedDStream<>(JavaPairDStream.fromPairDStream(wrapped().dstream(ssc), k(), v())
+					.leftOuterJoin(JavaPairDStream.fromPairDStream(other.wrapped().dstream(ssc), RDSupport.tag(), RDSupport.tag()))));
 		}
 	}
 
@@ -261,10 +262,10 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> implements PairWrapped<K, V
 		case STOCKING:
 			List<JavaPairRDD<K, Iterable<V>>> l = new ArrayList<>();
 			foreachPairRDD(rdd -> l.add(rdd.groupByKey()));
-			return new PairRDS<K, Iterable<V>>(RDSupport.union(l));
+			return new PairRDS<>(new WrappedRDD<>(RDSupport.union(l)));
 		case STREAMING:
-			return new PairRDS<K, Iterable<V>>(
-					JavaPairDStream.fromPairDStream(((WrappedDStream<Tuple2<K, V>>) wrapped()).dstream(), k(), v()).groupByKey());
+			return new PairRDS<>(new WrappedDStream<>(
+					JavaPairDStream.fromPairDStream(((WrappedDStream<Tuple2<K, V>>) wrapped()).dstream(), k(), v()).groupByKey()));
 		default:
 			throw new IllegalArgumentException();
 		}
@@ -276,10 +277,10 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> implements PairWrapped<K, V
 		case STOCKING:
 			List<JavaPairRDD<K, V>> l = new ArrayList<>();
 			foreachPairRDD(rdd -> l.add(rdd.reduceByKey(func)));
-			return new PairRDS<K, V>(RDSupport.union(l));
+			return new PairRDS<>(new WrappedRDD<>(RDSupport.union(l)));
 		case STREAMING:
 			DStream<Tuple2<K, V>> ds = ((WrappedDStream<Tuple2<K, V>>) wrapped()).dstream();
-			return new PairRDS<K, V>(JavaPairDStream.fromPairDStream(ds, k(), v()).reduceByKey(func));
+			return new PairRDS<>(new WrappedDStream<>(JavaPairDStream.fromPairDStream(ds, k(), v()).reduceByKey(func)));
 		default:
 			throw new IllegalArgumentException();
 		}
@@ -294,10 +295,10 @@ public class PairRDS<K, V> extends RDS<Tuple2<K, V>> implements PairWrapped<K, V
 		case STOCKING:
 			List<JavaPairRDD<K, V>> l = new ArrayList<>();
 			foreachPairRDD(rdd -> l.add(rdd.reduceByKey(func, minpnum)));
-			return new PairRDS<K, V>(RDSupport.union(l));
+			return new PairRDS<>(new WrappedRDD<>(RDSupport.union(l)));
 		case STREAMING:
 			DStream<Tuple2<K, V>> ds = ((WrappedDStream<Tuple2<K, V>>) wrapped()).dstream();
-			return new PairRDS<K, V>(JavaPairDStream.fromPairDStream(ds, k(), v()).reduceByKey(func, minpnum));
+			return new PairRDS<>(new WrappedDStream<>(JavaPairDStream.fromPairDStream(ds, k(), v()).reduceByKey(func, minpnum)));
 		default:
 			throw new IllegalArgumentException();
 		}

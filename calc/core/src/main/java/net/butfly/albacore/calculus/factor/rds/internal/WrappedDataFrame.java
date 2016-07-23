@@ -133,7 +133,8 @@ public class WrappedDataFrame<K, V> implements PairWrapped<K, V> {
 	@SuppressWarnings("unchecked")
 	@Override
 	public PairWrapped<K, V> union(Wrapped<Tuple2<K, V>> other) {
-		if (other instanceof WrappedDataFrame) return new WrappedDataFrame<>(frame.unionAll(((WrappedDataFrame<K, V>) other).frame), kClass, vClass);
+		if (other instanceof WrappedDataFrame)
+			return new WrappedDataFrame<>(frame.unionAll(((WrappedDataFrame<K, V>) other).frame), kClass, vClass);
 		else return new WrappedDataFrame<>(frame.unionAll(new WrappedDataFrame<K, V>(ssc, mapWithKey(other.jrdd())).frame), kClass, vClass);
 	}
 
@@ -203,7 +204,7 @@ public class WrappedDataFrame<K, V> implements PairWrapped<K, V> {
 	@Override
 	public <S> PairWrapped<K, V> sortBy(Function<Tuple2<K, V>, S> comp) {
 		JavaRDD<Tuple2<K, V>> v = jrdd().sortBy(comp, true, getNumPartitions());
-		return new PairRDS<K, V>(v);
+		return new PairRDS<>(new WrappedRDD<>(v));
 	}
 
 	@Override
