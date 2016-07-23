@@ -18,6 +18,7 @@ import java.util.function.Consumer;
 import com.google.common.reflect.TypeToken;
 
 import net.butfly.albacore.calculus.lambda.Func;
+import scala.Tuple2;
 
 public final class Reflections implements Serializable {
 	private static final long serialVersionUID = 6337397752201899394L;
@@ -150,6 +151,15 @@ public final class Reflections implements Serializable {
 			types.put(v.getName(), (Class<?>) TypeToken.of(implType).resolveType(v).getRawType());
 		} ;
 		return types;
+	}
+
+	public static <T, K, V> Map<K, V> transMapping(Collection<T> list, Func<T, Tuple2<K, V>> mapping) {
+		Map<K, V> map = new HashMap<>();
+		list.forEach(t -> {
+			Tuple2<K, V> e = mapping.call(t);
+			map.put(e._1, e._2);
+		});
+		return map;
 	}
 
 	@SafeVarargs

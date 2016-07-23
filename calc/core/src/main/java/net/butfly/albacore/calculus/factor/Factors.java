@@ -26,6 +26,7 @@ import net.butfly.albacore.calculus.factor.Factor.Streaming;
 import net.butfly.albacore.calculus.factor.Factoring.Factorings;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
+import net.butfly.albacore.calculus.factor.rds.internal.PairWrapped;
 import net.butfly.albacore.calculus.streaming.RDDDStream;
 import net.butfly.albacore.calculus.streaming.RDDDStream.Mechanism;
 import net.butfly.albacore.calculus.utils.Logable;
@@ -85,14 +86,14 @@ public final class Factors implements Serializable, Logable {
 		return fs.values();
 	}
 
-	public <K, F extends Factor<F>> PairRDS<K, F> get(String factoring, FactorFilter... filters) {
+	public <K, F extends Factor<F>> PairWrapped<K, F> get(String factoring, FactorFilter... filters) {
 		FactorConfig<K, F> config = (FactorConfig<K, F>) CONFIGS.get(factoring);
 		DataSource<K, ?, ?, ?, ?> ds = calc.dss.ds(config.dbid);
 		DataDetail<F> d = config.detail;
 		switch (calc.mode) {
 		case STOCKING:
 			if (config.batching <= 0) {
-				PairRDS<K, F> p = new PairRDS<K, F>(ds.stocking(calc, config.factorClass, d, config.expanding, filters));
+				PairWrapped<K, F> p = ds.stocking(calc, config.factorClass, d, config.expanding, filters);
 				if (config.persisting != null) p = p.persist(config.persisting);
 				return p;
 			} else return new PairRDS<K, F>(RDDDStream.bpstream(calc.ssc.ssc(), config.batching,

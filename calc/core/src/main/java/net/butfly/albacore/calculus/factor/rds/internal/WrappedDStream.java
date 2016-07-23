@@ -28,17 +28,17 @@ import scala.Tuple2;
  *
  * @param <T>
  */
-public class WStream<T> implements Wrapped<T> {
+public class WrappedDStream<T> implements Wrapped<T> {
 	private static final long serialVersionUID = 8010123164729388602L;
 	final protected StreamingContext ssc;
 	final transient DStream<T> dstream;
 
-	protected WStream(DStream<T> dstream) {
+	protected WrappedDStream(DStream<T> dstream) {
 		ssc = dstream.ssc();
 		this.dstream = dstream;
 	}
 
-	public WStream(JavaDStreamLike<T, ?, ?> dstream) {
+	public WrappedDStream(JavaDStreamLike<T, ?, ?> dstream) {
 		this(dstream.dstream());
 	}
 
@@ -53,24 +53,24 @@ public class WStream<T> implements Wrapped<T> {
 	}
 
 	@Override
-	public WStream<T> repartition(float ratio) {
-		return new WStream<T>(JavaDStream.fromDStream(dstream, classTag())
+	public WrappedDStream<T> repartition(float ratio) {
+		return new WrappedDStream<T>(JavaDStream.fromDStream(dstream, classTag())
 				.transform((Function<JavaRDD<T>, JavaRDD<T>>) rdd -> rdd.repartition((int) Math.ceil(rdd.getNumPartitions() * ratio))));
 	}
 
 	@Override
-	public WStream<T> unpersist() {
+	public WrappedDStream<T> unpersist() {
 		return this;
 	}
 
 	@Override
-	public WStream<T> persist() {
-		return new WStream<T>(dstream.persist());
+	public WrappedDStream<T> persist() {
+		return new WrappedDStream<T>(dstream.persist());
 	}
 
 	@Override
-	public WStream<T> persist(StorageLevel level) {
-		return new WStream<T>(dstream.persist(level));
+	public WrappedDStream<T> persist(StorageLevel level) {
+		return new WrappedDStream<T>(dstream.persist(level));
 	}
 
 	@Override
@@ -94,35 +94,35 @@ public class WStream<T> implements Wrapped<T> {
 
 	@Override
 	public Wrapped<T> union(Wrapped<T> other) {
-		if (WDD.class.isAssignableFrom(other.getClass()))
-			return new WStream<T>(dstream.union(RDDDStream.stream(ssc, Mechanism.CONST, () -> other.jrdd()).dstream()));
-		else if (WStream.class.isAssignableFrom(other.getClass())) return new WStream<T>(dstream.union(((WStream<T>) other).dstream));
+		if (WrappedRDD.class.isAssignableFrom(other.getClass()))
+			return new WrappedDStream<T>(dstream.union(RDDDStream.stream(ssc, Mechanism.CONST, () -> other.jrdd()).dstream()));
+		else if (WrappedDStream.class.isAssignableFrom(other.getClass())) return new WrappedDStream<T>(dstream.union(((WrappedDStream<T>) other).dstream));
 		else throw new IllegalArgumentException();
 	}
 
 	@Override
-	public WStream<T> filter(Function<T, Boolean> func) {
-		return new WStream<T>(JavaDStream.fromDStream(dstream, classTag()).filter(func).dstream());
+	public WrappedDStream<T> filter(Function<T, Boolean> func) {
+		return new WrappedDStream<T>(JavaDStream.fromDStream(dstream, classTag()).filter(func).dstream());
 	}
 
 	@Override
-	public <K2, V2> WStream<Tuple2<K2, V2>> mapToPair(PairFunction<T, K2, V2> func) {
-		return new WStream<Tuple2<K2, V2>>(JavaDStream.fromDStream(dstream, classTag()).mapToPair(func));
+	public <K2, V2> WrappedDStream<Tuple2<K2, V2>> mapToPair(PairFunction<T, K2, V2> func) {
+		return new WrappedDStream<Tuple2<K2, V2>>(JavaDStream.fromDStream(dstream, classTag()).mapToPair(func));
 	}
 
 	@Override
-	public final <T1> WStream<T1> map(Function<T, T1> func) {
-		return new WStream<T1>(JavaDStream.fromDStream(dstream, classTag()).map(func).dstream());
+	public final <T1> WrappedDStream<T1> map(Function<T, T1> func) {
+		return new WrappedDStream<T1>(JavaDStream.fromDStream(dstream, classTag()).map(func).dstream());
 	}
 
 	@Override
-	public <U> WDD<Tuple2<U, Iterable<T>>> groupBy(Function<T, U> func) {
-		return new WDD<Tuple2<U, Iterable<T>>>(jrdd().groupBy(func));
+	public <U> WrappedRDD<Tuple2<U, Iterable<T>>> groupBy(Function<T, U> func) {
+		return new WrappedRDD<Tuple2<U, Iterable<T>>>(jrdd().groupBy(func));
 	}
 
 	@Override
-	public <U> WDD<Tuple2<U, Iterable<T>>> groupBy(Function<T, U> func, int numPartitions) {
-		return new WDD<Tuple2<U, Iterable<T>>>(jrdd().groupBy(func, numPartitions));
+	public <U> WrappedRDD<Tuple2<U, Iterable<T>>> groupBy(Function<T, U> func, int numPartitions) {
+		return new WrappedRDD<Tuple2<U, Iterable<T>>>(jrdd().groupBy(func, numPartitions));
 	}
 
 	@Override
@@ -138,7 +138,7 @@ public class WStream<T> implements Wrapped<T> {
 			rr.add(rdd.first());
 		});
 		if (rr.isEmpty()) return null;
-		return new WDD<T>(ssc.sc(), rr).reduce(func);
+		return new WrappedRDD<T>(ssc.sc(), rr).reduce(func);
 	}
 
 	@Override
@@ -172,9 +172,9 @@ public class WStream<T> implements Wrapped<T> {
 	}
 
 	@Override
-	public <S> WDD<T> sortBy(Function<T, S> comp) {
+	public <S> WrappedRDD<T> sortBy(Function<T, S> comp) {
 		JavaRDD<T> rdd = jrdd();
-		return new WDD<T>(rdd.sortBy(comp, true, rdd.getNumPartitions()));
+		return new WrappedRDD<T>(rdd.sortBy(comp, true, rdd.getNumPartitions()));
 	}
 
 	@Override

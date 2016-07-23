@@ -14,7 +14,7 @@ import org.apache.spark.streaming.StreamingContext;
 import org.apache.spark.streaming.dstream.DStream;
 
 import net.butfly.albacore.calculus.Mode;
-import net.butfly.albacore.calculus.factor.rds.internal.WDD;
+import net.butfly.albacore.calculus.factor.rds.internal.WrappedRDD;
 import net.butfly.albacore.calculus.factor.rds.internal.Wrapped;
 import scala.Tuple2;
 
@@ -38,7 +38,7 @@ public class RDS<T> implements Wrapped<T> {
 
 	@SafeVarargs
 	public RDS(JavaSparkContext sc, T... t) {
-		this.wrapped = new WDD<T>(sc.sc(), t);
+		this.wrapped = new WrappedRDD<T>(sc.sc(), t);
 	}
 
 	@Override

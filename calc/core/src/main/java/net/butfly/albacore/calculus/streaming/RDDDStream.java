@@ -5,7 +5,6 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.apache.spark.SparkContext;
-import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.streaming.StreamingContext;
@@ -13,7 +12,9 @@ import org.apache.spark.streaming.Time;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.dstream.InputDStream;
+import org.apache.spark.util.SizeEstimator;
 
+import net.butfly.albacore.calculus.factor.rds.internal.PairWrapped;
 import net.butfly.albacore.calculus.factor.rds.internal.RDSupport;
 import net.butfly.albacore.calculus.lambda.Func0;
 import net.butfly.albacore.calculus.lambda.Func2;
@@ -37,7 +38,7 @@ public abstract class RDDDStream<T> extends InputDStream<T> {
 	abstract protected RDD<T> load();
 
 	public Option<RDD<T>> compute(Time time) {
-		trace(() -> "RDD [" + name() + "] inputted as streaming with count: " + current.count());
+		trace(() -> "RDD [" + name() + "] inputted as streaming, size: " + SizeEstimator.estimate(current));
 		return Option.apply(current);
 	}
 
@@ -63,7 +64,7 @@ public abstract class RDDDStream<T> extends InputDStream<T> {
 		if (log().isTraceEnabled()) log().trace(msg.call());
 	}
 
-	public static <K, V> JavaPairDStream<K, V> pstream(StreamingContext ssc, Mechanism mechanism, Func0<JavaPairRDD<K, V>> rdd) {
+	public static <K, V> JavaPairDStream<K, V> pstream(StreamingContext ssc, Mechanism mechanism, Func0<PairWrapped<K, V>> rdd) {
 		try {
 			return JavaPairDStream.fromPairDStream(new RDDInputDStream<Tuple2<K, V>>(ssc, mechanism, rdd.call().map(t -> t)::rdd),
 					RDSupport.tag(), RDSupport.tag());
@@ -73,7 +74,7 @@ public abstract class RDDDStream<T> extends InputDStream<T> {
 	}
 
 	@Deprecated
-	public static <K, V> JavaPairDStream<K, V> bpstream(StreamingContext ssc, long batch, Func2<Long, K, JavaPairRDD<K, V>> batcher,
+	public static <K, V> JavaPairDStream<K, V> bpstream(StreamingContext ssc, long batch, Func2<Long, K, PairWrapped<K, V>> batcher,
 			Comparator<K> comparator) {
 		try {
 			return JavaPairDStream.fromPairDStream(

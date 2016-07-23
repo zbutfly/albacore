@@ -78,12 +78,12 @@ public interface Wrapped<T> extends Serializable, Logable {
 
 	public <T1> Wrapped<T1> map(Function<T, T1> func);
 
-	public default <U> WDD<Tuple2<U, Iterable<T>>> groupBy(Function<T, U> func) {
-		return new WDD<Tuple2<U, Iterable<T>>>(jrdd().groupBy(func::call));
+	public default <U> WrappedRDD<Tuple2<U, Iterable<T>>> groupBy(Function<T, U> func) {
+		return new WrappedRDD<Tuple2<U, Iterable<T>>>(jrdd().groupBy(func::call));
 	}
 
-	public default <U> WDD<Tuple2<U, Iterable<T>>> groupBy(Function<T, U> func, int numPartitions) {
-		return new WDD<Tuple2<U, Iterable<T>>>(jrdd().groupBy(func::call, numPartitions));
+	public default <U> WrappedRDD<Tuple2<U, Iterable<T>>> groupBy(Function<T, U> func, int numPartitions) {
+		return new WrappedRDD<Tuple2<U, Iterable<T>>>(jrdd().groupBy(func::call, numPartitions));
 	}
 
 	public <S> Wrapped<T> sortBy(Function<T, S> comp);
@@ -96,7 +96,7 @@ public interface Wrapped<T> extends Serializable, Logable {
 	static StreamingContext ssc(Wrapped... wrapped) {
 		for (Wrapped w : wrapped) {
 			Wrapped ed = w.wrapped();
-			if (ed.mode() == Mode.STREAMING) return ((WStream) ed).ssc;
+			if (ed.mode() == Mode.STREAMING) return ((WrappedDStream) ed).ssc;
 		}
 		return null;
 

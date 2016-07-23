@@ -22,7 +22,6 @@ import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
 import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
 import org.apache.hadoop.hbase.protobuf.ProtobufUtil;
 import org.apache.hadoop.hbase.util.Base64;
-import org.apache.spark.api.java.JavaPairRDD;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.CaseFormat;
@@ -32,6 +31,7 @@ import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
 import net.butfly.albacore.calculus.factor.filter.HbaseBuilder;
+import net.butfly.albacore.calculus.factor.rds.internal.PairWrapped;
 import net.butfly.albacore.calculus.marshall.HbaseMarshaller;
 import net.butfly.albacore.calculus.utils.Reflections;
 
@@ -92,7 +92,7 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 	}
 
 	@Override
-	public <F extends Factor<F>> JavaPairRDD<byte[], F> stocking(Calculator calc, Class<F> factor, DataDetail<F> detail,
+	public <F extends Factor<F>> PairWrapped<byte[], F> stocking(Calculator calc, Class<F> factor, DataDetail<F> detail,
 			float expandPartitions, FactorFilter... filters) {
 		if (calc.debug) filters = enableDebug(filters);
 		debug(() -> "Scaning begin: " + factor.toString() + " from table: " + detail.tables[0] + ".");
@@ -103,7 +103,7 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 
 	@Override
 	@Deprecated
-	public <F extends Factor<F>> JavaPairRDD<byte[], F> batching(Calculator calc, Class<F> factor, long limit, byte[] offset,
+	public <F extends Factor<F>> PairWrapped<byte[], F> batching(Calculator calc, Class<F> factor, long limit, byte[] offset,
 			DataDetail<F> detail, FactorFilter... filters) {
 		debug(() -> "Scaning begin: " + factor.toString() + " from table: " + detail.tables[0] + ".");
 		error(() -> "Batching mode is not supported now... BUG!!!!!");

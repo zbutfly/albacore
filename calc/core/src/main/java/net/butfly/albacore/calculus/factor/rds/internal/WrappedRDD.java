@@ -24,26 +24,26 @@ import scala.Tuple2;
 import scala.collection.JavaConversions;
 import scala.collection.Seq;
 
-public class WDD<T> implements Wrapped<T> {
+public class WrappedRDD<T> implements Wrapped<T> {
 	private static final long serialVersionUID = 3614737214835144193L;
 	final private SparkContext sc;
 	final protected transient RDD<T> rdd;
 
-	protected WDD(RDD<T> rdd) {
+	protected WrappedRDD(RDD<T> rdd) {
 		sc = rdd.context();
 		this.rdd = rdd;
 	}
 
-	public WDD(JavaRDDLike<T, ?> rdd) {
+	public WrappedRDD(JavaRDDLike<T, ?> rdd) {
 		this(rdd.rdd());
 	}
 
 	@SafeVarargs
-	public WDD(SparkContext sc, T... t) {
+	public WrappedRDD(SparkContext sc, T... t) {
 		this(sc, Arrays.asList(t));
 	}
 
-	public WDD(SparkContext sc, List<T> t) {
+	public WrappedRDD(SparkContext sc, List<T> t) {
 		this(sc.parallelize(JavaConversions.asScalaBuffer(t).seq(), sc.defaultParallelism(), RDSupport.tag()));
 	}
 
@@ -58,23 +58,23 @@ public class WDD<T> implements Wrapped<T> {
 	}
 
 	@Override
-	public WDD<T> repartition(float ratio) {
-		return new WDD<T>(jrdd().repartition((int) Math.ceil(rdd.getNumPartitions() * ratio)).rdd());
+	public WrappedRDD<T> repartition(float ratio) {
+		return new WrappedRDD<T>(jrdd().repartition((int) Math.ceil(rdd.getNumPartitions() * ratio)).rdd());
 	}
 
 	@Override
-	public WDD<T> unpersist() {
-		return new WDD<T>(rdd.unpersist(true));
+	public WrappedRDD<T> unpersist() {
+		return new WrappedRDD<T>(rdd.unpersist(true));
 	}
 
 	@Override
-	public WDD<T> persist() {
-		return new WDD<T>(rdd.persist());
+	public WrappedRDD<T> persist() {
+		return new WrappedRDD<T>(rdd.persist());
 	}
 
 	@Override
-	public WDD<T> persist(StorageLevel level) {
-		return new WDD<T>(rdd.persist(level));
+	public WrappedRDD<T> persist(StorageLevel level) {
+		return new WrappedRDD<T>(rdd.persist(level));
 	}
 
 	@Override
@@ -99,25 +99,25 @@ public class WDD<T> implements Wrapped<T> {
 	@Override
 	public Wrapped<T> union(Wrapped<T> other) {
 		if (RDS.class.isAssignableFrom(other.getClass())) return union(((RDS<T>) other).wrapped());
-		if (WDD.class.isAssignableFrom(other.getClass())) return new WDD<>(jrdd().union(other.jrdd()));
-		else if (WStream.class.isAssignableFrom(other.getClass()))
-			return new WStream<>(jdstream(((WStream<T>) other).ssc).union(other.jdstream(((WStream<T>) other).ssc)));
+		if (WrappedRDD.class.isAssignableFrom(other.getClass())) return new WrappedRDD<>(jrdd().union(other.jrdd()));
+		else if (WrappedDStream.class.isAssignableFrom(other.getClass()))
+			return new WrappedDStream<>(jdstream(((WrappedDStream<T>) other).ssc).union(other.jdstream(((WrappedDStream<T>) other).ssc)));
 		else throw new IllegalArgumentException();
 	}
 
 	@Override
-	public WDD<T> filter(Function<T, Boolean> func) {
-		return new WDD<T>(jrdd().filter(func).rdd());
+	public WrappedRDD<T> filter(Function<T, Boolean> func) {
+		return new WrappedRDD<T>(jrdd().filter(func).rdd());
 	}
 
 	@Override
-	public <K2, V2> WDD<Tuple2<K2, V2>> mapToPair(PairFunction<T, K2, V2> func) {
-		return new WDD<Tuple2<K2, V2>>(jrdd().mapToPair(func).rdd());
+	public <K2, V2> WrappedRDD<Tuple2<K2, V2>> mapToPair(PairFunction<T, K2, V2> func) {
+		return new WrappedRDD<Tuple2<K2, V2>>(jrdd().mapToPair(func).rdd());
 	}
 
 	@Override
-	public final <T1> WDD<T1> map(Function<T, T1> func) {
-		return new WDD<T1>(jrdd().map(func).rdd());
+	public final <T1> WrappedRDD<T1> map(Function<T, T1> func) {
+		return new WrappedRDD<T1>(jrdd().map(func).rdd());
 	}
 
 	@Override
@@ -152,9 +152,9 @@ public class WDD<T> implements Wrapped<T> {
 	}
 
 	@Override
-	public <S> WDD<T> sortBy(Function<T, S> comp) {
+	public <S> WrappedRDD<T> sortBy(Function<T, S> comp) {
 		JavaRDD<T> rdd = jrdd();
-		return new WDD<T>(rdd.sortBy(comp, true, rdd.getNumPartitions()));
+		return new WrappedRDD<T>(rdd.sortBy(comp, true, rdd.getNumPartitions()));
 	}
 
 	@Override

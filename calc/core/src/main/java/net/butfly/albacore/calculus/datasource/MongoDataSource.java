@@ -9,7 +9,6 @@ import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.InputFormat;
-import org.apache.spark.api.java.JavaPairRDD;
 import org.bson.BSONObject;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -32,6 +31,7 @@ import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
 import net.butfly.albacore.calculus.factor.modifier.Index;
+import net.butfly.albacore.calculus.factor.rds.internal.PairWrapped;
 import net.butfly.albacore.calculus.marshall.MongoMarshaller;
 import net.butfly.albacore.calculus.marshall.bson.BsonMarshaller;
 import net.butfly.albacore.calculus.utils.Reflections;
@@ -87,7 +87,7 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 	}
 
 	@Override
-	public <F extends Factor<F>> JavaPairRDD<Object, F> stocking(Calculator calc, Class<F> factor, DataDetail<F> detail,
+	public <F extends Factor<F>> PairWrapped<Object, F> stocking(Calculator calc, Class<F> factor, DataDetail<F> detail,
 			float expandPartitions, FactorFilter... filters) {
 		debug(() -> "Stocking begin: " + factor.toString() + ", from table: " + detail.tables[0] + ".");
 		Configuration mconf = new Configuration();

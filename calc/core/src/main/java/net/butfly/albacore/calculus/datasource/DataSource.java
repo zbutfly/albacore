@@ -24,21 +24,23 @@ import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
 import net.butfly.albacore.calculus.factor.modifier.Id;
 import net.butfly.albacore.calculus.factor.modifier.Key;
+import net.butfly.albacore.calculus.factor.rds.PairRDS;
+import net.butfly.albacore.calculus.factor.rds.internal.PairWrapped;
 import net.butfly.albacore.calculus.marshall.Marshaller;
 import net.butfly.albacore.calculus.utils.Logable;
 import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
 
 @SuppressWarnings("rawtypes")
-public abstract class DataSource<FactorKey, InputKey, InputValue, OutputKey, OutputValue> implements Serializable, Logable {
+public abstract class DataSource<FK, InK, InV, OutK, OutV> implements Serializable, Logable {
 	private static final long serialVersionUID = -1L;
 	protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 	protected final Factor.Type type;
-	protected final Marshaller<FactorKey, InputKey, InputValue> marshaller;
-	public final Class<InputKey> keyClass;
-	public final Class<InputValue> valueClass;
+	protected final Marshaller<FK, InK, InV> marshaller;
+	public final Class<InK> keyClass;
+	public final Class<InV> valueClass;
 	public final Class<? extends OutputFormat> outputFormatClass;
-	private final Class<? extends InputFormat<InputKey, InputValue>> inputFormatClass;
+	private final Class<? extends InputFormat<InK, InV>> inputFormatClass;
 	protected Configuration outputConfig;
 
 	public final boolean validate;
@@ -52,13 +54,12 @@ public abstract class DataSource<FactorKey, InputKey, InputValue, OutputKey, Out
 		return type;
 	}
 
-	public Marshaller<FactorKey, InputKey, InputValue> marshaller() {
+	public Marshaller<FK, InK, InV> marshaller() {
 		return marshaller;
 	}
 
-	public DataSource(Type type, boolean validate, Marshaller<FactorKey, InputKey, InputValue> marshaller, Class<InputKey> keyClass,
-			Class<InputValue> valueClass, Class<? extends OutputFormat> outputFormatClass,
-			Class<? extends InputFormat<InputKey, InputValue>> inputFormatClass) {
+	public DataSource(Type type, boolean validate, Marshaller<FK, InK, InV> marshaller, Class<InK> keyClass, Class<InV> valueClass,
+			Class<? extends OutputFormat> outputFormatClass, Class<? extends InputFormat<InK, InV>> inputFormatClass) {
 		super();
 		this.type = type;
 		this.validate = validate;
@@ -74,18 +75,18 @@ public abstract class DataSource<FactorKey, InputKey, InputValue, OutputKey, Out
 		return "CalculatorDataSource:" + this.type;
 	}
 
-	public <F extends Factor<F>> JavaPairRDD<FactorKey, F> stocking(Calculator calc, Class<F> factor, DataDetail<F> detail,
-			float expandPartitions, FactorFilter... filters) {
+	public <F extends Factor<F>> PairWrapped<FK, F> stocking(Calculator calc, Class<F> factor, DataDetail<F> detail, float expandPartitions,
+			FactorFilter... filters) {
 		throw new UnsupportedOperationException("Unsupportted stocking mode: " + type + " on " + factor.toString());
 	}
 
 	@Deprecated
-	public <F extends Factor<F>> JavaPairRDD<FactorKey, F> batching(Calculator calc, Class<F> factorClass, long batching, FactorKey offset,
+	public <F extends Factor<F>> PairWrapped<FK, F> batching(Calculator calc, Class<F> factorClass, long batching, FK offset,
 			DataDetail<F> detail, FactorFilter... filters) {
 		throw new UnsupportedOperationException("Unsupportted stocking mode with batching: " + type + " on " + factorClass.toString());
 	}
 
-	public <F extends Factor<F>> JavaPairDStream<FactorKey, F> streaming(Calculator calc, Class<F> factor, DataDetail<F> detail,
+	public <F extends Factor<F>> JavaPairDStream<FK, F> streaming(Calculator calc, Class<F> factor, DataDetail<F> detail,
 			FactorFilter... filters) {
 		throw new UnsupportedOperationException("Unsupportted streaming mode: " + type + " on " + factor.toString());
 	}
@@ -103,7 +104,7 @@ public abstract class DataSource<FactorKey, InputKey, InputValue, OutputKey, Out
 		}
 	}
 
-	public <V> Tuple2<OutputKey, OutputValue> beforeWriting(FactorKey key, V value) {
+	public <V> Tuple2<OutK, OutV> beforeWriting(FK key, V value) {
 		throw new UnsupportedOperationException("Unsupportted saving prepare: " + type);
 	}
 
@@ -120,15 +121,15 @@ public abstract class DataSource<FactorKey, InputKey, InputValue, OutputKey, Out
 		return l.toArray(new FactorFilter[l.size()]);
 	}
 
-	public void save(JavaPairRDD<OutputKey, OutputValue> rdd, DataDetail<?> dd) {
-		trace(() -> "Writing to " + type + ": " + rdd.count());
-		rdd.saveAsNewAPIHadoopFile("", keyClass, valueClass, outputFormatClass, dd.outputConfiguration(this));
+	public void save(JavaPairRDD<OutK, OutV> w, DataDetail<?> dd) {
+		debug(() -> "Writing to " + type + ", size: " + SizeEstimator.estimate(w));
+		w.saveAsNewAPIHadoopFile("", keyClass, valueClass, outputFormatClass, dd.outputConfiguration(this));
 	}
 
 	@SuppressWarnings("unchecked")
-	protected <F extends Factor<F>> JavaPairRDD<FactorKey, F> readByInputFormat(JavaSparkContext sc, Configuration conf, Class<F> factor,
+	protected <F extends Factor<F>> PairWrapped<FK, F> readByInputFormat(JavaSparkContext sc, Configuration conf, Class<F> factor,
 			float expandPartitions) {
-		JavaPairRDD<InputKey, InputValue> raw = sc.newAPIHadoopRDD(conf, inputFormatClass, keyClass, valueClass);
+		JavaPairRDD<InK, InV> raw = sc.newAPIHadoopRDD(conf, inputFormatClass, keyClass, valueClass);
 		debug(() -> "Loading from datasource finished: " + SizeEstimator.estimate(raw) + " bytes (estimate).");
 		Set<Field> ids = marshaller.parseAll(factor, Id.class).keySet();
 		if (ids.size() > 1) error(() -> "Multiple @Id on " + factor.toString() + ", only use one (but randomized one).");
@@ -138,12 +139,13 @@ public abstract class DataSource<FactorKey, InputKey, InputValue, OutputKey, Out
 		final String key = keys.isEmpty() ? null : new ArrayList<>(keys).get(0).getName();
 		if (null != key && null == id)
 			throw new IllegalArgumentException("@Key defined but @Id not defined on " + factor.toString() + ", id will lose in mapping.");
-		final JavaPairRDD<FactorKey, F> results = raw.mapToPair(t -> {
+		JavaPairRDD<FK, F> results = raw.mapToPair(t -> {
 			F v = marshaller.unmarshall(t._2, factor);
-			FactorKey k = null == key ? marshaller.unmarshallId(t._1) : Reflections.get(v, key);
+			FK k = null == key ? marshaller.unmarshallId(t._1) : Reflections.get(v, key);
 			if (null != id) Reflections.set(v, id, marshaller.unmarshallId(t._1));;
 			return new Tuple2<>(k, v);
 		});
-		return (expandPartitions > 1) ? results.repartition((int) Math.ceil(results.getNumPartitions() * expandPartitions)) : results;
+		results = (expandPartitions > 1) ? results.repartition((int) Math.ceil(results.getNumPartitions() * expandPartitions)) : results;
+		return new PairRDS<>(results);
 	}
 }
