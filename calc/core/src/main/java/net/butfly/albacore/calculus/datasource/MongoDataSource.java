@@ -14,6 +14,7 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 
+import com.google.common.base.CaseFormat;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import com.mongodb.client.MongoCollection;
@@ -41,16 +42,12 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 	private static final long serialVersionUID = -2617369621178264387L;
 	final String uri;
 
-	public MongoDataSource(String uri, MongoMarshaller marshaller, String suffix, boolean validate) {
-		super(Type.MONGODB, validate, null == marshaller ? new MongoMarshaller() : marshaller, Object.class, BSONObject.class,
-				MongoOutputFormat.class, MongoInputFormat.class);
+	public MongoDataSource(String uri, String suffix, boolean validate, CaseFormat srcf, CaseFormat dstf) {
+		super(Type.MONGODB, validate, MongoMarshaller.class, Object.class, BSONObject.class, MongoOutputFormat.class,
+				MongoInputFormat.class, srcf, dstf);
 		super.suffix = suffix;
 		this.uri = uri;
 
-	}
-
-	public MongoDataSource(String uri, String suffix, boolean validate) {
-		this(uri, new MongoMarshaller(), suffix, validate);
 	}
 
 	@Override
@@ -87,8 +84,8 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 	}
 
 	@Override
-	public <F extends Factor<F>> PairRDS<Object, F> stocking(Calculator calc, Class<F> factor, DataDetail<F> detail,
-			float expandPartitions, FactorFilter... filters) {
+	public <F extends Factor<F>> PairRDS<Object, F> stocking(Calculator calc, Class<F> factor, DataDetail<F> detail, float expandPartitions,
+			FactorFilter... filters) {
 		debug(() -> "Stocking begin: " + factor.toString() + ", from table: " + detail.tables[0] + ".");
 		Configuration mconf = new Configuration();
 		mconf.setClass(MongoConfigUtil.JOB_INPUT_FORMAT, MongoInputFormat.class, InputFormat.class);

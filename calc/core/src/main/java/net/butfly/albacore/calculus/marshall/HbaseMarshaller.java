@@ -17,10 +17,15 @@ import com.google.common.base.Defaults;
 import com.google.common.base.Joiner;
 
 import net.butfly.albacore.calculus.datasource.HbaseColumnFamily;
+import net.butfly.albacore.calculus.lambda.Func;
 import net.butfly.albacore.calculus.utils.Reflections;
 
 public class HbaseMarshaller extends Marshaller<byte[], ImmutableBytesWritable, Result> {
 	private static final long serialVersionUID = -4529825710243214685L;
+
+	public HbaseMarshaller(Func<String, String> mapping) {
+		super(mapping);
+	}
 
 	private String[] rows(Result result) {
 		List<String> rows = new ArrayList<>();
@@ -53,7 +58,7 @@ public class HbaseMarshaller extends Marshaller<byte[], ImmutableBytesWritable, 
 	}
 
 	@Override
-	public String parseQualifier(Field f) {
+	public final String parseQualifier(Field f) {
 		String col = super.parseQualifier(f);
 		Class<?> to = f.getDeclaringClass();
 		// XXX: field in parent class could not found annotation on sub-class.

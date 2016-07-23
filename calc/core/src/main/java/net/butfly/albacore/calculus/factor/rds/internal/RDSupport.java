@@ -67,4 +67,9 @@ public interface RDSupport {
 	static <T> ClassTag<T> tag() {
 		return (ClassTag<T>) ManifestFactory.AnyRef();
 	}
+
+	@SuppressWarnings("unchecked")
+	static <T> ClassTag<T> tag(Class<T> clazz) {
+		return (ClassTag<T>) ManifestFactory.classType(clazz);
+	}
 }

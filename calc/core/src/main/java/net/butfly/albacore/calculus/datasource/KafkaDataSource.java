@@ -10,6 +10,8 @@ import org.apache.spark.storage.StorageLevel;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.kafka.KafkaUtils;
 
+import com.google.common.base.CaseFormat;
+
 import kafka.serializer.DefaultDecoder;
 import kafka.serializer.StringDecoder;
 import net.butfly.albacore.calculus.Calculator;
@@ -26,10 +28,9 @@ public class KafkaDataSource extends DataSource<String, String, byte[], Void, Vo
 	String group;
 	int topicPartitions;
 
-	public KafkaDataSource(String servers, String root, int topicPartitions, String group, KafkaMarshaller marshaller) {
+	public KafkaDataSource(String servers, String root, int topicPartitions, String group, CaseFormat srcf, CaseFormat dstf) {
 		// TODO: customize topic partitions map in configuration.
-		super(Type.KAFKA, false, null == marshaller ? new KafkaMarshaller() : marshaller, String.class, byte[].class,
-				NullOutputFormat.class, null);
+		super(Type.KAFKA, false, KafkaMarshaller.class, String.class, byte[].class, NullOutputFormat.class, null, srcf, dstf);
 		int pos = servers.indexOf('/');
 		if (root == null && pos >= 0) {
 			this.servers = servers.substring(0, pos);
@@ -40,10 +41,6 @@ public class KafkaDataSource extends DataSource<String, String, byte[], Void, Vo
 		}
 		this.group = group;
 		this.topicPartitions = topicPartitions;
-	}
-
-	public KafkaDataSource(String servers, String root, int topicPartitions, String group) {
-		this(servers, root, topicPartitions, group, new KafkaMarshaller());
 	}
 
 	@Override
@@ -90,7 +87,7 @@ public class KafkaDataSource extends DataSource<String, String, byte[], Void, Vo
 			kafka = KafkaUtils.createStream(calc.ssc, String.class, byte[].class, StringDecoder.class, DefaultDecoder.class, params,
 					topicsMap, StorageLevel.MEMORY_ONLY());
 		}
-		return kafka.mapToPair((final Tuple2<String, byte[]> t) -> new Tuple2<String, F>(marshaller.unmarshallId(t._1), marshaller
-				.unmarshall(t._2, factor)));
+		return kafka.mapToPair((final Tuple2<String, byte[]> t) -> new Tuple2<String, F>(marshaller.unmarshallId(t._1),
+				marshaller.unmarshall(t._2, factor)));
 	}
 }

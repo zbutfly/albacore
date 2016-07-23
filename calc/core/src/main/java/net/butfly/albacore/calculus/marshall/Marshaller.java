@@ -13,13 +13,35 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.CaseFormat;
 
+import net.butfly.albacore.calculus.lambda.Func;
 import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
 
 @SuppressWarnings("unchecked")
 public class Marshaller<FK, VK, VV> implements Serializable {
 	private static final long serialVersionUID = 6678021328832491260L;
+	private static final CaseFormat DEFAULT_SRC_FORMAT = CaseFormat.LOWER_CAMEL;
+	private static final CaseFormat DEFAULT_DST_FORMAT = CaseFormat.UPPER_UNDERSCORE;
+
 	protected final Logger logger = LoggerFactory.getLogger(this.getClass());
+	private final Func<String, String> mapping;
+
+	public Marshaller() {
+		this(s -> DEFAULT_SRC_FORMAT.to(DEFAULT_DST_FORMAT, s));
+	}
+
+	public Marshaller(CaseFormat dstFormat) {
+		this(s -> DEFAULT_SRC_FORMAT.to(dstFormat, s));
+	}
+
+	public Marshaller(CaseFormat srcFormat, CaseFormat dstFormat) {
+		this(s -> srcFormat.to(dstFormat, s));
+	}
+
+	public Marshaller(Func<String, String> mapping) {
+		super();
+		this.mapping = mapping;
+	}
 
 	public FK unmarshallId(VK id) {
 		return null == id ? null : (FK) id;
@@ -43,18 +65,17 @@ public class Marshaller<FK, VK, VV> implements Serializable {
 
 	public String parseQualifier(Field f) {
 		Reflections.noneNull("", f);
-		return f.isAnnotationPresent(JsonProperty.class) ? f.getAnnotation(JsonProperty.class).value()
-				: CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, f.getName());
+		return f.isAnnotationPresent(JsonProperty.class) ? f.getAnnotation(JsonProperty.class).value() : mapping.call(f.getName());
 	}
 
-	public <V> Tuple2<Field, ? extends Annotation> parse(Class<V> c, Class<? extends Annotation>... annotation) {
+	public static <V> Tuple2<Field, ? extends Annotation> parse(Class<V> c, Class<? extends Annotation>... annotation) {
 		for (Field f : Reflections.getDeclaredFields(c))
 			for (Class<? extends Annotation> a : annotation)
 				if (f.isAnnotationPresent(a)) return new Tuple2<>(f, f.getAnnotation(a));
 		return null;
 	}
 
-	public <V> Map<Field, Annotation> parseAll(Class<V> c, Class<? extends Annotation>... annotation) {
+	public static <V> Map<Field, Annotation> parseAll(Class<V> c, Class<? extends Annotation>... annotation) {
 		Map<Field, Annotation> fs = new HashMap<>();
 		for (Field f : Reflections.getDeclaredFields(c))
 			for (Class<? extends Annotation> a : annotation)

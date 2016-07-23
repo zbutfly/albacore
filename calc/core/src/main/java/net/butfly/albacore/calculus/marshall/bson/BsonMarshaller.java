@@ -37,10 +37,20 @@ import com.mongodb.DBRef;
 import com.mongodb.DefaultDBEncoder;
 import com.mongodb.LazyDBObject;
 
+import net.butfly.albacore.calculus.lambda.Func;
 import net.butfly.albacore.calculus.marshall.Marshaller;
 
 public abstract class BsonMarshaller<FK, VK, VV> extends Marshaller<FK, VK, VV> {
 	private static final long serialVersionUID = -7385678674433019238L;
+
+	public BsonMarshaller() {
+		super();
+	}
+
+	public BsonMarshaller(Func<String, String> mapping) {
+		super(mapping);
+	}
+
 	public static ObjectMapper bsoner = new ObjectMapper(MongoBsonFactory.createFactory())
 			.setPropertyNamingStrategy(new UpperCaseWithUnderscoresStrategy()).disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 			.disable(MapperFeature.USE_GETTERS_AS_SETTERS).disable(SerializationFeature.WRITE_NULL_MAP_VALUES)

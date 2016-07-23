@@ -1,7 +1,9 @@
 package net.butfly.albacore.calculus.factor.rds.internal;
 
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -15,8 +17,8 @@ import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.api.java.function.VoidFunction2;
 import org.apache.spark.rdd.RDD;
-import org.apache.spark.sql.DataFrame;
-import org.apache.spark.sql.Row;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Encoders;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.storage.StorageLevel;
 import org.apache.spark.streaming.StreamingContext;
@@ -29,7 +31,7 @@ import net.butfly.albacore.calculus.datasource.DataDetail;
 import net.butfly.albacore.calculus.datasource.DataSource;
 import net.butfly.albacore.calculus.factor.modifier.Key;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
-import net.butfly.albacore.calculus.marshall.RowMarshaller;
+import net.butfly.albacore.calculus.marshall.Marshaller;
 import net.butfly.albacore.calculus.streaming.RDDDStream;
 import net.butfly.albacore.calculus.streaming.RDDDStream.Mechanism;
 import net.butfly.albacore.calculus.utils.Reflections;
@@ -42,42 +44,32 @@ import scala.runtime.AbstractFunction1;
  * 
  * @author butfly
  *
- * @param <Row>
  */
-@SuppressWarnings("unchecked")
-public class WrappedDataFrame<K, V> implements PairWrapped<K, V> {
+public class WrappedDataset<K, V> implements PairWrapped<K, V> {
 	private static final long serialVersionUID = 3614737214835144193L;
-	final private Class<K> kClass;
-	final private Class<V> vClass;
-	final protected transient DataFrame frame;
-	private final RowMarshaller marshaller;
+	final protected transient Dataset<V> dataset;
 
-	public WrappedDataFrame(DataFrame frame, RowMarshaller marshaller, Class<V> vClass) {
-		this.marshaller = marshaller;
-		this.kClass = (Class<K>) marshaller.parse(vClass, Key.class)._1.getType();
-		this.vClass = vClass;
-		this.frame = frame;
+	public WrappedDataset(Dataset<V> dataset) {
+		this.dataset = dataset;
 	}
 
-	public WrappedDataFrame(SQLContext ssc, RowMarshaller marshaller, RDD<V> rdd) {
-		this.marshaller = marshaller;
-		vClass = (Class<V>) rdd.elementClassTag().runtimeClass();
-		kClass = (Class<K>) marshaller.parse(vClass, Key.class)._1.getType();
-		frame = ssc.createDataFrame(rdd, vClass);
+	@SuppressWarnings("unchecked")
+	public WrappedDataset(SQLContext ssc, RDD<V> rdd) {
+		dataset = ssc.createDataset(rdd, Encoders.kryo(rdd.elementClassTag()));
 	}
 
-	public WrappedDataFrame(SQLContext ssc, RowMarshaller marshaller, JavaRDDLike<V, ?> rdd) {
-		this(ssc, marshaller, rdd.rdd());
+	public WrappedDataset(SQLContext ssc, JavaRDDLike<V, ?> rdd) {
+		this(ssc, rdd.rdd());
 	}
 
 	@SafeVarargs
-	public WrappedDataFrame(SQLContext ssc, RowMarshaller marshaller, V... t) {
-		this(ssc, marshaller, Arrays.asList(t));
+	public WrappedDataset(SQLContext ssc, V... t) {
+		this(ssc, Arrays.asList(t));
 	}
 
-	public WrappedDataFrame(SQLContext ssc, RowMarshaller marshaller, List<V> t) {
-		this(ssc, marshaller, ssc.sparkContext().parallelize(JavaConversions.asScalaBuffer(t).seq(),
-				ssc.sparkContext().defaultMinPartitions(), RDSupport.tag()));
+	public WrappedDataset(SQLContext ssc, List<V> t) {
+		this(ssc, ssc.sparkContext().parallelize(JavaConversions.asScalaBuffer(t).seq(), ssc.sparkContext().defaultMinPartitions(),
+				RDSupport.tag()));
 	}
 
 	@Override
@@ -87,32 +79,32 @@ public class WrappedDataFrame<K, V> implements PairWrapped<K, V> {
 
 	@Override
 	public int getNumPartitions() {
-		return frame.rdd().getNumPartitions();
+		return dataset.rdd().getNumPartitions();
 	}
 
 	@Override
-	public WrappedDataFrame<K, V> repartition(float ratio) {
-		return new WrappedDataFrame<K, V>(frame.repartition((int) Math.ceil(rdd().getNumPartitions() * ratio)), marshaller, vClass);
+	public WrappedDataset<K, V> repartition(float ratio) {
+		return new WrappedDataset<K, V>(dataset.repartition((int) Math.ceil(rdd().getNumPartitions() * ratio)));
 	}
 
 	@Override
-	public WrappedDataFrame<K, V> unpersist() {
-		return new WrappedDataFrame<K, V>(frame.unpersist(), marshaller, vClass);
+	public WrappedDataset<K, V> unpersist() {
+		return new WrappedDataset<K, V>(dataset.unpersist());
 	}
 
 	@Override
-	public WrappedDataFrame<K, V> persist() {
-		return new WrappedDataFrame<K, V>(frame.persist(), marshaller, vClass);
+	public WrappedDataset<K, V> persist() {
+		return new WrappedDataset<K, V>(dataset.persist());
 	}
 
 	@Override
-	public WrappedDataFrame<K, V> persist(StorageLevel level) {
+	public WrappedDataset<K, V> persist(StorageLevel level) {
 		return persist();
 	}
 
 	@Override
 	public final boolean isEmpty() {
-		return frame.count() > 0;
+		return dataset.count() > 0;
 	}
 
 	@Override
@@ -129,13 +121,11 @@ public class WrappedDataFrame<K, V> implements PairWrapped<K, V> {
 		jrdd().foreach(consumer);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public PairWrapped<K, V> union(Wrapped<Tuple2<K, V>> other) {
-		if (other instanceof WrappedDataFrame)
-			return new WrappedDataFrame<>(frame.unionAll(((WrappedDataFrame<K, V>) other).frame), marshaller, vClass);
-		else return new WrappedDataFrame<>(
-				frame.unionAll(new WrappedDataFrame<K, V>(frame.sqlContext(), marshaller, mapWithKey(other.jrdd())).frame), marshaller,
-				vClass);
+		if (other instanceof WrappedDataset) return new WrappedDataset<>(dataset.union(((WrappedDataset<K, V>) other).dataset));
+		else return new WrappedDataset<>(dataset.union(new WrappedDataset<K, V>(dataset.sqlContext(), mapWithKey(other.jrdd())).dataset));
 	}
 
 	private static <KK, TT> RDD<TT> mapWithKey(JavaRDD<Tuple2<KK, TT>> jrdd) {
@@ -146,15 +136,14 @@ public class WrappedDataFrame<K, V> implements PairWrapped<K, V> {
 		return jrdd.map(t -> t._2).rdd();
 	}
 
-	// TODO
 	@Override
-	public WrappedDataFrame<K, V> filter(Function<Tuple2<K, V>, Boolean> func) {
-		return new WrappedDataFrame<>(frame.sqlContext(), marshaller, mapWithKey(jrdd().filter(func)));
+	public WrappedDataset<K, V> filter(Function<Tuple2<K, V>, Boolean> func) {
+		return new WrappedDataset<>(dataset.sqlContext(), mapWithKey(jrdd().filter(func)));
 	}
 
 	@Override
 	public <K2, V2> PairWrapped<K2, V2> mapToPair(PairFunction<Tuple2<K, V>, K2, V2> func) {
-		return new WrappedDataFrame<>(frame.sqlContext(), marshaller, mapWithKey(jrdd().mapToPair(func)));
+		return new WrappedDataset<>(dataset.sqlContext(), mapWithKey(jrdd().mapToPair(func)));
 	}
 
 	@Override
@@ -162,17 +151,18 @@ public class WrappedDataFrame<K, V> implements PairWrapped<K, V> {
 		return new WrappedRDD<T1>(jrdd().map(func).rdd());
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public final Tuple2<K, V> first() {
-		Row row = frame.first();
-		return new Tuple2<>((K) marshaller.unmarshallId(row), marshaller.unmarshall(row, vClass));
+		V v = dataset.first();
+		return new Tuple2<>(key(v), v);
 	}
 
 	@Override
 	public Tuple2<K, V> reduce(Function2<Tuple2<K, V>, Tuple2<K, V>, Tuple2<K, V>> func) {
 		return JavaRDD.fromRDD(
-				frame.sqlContext().sparkContext().parallelize(JavaConversions.asScalaBuffer(Arrays.asList(jrdd().reduce(func))).seq(),
-						frame.sqlContext().sparkContext().defaultMinPartitions(), classTag()),
+				dataset.sqlContext().sparkContext().parallelize(JavaConversions.asScalaBuffer(Arrays.asList(jrdd().reduce(func))).seq(),
+						dataset.sqlContext().sparkContext().defaultMinPartitions(), classTag()),
 				classTag()).reduce(func);
 	}
 
@@ -188,12 +178,13 @@ public class WrappedDataFrame<K, V> implements PairWrapped<K, V> {
 
 	@Override
 	public RDD<Tuple2<K, V>> rdd() {
-		return frame.map(new AbstractFunction1<Row, Tuple2<K, V>>() {
+		return dataset.map(new AbstractFunction1<V, Tuple2<K, V>>() {
+			@SuppressWarnings("unchecked")
 			@Override
-			public Tuple2<K, V> apply(Row row) {
-				return new Tuple2<>((K) marshaller.unmarshallId(row), marshaller.unmarshall(row, vClass));
+			public Tuple2<K, V> apply(V v) {
+				return new Tuple2<>(key(v), v);
 			}
-		}, RDSupport.tag());
+		}, Encoders.tuple(Encoders.kryo(k), Encoders.kryo(v)));
 	}
 
 	@Override
@@ -217,15 +208,16 @@ public class WrappedDataFrame<K, V> implements PairWrapped<K, V> {
 		throw new NotImplementedException();
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public Map<K, V> collectAsMap() {
-		return Reflections.transMapping(frame.collectAsList(),
-				row -> new Tuple2<K, V>((K) marshaller.unmarshallId(row), marshaller.unmarshall(row, vClass)));
+		return Reflections.transMapping(dataset.collectAsList(), v -> new Tuple2<K, V>(key(v), v));
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public List<K> collectKeys() {
-		return Reflections.transform(frame.collectAsList(), row -> (K) marshaller.unmarshallId(row));
+		return Reflections.transform(dataset.collectAsList(), v -> key(v));
 	}
 
 	@Override
@@ -328,5 +320,14 @@ public class WrappedDataFrame<K, V> implements PairWrapped<K, V> {
 	public PairWrapped<K, V> repartition(float ratio, boolean rehash) {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	@SuppressWarnings("unchecked")
+	private static <K, V> K key(V v) {
+		try {
+			return null == v ? null : (K) Marshaller.parse(v.getClass(), Key.class)._1.get(v);
+		} catch (IllegalArgumentException | IllegalAccessException e) {
+			return null;
+		}
 	}
 }

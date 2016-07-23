@@ -23,7 +23,6 @@ import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
 import org.apache.hadoop.hbase.protobuf.ProtobufUtil;
 import org.apache.hadoop.hbase.util.Base64;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.CaseFormat;
 
 import net.butfly.albacore.calculus.Calculator;
@@ -40,9 +39,9 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 	private static final long serialVersionUID = 3367501286179801635L;
 	final String configFile;
 
-	public HbaseDataSource(String configFile, HbaseMarshaller marshaller) {
-		super(Type.HBASE, false, null == marshaller ? new HbaseMarshaller() : marshaller, ImmutableBytesWritable.class, Result.class,
-				TableOutputFormat.class, TableInputFormat.class);
+	public HbaseDataSource(String configFile, CaseFormat srcf, CaseFormat dstf) {
+		super(Type.HBASE, false, HbaseMarshaller.class, ImmutableBytesWritable.class, Result.class, TableOutputFormat.class,
+				TableInputFormat.class, srcf, dstf);
 		this.configFile = configFile;
 	}
 
@@ -68,8 +67,7 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 			String dcf = factor.isAnnotationPresent(HbaseColumnFamily.class) ? factor.getAnnotation(HbaseColumnFamily.class).value() : null;
 			families.add(dcf);
 			for (Field f : Reflections.getDeclaredFields(factor)) {
-				String colname = f.isAnnotationPresent(JsonProperty.class) ? f.getAnnotation(JsonProperty.class).value()
-						: CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, f.getName());
+				String colname = marshaller.parseQualifier(f);
 				String colfamily = f.isAnnotationPresent(HbaseColumnFamily.class) ? f.getAnnotation(HbaseColumnFamily.class).value() : dcf;
 				families.add(colfamily);
 				columns.add(colfamily + ":" + colname);
@@ -93,8 +91,8 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 	}
 
 	@Override
-	public <F extends Factor<F>> PairRDS<byte[], F> stocking(Calculator calc, Class<F> factor, DataDetail<F> detail,
-			float expandPartitions, FactorFilter... filters) {
+	public <F extends Factor<F>> PairRDS<byte[], F> stocking(Calculator calc, Class<F> factor, DataDetail<F> detail, float expandPartitions,
+			FactorFilter... filters) {
 		if (calc.debug) filters = enableDebug(filters);
 		debug(() -> "Scaning begin: " + factor.toString() + " from table: " + detail.tables[0] + ".");
 		return readByInputFormat(calc.sc,

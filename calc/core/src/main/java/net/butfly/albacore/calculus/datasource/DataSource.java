@@ -18,6 +18,8 @@ import org.apache.spark.util.SizeEstimator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.CaseFormat;
+
 import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
@@ -27,6 +29,7 @@ import net.butfly.albacore.calculus.factor.modifier.Key;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.factor.rds.internal.PairWrapped;
 import net.butfly.albacore.calculus.factor.rds.internal.WrappedRDD;
+import net.butfly.albacore.calculus.lambda.Func;
 import net.butfly.albacore.calculus.marshall.Marshaller;
 import net.butfly.albacore.calculus.utils.Logable;
 import net.butfly.albacore.calculus.utils.Reflections;
@@ -59,12 +62,12 @@ public abstract class DataSource<FK, InK, InV, OutK, OutV> implements Serializab
 		return marshaller;
 	}
 
-	public DataSource(Type type, boolean validate, Marshaller<FK, InK, InV> marshaller, Class<InK> keyClass, Class<InV> valueClass,
-			Class<? extends OutputFormat> outputFormatClass, Class<? extends InputFormat<InK, InV>> inputFormatClass) {
-		super();
+	public DataSource(Type type, boolean validate, Class<? extends Marshaller<FK, InK, InV>> marshaller, Class<InK> keyClass,
+			Class<InV> valueClass, Class<? extends OutputFormat> outputFormatClass, Class<? extends InputFormat<InK, InV>> inputFormatClass,
+			CaseFormat srcFormat, CaseFormat dstFormat) {
 		this.type = type;
 		this.validate = validate;
-		this.marshaller = marshaller;
+		this.marshaller = Reflections.construct(marshaller, (Func<String, String>) s -> srcFormat.to(dstFormat, s));
 		this.keyClass = keyClass;
 		this.valueClass = valueClass;
 		this.outputFormatClass = outputFormatClass;

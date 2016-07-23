@@ -24,6 +24,8 @@ import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.CaseFormat;
+
 import net.butfly.albacore.calculus.datasource.ConstDataSource;
 import net.butfly.albacore.calculus.datasource.DataSource;
 import net.butfly.albacore.calculus.datasource.DataSource.DataSources;
@@ -33,11 +35,7 @@ import net.butfly.albacore.calculus.datasource.KafkaDataSource;
 import net.butfly.albacore.calculus.datasource.MongoDataSource;
 import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.factor.Factors;
-import net.butfly.albacore.calculus.marshall.HbaseMarshaller;
 import net.butfly.albacore.calculus.marshall.RowMarshaller;
-import net.butfly.albacore.calculus.marshall.KafkaMarshaller;
-import net.butfly.albacore.calculus.marshall.Marshaller;
-import net.butfly.albacore.calculus.marshall.MongoMarshaller;
 import net.butfly.albacore.calculus.utils.Logable;
 import net.butfly.albacore.calculus.utils.Reflections;
 
@@ -154,32 +152,32 @@ public class Calculator implements Logable, Serializable {
 	private void parseDatasources(Map<String, Properties> dsprops) {
 		for (String dsid : dsprops.keySet()) {
 			Properties dbprops = dsprops.get(dsid);
-			Marshaller<?, ?, ?> m;
-			try {
-				m = (Marshaller<?, ?, ?>) Class.forName(dbprops.getProperty("marshaller")).newInstance();
-			} catch (Exception e) {
-				m = null;
-			}
 			Type type = Type.valueOf(dbprops.getProperty("type"));
+			CaseFormat srcf = dbprops.containsKey("field.name.format.src") ? CaseFormat.LOWER_CAMEL
+					: CaseFormat.valueOf(dbprops.getProperty("field.name.format.src"));
+			CaseFormat dstf = dbprops.containsKey("field.name.format.dst") ? CaseFormat.UPPER_UNDERSCORE
+					: CaseFormat.valueOf(dbprops.getProperty("field.name.format.dst"));
 			DataSource<?, ?, ?, ?, ?> ds = null;
 			switch (type) {
 			case HIVE:
-				ds = new HiveDataSource(dbprops.getProperty("schema"), (RowMarshaller) m, this.sc);
+				ds = new HiveDataSource(dbprops.getProperty("schema"), this.sc, srcf, dstf);
+				// XXX: Tweak!!
+				RowMarshaller.DEFAULT_WITH = new RowMarshaller(s -> srcf.to(dstf, s));
 				break;
 			case CONSTAND_TO_CONSOLE:
-				ds = new ConstDataSource(dbprops.getProperty("values").split(","));
+				ds = new ConstDataSource(dbprops.getProperty("values").split(","), srcf, dstf);
 				break;
 			case HBASE:
-				ds = new HbaseDataSource(dbprops.getProperty("config", "hbase-site.xml"), (HbaseMarshaller) m);
+				ds = new HbaseDataSource(dbprops.getProperty("config", "hbase-site.xml"), srcf, dstf);
 				break;
 			case MONGODB:
-				ds = new MongoDataSource(dbprops.getProperty("uri"), (MongoMarshaller) m, dbprops.getProperty("output.suffix"),
-						Boolean.parseBoolean(dbprops.getProperty("validate", "true")));
+				ds = new MongoDataSource(dbprops.getProperty("uri"), dbprops.getProperty("output.suffix"),
+						Boolean.parseBoolean(dbprops.getProperty("validate", "true")), srcf, dstf);
 				break;
 			case KAFKA:
 				ds = new KafkaDataSource(dbprops.getProperty("servers"), dbprops.getProperty("root"),
 						Integer.parseInt(dbprops.getProperty("topic.partitions", "1")),
-						debug ? appname + UUID.randomUUID().toString() : appname, (KafkaMarshaller) m);
+						debug ? appname + UUID.randomUUID().toString() : appname, srcf, dstf);
 				break;
 			default:
 				warn(() -> "Unsupportted type: " + type);
