@@ -49,7 +49,7 @@ public class ElasticDataSource extends DataSource<String, String, Map, String, O
 	public <V> Tuple2<String, Object> beforeWriting(String key, V value) {
 		if (null == value) return null;
 		@SuppressWarnings("unchecked")
-		Field f = marshaller.parse(value.getClass(), Id.class)._1();
+		Field f = Marshaller.parse(value.getClass(), Id.class)._1();
 		if (null != f) {
 			f.setAccessible(true);
 			try {
@@ -65,7 +65,7 @@ public class ElasticDataSource extends DataSource<String, String, Map, String, O
 	@Override
 	public void save(JavaPairRDD<String, Object> rdd, DataDetail<?> dd) {
 		java.util.Map<String, String> m = new HashMap<>();
-		m.put("es.mapping.id", marshaller.parseQualifier(marshaller.parse(dd.factorClass, Id.class)._1));
+		m.put("es.mapping.id", marshaller.parseQualifier(Marshaller.parse(dd.factorClass, Id.class)._1));
 		EsSpark.saveToEs(rdd.values().rdd(), dd.tables[0], JavaConverters.asScalaMapConverter(m).asScala());
 	}
 

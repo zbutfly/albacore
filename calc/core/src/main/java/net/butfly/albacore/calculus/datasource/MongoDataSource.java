@@ -33,6 +33,7 @@ import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
 import net.butfly.albacore.calculus.factor.modifier.Index;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
+import net.butfly.albacore.calculus.marshall.Marshaller;
 import net.butfly.albacore.calculus.marshall.MongoMarshaller;
 import net.butfly.albacore.calculus.marshall.bson.BsonMarshaller;
 import net.butfly.albacore.calculus.utils.Reflections;
@@ -69,7 +70,7 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 				MongoDatabase db = mclient.getDatabase(muri.getDatabase());
 				db.createCollection(detail.tables[0]);
 				MongoCollection<Document> col = db.getCollection(detail.tables[0]);
-				for (Map.Entry<Field, ? extends Annotation> f : marshaller.parseAll(factor, Index.class).entrySet()) {
+				for (Map.Entry<Field, ? extends Annotation> f : Marshaller.parseAll(factor, Index.class).entrySet()) {
 					Index idx = (Index) f.getValue();
 					Object v = 1;
 					if (idx.hashed()) v = "hashed";

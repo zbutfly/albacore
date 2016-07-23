@@ -29,6 +29,7 @@ import net.butfly.albacore.calculus.datasource.DataDetail;
 import net.butfly.albacore.calculus.datasource.DataSource;
 import net.butfly.albacore.calculus.factor.modifier.Key;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
+import net.butfly.albacore.calculus.marshall.Marshaller;
 import net.butfly.albacore.calculus.marshall.RowMarshaller;
 import net.butfly.albacore.calculus.streaming.RDDDStream;
 import net.butfly.albacore.calculus.streaming.RDDDStream.Mechanism;
@@ -54,7 +55,7 @@ public class WrappedDataFrame<K, V> implements PairWrapped<K, V> {
 
 	public WrappedDataFrame(DataFrame frame, RowMarshaller marshaller, Class<V> vClass) {
 		this.marshaller = marshaller;
-		this.kClass = (Class<K>) marshaller.parse(vClass, Key.class)._1.getType();
+		this.kClass = (Class<K>) Marshaller.parse(vClass, Key.class)._1.getType();
 		this.vClass = vClass;
 		this.frame = frame;
 	}
@@ -62,7 +63,7 @@ public class WrappedDataFrame<K, V> implements PairWrapped<K, V> {
 	public WrappedDataFrame(SQLContext ssc, RowMarshaller marshaller, RDD<V> rdd) {
 		this.marshaller = marshaller;
 		vClass = (Class<V>) rdd.elementClassTag().runtimeClass();
-		kClass = (Class<K>) marshaller.parse(vClass, Key.class)._1.getType();
+		kClass = (Class<K>) Marshaller.parse(vClass, Key.class)._1.getType();
 		frame = ssc.createDataFrame(rdd, vClass);
 	}
 

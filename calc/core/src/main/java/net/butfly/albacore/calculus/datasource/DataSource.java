@@ -135,10 +135,10 @@ public abstract class DataSource<FK, InK, InV, OutK, OutV> implements Serializab
 			float expandPartitions) {
 		JavaPairRDD<InK, InV> raw = sc.newAPIHadoopRDD(conf, inputFormatClass, keyClass, valueClass);
 		debug(() -> "Loading from datasource finished: " + SizeEstimator.estimate(raw) + " bytes (estimate).");
-		Set<Field> ids = marshaller.parseAll(factor, Id.class).keySet();
+		Set<Field> ids = Marshaller.parseAll(factor, Id.class).keySet();
 		if (ids.size() > 1) error(() -> "Multiple @Id on " + factor.toString() + ", only use one (but randomized one).");
 		final String id = ids.isEmpty() ? null : new ArrayList<>(ids).get(0).getName();
-		Set<Field> keys = marshaller.parseAll(factor, Key.class).keySet();
+		Set<Field> keys = Marshaller.parseAll(factor, Key.class).keySet();
 		if (keys.size() > 1) error(() -> "Multiple @Key on " + factor.toString() + ", only use one (but randomized one).");
 		final String key = keys.isEmpty() ? null : new ArrayList<>(keys).get(0).getName();
 		if (null != key && null == id)

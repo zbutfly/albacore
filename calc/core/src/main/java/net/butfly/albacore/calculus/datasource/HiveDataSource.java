@@ -15,6 +15,7 @@ import net.butfly.albacore.calculus.factor.filter.HiveBuilder;
 import net.butfly.albacore.calculus.factor.modifier.Key;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.factor.rds.internal.WrappedDataFrame;
+import net.butfly.albacore.calculus.marshall.Marshaller;
 import net.butfly.albacore.calculus.marshall.RowMarshaller;
 
 public class HiveDataSource extends DataSource<Object, Row, Row, Object, Row> {
@@ -47,7 +48,7 @@ public class HiveDataSource extends DataSource<Object, Row, Row, Object, Row> {
 		debug(() -> "Hive HQL parsed into: \n\t" + hqlstr);
 		DataFrame df = this.context.sql(hqlstr);
 
-		String key = ((RowMarshaller) marshaller).parseQualifier(marshaller.parse(factor, Key.class)._1);
+		String key = ((RowMarshaller) marshaller).parseQualifier(Marshaller.parse(factor, Key.class)._1);
 		df = df.repartition(df.col(key));
 		if (expandPartitions > 1) df = df.repartition((int) Math.ceil(df.javaRDD().getNumPartitions() * expandPartitions));
 		// RDD<Tuple2<Object, F>> rdd = df.mapPartitions(new
