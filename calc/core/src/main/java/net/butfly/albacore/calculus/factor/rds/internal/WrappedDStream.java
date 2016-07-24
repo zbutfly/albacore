@@ -1,7 +1,6 @@
 package net.butfly.albacore.calculus.factor.rds.internal;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import org.apache.spark.api.java.JavaRDD;
@@ -16,7 +15,6 @@ import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaDStreamLike;
 import org.apache.spark.streaming.dstream.DStream;
 
-import net.butfly.albacore.calculus.Mode;
 import net.butfly.albacore.calculus.streaming.RDDDStream;
 import net.butfly.albacore.calculus.streaming.RDDDStream.Mechanism;
 import scala.Tuple2;
@@ -43,13 +41,8 @@ public class WrappedDStream<T> implements Wrapped<T> {
 	}
 
 	@Override
-	public Mode mode() {
-		return Mode.STREAMING;
-	}
-
-	@Override
 	public int getNumPartitions() {
-		return -1;
+		return 1;
 	}
 
 	@Override
@@ -96,7 +89,8 @@ public class WrappedDStream<T> implements Wrapped<T> {
 	public Wrapped<T> union(Wrapped<T> other) {
 		if (WrappedRDD.class.isAssignableFrom(other.getClass()))
 			return new WrappedDStream<T>(dstream.union(RDDDStream.stream(ssc, Mechanism.CONST, () -> other.jrdd()).dstream()));
-		else if (WrappedDStream.class.isAssignableFrom(other.getClass())) return new WrappedDStream<T>(dstream.union(((WrappedDStream<T>) other).dstream));
+		else if (WrappedDStream.class.isAssignableFrom(other.getClass()))
+			return new WrappedDStream<T>(dstream.union(((WrappedDStream<T>) other).dstream));
 		else throw new IllegalArgumentException();
 	}
 
@@ -123,12 +117,6 @@ public class WrappedDStream<T> implements Wrapped<T> {
 	@Override
 	public <U> WrappedRDD<Tuple2<U, Iterable<T>>> groupBy(Function<T, U> func, int numPartitions) {
 		return new WrappedRDD<Tuple2<U, Iterable<T>>>(jrdd().groupBy(func, numPartitions));
-	}
-
-	@Override
-	public final T first() {
-		Collection<RDD<T>> rdds = rdds();
-		return rdds.isEmpty() ? null : rdds.iterator().next().first();
 	}
 
 	@Override
@@ -161,14 +149,9 @@ public class WrappedDStream<T> implements Wrapped<T> {
 
 	@Override
 	public RDD<T> rdd() {
-		return RDSupport.union(rdds());
-	}
-
-	@Override
-	public Collection<RDD<T>> rdds() {
-		List<RDD<T>> r = new ArrayList<>();
-		foreachRDD((final JavaRDD<T> rdd) -> r.add(rdd.rdd()));
-		return r;
+		List<RDD<T>> all = new ArrayList<>();
+		foreachRDD(r -> all.add(r.rdd()));
+		return RDSupport.union(all);
 	}
 
 	@Override

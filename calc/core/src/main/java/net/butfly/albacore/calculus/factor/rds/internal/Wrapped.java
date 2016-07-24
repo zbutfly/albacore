@@ -1,7 +1,6 @@
 package net.butfly.albacore.calculus.factor.rds.internal;
 
 import java.io.Serializable;
-import java.util.Collection;
 import java.util.List;
 
 import org.apache.spark.api.java.JavaRDD;
@@ -15,7 +14,6 @@ import org.apache.spark.streaming.StreamingContext;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.dstream.DStream;
 
-import net.butfly.albacore.calculus.Mode;
 import net.butfly.albacore.calculus.utils.Logable;
 import scala.Tuple2;
 import scala.reflect.ClassTag;
@@ -28,85 +26,85 @@ import scala.reflect.ClassTag;
  * @param <T>
  */
 public interface Wrapped<T> extends Serializable, Logable {
-	public default boolean isEmpty() {
+	default boolean isStream() {
+		return wrapped() instanceof DStream;
+	}
+
+	default boolean isEmpty() {
 		return this.wrapped().isEmpty();
 	}
 
-	public default int getNumPartitions() {
+	default int getNumPartitions() {
 		return wrapped().getNumPartitions();
 	}
 
-	public default long count() {
+	default long count() {
 		return wrapped().count();
 	}
 
-	public void foreachRDD(VoidFunction<JavaRDD<T>> consumer);
+	void foreachRDD(VoidFunction<JavaRDD<T>> consumer);
 
-	public void foreach(VoidFunction<T> consumer);
+	void foreach(VoidFunction<T> consumer);
 
-	public T first();
+	default T first() {
+		return rdd().first();
+	}
 
-	public default List<T> collect() {
+	default List<T> collect() {
 		return jrdd().collect();
 	};
 
-	public default ClassTag<T> classTag() {
+	default ClassTag<T> classTag() {
 		return RDSupport.tag();
 	}
 
-	public T reduce(Function2<T, T, T> func);
+	T reduce(Function2<T, T, T> func);
 
-	public DStream<T> dstream(StreamingContext ssc);
+	DStream<T> dstream(StreamingContext ssc);
 
-	public RDD<T> rdd();
+	RDD<T> rdd();
 
-	public Collection<RDD<T>> rdds();
+	Wrapped<T> repartition(float ratio);
 
-	public Wrapped<T> repartition(float ratio);
+	Wrapped<T> unpersist();
 
-	public Wrapped<T> unpersist();
+	Wrapped<T> persist();
 
-	public Wrapped<T> persist();
+	Wrapped<T> persist(StorageLevel level);
 
-	public Wrapped<T> persist(StorageLevel level);
+	Wrapped<T> union(Wrapped<T> other);
 
-	public Wrapped<T> union(Wrapped<T> other);
+	Wrapped<T> filter(Function<T, Boolean> func);
 
-	public Wrapped<T> filter(Function<T, Boolean> func);
+	<K2, V2> Wrapped<Tuple2<K2, V2>> mapToPair(PairFunction<T, K2, V2> func);
 
-	public <K2, V2> Wrapped<Tuple2<K2, V2>> mapToPair(PairFunction<T, K2, V2> func);
+	<T1> Wrapped<T1> map(Function<T, T1> func);
 
-	public <T1> Wrapped<T1> map(Function<T, T1> func);
-
-	public default <U> WrappedRDD<Tuple2<U, Iterable<T>>> groupBy(Function<T, U> func) {
+	@Deprecated
+	default <U> WrappedRDD<Tuple2<U, Iterable<T>>> groupBy(Function<T, U> func) {
 		return new WrappedRDD<Tuple2<U, Iterable<T>>>(jrdd().groupBy(func::call));
 	}
 
-	public default <U> WrappedRDD<Tuple2<U, Iterable<T>>> groupBy(Function<T, U> func, int numPartitions) {
+	@Deprecated
+	default <U> WrappedRDD<Tuple2<U, Iterable<T>>> groupBy(Function<T, U> func, int numPartitions) {
 		return new WrappedRDD<Tuple2<U, Iterable<T>>>(jrdd().groupBy(func::call, numPartitions));
 	}
 
-	public <S> Wrapped<T> sortBy(Function<T, S> comp);
-
-	Mode mode();
+	<S> Wrapped<T> sortBy(Function<T, S> comp);
 
 	Wrapped<T> wrapped();
 
-	@SuppressWarnings("rawtypes")
-	static StreamingContext ssc(Wrapped... wrapped) {
-		for (Wrapped w : wrapped) {
-			Wrapped ed = w.wrapped();
-			if (ed.mode() == Mode.STREAMING) return ((WrappedDStream) ed).ssc;
-		}
+	static StreamingContext streaming(Wrapped<?>... wrapped) {
+		for (Wrapped<?> w : wrapped)
+			if (w.isStream()) return ((WrappedDStream<?>) w.wrapped()).ssc;
 		return null;
-
 	}
 
-	public default JavaRDD<T> jrdd() {
+	default JavaRDD<T> jrdd() {
 		return rdd().toJavaRDD();
 	}
 
-	public default JavaDStream<T> jdstream(StreamingContext ssc) {
+	default JavaDStream<T> jdstream(StreamingContext ssc) {
 		return JavaDStream.fromDStream(dstream(ssc), classTag());
 	}
 }

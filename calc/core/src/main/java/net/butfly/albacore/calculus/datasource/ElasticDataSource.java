@@ -1,6 +1,5 @@
 package net.butfly.albacore.calculus.datasource;
 
-import java.lang.reflect.Field;
 import java.util.HashMap;
 
 import org.apache.hadoop.mapreduce.OutputFormat;
@@ -13,12 +12,13 @@ import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
-import net.butfly.albacore.calculus.factor.modifier.Id;
+import net.butfly.albacore.calculus.factor.modifier.DBIdentity;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.factor.rds.internal.RDSupport;
 import net.butfly.albacore.calculus.factor.rds.internal.WrappedRDD;
 import net.butfly.albacore.calculus.lambda.Func;
 import net.butfly.albacore.calculus.marshall.Marshaller;
+import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
 import scala.collection.JavaConverters;
 import scala.collection.Map;
@@ -48,24 +48,14 @@ public class ElasticDataSource extends DataSource<String, String, Map, String, O
 	@Override
 	public <V> Tuple2<String, Object> beforeWriting(String key, V value) {
 		if (null == value) return null;
-		@SuppressWarnings("unchecked")
-		Field f = Marshaller.parse(value.getClass(), Id.class)._1();
-		if (null != f) {
-			f.setAccessible(true);
-			try {
-				f.set(value, key);
-			} catch (IllegalArgumentException | IllegalAccessException e) {
-				error(() -> "Error in id setting", e);
-			}
-		}
+		Reflections.set(value, Marshaller.parseFirstOfAny(value.getClass(), DBIdentity.class)._1, key);
 		return new Tuple2<>(null, value);
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public void save(JavaPairRDD<String, Object> rdd, DataDetail<?> dd) {
 		java.util.Map<String, String> m = new HashMap<>();
-		m.put("es.mapping.id", marshaller.parseQualifier(Marshaller.parse(dd.factorClass, Id.class)._1));
+		m.put("es.mapping.id", marshaller.parseQualifier(Marshaller.parseFirstOfAny(dd.factorClass, DBIdentity.class)._1));
 		EsSpark.saveToEs(rdd.values().rdd(), dd.tables[0], JavaConverters.asScalaMapConverter(m).asScala());
 	}
 

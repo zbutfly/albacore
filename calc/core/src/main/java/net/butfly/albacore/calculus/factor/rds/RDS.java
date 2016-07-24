@@ -1,7 +1,5 @@
 package net.butfly.albacore.calculus.factor.rds;
 
-import java.util.Collection;
-
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
@@ -13,9 +11,8 @@ import org.apache.spark.storage.StorageLevel;
 import org.apache.spark.streaming.StreamingContext;
 import org.apache.spark.streaming.dstream.DStream;
 
-import net.butfly.albacore.calculus.Mode;
-import net.butfly.albacore.calculus.factor.rds.internal.WrappedRDD;
 import net.butfly.albacore.calculus.factor.rds.internal.Wrapped;
+import net.butfly.albacore.calculus.factor.rds.internal.WrappedRDD;
 import scala.Tuple2;
 
 /**
@@ -39,11 +36,6 @@ public class RDS<T> implements Wrapped<T> {
 	@SafeVarargs
 	public RDS(JavaSparkContext sc, T... t) {
 		this.wrapped = new WrappedRDD<T>(sc.sc(), t);
-	}
-
-	@Override
-	public Mode mode() {
-		return wrapped().mode();
 	}
 
 	@Override
@@ -77,11 +69,6 @@ public class RDS<T> implements Wrapped<T> {
 	@Override
 	public RDD<T> rdd() {
 		return wrapped().rdd();
-	}
-
-	@Override
-	public Collection<RDD<T>> rdds() {
-		return wrapped().rdds();
 	}
 
 	@Override
@@ -127,10 +114,5 @@ public class RDS<T> implements Wrapped<T> {
 	@Override
 	public <S> RDS<T> sortBy(Function<T, S> comp) {
 		return new RDS<>(wrapped().sortBy(comp));
-	}
-
-	@Override
-	public T first() {
-		return wrapped().first();
 	}
 }

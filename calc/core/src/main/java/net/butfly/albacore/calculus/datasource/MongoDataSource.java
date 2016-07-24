@@ -31,7 +31,7 @@ import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
-import net.butfly.albacore.calculus.factor.modifier.Index;
+import net.butfly.albacore.calculus.factor.modifier.DBIndex;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.marshall.Marshaller;
 import net.butfly.albacore.calculus.marshall.MongoMarshaller;
@@ -60,7 +60,7 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 		return uri;
 	}
 
-	@SuppressWarnings({ "deprecation", "unchecked" })
+	@SuppressWarnings("deprecation")
 	@Override
 	public <F> boolean confirm(Class<F> factor, DataDetail<F> detail) {
 		MongoClientURI muri = new MongoClientURI(getUri());
@@ -70,8 +70,8 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 				MongoDatabase db = mclient.getDatabase(muri.getDatabase());
 				db.createCollection(detail.tables[0]);
 				MongoCollection<Document> col = db.getCollection(detail.tables[0]);
-				for (Map.Entry<Field, ? extends Annotation> f : Marshaller.parseAll(factor, Index.class).entrySet()) {
-					Index idx = (Index) f.getValue();
+				for (Map.Entry<Field, ? extends Annotation> f : Marshaller.parseAll(factor, DBIndex.class).entrySet()) {
+					DBIndex idx = (DBIndex) f.getValue();
 					Object v = 1;
 					if (idx.hashed()) v = "hashed";
 					else if (idx.descending()) v = -1;

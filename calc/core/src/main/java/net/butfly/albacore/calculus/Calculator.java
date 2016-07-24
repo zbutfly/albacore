@@ -35,7 +35,6 @@ import net.butfly.albacore.calculus.datasource.KafkaDataSource;
 import net.butfly.albacore.calculus.datasource.MongoDataSource;
 import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.factor.Factors;
-import net.butfly.albacore.calculus.marshall.RowMarshaller;
 import net.butfly.albacore.calculus.utils.Logable;
 import net.butfly.albacore.calculus.utils.Reflections;
 
@@ -153,16 +152,14 @@ public class Calculator implements Logable, Serializable {
 		for (String dsid : dsprops.keySet()) {
 			Properties dbprops = dsprops.get(dsid);
 			Type type = Type.valueOf(dbprops.getProperty("type"));
-			CaseFormat srcf = dbprops.containsKey("field.name.format.src") ? CaseFormat.LOWER_CAMEL
-					: CaseFormat.valueOf(dbprops.getProperty("field.name.format.src"));
-			CaseFormat dstf = dbprops.containsKey("field.name.format.dst") ? CaseFormat.UPPER_UNDERSCORE
-					: CaseFormat.valueOf(dbprops.getProperty("field.name.format.dst"));
+			CaseFormat srcf = dbprops.containsKey("field.name.format.src")
+					? CaseFormat.valueOf(dbprops.getProperty("field.name.format.src")) : CaseFormat.LOWER_CAMEL;
+			CaseFormat dstf = dbprops.containsKey("field.name.format.dst")
+					? CaseFormat.valueOf(dbprops.getProperty("field.name.format.dst")) : CaseFormat.UPPER_UNDERSCORE;
 			DataSource<?, ?, ?, ?, ?> ds = null;
 			switch (type) {
 			case HIVE:
 				ds = new HiveDataSource(dbprops.getProperty("schema"), this.sc, srcf, dstf);
-				// XXX: Tweak!!
-				RowMarshaller.DEFAULT_WITH = new RowMarshaller(s -> srcf.to(dstf, s));
 				break;
 			case CONSTAND_TO_CONSOLE:
 				ds = new ConstDataSource(dbprops.getProperty("values").split(","), srcf, dstf);

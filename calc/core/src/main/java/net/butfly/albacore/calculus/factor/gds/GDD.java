@@ -1,6 +1,5 @@
 package net.butfly.albacore.calculus.factor.gds;
 
-import java.util.Collection;
 import java.util.List;
 
 import org.apache.spark.api.java.JavaRDD;
@@ -14,7 +13,6 @@ import org.apache.spark.storage.StorageLevel;
 import org.apache.spark.streaming.StreamingContext;
 import org.apache.spark.streaming.dstream.DStream;
 
-import net.butfly.albacore.calculus.Mode;
 import net.butfly.albacore.calculus.factor.rds.internal.Wrapped;
 import scala.Tuple2;
 
@@ -36,12 +34,6 @@ public class GDD<V, E> implements Wrapped<Tuple2<List<V>, List<E>>> {
 	}
 
 	@Override
-	public Tuple2<List<V>, List<E>> first() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
 	public Tuple2<List<V>, List<E>> reduce(Function2<Tuple2<List<V>, List<E>>, Tuple2<List<V>, List<E>>, Tuple2<List<V>, List<E>>> func) {
 		// TODO Auto-generated method stub
 		return null;
@@ -55,12 +47,6 @@ public class GDD<V, E> implements Wrapped<Tuple2<List<V>, List<E>>> {
 
 	@Override
 	public RDD<Tuple2<List<V>, List<E>>> rdd() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public Collection<RDD<Tuple2<List<V>, List<E>>>> rdds() {
 		// TODO Auto-generated method stub
 		return null;
 	}
@@ -115,12 +101,6 @@ public class GDD<V, E> implements Wrapped<Tuple2<List<V>, List<E>>> {
 
 	@Override
 	public <S> Wrapped<Tuple2<List<V>, List<E>>> sortBy(Function<Tuple2<List<V>, List<E>>, S> comp) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public Mode mode() {
 		// TODO Auto-generated method stub
 		return null;
 	}

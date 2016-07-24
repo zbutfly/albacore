@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import org.apache.commons.lang3.reflect.ConstructorUtils;
+
 import com.google.common.reflect.TypeToken;
 
 import net.butfly.albacore.calculus.lambda.Func;
@@ -81,21 +83,14 @@ public final class Reflections implements Serializable {
 	}
 
 	public static <T> T construct(String className, Object... parameters) {
-		Class<T> clazz = forClassName(className);
-		return construct(clazz, parameters);
+		return construct(forClassName(className), parameters);
 	}
 
 	public static <T> T construct(final Class<T> cls, Object... parameters) {
-		final Class<?> parameterTypes[] = toClass(parameters);
-		return constr(cls, parameters, parameterTypes);
-	}
-
-	private static <T> T constr(final Class<T> cls, Object[] parameters, Class<?>[] parameterTypes) {
 		try {
-			return cls.getConstructor(parameterTypes).newInstance(parameters);
-		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
-				| NoSuchMethodException | SecurityException e) {
-			throw new RuntimeException("Instance of " + cls.toString() + " construction failure.", e);
+			return ConstructorUtils.invokeConstructor(cls, parameters);
+		} catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException | InstantiationException e) {
+			throw new RuntimeException(e);
 		}
 	}
 

@@ -79,7 +79,7 @@ public abstract class BsonMarshaller<FK, VK, VV> extends Marshaller<FK, VK, VV> 
 		protected void _putObjectField(final String name, final Object initialValue) {
 			if ("_transientFields".equals(name)) { return; }
 			if (name.contains("\0")) { throw new IllegalArgumentException(
-					"Document field names can't have a NULL character. (Bad Key: '" + name + "')"); }
+					"Document field names can't have a NULL character. (Bad MapReduceKey: '" + name + "')"); }
 
 			if ("$where".equals(name) && initialValue instanceof String) {
 				putCode(name, new Code((String) initialValue));

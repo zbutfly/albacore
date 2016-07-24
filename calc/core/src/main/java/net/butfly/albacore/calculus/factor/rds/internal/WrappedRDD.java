@@ -1,7 +1,6 @@
 package net.butfly.albacore.calculus.factor.rds.internal;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 
 import org.apache.spark.SparkContext;
@@ -16,7 +15,6 @@ import org.apache.spark.storage.StorageLevel;
 import org.apache.spark.streaming.StreamingContext;
 import org.apache.spark.streaming.dstream.DStream;
 
-import net.butfly.albacore.calculus.Mode;
 import net.butfly.albacore.calculus.factor.rds.RDS;
 import net.butfly.albacore.calculus.streaming.RDDDStream;
 import net.butfly.albacore.calculus.streaming.RDDDStream.Mechanism;
@@ -45,11 +43,6 @@ public class WrappedRDD<T> implements Wrapped<T> {
 
 	public WrappedRDD(SparkContext sc, List<T> t) {
 		this(sc.parallelize(JavaConversions.asScalaBuffer(t).seq(), sc.defaultParallelism(), RDSupport.tag()));
-	}
-
-	@Override
-	public Mode mode() {
-		return Mode.STOCKING;
 	}
 
 	@Override
@@ -121,11 +114,6 @@ public class WrappedRDD<T> implements Wrapped<T> {
 	}
 
 	@Override
-	public final T first() {
-		return rdd.first();
-	}
-
-	@Override
 	public final T reduce(Function2<T, T, T> func) {
 		Seq<T> seq = JavaConversions.asScalaBuffer(Arrays.asList(jrdd().reduce(func))).seq();
 		return sc.parallelize(seq, sc.defaultMinPartitions(), classTag()).toJavaRDD().reduce(func);
@@ -144,11 +132,6 @@ public class WrappedRDD<T> implements Wrapped<T> {
 	@Override
 	public RDD<T> rdd() {
 		return rdd;
-	}
-
-	@Override
-	public Collection<RDD<T>> rdds() {
-		return Arrays.asList(rdd);
 	}
 
 	@Override

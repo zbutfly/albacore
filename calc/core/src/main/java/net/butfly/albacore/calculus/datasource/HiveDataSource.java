@@ -1,7 +1,6 @@
 package net.butfly.albacore.calculus.datasource;
 
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.hive.HiveContext;
 
@@ -12,10 +11,8 @@ import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
 import net.butfly.albacore.calculus.factor.filter.HiveBuilder;
-import net.butfly.albacore.calculus.factor.modifier.Key;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
-import net.butfly.albacore.calculus.factor.rds.internal.WrappedDataFrame;
-import net.butfly.albacore.calculus.marshall.Marshaller;
+import net.butfly.albacore.calculus.factor.rds.internal.WrappedDataset;
 import net.butfly.albacore.calculus.marshall.RowMarshaller;
 
 public class HiveDataSource extends DataSource<Object, Row, Row, Object, Row> {
@@ -34,36 +31,20 @@ public class HiveDataSource extends DataSource<Object, Row, Row, Object, Row> {
 		return super.toString();
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public <F extends Factor<F>> PairRDS<Object, F> stocking(Calculator calc, Class<F> factor, DataDetail<F> detail, float expandPartitions,
 			FactorFilter... filters) {
 		if (calc.debug) filters = enableDebug(filters);
 		debug(() -> "Scaning begin: " + factor.toString() + " from table: " + detail.tables[0] + ".");
-		StringBuilder hql = new StringBuilder("select * from ").append(detail.tables[0]);
+		StringBuilder hql = new StringBuilder("select ");
+		((RowMarshaller) marshaller).colsAsFields(hql, factor);
+		hql.append(" from ").append(detail.tables[0]);
 		HiveBuilder<F> b = new HiveBuilder<F>(factor, (RowMarshaller) marshaller);
 		String q = b.filter(filters);
 		if (null != q) hql.append(q);
 		String hqlstr = b.finalize(hql).toString();
 		debug(() -> "Hive HQL parsed into: \n\t" + hqlstr);
-		DataFrame df = this.context.sql(hqlstr);
-
-		String key = ((RowMarshaller) marshaller).parseQualifier(Marshaller.parse(factor, Key.class)._1);
-		df = df.repartition(df.col(key));
-		if (expandPartitions > 1) df = df.repartition((int) Math.ceil(df.javaRDD().getNumPartitions() * expandPartitions));
-		// RDD<Tuple2<Object, F>> rdd = df.mapPartitions(new
-		// AbstractFunction1<Iterator<Row>, Iterator<Tuple2<Object, F>>>() {
-		// @Override
-		// public Iterator<Tuple2<Object, F>> apply(Iterator<Row> rows) {
-		// List<Tuple2<Object, F>> list = new ArrayList<>();
-		// while (rows.hasNext()) {
-		// Row r = rows.next();
-		// list.add(new Tuple2<Object, F>(r.get(r.fieldIndex(key)),
-		// marshaller.unmarshall(r, factor)));
-		// }
-		// return JavaConversions.asScalaIterator(list.iterator());
-		// }
-		// }, RDSupport.tag());
-		return new PairRDS<>(new WrappedDataFrame<>(df, (RowMarshaller) marshaller, factor));
+		WrappedDataset<Object, F> ds = new WrappedDataset<Object, F>(context.sql(hqlstr), factor);
+		return new PairRDS<>(expandPartitions > 1 ? ds.repartition(expandPartitions) : ds);
 	}
 }
