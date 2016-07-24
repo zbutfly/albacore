@@ -1,6 +1,9 @@
 package net.butfly.albacore.calculus.factor.rds.internal;
 
+import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -16,6 +19,7 @@ import org.apache.spark.rdd.RDD;
 import org.apache.spark.sql.Column;
 import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Encoder;
 import org.apache.spark.sql.Encoders;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.storage.StorageLevel;
@@ -56,7 +60,7 @@ public class WrappedDataset<K, V> implements PairWrapped<K, V> {
 
 	public WrappedDataset(DataFrame frame, Class<V> vClass) {
 		this.vClass = vClass;
-		dataset = frame.as(Encoders.kryo(vClass));
+		dataset = frame.as(Encoders.bean(vClass));
 	}
 
 	public WrappedDataset(SQLContext ssc, JavaRDDLike<V, ?> rdd) {
@@ -70,7 +74,7 @@ public class WrappedDataset<K, V> implements PairWrapped<K, V> {
 
 	public WrappedDataset(SQLContext ssc, RDD<V> rdd) {
 		this.vClass = (Class<V>) rdd.elementClassTag().runtimeClass();
-		dataset = ssc.createDataset(rdd, Encoders.kryo(vClass));
+		dataset = ssc.createDataset(rdd, Encoders.bean(vClass));
 	}
 
 	@SafeVarargs
@@ -85,7 +89,7 @@ public class WrappedDataset<K, V> implements PairWrapped<K, V> {
 
 	@Override
 	public List<K> collectKeys() {
-		return dataset.map(Marshaller::key, Encoders.kryo(kClass())).collectAsList();
+		return dataset.map(Marshaller::key, keyEncoder()).collectAsList();
 	}
 
 	@Override
@@ -177,8 +181,21 @@ public class WrappedDataset<K, V> implements PairWrapped<K, V> {
 		return repartition(ratioPartitions).join(other.repartition(ratioPartitions));
 	}
 
-	private Class<K> kClass() {
-		return (Class<K>) Marshaller.keyField(vClass).getType();
+	private Encoder<K> keyEncoder() {
+		Class<K> kc = (Class<K>) Marshaller.keyField(vClass).getType();
+		if (CharSequence.class.isAssignableFrom(kc)) return (Encoder<K>) Encoders.STRING();
+		if (byte[].class.isAssignableFrom(kc)) return (Encoder<K>) Encoders.BINARY();
+		if (Boolean.class.isAssignableFrom(kc) || boolean.class.isAssignableFrom(kc)) return (Encoder<K>) Encoders.BOOLEAN();
+		if (Byte.class.isAssignableFrom(kc) || byte.class.isAssignableFrom(kc)) return (Encoder<K>) Encoders.BYTE();
+		if (Double.class.isAssignableFrom(kc) || double.class.isAssignableFrom(kc)) return (Encoder<K>) Encoders.DOUBLE();
+		if (Float.class.isAssignableFrom(kc) || float.class.isAssignableFrom(kc)) return (Encoder<K>) Encoders.FLOAT();
+		if (Integer.class.isAssignableFrom(kc) || int.class.isAssignableFrom(kc)) return (Encoder<K>) Encoders.INT();
+		if (Long.class.isAssignableFrom(kc) || long.class.isAssignableFrom(kc)) return (Encoder<K>) Encoders.LONG();
+		if (Short.class.isAssignableFrom(kc) || short.class.isAssignableFrom(kc)) return (Encoder<K>) Encoders.SHORT();
+		if (BigDecimal.class.isAssignableFrom(kc)) return (Encoder<K>) Encoders.DECIMAL();
+		if (Date.class.isAssignableFrom(kc)) return (Encoder<K>) Encoders.DATE();
+		if (Timestamp.class.isAssignableFrom(kc)) return (Encoder<K>) Encoders.TIMESTAMP();
+		throw new UnsupportedOperationException("Can not create key encoder for " + kc.toString());
 	}
 
 	@Override
@@ -208,7 +225,8 @@ public class WrappedDataset<K, V> implements PairWrapped<K, V> {
 	@Override
 	public <K2, V2> PairWrapped<K2, V2> mapToPair(PairFunction<Tuple2<K, V>, K2, V2> func) {
 		ClassTag<V2> v2 = RDSupport.tag();
-		return new WrappedDataset<K2, V2>(dataset.map(v -> func.call(new Tuple2<>(Marshaller.key(v), v))._2, Encoders.kryo(v2)));
+		return new WrappedDataset<K2, V2>(
+				dataset.map(v -> func.call(new Tuple2<>(Marshaller.key(v), v))._2, Encoders.bean((Class<V2>) v2.runtimeClass())));
 	}
 
 	@Override
@@ -230,7 +248,7 @@ public class WrappedDataset<K, V> implements PairWrapped<K, V> {
 			public Tuple2<K, V> apply(V v) {
 				return new Tuple2<>(Marshaller.key(v), v);
 			}
-		}, Encoders.tuple(Encoders.kryo(kClass()), dataset.unresolvedTEncoder())).rdd();
+		}, Encoders.tuple(keyEncoder(), dataset.unresolvedTEncoder())).rdd();
 	}
 
 	@Override
@@ -248,7 +266,7 @@ public class WrappedDataset<K, V> implements PairWrapped<K, V> {
 			public K apply(V v) {
 				return Marshaller.key(v);
 			}
-		}, Encoders.kryo(kClass())).mapGroups((key, values) -> {
+		}, keyEncoder()).mapGroups((key, values) -> {
 			V v0 = null;
 			if (values.hasNext()) v0 = values.next();
 			while (values.hasNext())
@@ -266,7 +284,7 @@ public class WrappedDataset<K, V> implements PairWrapped<K, V> {
 			public K apply(V v) {
 				return Marshaller.key(v);
 			}
-		}, Encoders.kryo(kClass())).mapGroups((key, values) -> {
+		}, keyEncoder()).mapGroups((key, values) -> {
 			V v0 = null;
 			if (values.hasNext()) v0 = values.next();
 			while (values.hasNext())

@@ -291,7 +291,7 @@ public class WrappedDataFrame<K, V> implements PairWrapped<K, V> {
 
 	@Override
 	public WrappedDataset<K, V> toDS(Class<V> vClass) {
-		return new WrappedDataset<>(frame.as(Encoders.kryo(vClass)));
+		return new WrappedDataset<>(frame.as(Encoders.bean(vClass)));
 	}
 
 	@Override
