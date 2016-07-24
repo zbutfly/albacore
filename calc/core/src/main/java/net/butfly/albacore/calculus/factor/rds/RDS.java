@@ -93,17 +93,22 @@ public class RDS<T> implements Wrapped<T> {
 	}
 
 	@Override
-	public <K2, V2> RDS<Tuple2<K2, V2>> mapToPair(PairFunction<T, K2, V2> func, Class<V2> cls) {
+	public <K2, V2> RDS<Tuple2<K2, V2>> mapToPair(PairFunction<T, K2, V2> func, Class<?>... cls) {
 		return new RDS<>(wrapped().mapToPair(func, cls));
 	}
 
 	@Override
-	public <T1> RDS<T1> map(Function<T, T1> func, Class<T1> cls) {
-		return new RDS<>(wrapped().map(func, cls));
+	public <T1> RDS<T1> map(Function<T, T1> func, Class<?>... cls1) {
+		return new RDS<>(wrapped().map(func, cls1));
 	}
 
 	@Override
-	public <S> RDS<T> sortBy(Function<T, S> comp, Class<S> cls) {
+	public <S> RDS<T> sortBy(Function<T, S> comp, Class<?>... cls) {
 		return new RDS<>(wrapped().sortBy(comp, cls));
+	}
+
+	@Override
+	public boolean isStream() {
+		return wrapped().isStream();
 	}
 }

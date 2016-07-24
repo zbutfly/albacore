@@ -100,12 +100,12 @@ public class WrappedRDD<T> implements Wrapped<T> {
 	}
 
 	@Override
-	public <K2, V2> WrappedRDD<Tuple2<K2, V2>> mapToPair(PairFunction<T, K2, V2> func, Class<V2> cls) {
+	public <K2, V2> WrappedRDD<Tuple2<K2, V2>> mapToPair(PairFunction<T, K2, V2> func, Class<?>... vClass2) {
 		return new WrappedRDD<Tuple2<K2, V2>>(jrdd().mapToPair(func).rdd());
 	}
 
 	@Override
-	public final <T1> WrappedRDD<T1> map(Function<T, T1> func, Class<T1> cls) {
+	public final <T1> WrappedRDD<T1> map(Function<T, T1> func, Class<?>... vClass2) {
 		return new WrappedRDD<T1>(jrdd().map(func).rdd());
 	}
 
@@ -131,7 +131,7 @@ public class WrappedRDD<T> implements Wrapped<T> {
 	}
 
 	@Override
-	public <S> WrappedRDD<T> sortBy(Function<T, S> comp, Class<S> cls) {
+	public <S> WrappedRDD<T> sortBy(Function<T, S> comp, Class<?>... vClass2) {
 		JavaRDD<T> rdd = jrdd();
 		return new WrappedRDD<T>(rdd.sortBy(comp, true, rdd.getNumPartitions()));
 	}

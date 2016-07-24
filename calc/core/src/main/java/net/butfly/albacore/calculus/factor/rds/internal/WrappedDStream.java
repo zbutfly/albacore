@@ -31,7 +31,7 @@ public class WrappedDStream<T> implements Wrapped<T> {
 	final protected StreamingContext ssc;
 	final transient DStream<T> dstream;
 
-	protected WrappedDStream(DStream<T> dstream) {
+	public WrappedDStream(DStream<T> dstream) {
 		ssc = dstream.ssc();
 		this.dstream = dstream;
 	}
@@ -96,12 +96,12 @@ public class WrappedDStream<T> implements Wrapped<T> {
 	}
 
 	@Override
-	public <K2, V2> WrappedDStream<Tuple2<K2, V2>> mapToPair(PairFunction<T, K2, V2> func, Class<V2> cls) {
+	public <K2, V2> WrappedDStream<Tuple2<K2, V2>> mapToPair(PairFunction<T, K2, V2> func, Class<?>... vClass2) {
 		return new WrappedDStream<Tuple2<K2, V2>>(JavaDStream.fromDStream(dstream, classTag()).mapToPair(func));
 	}
 
 	@Override
-	public final <T1> WrappedDStream<T1> map(Function<T, T1> func, Class<T1> cls) {
+	public final <T1> WrappedDStream<T1> map(Function<T, T1> func, Class<?>... vClass2) {
 		return new WrappedDStream<T1>(JavaDStream.fromDStream(dstream, classTag()).map(func).dstream());
 	}
 
@@ -141,7 +141,7 @@ public class WrappedDStream<T> implements Wrapped<T> {
 	}
 
 	@Override
-	public <S> WrappedRDD<T> sortBy(Function<T, S> comp, Class<S> cls) {
+	public <S> WrappedRDD<T> sortBy(Function<T, S> comp, Class<?>... vClass2) {
 		JavaRDD<T> rdd = jrdd();
 		return new WrappedRDD<T>(rdd.sortBy(comp, true, rdd.getNumPartitions()));
 	}
@@ -149,5 +149,10 @@ public class WrappedDStream<T> implements Wrapped<T> {
 	@Override
 	public Wrapped<T> wrapped() {
 		return this;
+	}
+
+	@Override
+	public boolean isStream() {
+		return true;
 	}
 }

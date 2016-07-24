@@ -13,7 +13,6 @@ import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.api.java.function.VoidFunction2;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.sql.DataFrame;
-import org.apache.spark.sql.Encoders;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.storage.StorageLevel;
@@ -156,36 +155,37 @@ public class WrappedDataFrame<K, V> implements PairWrapped<K, V> {
 	}
 
 	@Override
-	public <V2> PairWrapped<K, Tuple2<V, V2>> join(Wrapped<Tuple2<K, V2>> other) {
+	public <V2> PairWrapped<K, Tuple2<V, V2>> join(Wrapped<Tuple2<K, V2>> other, Class<?>... vClass2) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public <V2> PairWrapped<K, Tuple2<V, V2>> join(Wrapped<Tuple2<K, V2>> other, float ratioPartitions) {
+	public <V2> PairWrapped<K, Tuple2<V, V2>> join(Wrapped<Tuple2<K, V2>> other, float ratioPartitions, Class<?>... vClass2) {
 		// TODO Auto-generated method stub
 		return null;
 	};
 
 	@Override
-	public <V2> PairWrapped<K, Tuple2<V, Optional<V2>>> leftOuterJoin(Wrapped<Tuple2<K, V2>> other) {
+	public <V2> PairWrapped<K, Tuple2<V, Optional<V2>>> leftOuterJoin(Wrapped<Tuple2<K, V2>> other, Class<?>... vClass2) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public <V2> PairWrapped<K, Tuple2<V, Optional<V2>>> leftOuterJoin(Wrapped<Tuple2<K, V2>> other, float ratioPartitions) {
+	public <V2> PairWrapped<K, Tuple2<V, Optional<V2>>> leftOuterJoin(Wrapped<Tuple2<K, V2>> other, float ratioPartitions,
+			Class<?>... vClass2) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public final <T1> Wrapped<T1> map(Function<Tuple2<K, V>, T1> func, Class<T1> cls) {
+	public final <T1> Wrapped<T1> map(Function<Tuple2<K, V>, T1> func, Class<?>... cls) {
 		return new WrappedRDD<T1>(jrdd().map(func).rdd());
 	}
 
 	@Override
-	public <K2, V2> PairWrapped<K2, V2> mapToPair(PairFunction<Tuple2<K, V>, K2, V2> func, Class<V2> cls) {
+	public <K2, V2> PairWrapped<K2, V2> mapToPair(PairFunction<Tuple2<K, V>, K2, V2> func, Class<?>... vClass2) {
 		return new WrappedDataFrame<>(frame.sqlContext(), marshaller, jrdd().mapToPair(func).map(t -> t._2).rdd());
 	}
 
@@ -238,13 +238,13 @@ public class WrappedDataFrame<K, V> implements PairWrapped<K, V> {
 	}
 
 	@Override
-	public <S> PairWrapped<K, V> sortBy(Function<Tuple2<K, V>, S> comp, Class<S> cls) {
+	public <S> PairWrapped<K, V> sortBy(Function<Tuple2<K, V>, S> comp, Class<?>... cls) {
 		JavaRDD<Tuple2<K, V>> v = jrdd().sortBy(comp, true, getNumPartitions());
 		return new PairRDS<>(new WrappedRDD<>(v));
 	}
 
 	@Override
-	public <S> PairWrapped<K, V> sortBy(Function2<K, V, S> comp, Class<S> cls) {
+	public <S> PairWrapped<K, V> sortBy(Function2<K, V, S> comp, Class<?>... cls) {
 		JavaRDD<Tuple2<K, V>> v = jrdd().sortBy(t -> comp.call(t._1, t._2), true, getNumPartitions());
 		return new PairRDS<>(new WrappedRDD<>(v));
 	}
@@ -260,8 +260,8 @@ public class WrappedDataFrame<K, V> implements PairWrapped<K, V> {
 	}
 
 	@Override
-	public WrappedDataset<K, V> toDS(Class<V> vClass) {
-		return new WrappedDataset<>(frame.as(Encoders.bean(vClass)));
+	public WrappedDataset<K, V> toDS(Class<?>... vClass) {
+		return new WrappedDataset<>(frame.as(EncoderBuilder.with(vClass)));
 	}
 
 	@Override

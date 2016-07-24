@@ -14,6 +14,8 @@ import org.apache.spark.streaming.StreamingContext;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.dstream.DStream;
 
+import net.butfly.albacore.calculus.streaming.RDDDStream;
+import net.butfly.albacore.calculus.streaming.RDDDStream.Mechanism;
 import net.butfly.albacore.calculus.utils.Logable;
 import scala.Tuple2;
 import scala.reflect.ClassTag;
@@ -27,7 +29,7 @@ import scala.reflect.ClassTag;
  */
 public interface Wrapped<T> extends Serializable, Logable {
 	default boolean isStream() {
-		return wrapped() instanceof DStream;
+		return false;
 	}
 
 	default boolean isEmpty() {
@@ -82,9 +84,9 @@ public interface Wrapped<T> extends Serializable, Logable {
 
 	Wrapped<T> filter(Function<T, Boolean> func);
 
-	<K2, V2> Wrapped<Tuple2<K2, V2>> mapToPair(PairFunction<T, K2, V2> func, Class<V2> vClass2);
+	<K2, V2> Wrapped<Tuple2<K2, V2>> mapToPair(PairFunction<T, K2, V2> func, Class<?>... vClass2);
 
-	<T1> Wrapped<T1> map(Function<T, T1> func, Class<T1> tClass);
+	<T1> Wrapped<T1> map(Function<T, T1> func, Class<?>... tClass1);
 
 	@Deprecated
 	default <U> WrappedRDD<Tuple2<U, Iterable<T>>> groupBy(Function<T, U> func) {
@@ -96,7 +98,7 @@ public interface Wrapped<T> extends Serializable, Logable {
 		return new WrappedRDD<Tuple2<U, Iterable<T>>>(jrdd().groupBy(func, numPartitions));
 	}
 
-	<S> Wrapped<T> sortBy(Function<T, S> comp, Class<S> sClass);
+	<S> Wrapped<T> sortBy(Function<T, S> comp, Class<?>... cls);
 
 	Wrapped<T> wrapped();
 
@@ -104,6 +106,11 @@ public interface Wrapped<T> extends Serializable, Logable {
 		for (Wrapped<?> w : wrapped)
 			if (w.isStream()) return ((WrappedDStream<?>) w.wrapped()).ssc;
 		return null;
+	}
+
+	default JavaDStream<T> stream(StreamingContext ssc) {
+		if (isStream()) return JavaDStream.fromDStream(((WrappedDStream<T>) wrapped()).dstream, classTag());
+		else return RDDDStream.stream(ssc, Mechanism.CONST, () -> jrdd());
 	}
 
 	default JavaRDD<T> jrdd() {

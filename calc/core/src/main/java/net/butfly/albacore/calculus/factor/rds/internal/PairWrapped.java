@@ -12,6 +12,7 @@ import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.api.java.function.VoidFunction2;
 import org.apache.spark.storage.StorageLevel;
+import org.apache.spark.streaming.StreamingContext;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
 
 import com.google.common.base.Optional;
@@ -21,6 +22,8 @@ import net.butfly.albacore.calculus.datasource.DataDetail;
 import net.butfly.albacore.calculus.datasource.DataSource;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.marshall.RowMarshaller;
+import net.butfly.albacore.calculus.streaming.RDDDStream;
+import net.butfly.albacore.calculus.streaming.RDDDStream.Mechanism;
 import scala.Tuple2;
 import scala.reflect.ClassTag;
 
@@ -60,21 +63,26 @@ public interface PairWrapped<K, V> extends Wrapped<Tuple2<K, V>> {
 
 	PairWrapped<K, V> reduceByKey(Function2<V, V, V> func, float ratioPartitions);
 
-	<V2> PairWrapped<K, Tuple2<V, V2>> join(Wrapped<Tuple2<K, V2>> other);
+	<V2> PairWrapped<K, Tuple2<V, V2>> join(Wrapped<Tuple2<K, V2>> other, Class<?>... vClass2);
 
-	<V2> PairWrapped<K, Tuple2<V, V2>> join(Wrapped<Tuple2<K, V2>> other, float ratioPartitions);
+	<V2> PairWrapped<K, Tuple2<V, V2>> join(Wrapped<Tuple2<K, V2>> other, float ratioPartitions, Class<?>... vClass2);
 
-	<V2> PairWrapped<K, Tuple2<V, Optional<V2>>> leftOuterJoin(Wrapped<Tuple2<K, V2>> other);
+	<V2> PairWrapped<K, Tuple2<V, Optional<V2>>> leftOuterJoin(Wrapped<Tuple2<K, V2>> other, Class<?>... vClass2);
 
-	<V2> PairWrapped<K, Tuple2<V, Optional<V2>>> leftOuterJoin(Wrapped<Tuple2<K, V2>> other, float ratioPartitions);
+	<V2> PairWrapped<K, Tuple2<V, Optional<V2>>> leftOuterJoin(Wrapped<Tuple2<K, V2>> other, float ratioPartitions, Class<?>... vClass2);
+
+	default JavaPairDStream<K, V> pairStream(StreamingContext ssc) {
+		if (isStream()) return JavaPairDStream.fromPairDStream(((WrappedDStream<Tuple2<K, V>>) wrapped()).dstream, k(), v());
+		else return RDDDStream.pstream(ssc, Mechanism.CONST, () -> this);
+	};
 
 	default JavaPairRDD<K, V> pairRDD() {
-		return JavaPairRDD.fromJavaRDD(rdd().toJavaRDD());
+		return JavaPairRDD.fromJavaRDD(jrdd());
 	};
 
 	PairWrapped<K, V> sortByKey(boolean asc);
 
-	<S> PairWrapped<K, V> sortBy(Function2<K, V, S> comp, Class<S> cls);
+	<S> PairWrapped<K, V> sortBy(Function2<K, V, S> comp, Class<?>... cls);
 
 	default K maxKey() {
 		@SuppressWarnings("unchecked")
@@ -119,9 +127,9 @@ public interface PairWrapped<K, V> extends Wrapped<Tuple2<K, V>> {
 	PairWrapped<K, V> union(Wrapped<Tuple2<K, V>> other);
 
 	@Override
-	<K2, V2> PairWrapped<K2, V2> mapToPair(PairFunction<Tuple2<K, V>, K2, V2> func, Class<V2> vClass2);
+	<K2, V2> PairWrapped<K2, V2> mapToPair(PairFunction<Tuple2<K, V>, K2, V2> func, Class<?>... vClass2);
 
-	WrappedDataset<K, V> toDS(Class<V> vClass);
+	WrappedDataset<K, V> toDS(Class<?>... vClass2);
 
 	@Deprecated
 	WrappedDataFrame<K, V> toDF(RowMarshaller marshaller);
