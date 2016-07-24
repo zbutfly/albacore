@@ -94,7 +94,7 @@ public final class Factors implements Serializable, Logable {
 		case STOCKING:
 			if (config.batching <= 0) {
 				PairRDS<K, F> p = ds.stocking(calc, config.factorClass, d, config.expanding, filters);
-				if (config.persisting != null) p = p.persist(config.persisting);
+				if (config.persisting != null && !StorageLevel.NONE().equals(config.persisting)) p = p.persist(config.persisting);
 				return p;
 			} else return new PairRDS<K, F>(new WrappedDStream<>(RDDDStream.bpstream(calc.ssc.ssc(), config.batching,
 					(final Long limit, final K offset) -> ds.batching(calc, config.factorClass, limit, offset, d, filters),

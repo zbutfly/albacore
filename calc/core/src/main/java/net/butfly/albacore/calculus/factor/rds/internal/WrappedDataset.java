@@ -7,7 +7,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaRDDLike;
 import org.apache.spark.api.java.function.Function;
@@ -28,8 +27,7 @@ import org.apache.spark.streaming.dstream.DStream;
 
 import com.google.common.base.Optional;
 
-import net.butfly.albacore.calculus.datasource.DataDetail;
-import net.butfly.albacore.calculus.datasource.DataSource;
+import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.lambda.ScalarFunc1;
 import net.butfly.albacore.calculus.marshall.Marshaller;
@@ -84,12 +82,13 @@ public class WrappedDataset<K, V> implements PairWrapped<K, V> {
 
 	@Override
 	public Map<K, V> collectAsMap() {
+
 		return Reflections.transMapping(dataset.collectAsList(), v -> new Tuple2<K, V>(Marshaller.key(v), v));
 	}
 
 	@Override
-	public List<K> collectKeys() {
-		return dataset.map(Marshaller::key, keyEncoder()).collectAsList();
+	public List<K> collectKeys(Class<K> kClass) {
+		return dataset.map(Marshaller::key, parseEncoder(kClass)).collectAsList();
 	}
 
 	@Override
@@ -119,22 +118,8 @@ public class WrappedDataset<K, V> implements PairWrapped<K, V> {
 	}
 
 	@Override
-	public void foreach(VoidFunction<Tuple2<K, V>> consumer) {
-		jrdd().foreach(consumer);
-	}
-
-	@Override
 	public void foreach(VoidFunction2<K, V> consumer) {
-		pairRDD().foreach(t -> consumer.call(t._1, t._2));
-	}
 
-	@Override
-	public void foreachPairRDD(VoidFunction<JavaPairRDD<K, V>> consumer) {
-		try {
-			consumer.call(pairRDD());
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
 	}
 
 	@Override
@@ -181,21 +166,29 @@ public class WrappedDataset<K, V> implements PairWrapped<K, V> {
 		return repartition(ratioPartitions).join(other.repartition(ratioPartitions));
 	}
 
+	public static <V> Encoder<V> parseEncoder(Class<V> vc) {
+		if (null == vc) {
+			ClassTag<V> ct = RDSupport.tag();
+			return parseEncoder((Class<V>) ct.runtimeClass());
+		}
+		if (CharSequence.class.isAssignableFrom(vc)) return (Encoder<V>) Encoders.STRING();
+		if (byte[].class.isAssignableFrom(vc)) return (Encoder<V>) Encoders.BINARY();
+		if (Boolean.class.isAssignableFrom(vc) || boolean.class.isAssignableFrom(vc)) return (Encoder<V>) Encoders.BOOLEAN();
+		if (Byte.class.isAssignableFrom(vc) || byte.class.isAssignableFrom(vc)) return (Encoder<V>) Encoders.BYTE();
+		if (Double.class.isAssignableFrom(vc) || double.class.isAssignableFrom(vc)) return (Encoder<V>) Encoders.DOUBLE();
+		if (Float.class.isAssignableFrom(vc) || float.class.isAssignableFrom(vc)) return (Encoder<V>) Encoders.FLOAT();
+		if (Integer.class.isAssignableFrom(vc) || int.class.isAssignableFrom(vc)) return (Encoder<V>) Encoders.INT();
+		if (Long.class.isAssignableFrom(vc) || long.class.isAssignableFrom(vc)) return (Encoder<V>) Encoders.LONG();
+		if (Short.class.isAssignableFrom(vc) || short.class.isAssignableFrom(vc)) return (Encoder<V>) Encoders.SHORT();
+		if (BigDecimal.class.isAssignableFrom(vc)) return (Encoder<V>) Encoders.DECIMAL();
+		if (Date.class.isAssignableFrom(vc)) return (Encoder<V>) Encoders.DATE();
+		if (Timestamp.class.isAssignableFrom(vc)) return (Encoder<V>) Encoders.TIMESTAMP();
+		if (Factor.class.isAssignableFrom(vc)) return Encoders.bean(vc);
+		throw new UnsupportedOperationException("Can not create key encoder for " + vc.toString());
+	}
+
 	private Encoder<K> keyEncoder() {
-		Class<K> kc = (Class<K>) Marshaller.keyField(vClass).getType();
-		if (CharSequence.class.isAssignableFrom(kc)) return (Encoder<K>) Encoders.STRING();
-		if (byte[].class.isAssignableFrom(kc)) return (Encoder<K>) Encoders.BINARY();
-		if (Boolean.class.isAssignableFrom(kc) || boolean.class.isAssignableFrom(kc)) return (Encoder<K>) Encoders.BOOLEAN();
-		if (Byte.class.isAssignableFrom(kc) || byte.class.isAssignableFrom(kc)) return (Encoder<K>) Encoders.BYTE();
-		if (Double.class.isAssignableFrom(kc) || double.class.isAssignableFrom(kc)) return (Encoder<K>) Encoders.DOUBLE();
-		if (Float.class.isAssignableFrom(kc) || float.class.isAssignableFrom(kc)) return (Encoder<K>) Encoders.FLOAT();
-		if (Integer.class.isAssignableFrom(kc) || int.class.isAssignableFrom(kc)) return (Encoder<K>) Encoders.INT();
-		if (Long.class.isAssignableFrom(kc) || long.class.isAssignableFrom(kc)) return (Encoder<K>) Encoders.LONG();
-		if (Short.class.isAssignableFrom(kc) || short.class.isAssignableFrom(kc)) return (Encoder<K>) Encoders.SHORT();
-		if (BigDecimal.class.isAssignableFrom(kc)) return (Encoder<K>) Encoders.DECIMAL();
-		if (Date.class.isAssignableFrom(kc)) return (Encoder<K>) Encoders.DATE();
-		if (Timestamp.class.isAssignableFrom(kc)) return (Encoder<K>) Encoders.TIMESTAMP();
-		throw new UnsupportedOperationException("Can not create key encoder for " + kc.toString());
+		return parseEncoder((Class<K>) Marshaller.keyField(vClass).getType());
 	}
 
 	@Override
@@ -218,24 +211,18 @@ public class WrappedDataset<K, V> implements PairWrapped<K, V> {
 	}
 
 	@Override
-	public final <T1> Wrapped<T1> map(Function<Tuple2<K, V>, T1> func) {
+	public final <T1> Wrapped<T1> map(Function<Tuple2<K, V>, T1> func, Class<T1> cls) {
 		return new WrappedRDD<T1>(jrdd().map(func).rdd());
 	}
 
 	@Override
-	public <K2, V2> PairWrapped<K2, V2> mapToPair(PairFunction<Tuple2<K, V>, K2, V2> func) {
-		ClassTag<V2> v2 = RDSupport.tag();
-		return new WrappedDataset<K2, V2>(
-				dataset.map(v -> func.call(new Tuple2<>(Marshaller.key(v), v))._2, Encoders.bean((Class<V2>) v2.runtimeClass())));
-	}
-
-	@Override
-	public WrappedDataset<K, V> persist() {
-		return new WrappedDataset<K, V>(dataset.persist());
+	public <K2, V2> PairWrapped<K2, V2> mapToPair(PairFunction<Tuple2<K, V>, K2, V2> func, Class<V2> cls) {
+		return new WrappedDataset<K2, V2>(dataset.map(v -> func.call(new Tuple2<>(Marshaller.key(v), v))._2, Encoders.bean(cls)));
 	}
 
 	@Override
 	public WrappedDataset<K, V> persist(StorageLevel level) {
+		if (null == level || StorageLevel.NONE().equals(level)) return this;
 		return new WrappedDataset<K, V>(dataset.persist(level));
 	}
 
@@ -299,25 +286,15 @@ public class WrappedDataset<K, V> implements PairWrapped<K, V> {
 	}
 
 	@Override
-	public PairWrapped<K, V> repartition(float ratio, boolean rehash) {
-		return repartition(ratio);
-	}
-
-	@Override
-	public <RK, RV, WK, WV> void save(DataSource<K, RK, RV, WK, WV> ds, DataDetail<V> dd) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public <S> PairWrapped<K, V> sortBy(Function<Tuple2<K, V>, S> comp) {
+	public <S> PairWrapped<K, V> sortBy(Function<Tuple2<K, V>, S> comp, Class<S> cls) {
 		JavaRDD<Tuple2<K, V>> v = jrdd().sortBy(comp, true, getNumPartitions());
 		return new PairRDS<>(new WrappedRDD<>(v));
 	}
 
 	@Override
-	public <S> PairWrapped<K, V> sortBy(Function2<K, V, S> comp) {
-		// TODO Auto-generated method stub
-		return null;
+	public <S> PairWrapped<K, V> sortBy(Function2<K, V, S> comp, Class<S> cls) {
+		JavaRDD<Tuple2<K, V>> v = jrdd().sortBy(t -> comp.call(t._1, t._2), true, getNumPartitions());
+		return new PairRDS<>(new WrappedRDD<>(v));
 	}
 
 	@Override

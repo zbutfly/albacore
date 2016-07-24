@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaRDDLike;
 import org.apache.spark.api.java.function.Function;
@@ -23,8 +22,6 @@ import org.apache.spark.streaming.dstream.DStream;
 
 import com.google.common.base.Optional;
 
-import net.butfly.albacore.calculus.datasource.DataDetail;
-import net.butfly.albacore.calculus.datasource.DataSource;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.lambda.ScalarFunc1;
 import net.butfly.albacore.calculus.marshall.Marshaller;
@@ -82,8 +79,15 @@ public class WrappedDataFrame<K, V> implements PairWrapped<K, V> {
 	}
 
 	@Override
-	public List<K> collectKeys() {
-		return Reflections.transform(frame.collectAsList(), row -> (K) marshaller.unmarshallId(row));
+	public List<K> collectKeys(Class<K> cls) {
+		return frame.map(new ScalarFunc1<Row, K>() {
+			private static final long serialVersionUID = -1011796477262995212L;
+
+			@Override
+			public K apply(Row row) {
+				return (K) row.get(row.fieldIndex(marshaller.parseQualifier(Marshaller.keyField(vClass))));
+			}
+		}, RDSupport.tag(cls)).toJavaRDD().collect();
 	}
 
 	@Override
@@ -121,12 +125,6 @@ public class WrappedDataFrame<K, V> implements PairWrapped<K, V> {
 
 	@Override
 	public void foreach(VoidFunction2<K, V> consumer) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void foreachPairRDD(VoidFunction<JavaPairRDD<K, V>> consumer) {
 		// TODO Auto-generated method stub
 
 	}
@@ -182,41 +180,18 @@ public class WrappedDataFrame<K, V> implements PairWrapped<K, V> {
 	}
 
 	@Override
-	public final <T1> Wrapped<T1> map(Function<Tuple2<K, V>, T1> func) {
+	public final <T1> Wrapped<T1> map(Function<Tuple2<K, V>, T1> func, Class<T1> cls) {
 		return new WrappedRDD<T1>(jrdd().map(func).rdd());
 	}
 
 	@Override
-	public <K2, V2> PairWrapped<K2, V2> mapToPair(PairFunction<Tuple2<K, V>, K2, V2> func) {
+	public <K2, V2> PairWrapped<K2, V2> mapToPair(PairFunction<Tuple2<K, V>, K2, V2> func, Class<V2> cls) {
 		return new WrappedDataFrame<>(frame.sqlContext(), marshaller, jrdd().mapToPair(func).map(t -> t._2).rdd());
 	}
 
 	@Override
-	public K maxKey() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public K minKey() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public JavaPairRDD<K, V> pairRDD() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public WrappedDataFrame<K, V> persist() {
-		return new WrappedDataFrame<>(frame.persist(), marshaller, vClass);
-	}
-
-	@Override
 	public WrappedDataFrame<K, V> persist(StorageLevel level) {
-		return persist();
+		return new WrappedDataFrame<>(frame.persist(level), marshaller, vClass);
 	}
 
 	@Override
@@ -263,20 +238,15 @@ public class WrappedDataFrame<K, V> implements PairWrapped<K, V> {
 	}
 
 	@Override
-	public <RK, RV, WK, WV> void save(DataSource<K, RK, RV, WK, WV> ds, DataDetail<V> dd) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public <S> PairWrapped<K, V> sortBy(Function<Tuple2<K, V>, S> comp) {
+	public <S> PairWrapped<K, V> sortBy(Function<Tuple2<K, V>, S> comp, Class<S> cls) {
 		JavaRDD<Tuple2<K, V>> v = jrdd().sortBy(comp, true, getNumPartitions());
 		return new PairRDS<>(new WrappedRDD<>(v));
 	}
 
 	@Override
-	public <S> PairWrapped<K, V> sortBy(Function2<K, V, S> comp) {
-		// TODO Auto-generated method stub
-		return null;
+	public <S> PairWrapped<K, V> sortBy(Function2<K, V, S> comp, Class<S> cls) {
+		JavaRDD<Tuple2<K, V>> v = jrdd().sortBy(t -> comp.call(t._1, t._2), true, getNumPartitions());
+		return new PairRDS<>(new WrappedRDD<>(v));
 	}
 
 	@Override

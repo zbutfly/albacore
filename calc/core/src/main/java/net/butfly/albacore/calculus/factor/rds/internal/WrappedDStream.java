@@ -57,12 +57,8 @@ public class WrappedDStream<T> implements Wrapped<T> {
 	}
 
 	@Override
-	public WrappedDStream<T> persist() {
-		return new WrappedDStream<T>(dstream.persist());
-	}
-
-	@Override
 	public WrappedDStream<T> persist(StorageLevel level) {
+		if (null == level || StorageLevel.NONE().equals(level)) return this;
 		return new WrappedDStream<T>(dstream.persist(level));
 	}
 
@@ -100,23 +96,13 @@ public class WrappedDStream<T> implements Wrapped<T> {
 	}
 
 	@Override
-	public <K2, V2> WrappedDStream<Tuple2<K2, V2>> mapToPair(PairFunction<T, K2, V2> func) {
+	public <K2, V2> WrappedDStream<Tuple2<K2, V2>> mapToPair(PairFunction<T, K2, V2> func, Class<V2> cls) {
 		return new WrappedDStream<Tuple2<K2, V2>>(JavaDStream.fromDStream(dstream, classTag()).mapToPair(func));
 	}
 
 	@Override
-	public final <T1> WrappedDStream<T1> map(Function<T, T1> func) {
+	public final <T1> WrappedDStream<T1> map(Function<T, T1> func, Class<T1> cls) {
 		return new WrappedDStream<T1>(JavaDStream.fromDStream(dstream, classTag()).map(func).dstream());
-	}
-
-	@Override
-	public <U> WrappedRDD<Tuple2<U, Iterable<T>>> groupBy(Function<T, U> func) {
-		return new WrappedRDD<Tuple2<U, Iterable<T>>>(jrdd().groupBy(func));
-	}
-
-	@Override
-	public <U> WrappedRDD<Tuple2<U, Iterable<T>>> groupBy(Function<T, U> func, int numPartitions) {
-		return new WrappedRDD<Tuple2<U, Iterable<T>>>(jrdd().groupBy(func, numPartitions));
 	}
 
 	@Override
@@ -155,7 +141,7 @@ public class WrappedDStream<T> implements Wrapped<T> {
 	}
 
 	@Override
-	public <S> WrappedRDD<T> sortBy(Function<T, S> comp) {
+	public <S> WrappedRDD<T> sortBy(Function<T, S> comp, Class<S> cls) {
 		JavaRDD<T> rdd = jrdd();
 		return new WrappedRDD<T>(rdd.sortBy(comp, true, rdd.getNumPartitions()));
 	}

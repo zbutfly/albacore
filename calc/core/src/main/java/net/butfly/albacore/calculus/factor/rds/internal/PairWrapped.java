@@ -1,21 +1,25 @@
 package net.butfly.albacore.calculus.factor.rds.internal;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.spark.HashPartitioner;
+import org.apache.spark.Partitioner;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
-import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.api.java.function.VoidFunction2;
 import org.apache.spark.storage.StorageLevel;
+import org.apache.spark.streaming.api.java.JavaPairDStream;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Ordering;
 
 import net.butfly.albacore.calculus.datasource.DataDetail;
 import net.butfly.albacore.calculus.datasource.DataSource;
+import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.marshall.RowMarshaller;
 import scala.Tuple2;
 import scala.reflect.ClassTag;
@@ -29,15 +33,25 @@ public interface PairWrapped<K, V> extends Wrapped<Tuple2<K, V>> {
 		return RDSupport.tag();
 	}
 
-	<RK, RV, WK, WV> void save(DataSource<K, RK, RV, WK, WV> ds, DataDetail<V> dd);
+	default <RK, RV, WK, WV> void save(DataSource<K, RK, RV, WK, WV> ds, DataDetail<V> dd) {
+		foreachRDD(r -> ds.save(
+				r.mapToPair(t -> (Tuple2<WK, WV>) ds.beforeWriting(t._1, t._2)).filter(t -> t != null && t._1 != null && t._2 != null),
+				dd));
+	}
 
-	Map<K, V> collectAsMap();
+	default Map<K, V> collectAsMap() {
+		Map<K, V> r = new HashMap<>();
+		foreach((k, v) -> r.put(k, v));
+		return r;
+	}
 
-	List<K> collectKeys();
+	default List<K> collectKeys(Class<K> kClass) {
+		return map(t -> t._1, kClass).collect();
+	}
 
-	void foreachPairRDD(VoidFunction<JavaPairRDD<K, V>> consumer);
-
-	void foreach(VoidFunction2<K, V> consumer);
+	default void foreach(VoidFunction2<K, V> consumer) {
+		jrdd().foreach(t -> consumer.call(t._1, t._2));
+	};
 
 	@Deprecated
 	<U> PairWrapped<K, Iterable<V>> groupByKey();
@@ -60,7 +74,7 @@ public interface PairWrapped<K, V> extends Wrapped<Tuple2<K, V>> {
 
 	PairWrapped<K, V> sortByKey(boolean asc);
 
-	<S> PairWrapped<K, V> sortBy(Function2<K, V, S> comp);
+	<S> PairWrapped<K, V> sortBy(Function2<K, V, S> comp, Class<S> cls);
 
 	default K maxKey() {
 		@SuppressWarnings("unchecked")
@@ -76,7 +90,15 @@ public interface PairWrapped<K, V> extends Wrapped<Tuple2<K, V>> {
 
 	PairWrapped<K, V> filter(Function2<K, V, Boolean> func);
 
-	PairWrapped<K, V> repartition(float ratio, boolean rehash);
+	default PairWrapped<K, V> repartition(float ratio, boolean rehash) {
+		if (!rehash) return repartition(ratio);
+		Partitioner p = new HashPartitioner((int) Math.ceil(getNumPartitions() * ratio));
+		return isStream()
+				? new PairRDS<>(new WrappedDStream<>(JavaPairDStream.fromPairDStream(dstream(Wrapped.streaming(this)), k(), v())
+						.transformToPair((Function<JavaPairRDD<K, V>, JavaPairRDD<K, V>>) rdd -> rdd.partitionBy(p))))
+				: new PairRDS<>(new WrappedRDD<>(JavaPairRDD.fromJavaRDD(rdd().toJavaRDD()).partitionBy(p)));
+
+	};
 
 	@Override
 	PairWrapped<K, V> filter(Function<Tuple2<K, V>, Boolean> func);
@@ -88,16 +110,16 @@ public interface PairWrapped<K, V> extends Wrapped<Tuple2<K, V>> {
 	PairWrapped<K, V> unpersist();
 
 	@Override
-	PairWrapped<K, V> persist();
-
-	@Override
-	PairWrapped<K, V> persist(StorageLevel level);
+	default PairWrapped<K, V> persist(StorageLevel level) {
+		if (null == level || StorageLevel.NONE().equals(level)) return this;
+		else return new PairRDS<>(wrapped().persist(level));
+	}
 
 	@Override
 	PairWrapped<K, V> union(Wrapped<Tuple2<K, V>> other);
 
 	@Override
-	<K2, V2> PairWrapped<K2, V2> mapToPair(PairFunction<Tuple2<K, V>, K2, V2> func);
+	<K2, V2> PairWrapped<K2, V2> mapToPair(PairFunction<Tuple2<K, V>, K2, V2> func, Class<V2> vClass2);
 
 	WrappedDataset<K, V> toDS(Class<V> vClass);
 

@@ -31,7 +31,7 @@ public interface Wrapped<T> extends Serializable, Logable {
 	}
 
 	default boolean isEmpty() {
-		return this.wrapped().isEmpty();
+		return wrapped().isEmpty();
 	}
 
 	default int getNumPartitions() {
@@ -39,36 +39,42 @@ public interface Wrapped<T> extends Serializable, Logable {
 	}
 
 	default long count() {
-		return wrapped().count();
+		return jrdd().count();
 	}
 
-	void foreachRDD(VoidFunction<JavaRDD<T>> consumer);
+	default void foreachRDD(VoidFunction<JavaRDD<T>> consumer) {
+		wrapped().foreachRDD(consumer);
+	}
 
-	void foreach(VoidFunction<T> consumer);
+	default void foreach(VoidFunction<T> consumer) {
+		wrapped().foreach(consumer);
+	};
 
 	default T first() {
-		return rdd().first();
+		return wrapped().first();
 	}
 
 	default List<T> collect() {
-		return jrdd().collect();
+		return wrapped().collect();
 	};
 
 	default ClassTag<T> classTag() {
 		return RDSupport.tag();
 	}
 
-	T reduce(Function2<T, T, T> func);
+	default T reduce(Function2<T, T, T> func) {
+		return wrapped().reduce(func);
+	};
 
 	DStream<T> dstream(StreamingContext ssc);
 
-	RDD<T> rdd();
+	default RDD<T> rdd() {
+		return wrapped().rdd();
+	};
 
 	Wrapped<T> repartition(float ratio);
 
 	Wrapped<T> unpersist();
-
-	Wrapped<T> persist();
 
 	Wrapped<T> persist(StorageLevel level);
 
@@ -76,21 +82,21 @@ public interface Wrapped<T> extends Serializable, Logable {
 
 	Wrapped<T> filter(Function<T, Boolean> func);
 
-	<K2, V2> Wrapped<Tuple2<K2, V2>> mapToPair(PairFunction<T, K2, V2> func);
+	<K2, V2> Wrapped<Tuple2<K2, V2>> mapToPair(PairFunction<T, K2, V2> func, Class<V2> vClass2);
 
-	<T1> Wrapped<T1> map(Function<T, T1> func);
+	<T1> Wrapped<T1> map(Function<T, T1> func, Class<T1> tClass);
 
 	@Deprecated
 	default <U> WrappedRDD<Tuple2<U, Iterable<T>>> groupBy(Function<T, U> func) {
-		return new WrappedRDD<Tuple2<U, Iterable<T>>>(jrdd().groupBy(func::call));
+		return new WrappedRDD<Tuple2<U, Iterable<T>>>(jrdd().groupBy(func));
 	}
 
 	@Deprecated
 	default <U> WrappedRDD<Tuple2<U, Iterable<T>>> groupBy(Function<T, U> func, int numPartitions) {
-		return new WrappedRDD<Tuple2<U, Iterable<T>>>(jrdd().groupBy(func::call, numPartitions));
+		return new WrappedRDD<Tuple2<U, Iterable<T>>>(jrdd().groupBy(func, numPartitions));
 	}
 
-	<S> Wrapped<T> sortBy(Function<T, S> comp);
+	<S> Wrapped<T> sortBy(Function<T, S> comp, Class<S> sClass);
 
 	Wrapped<T> wrapped();
 

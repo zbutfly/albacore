@@ -52,11 +52,6 @@ public class RDS<T> implements Wrapped<T> {
 	}
 
 	@Override
-	public void foreach(VoidFunction<T> consumer) {
-		wrapped().foreach(consumer);
-	}
-
-	@Override
 	public T reduce(Function2<T, T, T> func) {
 		return wrapped().reduce(func);
 	}
@@ -82,12 +77,8 @@ public class RDS<T> implements Wrapped<T> {
 	}
 
 	@Override
-	public RDS<T> persist() {
-		return new RDS<>(wrapped().persist());
-	}
-
-	@Override
 	public RDS<T> persist(StorageLevel level) {
+		if (null == level || StorageLevel.NONE().equals(level)) return this;
 		return new RDS<>(wrapped().persist(level));
 	}
 
@@ -102,17 +93,17 @@ public class RDS<T> implements Wrapped<T> {
 	}
 
 	@Override
-	public <K2, V2> RDS<Tuple2<K2, V2>> mapToPair(PairFunction<T, K2, V2> func) {
-		return new RDS<>(wrapped().mapToPair(func));
+	public <K2, V2> RDS<Tuple2<K2, V2>> mapToPair(PairFunction<T, K2, V2> func, Class<V2> cls) {
+		return new RDS<>(wrapped().mapToPair(func, cls));
 	}
 
 	@Override
-	public <T1> RDS<T1> map(Function<T, T1> func) {
-		return new RDS<>(wrapped().map(func));
+	public <T1> RDS<T1> map(Function<T, T1> func, Class<T1> cls) {
+		return new RDS<>(wrapped().map(func, cls));
 	}
 
 	@Override
-	public <S> RDS<T> sortBy(Function<T, S> comp) {
-		return new RDS<>(wrapped().sortBy(comp));
+	public <S> RDS<T> sortBy(Function<T, S> comp, Class<S> cls) {
+		return new RDS<>(wrapped().sortBy(comp, cls));
 	}
 }

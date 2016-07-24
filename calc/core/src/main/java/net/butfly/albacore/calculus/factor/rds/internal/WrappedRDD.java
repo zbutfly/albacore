@@ -61,12 +61,8 @@ public class WrappedRDD<T> implements Wrapped<T> {
 	}
 
 	@Override
-	public WrappedRDD<T> persist() {
-		return new WrappedRDD<T>(rdd.persist());
-	}
-
-	@Override
 	public WrappedRDD<T> persist(StorageLevel level) {
+		if (null == level || StorageLevel.NONE().equals(level)) return this;
 		return new WrappedRDD<T>(rdd.persist(level));
 	}
 
@@ -104,12 +100,12 @@ public class WrappedRDD<T> implements Wrapped<T> {
 	}
 
 	@Override
-	public <K2, V2> WrappedRDD<Tuple2<K2, V2>> mapToPair(PairFunction<T, K2, V2> func) {
+	public <K2, V2> WrappedRDD<Tuple2<K2, V2>> mapToPair(PairFunction<T, K2, V2> func, Class<V2> cls) {
 		return new WrappedRDD<Tuple2<K2, V2>>(jrdd().mapToPair(func).rdd());
 	}
 
 	@Override
-	public final <T1> WrappedRDD<T1> map(Function<T, T1> func) {
+	public final <T1> WrappedRDD<T1> map(Function<T, T1> func, Class<T1> cls) {
 		return new WrappedRDD<T1>(jrdd().map(func).rdd());
 	}
 
@@ -135,7 +131,7 @@ public class WrappedRDD<T> implements Wrapped<T> {
 	}
 
 	@Override
-	public <S> WrappedRDD<T> sortBy(Function<T, S> comp) {
+	public <S> WrappedRDD<T> sortBy(Function<T, S> comp, Class<S> cls) {
 		JavaRDD<T> rdd = jrdd();
 		return new WrappedRDD<T>(rdd.sortBy(comp, true, rdd.getNumPartitions()));
 	}

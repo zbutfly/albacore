@@ -1,19 +1,11 @@
 package net.butfly.albacore.calculus.factor.rds;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.spark.HashPartitioner;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
-import org.apache.spark.api.java.function.VoidFunction;
-import org.apache.spark.api.java.function.VoidFunction2;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.storage.StorageLevel;
 import org.apache.spark.streaming.StreamingContext;
@@ -22,8 +14,6 @@ import org.apache.spark.streaming.dstream.DStream;
 
 import com.google.common.base.Optional;
 
-import net.butfly.albacore.calculus.datasource.DataDetail;
-import net.butfly.albacore.calculus.datasource.DataSource;
 import net.butfly.albacore.calculus.factor.rds.internal.PairWrapped;
 import net.butfly.albacore.calculus.factor.rds.internal.RDSupport;
 import net.butfly.albacore.calculus.factor.rds.internal.Wrapped;
@@ -58,61 +48,13 @@ public final class PairRDS<K, V> extends RDS<Tuple2<K, V>> implements PairWrappe
 	}
 
 	@Override
-	public <RK, RV, WK, WV> void save(DataSource<K, RK, RV, WK, WV> ds, DataDetail<V> dd) {
-		foreachPairRDD(rdd -> {
-			JavaPairRDD<WK, WV> w = rdd.mapToPair(t -> (Tuple2<WK, WV>) ds.beforeWriting(t._1, t._2))
-					.filter(t -> t != null && t._1 != null && t._2 != null);
-			ds.save(w, dd);
-		});
-	}
-
-	@Override
-	public Map<K, V> collectAsMap() {
-		Map<K, V> r = new HashMap<>();
-		foreach((VoidFunction<Tuple2<K, V>>) t -> r.put(t._1, t._2));
-		return r;
-	}
-
-	@Override
-	public List<K> collectKeys() {
-		return map(t -> t._1).collect();
-	}
-
-	@Override
-	public void foreachPairRDD(VoidFunction<JavaPairRDD<K, V>> consumer) {
-		wrapped.foreachRDD(r -> consumer.call(JavaPairRDD.fromJavaRDD(r)));
-	}
-
-	@Override
-	public void foreach(VoidFunction2<K, V> consumer) {
-		wrapped.foreach(t -> consumer.call(t._1, t._2));
-	}
-
-	@Override
 	public PairRDS<K, V> unpersist() {
 		return new PairRDS<>(wrapped().unpersist());
 	}
 
 	@Override
-	public PairRDS<K, V> persist() {
-		return new PairRDS<>(wrapped().persist());
-	}
-
-	@Override
 	public PairRDS<K, V> persist(StorageLevel level) {
 		return new PairRDS<>(wrapped().persist(level));
-	}
-
-	@Override
-	public PairRDS<K, V> repartition(float ratioPartitions, boolean rehash) {
-		if (!rehash) return repartition(ratioPartitions);
-		return isStream()
-				? new PairRDS<>(new WrappedDStream<>(JavaPairDStream.fromPairDStream(dstream(Wrapped.streaming(this)), k(), v())
-						.transformToPair((Function<JavaPairRDD<K, V>, JavaPairRDD<K, V>>) rdd -> rdd
-								.partitionBy(new HashPartitioner((int) Math.ceil(rdd.getNumPartitions() * ratioPartitions))))))
-				: new PairRDS<>(new WrappedRDD<>(JavaPairRDD.fromJavaRDD(rdd().toJavaRDD())
-						.partitionBy(new HashPartitioner((int) Math.ceil(getNumPartitions() * ratioPartitions)))));
-
 	}
 
 	@Override
@@ -126,8 +68,8 @@ public final class PairRDS<K, V> extends RDS<Tuple2<K, V>> implements PairWrappe
 	}
 
 	@Override
-	public <S> PairRDS<K, V> sortBy(Function2<K, V, S> comp) {
-		return new PairRDS<>(wrapped().sortBy(t -> comp.call(t._1, t._2)));
+	public <S> PairRDS<K, V> sortBy(Function2<K, V, S> comp, Class<S> cls) {
+		return new PairRDS<>(wrapped().sortBy(t -> comp.call(t._1, t._2), cls));
 	}
 
 	public PairRDS<K, V> union(PairWrapped<K, V> other) {
@@ -150,11 +92,8 @@ public final class PairRDS<K, V> extends RDS<Tuple2<K, V>> implements PairWrappe
 	}
 
 	@Override
-	public final <K2, V2> PairRDS<K2, V2> mapToPair(PairFunction<Tuple2<K, V>, K2, V2> func) {
-		return isStream()
-				? new PairRDS<>(new WrappedDStream<>(
-						JavaPairDStream.fromPairDStream(dstream(Wrapped.streaming(this)), k(), v()).mapToPair(func::call)))
-				: new PairRDS<>(new WrappedRDD<>(JavaPairRDD.fromJavaRDD(rdd().toJavaRDD()).mapToPair(func::call)));
+	public final <K2, V2> PairRDS<K2, V2> mapToPair(PairFunction<Tuple2<K, V>, K2, V2> func, Class<V2> vClass2) {
+		return new PairRDS<>(wrapped.mapToPair(func, vClass2));
 	}
 
 	@Override
@@ -210,26 +149,16 @@ public final class PairRDS<K, V> extends RDS<Tuple2<K, V>> implements PairWrappe
 		if (isStream()) {
 			DStream<Tuple2<K, V>> ds = ((WrappedDStream<Tuple2<K, V>>) wrapped()).dstream();
 			return new PairRDS<>(new WrappedDStream<>(JavaPairDStream.fromPairDStream(ds, k(), v()).reduceByKey(func)));
-		} else {
-			List<JavaPairRDD<K, V>> l = new ArrayList<>();
-			foreachPairRDD(rdd -> l.add(rdd.reduceByKey(func)));
-			return new PairRDS<>(new WrappedRDD<>(RDSupport.union(l)));
-		}
+		} else return new PairRDS<>(new WrappedRDD<>(pairRDD().reduceByKey(func)));
 	}
 
 	@Override
 	public PairRDS<K, V> reduceByKey(Function2<V, V, V> func, float ratioPartitions) {
 		int pnum = (int) Math.ceil(getNumPartitions() * ratioPartitions);
-		// two stream, use 10 for devel testing.
-		int minpnum = pnum < 0 ? ((int) Math.ceil(ratioPartitions)) * 10 : pnum;
 		if (isStream()) {
 			DStream<Tuple2<K, V>> ds = ((WrappedDStream<Tuple2<K, V>>) wrapped()).dstream();
-			return new PairRDS<>(new WrappedDStream<>(JavaPairDStream.fromPairDStream(ds, k(), v()).reduceByKey(func, minpnum)));
-		} else {
-			List<JavaPairRDD<K, V>> l = new ArrayList<>();
-			foreachPairRDD(rdd -> l.add(rdd.reduceByKey(func, minpnum)));
-			return new PairRDS<>(new WrappedRDD<>(RDSupport.union(l)));
-		}
+			return new PairRDS<>(new WrappedDStream<>(JavaPairDStream.fromPairDStream(ds, k(), v()).reduceByKey(func, pnum)));
+		} else return new PairRDS<>(new WrappedRDD<>(pairRDD().reduceByKey(func, pnum)));
 	}
 
 	@SuppressWarnings("unchecked")

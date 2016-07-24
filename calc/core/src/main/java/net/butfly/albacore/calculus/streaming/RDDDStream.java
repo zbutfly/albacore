@@ -66,8 +66,8 @@ public abstract class RDDDStream<T> extends InputDStream<T> {
 
 	public static <K, V> JavaPairDStream<K, V> pstream(StreamingContext ssc, Mechanism mechanism, Func0<PairWrapped<K, V>> rdd) {
 		try {
-			return JavaPairDStream.fromPairDStream(new RDDInputDStream<Tuple2<K, V>>(ssc, mechanism, rdd.call().map(t -> t)::rdd),
-					RDSupport.tag(), RDSupport.tag());
+			return JavaPairDStream.fromPairDStream(new RDDInputDStream<Tuple2<K, V>>(ssc, mechanism, rdd.call()::rdd), RDSupport.tag(),
+					RDSupport.tag());
 		} catch (Exception ex) {
 			throw new RuntimeException(ex);
 		}
