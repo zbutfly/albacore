@@ -4,8 +4,10 @@ import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -84,12 +86,16 @@ public class Marshaller<FK, VK, VV> implements Serializable {
 		return parseFirstOfAny(c, MapReduceKey.class)._1;
 	}
 
+	public static <V> Field[] keyFields(Class<V> c) {
+		return parseAll(c, MapReduceKey.class);
+	}
+
 	public static <V> Field idField(Class<V> c) {
 		return parseFirstOfAny(c, DBIdentity.class)._1;
 	}
 
 	@SafeVarargs
-	public static <V> Map<Field, Annotation> parseAll(Class<V> c, Class<? extends Annotation>... annotation) {
+	public static <V> Map<Field, Annotation> parseAllForAny(Class<V> c, Class<? extends Annotation>... annotation) {
 		Map<Field, Annotation> fs = new HashMap<>();
 		for (Field f : Reflections.getDeclaredFields(c))
 			for (Class<? extends Annotation> a : annotation)
@@ -98,6 +104,16 @@ public class Marshaller<FK, VK, VV> implements Serializable {
 					break;
 				}
 		return fs;
+	}
+
+	public static <V> Field[] parseAll(Class<V> c, Class<? extends Annotation> a) {
+		List<Field> fs = new ArrayList<>();
+		for (Field f : Reflections.getDeclaredFields(c))
+			if (f.isAnnotationPresent(a)) {
+				fs.add(f);
+				break;
+			}
+		return fs.toArray(new Field[fs.size()]);
 	}
 
 	public static <K, V> K key(V v) {

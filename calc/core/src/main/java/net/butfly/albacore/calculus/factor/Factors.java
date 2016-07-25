@@ -157,7 +157,7 @@ public final class Factors implements Serializable, Logable {
 				if (null == s.table() || s.table().length == 0)
 					throw new IllegalArgumentException("Table not defined for factor " + factor.toString());
 				HiveDataSource hvds = calc.dss.ds(config.dbid);
-				config.detail = new HiveDataDetail<F>(factor, hvds.schema, s.table());
+				config.detail = new HiveDataDetail<F>(factor, s.queryDirectly(), hvds.schema, s.table());
 				config.keyClass = (Class<K>) byte[].class;
 				break;
 			case MONGODB:

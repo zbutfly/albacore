@@ -23,6 +23,8 @@ public interface Factor<F extends Factor<F>> extends Serializable {
 		String[] table() default {};
 
 		String filter() default NOT_DEFINED;
+
+		boolean queryDirectly() default false;
 	}
 
 	@Retention(RetentionPolicy.RUNTIME)

@@ -27,7 +27,7 @@ public class WrappedRDD<T> implements Wrapped<T> {
 	final private SparkContext sc;
 	final protected transient RDD<T> rdd;
 
-	protected WrappedRDD(RDD<T> rdd) {
+	public WrappedRDD(RDD<T> rdd) {
 		sc = rdd.context();
 		this.rdd = rdd;
 	}

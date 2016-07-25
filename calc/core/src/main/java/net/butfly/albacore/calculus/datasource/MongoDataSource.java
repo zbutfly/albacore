@@ -70,7 +70,7 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 				MongoDatabase db = mclient.getDatabase(muri.getDatabase());
 				db.createCollection(detail.tables[0]);
 				MongoCollection<Document> col = db.getCollection(detail.tables[0]);
-				for (Map.Entry<Field, ? extends Annotation> f : Marshaller.parseAll(factor, DBIndex.class).entrySet()) {
+				for (Map.Entry<Field, ? extends Annotation> f : Marshaller.parseAllForAny(factor, DBIndex.class).entrySet()) {
 					DBIndex idx = (DBIndex) f.getValue();
 					Object v = 1;
 					if (idx.hashed()) v = "hashed";

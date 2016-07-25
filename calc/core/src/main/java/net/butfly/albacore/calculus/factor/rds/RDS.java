@@ -27,8 +27,7 @@ public class RDS<T> implements Wrapped<T> {
 	protected Wrapped<T> wrapped;
 
 	protected RDS(Wrapped<T> wrapper) {
-		if (RDS.class.isAssignableFrom(wrapper.getClass())) throw new IllegalArgumentException();
-		this.wrapped = wrapper;
+		this.wrapped = wrapper.wrapped();
 	}
 
 	protected RDS() {}

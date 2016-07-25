@@ -197,7 +197,10 @@ public class WrappedDataset<K, V> implements PairWrapped<K, V> {
 
 	@Override
 	public <K2, V2> PairWrapped<K2, V2> mapToPair(PairFunction<Tuple2<K, V>, K2, V2> func, Class<?>... vClass2) {
-		return new WrappedDataset<K2, V2>(dataset.map(v -> func.call(new Tuple2<>(Marshaller.key(v), v))._2, EncoderBuilder.with(vClass2)));
+		// key changing cause key lost
+		return new PairRDS<K2, V2>(new WrappedRDD<>(jrdd().mapToPair(func)));
+		// return new WrappedDataset<K2, V2>(dataset.map(v -> func.call(new
+		// Tuple2<>(Marshaller.key(v), v))._2, EncoderBuilder.with(vClass2)));
 	}
 
 	@Override
@@ -215,7 +218,8 @@ public class WrappedDataset<K, V> implements PairWrapped<K, V> {
 			public Tuple2<K, V> apply(V v) {
 				return new Tuple2<>(Marshaller.key(v), v);
 			}
-		}, Encoders.tuple(keyEncoder(), dataset.unresolvedTEncoder())).rdd();
+		}, Encoders.tuple(keyEncoder(), dataset.unresolvedTEncoder())).repartition(getNumPartitions()).rdd();
+		// XXX OOM!!
 	}
 
 	@Override
