@@ -76,10 +76,10 @@ public final class Factors implements Serializable, Logable {
 		return new ArrayList<>(m.values());
 	}
 
-	public <K, F extends Factor<F>> PairRDS<K, F> directly(String factoring, String calcKey) {
-		FactorConfig<K, F> config = (FactorConfig<K, F>) CONFIGS.get(factoring);
+	public <K, F extends Factor<F>> PairRDS<K, F> directly(String factoringKey, String calcKey) {
+		FactorConfig<K, F> config = (FactorConfig<K, F>) CONFIGS.get(factoringKey);
 		@SuppressWarnings("rawtypes")
-		Map<String, DataDetail> dds = config.directDBIDs.get(factoring);
+		Map<String, DataDetail> dds = config.directDBIDs.get(factoringKey);
 		if (null == dds) return PairRDS.emptyPair(calc.sc);
 		DataDetail<F> d = dds.get(calcKey);
 		if (null == d) return PairRDS.emptyPair(calc.sc);
@@ -110,8 +110,8 @@ public final class Factors implements Serializable, Logable {
 		}
 	}
 
-	public <K, F extends Factor<F>> PairRDS<K, F> get(String factoring, FactorFilter... filters) {
-		FactorConfig<K, F> config = (FactorConfig<K, F>) CONFIGS.get(factoring);
+	public <K, F extends Factor<F>> PairRDS<K, F> get(String factorKey, FactorFilter... filters) {
+		FactorConfig<K, F> config = (FactorConfig<K, F>) CONFIGS.get(factorKey);
 		DataSource<K, ?, ?, ?, ?> ds = calc.getDS(config.dbid);
 		if (ds == null) return PairRDS.emptyPair(calc.sc);
 		DataDetail<F> d = config.detail;
@@ -146,19 +146,20 @@ public final class Factors implements Serializable, Logable {
 		}
 	}
 
-	public <K, F extends Factor<F>> void put(PairRDS<K, F> rds, Class<K> keyClass, Class<F> factorClass) {
-		FactorConfig<K, F> conf = config(factorClass);
+	public <K, F extends Factor<F>> void put(String key, PairRDS<K, F> rds, Class<K> keyClass, Class<F> factorClass) {
+		FactorConfig<K, F> conf = config(factorClass, key);
 		DataSource<K, ?, ?, ?, ?> ds = calc.getDS(conf.dbid);
 		if (ds != null) rds.save(ds, conf.detail);
 	}
 
 	public <K, F extends Factor<F>> FactorConfig<K, F> config(Class<F> factor, String... key) {
-		if (CONFIGS.containsKey(factor)) return CONFIGS.get(factor);
-		if (null == key || key.length == 0) throw new IllegalArgumentException(
-				"Configuration of [" + factor.toString() + "] not defined and can not be defined for no key.");
+		String k = null == key || key.length == 0 ? null : key[0];
+		if (null != k && CONFIGS.containsKey(k)) return CONFIGS.get(k);
+		if (null == k) // query, but not found
+			throw new IllegalArgumentException("Configuration of [" + factor.toString() + "] not found.");
 		FactorConfig<K, F> config = new FactorConfig<>();
 		config.factorClass = factor;
-		config.key = key[0];
+		config.key = k;
 
 		if (calc.mode == Mode.STREAMING && factor.isAnnotationPresent(Streaming.class)) buildStreaming(config, factor);
 		else buildStocking(config, factor);
@@ -167,7 +168,7 @@ public final class Factors implements Serializable, Logable {
 		@SuppressWarnings("rawtypes")
 		DataSource mainDS = calc.getDS(config.dbid);
 		if (mainDS != null && mainDS.validate) calc.getDS(config.dbid).confirm(factor, config.detail);
-		CONFIGS.put(factor.toString(), config);
+		CONFIGS.put(k, config);
 		return config;
 	}
 
