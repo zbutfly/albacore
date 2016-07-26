@@ -136,7 +136,7 @@ public abstract class DataSource<FK, InK, InV, OutK, OutV> implements Serializab
 		final Field idField = Marshaller.idField(factor);
 		final Field keyField = Marshaller.keyField(factor);
 		if (null != keyField && null == idField) throw new IllegalArgumentException(
-				"@MapReduceKey defined but @DBIdentity not defined on " + factor.toString() + ", id will lose in mapping.");
+				"@MapReduceKey defined but @DBIdentity not defined on " + factor.toString() + ", key will lose in mapping.");
 		JavaPairRDD<FK, F> results = raw.mapToPair(t -> {
 			F v = marshaller.unmarshall(t._2, factor);
 			FK k = null == keyField ? marshaller.unmarshallId(t._1) : Reflections.get(v, keyField);

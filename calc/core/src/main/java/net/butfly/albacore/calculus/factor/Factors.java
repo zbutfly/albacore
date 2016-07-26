@@ -48,23 +48,23 @@ public final class Factors implements Serializable, Logable {
 		FactorConfig<?, ?> batch = null;
 		Set<Class<?>> cl = new HashSet<>();
 		for (Factoring f : valid(Reflections.multipleAnnotation(Factoring.class, Factorings.class, calc.calculusClass))) {
-			if (CONFIGS.containsKey(f.key())) throw new IllegalArgumentException("Conflictted factoring id: " + f.key());
+			if (CONFIGS.containsKey(f.key())) throw new IllegalArgumentException("Conflictted factoring key: " + f.key());
 			@SuppressWarnings("rawtypes")
 			Class fc = f.factor();
 			if (!fc.isAnnotationPresent(Streaming.class) && !fc.isAnnotationPresent(Stocking.class)) throw new IllegalArgumentException(
 					"Factor [" + fc.toString() + "] is annotated as neither @Streaming nor @Stocking, can't calculate it!");
-			FactorConfig<?, ?> conf = config(fc);
-			cl.add(conf.factorClass);
-			conf.batching = f.batching();
-			conf.streaming = f.stockOnStreaming();
-			conf.expanding = f.expanding();
-			conf.persisting = StorageLevel.fromString(f.persisting());
+			FactorConfig<?, ?> config = config(fc, f.key());
+			cl.add(config.factorClass);
+			config.batching = f.batching();
+			config.streaming = f.stockOnStreaming();
+			config.expanding = f.expanding();
+			config.persisting = StorageLevel.fromString(f.persisting());
 			if (f.batching() > 0) {
 				if (batch != null) throw new IllegalArgumentException("Only one batch stocking source supported, now found second: "
-						+ batch.factorClass.toString() + " and " + conf.factorClass.toString());
-				else batch = conf;
+						+ batch.factorClass.toString() + " and " + config.factorClass.toString());
+				else batch = config;
 			}
-			CONFIGS.put(f.key(), conf);
+			CONFIGS.put(f.key(), config);
 		}
 		calc.sconf.registerKryoClasses(cl.toArray(new Class[cl.size()]));
 	}
@@ -78,7 +78,11 @@ public final class Factors implements Serializable, Logable {
 
 	public <K, F extends Factor<F>> PairRDS<K, F> directly(String factoring, String calcKey) {
 		FactorConfig<K, F> config = (FactorConfig<K, F>) CONFIGS.get(factoring);
-		DataDetail<F> d = config.directDBIDs.get(factoring).get(calcKey);
+		@SuppressWarnings("rawtypes")
+		Map<String, DataDetail> dds = config.directDBIDs.get(factoring);
+		if (null == dds) return PairRDS.emptyPair(calc.sc);
+		DataDetail<F> d = dds.get(calcKey);
+		if (null == d) return PairRDS.emptyPair(calc.sc);
 		DataSource<K, ?, ?, ?, ?> ds = calc.getDS(d.source);
 		if (ds == null) return PairRDS.emptyPair(calc.sc);
 		switch (calc.mode) {
@@ -148,10 +152,13 @@ public final class Factors implements Serializable, Logable {
 		if (ds != null) rds.save(ds, conf.detail);
 	}
 
-	public <K, F extends Factor<F>> FactorConfig<K, F> config(Class<F> factor) {
+	public <K, F extends Factor<F>> FactorConfig<K, F> config(Class<F> factor, String... key) {
 		if (CONFIGS.containsKey(factor)) return CONFIGS.get(factor);
+		if (null == key || key.length == 0) throw new IllegalArgumentException(
+				"Configuration of [" + factor.toString() + "] not defined and can not be defined for no key.");
 		FactorConfig<K, F> config = new FactorConfig<>();
 		config.factorClass = factor;
+		config.key = key[0];
 
 		if (calc.mode == Mode.STREAMING && factor.isAnnotationPresent(Streaming.class)) buildStreaming(config, factor);
 		else buildStocking(config, factor);
@@ -165,13 +172,13 @@ public final class Factors implements Serializable, Logable {
 	}
 
 	private <K, F extends Factor<F>> void buildDirectly(FactorConfig<K, F> config, Class<F> factor) {
-		for (StockingDirectly sd : Reflections.multipleAnnotation(StockingDirectly.class, Directly.class, calc.calculusClass)) {
+		for (StockingDirectly sd : Reflections.multipleAnnotation(StockingDirectly.class, Directly.class, factor)) {
 			@SuppressWarnings("rawtypes")
 			Map<String, DataDetail> dds;
-			if (config.directDBIDs.containsKey(sd.source())) dds = config.directDBIDs.get(sd.source());
+			if (config.directDBIDs.containsKey(config.key)) dds = config.directDBIDs.get(config.key);
 			else {
 				dds = new HashMap<>();
-				config.directDBIDs.put(sd.calc(), dds);
+				config.directDBIDs.put(config.key, dds);
 			}
 			DataDetail<F> dd = buildDetail(calc.getDS(sd.source()), factor, sd.type(), sd.source(), null,
 					Reflections.construct(sd.query()));
@@ -180,18 +187,18 @@ public final class Factors implements Serializable, Logable {
 	}
 
 	private <K, F extends Factor<F>> DataDetail<F> buildDetail(@SuppressWarnings("rawtypes") DataSource ds, Class<F> factor, Type type,
-			String source, String filter, Supplier<String> table) {
+			String source, String filter, Supplier<String> query) {
 		if (null == ds) return null;
-		String t = parseTable(type, factor, source, ds.suffix, table.get());
+		String q = parseTable(type, factor, source, ds.suffix, query.get());
 		switch (type) {
 		case HBASE:
-			return new HbaseDataDetail<F>(factor, t);
+			return new HbaseDataDetail<F>(factor, source, q);
 		case HIVE:
-			return new HiveDataDetail<F>(factor, ds.schema, t);
+			return new HiveDataDetail<F>(factor, source, ds.schema, q);
 		case MONGODB:
-			return new MongoDataDetail<F>(factor, null != filter && Factor.NOT_DEFINED.equals(filter) ? null : filter, t);
+			return new MongoDataDetail<F>(factor, source, null != filter && Factor.NOT_DEFINED.equals(filter) ? null : filter, q);
 		case KAFKA:
-			return new KafkaDataDetail<F>(factor, t);
+			return new KafkaDataDetail<F>(factor, source, q);
 		case CONSOLE:
 			return null;
 		default:

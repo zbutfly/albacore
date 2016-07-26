@@ -108,7 +108,7 @@ public abstract class BsonMarshaller<FK, VK, VV> extends Marshaller<FK, VK, VV> 
 			else if (value instanceof DBRef) {
 				BSONObject temp = new BasicBSONObject();
 				temp.put("$ref", ((DBRef) value).getCollectionName());
-				temp.put("$id", ((DBRef) value).getId());
+				temp.put("$key", ((DBRef) value).getId());
 				putObject(name, temp);
 			} else if (value instanceof MinKey) putMinKey(name);
 			else if (value instanceof MaxKey) putMaxKey(name);

@@ -16,7 +16,7 @@ public abstract class DataDetail<V> implements Serializable {
 	public final String[] tables;
 	public final String filter;
 	public final Class<V> factorClass;
-	public final String source; // db id in config
+	public final String source; // db key in config
 
 	protected DataDetail(Type type, Class<V> factor, String source, String filter, String... tables) {
 		Preconditions.checkArgument(tables != null && tables.length > 0);

@@ -91,7 +91,8 @@ public final class Reflections implements Serializable {
 
 	public static <T> T construct(final Class<T> cls, Object... parameters) {
 		try {
-			return ConstructorUtils.invokeConstructor(cls, parameters);
+			if (null == parameters || parameters.length == 0) return ConstructorUtils.invokeConstructor(cls);
+			else return ConstructorUtils.invokeConstructor(cls, parameters);
 		} catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException | InstantiationException e) {
 			throw new RuntimeException(e);
 		}
@@ -239,7 +240,7 @@ public final class Reflections implements Serializable {
 	public static <A extends Annotation> List<A> multipleAnnotation(Class<A> a, Class<? extends Annotation> ma, Class<?>... cc) {
 		List<A> list = new ArrayList<>();
 		if (null != cc && cc.length > 0) for (Class<?> c : cc) {
-
+			if (null == c) continue;
 			if (c.isAnnotationPresent(ma)) {
 				A[] v = Reflections.invoke(c.getAnnotation(ma), "value");
 				if (null != v) list.addAll(Arrays.asList(v));
