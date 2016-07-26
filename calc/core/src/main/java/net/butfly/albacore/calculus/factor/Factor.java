@@ -10,7 +10,7 @@ public interface Factor<F extends Factor<F>> extends Serializable {
 	public static final String NOT_DEFINED = "";
 
 	public enum Type {
-		CONSTAND_TO_CONSOLE, HBASE, MONGODB, KAFKA, ELASTIC, HIVE
+		CONSOLE, HBASE, MONGODB, KAFKA, ELASTIC, HIVE
 	}
 
 	@Retention(RetentionPolicy.RUNTIME)
@@ -18,13 +18,11 @@ public interface Factor<F extends Factor<F>> extends Serializable {
 	public @interface Stocking {
 		Type type();
 
-		String source() default NOT_DEFINED;
+		String source();
 
 		String[] table() default {};
 
 		String filter() default NOT_DEFINED;
-
-		boolean queryDirectly() default false;
 	}
 
 	@Retention(RetentionPolicy.RUNTIME)
@@ -35,6 +33,8 @@ public interface Factor<F extends Factor<F>> extends Serializable {
 		String source();
 
 		String[] table() default {};
+
+		String filter() default NOT_DEFINED;
 	}
 
 	public final static class VoidFactor implements Factor<VoidFactor> {
@@ -43,7 +43,7 @@ public interface Factor<F extends Factor<F>> extends Serializable {
 		private VoidFactor() {}
 	}
 
-	@Stocking(type = Type.CONSTAND_TO_CONSOLE)
+	@Stocking(type = Type.CONSOLE, source = "")
 	public final static class Const<V> implements Factor<Const<V>> {
 		private static final long serialVersionUID = 9100426079561362807L;
 		public V value;

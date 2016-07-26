@@ -37,6 +37,7 @@ public abstract class DataSource<FK, InK, InV, OutK, OutV> implements Serializab
 	private static final long serialVersionUID = -1L;
 	protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 	protected final Factor.Type type;
+	public final String schema;
 	protected final Marshaller<FK, InK, InV> marshaller;
 	public final Class<InK> keyClass;
 	public final Class<InV> valueClass;
@@ -59,10 +60,11 @@ public abstract class DataSource<FK, InK, InV, OutK, OutV> implements Serializab
 		return marshaller;
 	}
 
-	public DataSource(Type type, boolean validate, Class<? extends Marshaller<FK, InK, InV>> marshaller, Class<InK> keyClass,
+	public DataSource(Type type, String schema, boolean validate, Class<? extends Marshaller<FK, InK, InV>> marshaller, Class<InK> keyClass,
 			Class<InV> valueClass, Class<? extends OutputFormat> outputFormatClass, Class<? extends InputFormat<InK, InV>> inputFormatClass,
 			CaseFormat srcFormat, CaseFormat dstFormat) {
 		this.type = type;
+		this.schema = schema;
 		this.validate = validate;
 		this.marshaller = Reflections.construct(marshaller, (Func<String, String>) s -> srcFormat.to(dstFormat, s));
 		this.keyClass = keyClass;

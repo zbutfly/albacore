@@ -110,4 +110,8 @@ public class RDS<T> implements Wrapped<T> {
 	public boolean isStream() {
 		return wrapped().isStream();
 	}
+
+	public static <T> RDS<T> empty(JavaSparkContext sc) {
+		return new RDS<>(sc);
+	}
 }

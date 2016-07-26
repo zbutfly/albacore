@@ -1,6 +1,14 @@
 package net.butfly.albacore.calculus.datasource;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
@@ -23,7 +31,7 @@ public class ConstDataSource extends DataSource<String, Void, String, Void, Stri
 	private String[] values;
 
 	public ConstDataSource(String[] values, CaseFormat srcf, CaseFormat dstf) {
-		super(Type.CONSTAND_TO_CONSOLE, false, null, Void.class, String.class, NullOutputFormat.class, null, srcf, dstf);
+		super(Type.CONSOLE, null, false, null, Void.class, String.class, NullOutputFormat.class, null, srcf, dstf);
 		this.values = values;
 	}
 
@@ -42,8 +50,31 @@ public class ConstDataSource extends DataSource<String, Void, String, Void, Stri
 		String[] values = this.values;
 		if (values == null) values = new String[0];
 		JavaRDD<String> records = calc.sc.parallelize(Arrays.asList(values));
-		if (expandPartitions > 1) records = records.repartition((int) Math.ceil(records.getNumPartitions() * expandPartitions));
+		if (expandPartitions > 0) records = records.repartition((int) Math.ceil(records.getNumPartitions() * expandPartitions));
 		return new PairRDS<>(new WrappedRDD<>(records.mapToPair(
 				(final String t) -> null == t ? null : new Tuple2<>(UUID.randomUUID().toString(), (F) Reflections.construct(factor, t)))));
+	}
+
+	public static String[] readLines(String... uri) {
+		List<String> lines = new ArrayList<>();
+		try {
+			if (null == uri || uri.length == 0) appendAll(lines, System.in);
+			else for (String u : uri)
+				appendAll(lines, new URI(u).toURL().openStream());
+		} catch (IOException | URISyntaxException ex) {
+			throw new RuntimeException(ex);
+		}
+		return lines.toArray(new String[lines.size()]);
+	}
+
+	private static void appendAll(List<String> sb, InputStream is) throws IOException {
+		String line;
+		BufferedReader r = new BufferedReader(new InputStreamReader(is));
+		try {
+			while ((line = r.readLine()) != null)
+				sb.add(line);
+		} finally {
+			r.close();
+		}
 	}
 }

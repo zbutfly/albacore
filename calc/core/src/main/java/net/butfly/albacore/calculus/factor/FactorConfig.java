@@ -1,6 +1,8 @@
 package net.butfly.albacore.calculus.factor;
 
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.spark.storage.StorageLevel;
 
@@ -15,6 +17,8 @@ public class FactorConfig<K, F extends Factor<F>> implements Serializable {
 	public Class<F> factorClass;
 	public Mode mode;
 	public String dbid;
+	@SuppressWarnings("rawtypes")
+	public Map<String, Map<String, DataDetail>> directDBIDs = new HashMap<>();
 	public DataDetail<F> detail;
 	@Deprecated
 	public long batching = 0;

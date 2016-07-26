@@ -40,7 +40,7 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 	final String configFile;
 
 	public HbaseDataSource(String configFile, CaseFormat srcf, CaseFormat dstf) {
-		super(Type.HBASE, false, HbaseMarshaller.class, ImmutableBytesWritable.class, Result.class, TableOutputFormat.class,
+		super(Type.HBASE, null, false, HbaseMarshaller.class, ImmutableBytesWritable.class, Result.class, TableOutputFormat.class,
 				TableInputFormat.class, srcf, dstf);
 		this.configFile = configFile;
 	}

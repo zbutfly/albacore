@@ -41,7 +41,7 @@ public class ElasticDataSource extends DataSource<String, String, Map, String, O
 	};
 
 	public ElasticDataSource(String baseUrl, boolean validate, CaseFormat srcf, CaseFormat dstf) {
-		super(Type.ELASTIC, validate, M.class, String.class, Map.class, OutputFormat.class, null, srcf, dstf);
+		super(Type.ELASTIC, null, validate, M.class, String.class, Map.class, OutputFormat.class, null, srcf, dstf);
 		this.baseUrl = baseUrl;
 	}
 

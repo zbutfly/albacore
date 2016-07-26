@@ -43,8 +43,8 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 	private static final long serialVersionUID = -2617369621178264387L;
 	final String uri;
 
-	public MongoDataSource(String uri, String suffix, boolean validate, CaseFormat srcf, CaseFormat dstf) {
-		super(Type.MONGODB, validate, MongoMarshaller.class, Object.class, BSONObject.class, MongoOutputFormat.class,
+	public MongoDataSource(String uri, String schema, String suffix, boolean validate, CaseFormat srcf, CaseFormat dstf) {
+		super(Type.MONGODB, schema, validate, MongoMarshaller.class, Object.class, BSONObject.class, MongoOutputFormat.class,
 				MongoInputFormat.class, srcf, dstf);
 		super.suffix = suffix;
 		this.uri = uri;

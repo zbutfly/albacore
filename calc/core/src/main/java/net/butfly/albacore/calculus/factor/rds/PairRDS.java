@@ -232,4 +232,8 @@ public final class PairRDS<K, V> extends RDS<Tuple2<K, V>> implements PairWrappe
 			w = ((PairRDS<K, V>) w).wrapped;
 		return w instanceof PairWrapped ? (PairWrapped<K, V>) w : null;
 	}
+
+	public static <K, V> PairRDS<K, V> emptyPair(JavaSparkContext sc) {
+		return new PairRDS<>(sc);
+	}
 }

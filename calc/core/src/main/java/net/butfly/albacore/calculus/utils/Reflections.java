@@ -1,6 +1,7 @@
 package net.butfly.albacore.calculus.utils;
 
 import java.io.Serializable;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -8,6 +9,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -16,6 +18,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import org.apache.commons.lang3.reflect.ConstructorUtils;
+import org.apache.commons.lang3.reflect.MethodUtils;
 
 import com.google.common.reflect.TypeToken;
 
@@ -220,4 +223,30 @@ public final class Reflections implements Serializable {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
+	public static <V> V invoke(Object object, String methodName, Object... args) {
+		try {
+			if (Class.class.isAssignableFrom(object.getClass()))
+				return (V) MethodUtils.invokeStaticMethod((Class<?>) object, methodName, args);
+			else return (V) MethodUtils.invokeMethod(object, methodName, args);
+		} catch (NoSuchMethodException | IllegalAccessException ex) {
+			throw new RuntimeException(ex);
+		} catch (InvocationTargetException ex) {
+			throw new RuntimeException(ex.getTargetException());
+		}
+	}
+
+	public static <A extends Annotation> List<A> multipleAnnotation(Class<A> a, Class<? extends Annotation> ma, Class<?>... cc) {
+		List<A> list = new ArrayList<>();
+		if (null != cc && cc.length > 0) for (Class<?> c : cc) {
+
+			if (c.isAnnotationPresent(ma)) {
+				A[] v = Reflections.invoke(c.getAnnotation(ma), "value");
+				if (null != v) list.addAll(Arrays.asList(v));
+			} else if (c.isAnnotationPresent(a)) list.add(c.getAnnotation(a));
+			list.addAll(multipleAnnotation(a, ma, c.getSuperclass()));
+			list.addAll(multipleAnnotation(a, ma, c.getInterfaces()));
+		}
+		return list;
+	}
 }

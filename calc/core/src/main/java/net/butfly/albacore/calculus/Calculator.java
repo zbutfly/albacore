@@ -156,23 +156,28 @@ public class Calculator implements Logable, Serializable {
 					? CaseFormat.valueOf(dbprops.getProperty("field.name.format.src")) : CaseFormat.LOWER_CAMEL;
 			CaseFormat dstf = dbprops.containsKey("field.name.format.dst")
 					? CaseFormat.valueOf(dbprops.getProperty("field.name.format.dst")) : CaseFormat.UPPER_UNDERSCORE;
+			String schema = dbprops.getProperty("schema");
 			DataSource<?, ?, ?, ?, ?> ds = null;
 			switch (type) {
 			case HIVE:
-				ds = new HiveDataSource(dbprops.getProperty("schema"), this.sc, srcf, dstf);
+				ds = new HiveDataSource(schema, this.sc, srcf, dstf);
 				break;
-			case CONSTAND_TO_CONSOLE:
-				ds = new ConstDataSource(dbprops.getProperty("values").split(","), srcf, dstf);
+			case CONSOLE:
+				String[] values;
+				if (dbprops.containsKey("values")) values = dbprops.getProperty("values").split(dbprops.getProperty("values.split", ","));
+				else if (dbprops.containsKey("uris")) values = ConstDataSource.readLines(dbprops.getProperty("uris").split(","));
+				else values = ConstDataSource.readLines();
+				ds = new ConstDataSource(values, srcf, dstf);
 				break;
 			case HBASE:
 				ds = new HbaseDataSource(dbprops.getProperty("config", "hbase-site.xml"), srcf, dstf);
 				break;
 			case MONGODB:
-				ds = new MongoDataSource(dbprops.getProperty("uri"), dbprops.getProperty("output.suffix"),
+				ds = new MongoDataSource(dbprops.getProperty("uri"), schema, dbprops.getProperty("output.suffix"),
 						Boolean.parseBoolean(dbprops.getProperty("validate", "true")), srcf, dstf);
 				break;
 			case KAFKA:
-				ds = new KafkaDataSource(dbprops.getProperty("servers"), dbprops.getProperty("root"),
+				ds = new KafkaDataSource(dbprops.getProperty("servers"), dbprops.getProperty("schema"),
 						Integer.parseInt(dbprops.getProperty("topic.partitions", "1")),
 						debug ? appname + UUID.randomUUID().toString() : appname, srcf, dstf);
 				break;
@@ -190,7 +195,7 @@ public class Calculator implements Logable, Serializable {
 	private static CommandLine commandline(String... args) throws ParseException {
 		PosixParser parser = new PosixParser();
 		Options opts = new Options();
-		opts.addOption("f", "config", true, "Calculus configuration file location. Defalt calculus.properties in classpath root.");
+		opts.addOption("f", "config", true, "Calculus configuration file location. Defalt calculus.properties in classpath schema.");
 		opts.addOption("c", "class", true, "Calculus class to be calculated.");
 		opts.addOption("m", "mode", true, "Calculating mode, STOCKING or STREAMING. Default STREAMING.");
 		opts.addOption("d", "debug", true, "Debug mode, TRUE or FALSE. Default FALSE.");
@@ -205,5 +210,12 @@ public class Calculator implements Logable, Serializable {
 	public static final InputStream scanInputStream(String file) throws FileNotFoundException, IOException {
 		URL url = Thread.currentThread().getContextClassLoader().getResource(file);
 		return null == url ? new FileInputStream(file) : url.openStream();
+	}
+
+	@SuppressWarnings("rawtypes")
+	public <DS extends DataSource> DS getDS(String dbid) {
+		DS ds = dss.ds(dbid);
+		if (null == ds) logger.warn("Datasource " + dbid + " not configurated, ignore!");
+		return ds;
 	}
 }
