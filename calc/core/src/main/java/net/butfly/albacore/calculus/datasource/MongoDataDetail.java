@@ -11,8 +11,8 @@ import net.butfly.albacore.calculus.factor.Factor.Type;
 public class MongoDataDetail<F> extends DataDetail<F> {
 	private static final long serialVersionUID = 4206637701358532787L;
 
-	public MongoDataDetail(Class<F> factor, String filter, String... table) {
-		super(Type.MONGODB, factor, filter, table);
+	public MongoDataDetail(Class<F> factor, String source, String filter, String... table) {
+		super(Type.MONGODB, factor, source, filter, table);
 	}
 
 	@Override

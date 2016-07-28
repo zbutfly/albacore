@@ -118,7 +118,7 @@ public class SingleColumnInValuesFilter extends FilterBase {
 			// We already found and matched the single column, all keys now pass
 			return ReturnCode.INCLUDE;
 		} else if (this.latestVersionOnly && this.foundColumn) {
-			// We found but did not match the single column, skip to next row
+			// We found but did not match the single column, offset to next row
 			return ReturnCode.NEXT_ROW;
 		}
 		if (!CellUtil.matchingColumn(c, this.columnFamily, this.columnQualifier)) { return ReturnCode.INCLUDE; }

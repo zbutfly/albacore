@@ -10,6 +10,8 @@ import org.apache.spark.storage.StorageLevel;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.kafka.KafkaUtils;
 
+import com.google.common.base.CaseFormat;
+
 import kafka.serializer.DefaultDecoder;
 import kafka.serializer.StringDecoder;
 import net.butfly.albacore.calculus.Calculator;
@@ -21,50 +23,29 @@ import scala.Tuple2;
 
 public class KafkaDataSource extends DataSource<String, String, byte[], Void, Void> {
 	private static final long serialVersionUID = 7500441385655250814L;
-	String servers;
-	String root;
-	String group;
-	int topicPartitions;
+	public String servers;
+	public String group;
+	public int topicPartitions;
 
-	public KafkaDataSource(String servers, String root, int topicPartitions, String group, KafkaMarshaller marshaller) {
-		// TODO: customize topic partitions map in configuration.
-		super(Type.KAFKA, false, null == marshaller ? new KafkaMarshaller() : marshaller, String.class, byte[].class,
-				NullOutputFormat.class, null);
-		int pos = servers.indexOf('/');
-		if (root == null && pos >= 0) {
-			this.servers = servers.substring(0, pos);
-			this.root = servers.substring(pos + 1);
-		} else {
-			this.root = root;
-			this.servers = servers;
-		}
+	public KafkaDataSource(String servers, String root, int topicPartitions, String group, CaseFormat srcf, CaseFormat dstf) {
+		super(Type.KAFKA, parseSchema(root, servers), false, KafkaMarshaller.class, String.class, byte[].class, NullOutputFormat.class,
+				null, srcf, dstf);
+		int i = servers.indexOf('/');
+		if (i > 0) this.servers = servers.substring(0, servers.indexOf('/'));
 		this.group = group;
 		this.topicPartitions = topicPartitions;
 	}
 
-	public KafkaDataSource(String servers, String root, int topicPartitions, String group) {
-		this(servers, root, topicPartitions, group, new KafkaMarshaller());
+	public static String parseSchema(String rootInConf, String serversInConf) {
+		int pos = serversInConf.indexOf('/');
+		if (rootInConf != null) return rootInConf;
+		else if (pos > 0) return serversInConf.substring(pos + 1);
+		else return null;
 	}
 
 	@Override
 	public String toString() {
-		return super.toString() + ":" + this.getServers() + "(" + group + ")";
-	}
-
-	public String getGroup() {
-		return group;
-	}
-
-	public String getRoot() {
-		return root;
-	}
-
-	public String getServers() {
-		return this.servers + (null == this.root ? "" : "/" + this.root);
-	}
-
-	public int getTopicPartitions() {
-		return topicPartitions;
+		return super.toString() + ":" + this.servers + (null == this.schema ? "" : "/" + this.schema) + " (by " + group + ")";
 	}
 
 	@Override
@@ -73,7 +54,7 @@ public class KafkaDataSource extends DataSource<String, String, byte[], Void, Vo
 		debug(() -> "Streaming begin: " + factor.toString());
 		JavaPairDStream<String, byte[]> kafka;
 		Map<String, String> params = new HashMap<>();
-		if (root == null) { // direct mode
+		if (schema == null) { // direct mode
 			params.put("metadata.broker.list", servers);
 			// params.put("bootstrap.servers", ks.getServers());
 			// params.put("auto.commit.enable", "false");
@@ -90,7 +71,7 @@ public class KafkaDataSource extends DataSource<String, String, byte[], Void, Vo
 			kafka = KafkaUtils.createStream(calc.ssc, String.class, byte[].class, StringDecoder.class, DefaultDecoder.class, params,
 					topicsMap, StorageLevel.MEMORY_ONLY());
 		}
-		return kafka.mapToPair((final Tuple2<String, byte[]> t) -> new Tuple2<String, F>(marshaller.unmarshallId(t._1), marshaller
-				.unmarshall(t._2, factor)));
+		return kafka.mapToPair((final Tuple2<String, byte[]> t) -> new Tuple2<String, F>(marshaller.unmarshallId(t._1),
+				marshaller.unmarshall(t._2, factor)));
 	}
 }

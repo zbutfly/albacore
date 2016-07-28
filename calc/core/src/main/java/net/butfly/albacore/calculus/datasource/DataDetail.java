@@ -10,16 +10,18 @@ import com.google.common.base.Preconditions;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
 
-@SuppressWarnings("rawtypes")
 public abstract class DataDetail<V> implements Serializable {
 	private static final long serialVersionUID = 1900035964021610093L;
-	public Type type;
-	public String[] tables;
-	public String filter;
-	public Class<V> factorClass;
+	public final Type type;
+	public final String[] tables;
+	public final String filter;
+	public final Class<V> factorClass;
+	public final String source; // db key in config
 
-	protected DataDetail(Type type, Class<V> factor, String filter, String... tables) {
+	protected DataDetail(Type type, Class<V> factor, String source, String filter, String... tables) {
 		Preconditions.checkArgument(tables != null && tables.length > 0);
+		this.type = type;
+		this.source = source;
 		this.tables = tables;
 		this.filter = filter;
 		this.factorClass = factor;
@@ -34,7 +36,7 @@ public abstract class DataDetail<V> implements Serializable {
 				+ (Factor.NOT_DEFINED.equals(filter) ? "" : ", FactorFilter: " + filter) + "]";
 	}
 
-	public Configuration outputConfiguration(DataSource ds) {
+	public Configuration outputConfiguration(@SuppressWarnings("rawtypes") DataSource ds) {
 		return HBaseConfiguration.create();
 	}
 }

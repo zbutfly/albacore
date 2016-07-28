@@ -37,10 +37,20 @@ import com.mongodb.DBRef;
 import com.mongodb.DefaultDBEncoder;
 import com.mongodb.LazyDBObject;
 
+import net.butfly.albacore.calculus.lambda.Func;
 import net.butfly.albacore.calculus.marshall.Marshaller;
 
 public abstract class BsonMarshaller<FK, VK, VV> extends Marshaller<FK, VK, VV> {
 	private static final long serialVersionUID = -7385678674433019238L;
+
+	public BsonMarshaller() {
+		super();
+	}
+
+	public BsonMarshaller(Func<String, String> mapping) {
+		super(mapping);
+	}
+
 	public static ObjectMapper bsoner = new ObjectMapper(MongoBsonFactory.createFactory())
 			.setPropertyNamingStrategy(new UpperCaseWithUnderscoresStrategy()).disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 			.disable(MapperFeature.USE_GETTERS_AS_SETTERS).disable(SerializationFeature.WRITE_NULL_MAP_VALUES)
@@ -69,7 +79,7 @@ public abstract class BsonMarshaller<FK, VK, VV> extends Marshaller<FK, VK, VV> 
 		protected void _putObjectField(final String name, final Object initialValue) {
 			if ("_transientFields".equals(name)) { return; }
 			if (name.contains("\0")) { throw new IllegalArgumentException(
-					"Document field names can't have a NULL character. (Bad Key: '" + name + "')"); }
+					"Document field names can't have a NULL character. (Bad MapReduceKey: '" + name + "')"); }
 
 			if ("$where".equals(name) && initialValue instanceof String) {
 				putCode(name, new Code((String) initialValue));
@@ -98,7 +108,7 @@ public abstract class BsonMarshaller<FK, VK, VV> extends Marshaller<FK, VK, VV> 
 			else if (value instanceof DBRef) {
 				BSONObject temp = new BasicBSONObject();
 				temp.put("$ref", ((DBRef) value).getCollectionName());
-				temp.put("$id", ((DBRef) value).getId());
+				temp.put("$key", ((DBRef) value).getId());
 				putObject(name, temp);
 			} else if (value instanceof MinKey) putMinKey(name);
 			else if (value instanceof MaxKey) putMaxKey(name);

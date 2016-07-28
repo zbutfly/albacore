@@ -9,12 +9,12 @@ import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.InputFormat;
-import org.apache.spark.api.java.JavaPairRDD;
 import org.bson.BSONObject;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 
+import com.google.common.base.CaseFormat;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import com.mongodb.client.MongoCollection;
@@ -31,7 +31,9 @@ import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
-import net.butfly.albacore.calculus.factor.modifier.Index;
+import net.butfly.albacore.calculus.factor.modifier.DBIndex;
+import net.butfly.albacore.calculus.factor.rds.PairRDS;
+import net.butfly.albacore.calculus.marshall.Marshaller;
 import net.butfly.albacore.calculus.marshall.MongoMarshaller;
 import net.butfly.albacore.calculus.marshall.bson.BsonMarshaller;
 import net.butfly.albacore.calculus.utils.Reflections;
@@ -41,16 +43,12 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 	private static final long serialVersionUID = -2617369621178264387L;
 	final String uri;
 
-	public MongoDataSource(String uri, MongoMarshaller marshaller, String suffix, boolean validate) {
-		super(Type.MONGODB, validate, null == marshaller ? new MongoMarshaller() : marshaller, Object.class, BSONObject.class,
-				MongoOutputFormat.class, MongoInputFormat.class);
+	public MongoDataSource(String uri, String schema, String suffix, boolean validate, CaseFormat srcf, CaseFormat dstf) {
+		super(Type.MONGODB, schema, validate, MongoMarshaller.class, Object.class, BSONObject.class, MongoOutputFormat.class,
+				MongoInputFormat.class, srcf, dstf);
 		super.suffix = suffix;
 		this.uri = uri;
 
-	}
-
-	public MongoDataSource(String uri, String suffix, boolean validate) {
-		this(uri, new MongoMarshaller(), suffix, validate);
 	}
 
 	@Override
@@ -62,7 +60,7 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 		return uri;
 	}
 
-	@SuppressWarnings({ "deprecation", "unchecked" })
+	@SuppressWarnings("deprecation")
 	@Override
 	public <F> boolean confirm(Class<F> factor, DataDetail<F> detail) {
 		MongoClientURI muri = new MongoClientURI(getUri());
@@ -72,8 +70,8 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 				MongoDatabase db = mclient.getDatabase(muri.getDatabase());
 				db.createCollection(detail.tables[0]);
 				MongoCollection<Document> col = db.getCollection(detail.tables[0]);
-				for (Map.Entry<Field, ? extends Annotation> f : marshaller.parseAll(factor, Index.class).entrySet()) {
-					Index idx = (Index) f.getValue();
+				for (Map.Entry<Field, ? extends Annotation> f : Marshaller.parseAllForAny(factor, DBIndex.class).entrySet()) {
+					DBIndex idx = (DBIndex) f.getValue();
 					Object v = 1;
 					if (idx.hashed()) v = "hashed";
 					else if (idx.descending()) v = -1;
@@ -87,8 +85,8 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 	}
 
 	@Override
-	public <F extends Factor<F>> JavaPairRDD<Object, F> stocking(Calculator calc, Class<F> factor, DataDetail<F> detail,
-			float expandPartitions, FactorFilter... filters) {
+	public <F extends Factor<F>> PairRDS<Object, F> stocking(Calculator calc, Class<F> factor, DataDetail<F> detail, float expandPartitions,
+			FactorFilter... filters) {
 		debug(() -> "Stocking begin: " + factor.toString() + ", from table: " + detail.tables[0] + ".");
 		Configuration mconf = new Configuration();
 		mconf.setClass(MongoConfigUtil.JOB_INPUT_FORMAT, MongoInputFormat.class, InputFormat.class);
@@ -104,7 +102,7 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 				warn(() -> "MongoDB query chance set as [" + ((FactorFilter.Limit) f).limit + "], maybe debug...");
 				mconf.setLong(MongoConfigUtil.INPUT_LIMIT, ((FactorFilter.Limit) f).limit);
 			} else if (f instanceof FactorFilter.Skip) {
-				warn(() -> "MongoDB query skip set as [" + ((FactorFilter.Skip) f).skip + "], maybe debug...");
+				warn(() -> "MongoDB query offset set as [" + ((FactorFilter.Skip) f).skip + "], maybe debug...");
 				mconf.setLong(MongoConfigUtil.INPUT_SKIP, ((FactorFilter.Skip) f).skip);
 			} else if (f instanceof FactorFilter.Sort) {
 				warn(() -> "MongoDB query sort set as [" + ((FactorFilter.Sort) f).field + ":" + ((FactorFilter.Sort) f).asc
@@ -125,7 +123,7 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 					+ (inputquery.length() <= 200 || calc.debug ? inputquery
 							: inputquery.substring(0, 100) + "...(too long string eliminated)")
 					+ (mconf.get(MongoConfigUtil.INPUT_LIMIT) == null ? "" : ", chance: " + mconf.get(MongoConfigUtil.INPUT_LIMIT))
-					+ (mconf.get(MongoConfigUtil.INPUT_SKIP) == null ? "" : ", skip: " + mconf.get(MongoConfigUtil.INPUT_SKIP)) + ".");
+					+ (mconf.get(MongoConfigUtil.INPUT_SKIP) == null ? "" : ", offset: " + mconf.get(MongoConfigUtil.INPUT_SKIP)) + ".");
 		}
 		// conf.mconf.set(MongoConfigUtil.INPUT_FIELDS
 		mconf.setBoolean(MongoConfigUtil.INPUT_NOTIMEOUT, true);

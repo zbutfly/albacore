@@ -1,7 +1,5 @@
 package net.butfly.albacore.calculus.factor.rds;
 
-import java.util.Collection;
-
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
@@ -13,28 +11,30 @@ import org.apache.spark.storage.StorageLevel;
 import org.apache.spark.streaming.StreamingContext;
 import org.apache.spark.streaming.dstream.DStream;
 
-import net.butfly.albacore.calculus.Mode;
+import net.butfly.albacore.calculus.factor.rds.internal.Wrapped;
+import net.butfly.albacore.calculus.factor.rds.internal.WrappedRDD;
 import scala.Tuple2;
 
+/**
+ * Single including any implementation of spark data.
+ * 
+ * @author zx
+ *
+ * @param <T>
+ */
 public class RDS<T> implements Wrapped<T> {
 	private static final long serialVersionUID = -1898959212702322579L;
 	protected Wrapped<T> wrapped;
 
 	protected RDS(Wrapped<T> wrapper) {
-		if (RDS.class.isAssignableFrom(wrapper.getClass())) throw new IllegalArgumentException();
-		this.wrapped = wrapper;
+		this.wrapped = wrapper.wrapped();
 	}
 
 	protected RDS() {}
 
 	@SafeVarargs
 	public RDS(JavaSparkContext sc, T... t) {
-		this.wrapped = new WDD<T>(sc.sc(), t);
-	}
-
-	@Override
-	public Mode mode() {
-		return wrapped().mode();
+		this.wrapped = new WrappedRDD<T>(sc.sc(), t);
 	}
 
 	@Override
@@ -48,11 +48,6 @@ public class RDS<T> implements Wrapped<T> {
 	@Override
 	public void foreachRDD(VoidFunction<JavaRDD<T>> consumer) {
 		wrapped().foreachRDD(consumer);
-	}
-
-	@Override
-	public void foreach(VoidFunction<T> consumer) {
-		wrapped().foreach(consumer);
 	}
 
 	@Override
@@ -71,11 +66,6 @@ public class RDS<T> implements Wrapped<T> {
 	}
 
 	@Override
-	public Collection<RDD<T>> rdds() {
-		return wrapped().rdds();
-	}
-
-	@Override
 	public RDS<T> repartition(float ratio) {
 		return new RDS<>(wrapped().repartition(ratio));
 	}
@@ -86,12 +76,8 @@ public class RDS<T> implements Wrapped<T> {
 	}
 
 	@Override
-	public RDS<T> persist() {
-		return new RDS<>(wrapped().persist());
-	}
-
-	@Override
 	public RDS<T> persist(StorageLevel level) {
+		if (null == level || StorageLevel.NONE().equals(level)) return this;
 		return new RDS<>(wrapped().persist(level));
 	}
 
@@ -106,22 +92,26 @@ public class RDS<T> implements Wrapped<T> {
 	}
 
 	@Override
-	public <K2, V2> RDS<Tuple2<K2, V2>> mapToPair(PairFunction<T, K2, V2> func) {
-		return new RDS<>(wrapped().mapToPair(func));
+	public <K2, V2> RDS<Tuple2<K2, V2>> mapToPair(PairFunction<T, K2, V2> func, Class<?>... cls) {
+		return new RDS<>(wrapped().mapToPair(func, cls));
 	}
 
 	@Override
-	public <T1> RDS<T1> map(Function<T, T1> func) {
-		return new RDS<>(wrapped().map(func));
+	public <T1> RDS<T1> map(Function<T, T1> func, Class<?>... cls1) {
+		return new RDS<>(wrapped().map(func, cls1));
 	}
 
 	@Override
-	public <S> RDS<T> sortBy(Function<T, S> comp) {
-		return new RDS<>(wrapped().sortBy(comp));
+	public <S> RDS<T> sortBy(Function<T, S> comp, Class<?>... cls) {
+		return new RDS<>(wrapped().sortBy(comp, cls));
 	}
 
 	@Override
-	public T first() {
-		return wrapped().first();
+	public boolean isStream() {
+		return wrapped().isStream();
+	}
+
+	public static <T> RDS<T> empty(JavaSparkContext sc) {
+		return new RDS<>(sc);
 	}
 }

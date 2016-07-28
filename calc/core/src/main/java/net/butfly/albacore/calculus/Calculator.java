@@ -24,18 +24,17 @@ import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.CaseFormat;
+
 import net.butfly.albacore.calculus.datasource.ConstDataSource;
 import net.butfly.albacore.calculus.datasource.DataSource;
 import net.butfly.albacore.calculus.datasource.DataSource.DataSources;
 import net.butfly.albacore.calculus.datasource.HbaseDataSource;
+import net.butfly.albacore.calculus.datasource.HiveDataSource;
 import net.butfly.albacore.calculus.datasource.KafkaDataSource;
 import net.butfly.albacore.calculus.datasource.MongoDataSource;
 import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.factor.Factors;
-import net.butfly.albacore.calculus.marshall.HbaseMarshaller;
-import net.butfly.albacore.calculus.marshall.KafkaMarshaller;
-import net.butfly.albacore.calculus.marshall.Marshaller;
-import net.butfly.albacore.calculus.marshall.MongoMarshaller;
 import net.butfly.albacore.calculus.utils.Logable;
 import net.butfly.albacore.calculus.utils.Reflections;
 
@@ -75,13 +74,7 @@ public class Calculator implements Logable, Serializable {
 		for (Object key : props.keySet())
 			System.setProperty(key.toString(), props.getProperty(key.toString()));
 		Calculator c = new Calculator(props);
-		c.spark().calculate().end();
-	}
-
-	private Calculator spark() {
-		sc = new JavaSparkContext(sconf);
-		if (mode == Mode.STREAMING) ssc = new JavaStreamingContext(sc, Durations.seconds(dura));
-		return this;
+		c.calculate().end();
 	}
 
 	private Calculator end() {
@@ -127,6 +120,8 @@ public class Calculator implements Logable, Serializable {
 		if (props.containsKey("calculus.spark.jars")) sconf.setJars(props.getProperty("calculus.spark.jars").split(","));
 		if (props.containsKey("calculus.spark.home")) sconf.setSparkHome(props.getProperty("calculus.spark.home"));
 		if (debug) sconf.set("spark.testing", "true");
+		sc = new JavaSparkContext(sconf);
+		if (mode == Mode.STREAMING) ssc = new JavaStreamingContext(sc, Durations.seconds(dura));
 		parseDatasources(subprops(props, "calculus.ds."));
 		debug(() -> "Running " + calculusClass.getSimpleName());
 	}
@@ -156,29 +151,35 @@ public class Calculator implements Logable, Serializable {
 	private void parseDatasources(Map<String, Properties> dsprops) {
 		for (String dsid : dsprops.keySet()) {
 			Properties dbprops = dsprops.get(dsid);
-			Marshaller<?, ?, ?> m;
-			try {
-				m = (Marshaller<?, ?, ?>) Class.forName(dbprops.getProperty("marshaller")).newInstance();
-			} catch (Exception e) {
-				m = null;
-			}
 			Type type = Type.valueOf(dbprops.getProperty("type"));
+			CaseFormat srcf = dbprops.containsKey("field.name.format.src")
+					? CaseFormat.valueOf(dbprops.getProperty("field.name.format.src")) : CaseFormat.LOWER_CAMEL;
+			CaseFormat dstf = dbprops.containsKey("field.name.format.dst")
+					? CaseFormat.valueOf(dbprops.getProperty("field.name.format.dst")) : CaseFormat.UPPER_UNDERSCORE;
+			String schema = dbprops.getProperty("schema");
 			DataSource<?, ?, ?, ?, ?> ds = null;
 			switch (type) {
-			case CONSTAND_TO_CONSOLE:
-				ds = new ConstDataSource(dbprops.getProperty("values").split(","));
+			case HIVE:
+				ds = new HiveDataSource(schema, this.sc, srcf, dstf);
+				break;
+			case CONSOLE:
+				String[] values;
+				if (dbprops.containsKey("values")) values = dbprops.getProperty("values").split(dbprops.getProperty("values.split", ","));
+				else if (dbprops.containsKey("uris")) values = ConstDataSource.readLines(dbprops.getProperty("uris").split(","));
+				else values = ConstDataSource.readLines();
+				ds = new ConstDataSource(values, srcf, dstf);
 				break;
 			case HBASE:
-				ds = new HbaseDataSource(dbprops.getProperty("config", "hbase-site.xml"), (HbaseMarshaller) m);
+				ds = new HbaseDataSource(dbprops.getProperty("config", "hbase-site.xml"), srcf, dstf);
 				break;
 			case MONGODB:
-				ds = new MongoDataSource(dbprops.getProperty("uri"), (MongoMarshaller) m, dbprops.getProperty("output.suffix"),
-						Boolean.parseBoolean(dbprops.getProperty("validate", "true")));
+				ds = new MongoDataSource(dbprops.getProperty("uri"), schema, dbprops.getProperty("output.suffix"),
+						Boolean.parseBoolean(dbprops.getProperty("validate", "true")), srcf, dstf);
 				break;
 			case KAFKA:
-				ds = new KafkaDataSource(dbprops.getProperty("servers"), dbprops.getProperty("root"),
+				ds = new KafkaDataSource(dbprops.getProperty("servers"), dbprops.getProperty("schema"),
 						Integer.parseInt(dbprops.getProperty("topic.partitions", "1")),
-						debug ? appname + UUID.randomUUID().toString() : appname, (KafkaMarshaller) m);
+						debug ? appname + UUID.randomUUID().toString() : appname, srcf, dstf);
 				break;
 			default:
 				warn(() -> "Unsupportted type: " + type);
@@ -194,7 +195,7 @@ public class Calculator implements Logable, Serializable {
 	private static CommandLine commandline(String... args) throws ParseException {
 		PosixParser parser = new PosixParser();
 		Options opts = new Options();
-		opts.addOption("f", "config", true, "Calculus configuration file location. Defalt calculus.properties in classpath root.");
+		opts.addOption("f", "config", true, "Calculus configuration file location. Defalt calculus.properties in classpath schema.");
 		opts.addOption("c", "class", true, "Calculus class to be calculated.");
 		opts.addOption("m", "mode", true, "Calculating mode, STOCKING or STREAMING. Default STREAMING.");
 		opts.addOption("d", "debug", true, "Debug mode, TRUE or FALSE. Default FALSE.");
@@ -209,5 +210,12 @@ public class Calculator implements Logable, Serializable {
 	public static final InputStream scanInputStream(String file) throws FileNotFoundException, IOException {
 		URL url = Thread.currentThread().getContextClassLoader().getResource(file);
 		return null == url ? new FileInputStream(file) : url.openStream();
+	}
+
+	@SuppressWarnings("rawtypes")
+	public <DS extends DataSource> DS getDS(String dbid) {
+		DS ds = dss.ds(dbid);
+		if (null == ds) logger.warn("Datasource " + dbid + " not configurated, ignore!");
+		return ds;
 	}
 }

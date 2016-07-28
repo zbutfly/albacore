@@ -1,6 +1,7 @@
 package net.butfly.albacore.calculus.utils;
 
 import java.io.Serializable;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -8,6 +9,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -15,9 +17,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import org.apache.commons.lang3.reflect.ConstructorUtils;
+import org.apache.commons.lang3.reflect.MethodUtils;
+
 import com.google.common.reflect.TypeToken;
 
 import net.butfly.albacore.calculus.lambda.Func;
+import scala.Tuple2;
 
 public final class Reflections implements Serializable {
 	private static final long serialVersionUID = 6337397752201899394L;
@@ -80,21 +86,15 @@ public final class Reflections implements Serializable {
 	}
 
 	public static <T> T construct(String className, Object... parameters) {
-		Class<T> clazz = forClassName(className);
-		return construct(clazz, parameters);
+		return construct(forClassName(className), parameters);
 	}
 
 	public static <T> T construct(final Class<T> cls, Object... parameters) {
-		final Class<?> parameterTypes[] = toClass(parameters);
-		return constr(cls, parameters, parameterTypes);
-	}
-
-	private static <T> T constr(final Class<T> cls, Object[] parameters, Class<?>[] parameterTypes) {
 		try {
-			return cls.getConstructor(parameterTypes).newInstance(parameters);
-		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
-				| NoSuchMethodException | SecurityException e) {
-			throw new RuntimeException("Instance of " + cls.toString() + " construction failure.", e);
+			if (null == parameters || parameters.length == 0) return ConstructorUtils.invokeConstructor(cls);
+			else return ConstructorUtils.invokeConstructor(cls, parameters);
+		} catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException | InstantiationException e) {
+			throw new RuntimeException(e);
 		}
 	}
 
@@ -150,6 +150,15 @@ public final class Reflections implements Serializable {
 			types.put(v.getName(), (Class<?>) TypeToken.of(implType).resolveType(v).getRawType());
 		} ;
 		return types;
+	}
+
+	public static <T, K, V> Map<K, V> transMapping(Collection<T> list, Func<T, Tuple2<K, V>> mapping) {
+		Map<K, V> map = new HashMap<>();
+		list.forEach(t -> {
+			Tuple2<K, V> e = mapping.call(t);
+			map.put(e._1, e._2);
+		});
+		return map;
 	}
 
 	@SafeVarargs
@@ -215,4 +224,30 @@ public final class Reflections implements Serializable {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
+	public static <V> V invoke(Object object, String methodName, Object... args) {
+		try {
+			if (Class.class.isAssignableFrom(object.getClass()))
+				return (V) MethodUtils.invokeStaticMethod((Class<?>) object, methodName, args);
+			else return (V) MethodUtils.invokeMethod(object, methodName, args);
+		} catch (NoSuchMethodException | IllegalAccessException ex) {
+			throw new RuntimeException(ex);
+		} catch (InvocationTargetException ex) {
+			throw new RuntimeException(ex.getTargetException());
+		}
+	}
+
+	public static <A extends Annotation> List<A> multipleAnnotation(Class<A> a, Class<? extends Annotation> ma, Class<?>... cc) {
+		List<A> list = new ArrayList<>();
+		if (null != cc && cc.length > 0) for (Class<?> c : cc) {
+			if (null == c) continue;
+			if (c.isAnnotationPresent(ma)) {
+				A[] v = Reflections.invoke(c.getAnnotation(ma), "value");
+				if (null != v) list.addAll(Arrays.asList(v));
+			} else if (c.isAnnotationPresent(a)) list.add(c.getAnnotation(a));
+			list.addAll(multipleAnnotation(a, ma, c.getSuperclass()));
+			list.addAll(multipleAnnotation(a, ma, c.getInterfaces()));
+		}
+		return list;
+	}
 }
