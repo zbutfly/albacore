@@ -22,7 +22,7 @@ public interface Factor<F extends Factor<F>> extends Serializable {
 
 		String[] table() default {};
 
-		String filter() default NOT_DEFINED;
+		String query() default NOT_DEFINED;
 	}
 
 	@Retention(RetentionPolicy.RUNTIME)
@@ -34,7 +34,7 @@ public interface Factor<F extends Factor<F>> extends Serializable {
 
 		String[] table() default {};
 
-		String filter() default NOT_DEFINED;
+		String query() default NOT_DEFINED;
 	}
 
 	public final static class VoidFactor implements Factor<VoidFactor> {

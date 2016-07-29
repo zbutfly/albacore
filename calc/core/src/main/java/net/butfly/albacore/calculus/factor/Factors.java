@@ -25,7 +25,7 @@ import net.butfly.albacore.calculus.factor.Directly.StockingDirectly;
 import net.butfly.albacore.calculus.factor.Factor.Stocking;
 import net.butfly.albacore.calculus.factor.Factor.Streaming;
 import net.butfly.albacore.calculus.factor.Factor.Type;
-import net.butfly.albacore.calculus.factor.Factoring.Factorings;
+import net.butfly.albacore.calculus.factor.Calculating.Calculatings;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.factor.rds.internal.WrappedDStream;
@@ -47,7 +47,7 @@ public final class Factors implements Serializable, Logable {
 		this.calc = calc;
 		FactorConfig<?, ?> batch = null;
 		Set<Class<?>> cl = new HashSet<>();
-		for (Factoring f : valid(Reflections.multipleAnnotation(Factoring.class, Factorings.class, calc.calculusClass))) {
+		for (Calculating f : valid(Reflections.multipleAnnotation(Calculating.class, Calculatings.class, calc.calculusClass))) {
 			if (CONFIGS.containsKey(f.key())) throw new IllegalArgumentException("Conflictted factoring key: " + f.key());
 			@SuppressWarnings("rawtypes")
 			Class fc = f.factor();
@@ -69,9 +69,9 @@ public final class Factors implements Serializable, Logable {
 		calc.sconf.registerKryoClasses(cl.toArray(new Class[cl.size()]));
 	}
 
-	private List<Factoring> valid(List<Factoring> list) {
-		Map<String, Factoring> m = new HashMap<>();
-		for (Factoring f : list)
+	private List<Calculating> valid(List<Calculating> list) {
+		Map<String, Calculating> m = new HashMap<>();
+		for (Calculating f : list)
 			m.putIfAbsent(f.key(), f);
 		return new ArrayList<>(m.values());
 	}
@@ -211,14 +211,14 @@ public final class Factors implements Serializable, Logable {
 		Stocking s = factor.getAnnotation(Stocking.class);
 		config.mode = Mode.STOCKING;
 		config.dbid = s.source();
-		config.detail = buildDetail(calc.getDS(config.dbid), factor, s.type(), s.source(), s.filter(), () -> s.table()[0]);
+		config.detail = buildDetail(calc.getDS(config.dbid), factor, s.type(), s.source(), s.query(), () -> s.table()[0]);
 	}
 
 	private <K, F extends Factor<F>> void buildStreaming(FactorConfig<K, F> config, Class<F> factor) {
 		config.mode = Mode.STREAMING;
 		Streaming s = factor.getAnnotation(Streaming.class);
 		config.dbid = s.source();
-		config.detail = buildDetail(calc.getDS(config.dbid), factor, s.type(), s.source(), s.filter(), () -> s.table()[0]);
+		config.detail = buildDetail(calc.getDS(config.dbid), factor, s.type(), s.source(), s.query(), () -> s.table()[0]);
 	}
 
 	private String parseTable(Type type, Class<? extends Factor<?>> factor, String source, String suffix, String... table) {
