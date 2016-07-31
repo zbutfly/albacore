@@ -1,41 +1,12 @@
 package net.butfly.albacore.calculus.factor;
 
 import java.io.Serializable;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+
+import net.butfly.albacore.calculus.factor.Factoring.Type;
 
 public interface Factor<F extends Factor<F>> extends Serializable {
 	public static final String NOT_DEFINED = "";
 
-	public enum Type {
-		CONSOLE, HBASE, MONGODB, KAFKA, ELASTIC, HIVE
-	}
-
-	@Retention(RetentionPolicy.RUNTIME)
-	@Target({ ElementType.TYPE })
-	public @interface Stocking {
-		Type type();
-
-		String source();
-
-		String[] table() default {};
-
-		String query() default NOT_DEFINED;
-	}
-
-	@Retention(RetentionPolicy.RUNTIME)
-	@Target({ ElementType.TYPE })
-	public @interface Streaming {
-		Type type();
-
-		String source();
-
-		String[] table() default {};
-
-		String query() default NOT_DEFINED;
-	}
 
 	public final static class VoidFactor implements Factor<VoidFactor> {
 		private static final long serialVersionUID = -5722216150920437482L;
@@ -43,7 +14,7 @@ public interface Factor<F extends Factor<F>> extends Serializable {
 		private VoidFactor() {}
 	}
 
-	@Stocking(type = Type.CONSOLE, source = "")
+	@Factoring(type = Type.CONSOLE, ds = "")
 	public final static class Const<V> implements Factor<Const<V>> {
 		private static final long serialVersionUID = 9100426079561362807L;
 		public V value;

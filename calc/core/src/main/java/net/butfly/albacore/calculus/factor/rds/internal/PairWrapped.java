@@ -18,8 +18,8 @@ import org.apache.spark.streaming.api.java.JavaPairDStream;
 import com.google.common.base.Optional;
 import com.google.common.collect.Ordering;
 
-import net.butfly.albacore.calculus.datasource.DataDetail;
 import net.butfly.albacore.calculus.datasource.DataSource;
+import net.butfly.albacore.calculus.factor.FactroingConfig;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.marshall.RowMarshaller;
 import net.butfly.albacore.calculus.streaming.RDDDStream;
@@ -36,7 +36,7 @@ public interface PairWrapped<K, V> extends Wrapped<Tuple2<K, V>> {
 		return RDSupport.tag();
 	}
 
-	default <RK, RV, WK, WV> void save(DataSource<K, RK, RV, WK, WV> ds, DataDetail<V> dd) {
+	default <RK, RV, WK, WV> void save(DataSource<K, RK, RV, WK, WV> ds, FactroingConfig<V> dd) {
 		foreachRDD(r -> ds.save(
 				r.mapToPair(t -> (Tuple2<WK, WV>) ds.beforeWriting(t._1, t._2)).filter(t -> t != null && t._1 != null && t._2 != null),
 				dd));

@@ -10,10 +10,12 @@ import org.apache.spark.sql.Row;
 import org.apache.spark.sql.hive.HiveContext;
 
 import com.google.common.base.CaseFormat;
+import com.google.common.base.Joiner;
 
 import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
-import net.butfly.albacore.calculus.factor.Factor.Type;
+import net.butfly.albacore.calculus.factor.Factoring.Type;
+import net.butfly.albacore.calculus.factor.FactroingConfig;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
 import net.butfly.albacore.calculus.factor.filter.HiveBuilder;
 import net.butfly.albacore.calculus.factor.modifier.MapReduceKey;
@@ -43,8 +45,8 @@ public class HiveDataSource extends DataSource<Object, Row, Row, Object, Row> {
 	}
 
 	@Override
-	public <F extends Factor<F>> PairRDS<Object, F> stocking(Calculator calc, Class<F> factor, DataDetail<F> detail, float expandPartitions,
-			FactorFilter... filters) {
+	public <F extends Factor<F>> PairRDS<Object, F> stocking(Calculator calc, Class<F> factor, FactroingConfig<F> detail,
+			float expandPartitions, FactorFilter... filters) {
 		Function1<Iterator<Row>, Iterator<Tuple2<Object, F>>> f = new ScalarFunc1<Iterator<Row>, Iterator<Tuple2<Object, F>>>() {
 			private static final long serialVersionUID = -8328868785608422254L;
 
@@ -67,22 +69,31 @@ public class HiveDataSource extends DataSource<Object, Row, Row, Object, Row> {
 			}
 		};
 		if (calc.debug) filters = enableDebug(filters);
-		debug(() -> "Scaning begin: " + factor.toString() + " from table: " + detail.tables[0] + ".");
-		DataFrame df = context.sql(detail.tables[0]);
+		debug(() -> "Scaning begin: " + factor.toString() + " from table: " + detail.table + ".");
+		DataFrame df = context.sql(detail.table);
 		// df = context.sql(hql(factor, detail, filters));
 		return new PairRDS<Object, F>(new WrappedRDD<Tuple2<Object, F>>(df.mapPartitions(f, RDSupport.tag())));
 	}
 
-	protected <F extends Factor<F>> String hql(Class<F> factor, DataDetail<F> detail, FactorFilter... filters) {
-		debug(() -> "Scaning begin: " + factor.toString() + " from table: " + detail.tables[0] + ".");
+	protected <F extends Factor<F>> String hql(Class<F> factor, FactroingConfig<F> detail, FactorFilter... filters) {
+		debug(() -> "Scaning begin: " + factor.toString() + " from table: " + detail.table + ".");
 		StringBuilder hql = new StringBuilder("select ");
 		((RowMarshaller) marshaller).colsAsFields(hql, factor);
-		hql.append(" from ").append(detail.tables[0]);
+		hql.append(" from ").append(detail.table);
 		HiveBuilder<F> b = new HiveBuilder<F>(factor, (RowMarshaller) marshaller);
 		String q = b.filter(filters);
 		if (null != q) hql.append(q);
 		String hqlstr = b.finalize(hql).toString();
 		debug(() -> "Hive HQL parsed into: \n\t" + hqlstr);
 		return hqlstr;
+	}
+
+	private static final Joiner AND_JOINER = Joiner.on(" ) and (");
+
+	@Override
+	public String andQuery(String... ands) {
+		if (ands == null || ands.length == 0) return null;
+		if (ands.length == 1) return ands[0];
+		return "(" + AND_JOINER.join(ands) + ")";
 	}
 }

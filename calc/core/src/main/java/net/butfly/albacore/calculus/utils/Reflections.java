@@ -227,8 +227,8 @@ public final class Reflections implements Serializable {
 	@SuppressWarnings("unchecked")
 	public static <V> V invoke(Object object, String methodName, Object... args) {
 		try {
-			if (Class.class.isAssignableFrom(object.getClass()))
-				return (V) MethodUtils.invokeStaticMethod((Class<?>) object, methodName, args);
+			if (Class.class.isAssignableFrom(object.getClass())) return (V) MethodUtils.invokeStaticMethod((Class<?>) object, methodName,
+					args);
 			else return (V) MethodUtils.invokeMethod(object, methodName, args);
 		} catch (NoSuchMethodException | IllegalAccessException ex) {
 			throw new RuntimeException(ex);

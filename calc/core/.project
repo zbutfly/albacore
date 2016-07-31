@@ -24,12 +24,12 @@
 		<link>
 			<name>calculus-deps.pom</name>
 			<type>1</type>
-			<location>C:/Workspaces/albacore/calc/calculus-deps.pom</location>
+			<locationURI>$%7BPARENT-1-PROJECT_LOC%7D/calculus-deps.pom</locationURI>
 		</link>
 		<link>
 			<name>calculus-parent.pom</name>
 			<type>1</type>
-			<location>C:/Workspaces/albacore/calc/calculus-parent.pom</location>
+			<locationURI>$%7BPARENT-1-PROJECT_LOC%7D/calculus-parent.pom</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>

@@ -27,12 +27,14 @@ import com.google.common.base.CaseFormat;
 
 import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
-import net.butfly.albacore.calculus.factor.Factor.Type;
+import net.butfly.albacore.calculus.factor.Factoring.Type;
+import net.butfly.albacore.calculus.factor.FactroingConfig;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
 import net.butfly.albacore.calculus.factor.filter.HbaseBuilder;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.factor.rds.internal.PairWrapped;
 import net.butfly.albacore.calculus.marshall.HbaseMarshaller;
+import net.butfly.albacore.calculus.utils.Maps;
 import net.butfly.albacore.calculus.utils.Reflections;
 
 public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, Result, byte[], Mutation> {
@@ -55,11 +57,11 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 	}
 
 	@Override
-	public <F> boolean confirm(Class<F> factor, DataDetail<F> detail) {
+	public <F> boolean confirm(Class<F> factor, FactroingConfig<F> detail) {
 		try {
-			TableName ht = TableName.valueOf(detail.tables[0]);
+			TableName ht = TableName.valueOf(detail.table);
 			Configuration hconf = HBaseConfiguration.create();
-			hconf.addResource(Calculator.scanInputStream(configFile));
+			hconf.addResource(Maps.inputStream(configFile));
 			Admin a = ConnectionFactory.createConnection(hconf).getAdmin();
 			if (a.tableExists(ht)) return true;
 			Set<String> families = new HashSet<>();
@@ -91,29 +93,28 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 	}
 
 	@Override
-	public <F extends Factor<F>> PairRDS<byte[], F> stocking(Calculator calc, Class<F> factor, DataDetail<F> detail, float expandPartitions,
-			FactorFilter... filters) {
+	public <F extends Factor<F>> PairRDS<byte[], F> stocking(Calculator calc, Class<F> factor, FactroingConfig<F> detail,
+			float expandPartitions, FactorFilter... filters) {
 		if (calc.debug) filters = enableDebug(filters);
-		debug(() -> "Scaning begin: " + factor.toString() + " from table: " + detail.tables[0] + ".");
-		return readByInputFormat(calc.sc,
-				addHbaseFilter(new HbaseBuilder<F>(factor, (HbaseMarshaller) this.marshaller), createHbaseConf(detail.tables[0]), filters),
-				factor, expandPartitions);
+		debug(() -> "Scaning begin: " + factor.toString() + " from table: " + detail.table + ".");
+		return readByInputFormat(calc.sc, addHbaseFilter(new HbaseBuilder<F>(factor, (HbaseMarshaller) this.marshaller), createHbaseConf(
+				detail.table), filters), factor, expandPartitions);
 	}
 
 	@Override
 	@Deprecated
 	public <F extends Factor<F>> PairWrapped<byte[], F> batching(Calculator calc, Class<F> factor, long limit, byte[] offset,
-			DataDetail<F> detail, FactorFilter... filters) {
-		debug(() -> "Scaning begin: " + factor.toString() + " from table: " + detail.tables[0] + ".");
+			FactroingConfig<F> detail, FactorFilter... filters) {
+		debug(() -> "Scaning begin: " + factor.toString() + " from table: " + detail.table + ".");
 		error(() -> "Batching mode is not supported now... BUG!!!!!");
-		return readByInputFormat(calc.sc, addHbaseFilter(new HbaseBuilder<F>(factor, (HbaseMarshaller) this.marshaller),
-				createHbaseConf(detail.tables[0]), new FactorFilter.Page<byte[]>(offset, limit)), factor, -1);
+		return readByInputFormat(calc.sc, addHbaseFilter(new HbaseBuilder<F>(factor, (HbaseMarshaller) this.marshaller), createHbaseConf(
+				detail.table), new FactorFilter.Page<byte[]>(offset, limit)), factor, -1);
 	}
 
 	private Configuration createHbaseConf(String table) {
 		Configuration hconf = HBaseConfiguration.create();
 		try {
-			hconf.addResource(Calculator.scanInputStream(configFile));
+			hconf.addResource(Maps.inputStream(configFile));
 		} catch (IOException e) {
 			throw new RuntimeException("HBase configuration invalid.", e);
 		}
@@ -146,5 +147,10 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	@Override
+	public String andQuery(String... ands) {
+		throw new UnsupportedOperationException();
 	}
 }

@@ -16,7 +16,8 @@ import kafka.serializer.DefaultDecoder;
 import kafka.serializer.StringDecoder;
 import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
-import net.butfly.albacore.calculus.factor.Factor.Type;
+import net.butfly.albacore.calculus.factor.Factoring.Type;
+import net.butfly.albacore.calculus.factor.FactroingConfig;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
 import net.butfly.albacore.calculus.marshall.KafkaMarshaller;
 import scala.Tuple2;
@@ -49,7 +50,7 @@ public class KafkaDataSource extends DataSource<String, String, byte[], Void, Vo
 	}
 
 	@Override
-	public <F extends Factor<F>> JavaPairDStream<String, F> streaming(Calculator calc, Class<F> factor, DataDetail<F> detail,
+	public <F extends Factor<F>> JavaPairDStream<String, F> streaming(Calculator calc, Class<F> factor, FactroingConfig<F> detail,
 			FactorFilter... filters) {
 		debug(() -> "Streaming begin: " + factor.toString());
 		JavaPairDStream<String, byte[]> kafka;
@@ -60,18 +61,23 @@ public class KafkaDataSource extends DataSource<String, String, byte[], Void, Vo
 			// params.put("auto.commit.enable", "false");
 			params.put("group.id", group);
 			kafka = KafkaUtils.createDirectStream(calc.ssc, String.class, byte[].class, StringDecoder.class, DefaultDecoder.class, params,
-					new HashSet<String>(Arrays.asList(detail.tables)));
+					new HashSet<String>(Arrays.asList(detail.table)));
 		} else {
 			params.put("bootstrap.servers", servers);
 			params.put("auto.commit.enable", "false");
 			params.put("group.id", group);
 			Map<String, Integer> topicsMap = new HashMap<>();
-			for (String t : detail.tables)
+			for (String t : detail.table.split(","))
 				topicsMap.put(t, topicPartitions);
 			kafka = KafkaUtils.createStream(calc.ssc, String.class, byte[].class, StringDecoder.class, DefaultDecoder.class, params,
 					topicsMap, StorageLevel.MEMORY_ONLY());
 		}
-		return kafka.mapToPair((final Tuple2<String, byte[]> t) -> new Tuple2<String, F>(marshaller.unmarshallId(t._1),
-				marshaller.unmarshall(t._2, factor)));
+		return kafka.mapToPair((final Tuple2<String, byte[]> t) -> new Tuple2<String, F>(marshaller.unmarshallId(t._1), marshaller
+				.unmarshall(t._2, factor)));
+	}
+
+	@Override
+	public String andQuery(String... ands) {
+		throw new UnsupportedOperationException();
 	}
 }

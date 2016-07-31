@@ -21,7 +21,8 @@ import com.google.common.base.CaseFormat;
 
 import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
-import net.butfly.albacore.calculus.factor.Factor.Type;
+import net.butfly.albacore.calculus.factor.FactroingConfig;
+import net.butfly.albacore.calculus.factor.Factoring.Type;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.factor.rds.internal.PairWrapped;
@@ -36,7 +37,7 @@ import scala.Tuple2;
 public abstract class DataSource<FK, InK, InV, OutK, OutV> implements Serializable, Logable {
 	private static final long serialVersionUID = -1L;
 	protected final Logger logger = LoggerFactory.getLogger(this.getClass());
-	protected final Factor.Type type;
+	protected final Type type;
 	public final String schema;
 	protected final Marshaller<FK, InK, InV> marshaller;
 	public final Class<InK> keyClass;
@@ -52,7 +53,7 @@ public abstract class DataSource<FK, InK, InV, OutK, OutV> implements Serializab
 	public int debugLimit;
 	public float debugRandomChance;
 
-	public Factor.Type type() {
+	public Type type() {
 		return type;
 	}
 
@@ -78,23 +79,23 @@ public abstract class DataSource<FK, InK, InV, OutK, OutV> implements Serializab
 		return "CalculatorDataSource:" + this.type;
 	}
 
-	public <F extends Factor<F>> PairRDS<FK, F> stocking(Calculator calc, Class<F> factor, DataDetail<F> detail, float expandPartitions,
-			FactorFilter... filters) {
+	public <F extends Factor<F>> PairRDS<FK, F> stocking(Calculator calc, Class<F> factor, FactroingConfig<F> detail,
+			float expandPartitions, FactorFilter... filters) {
 		throw new UnsupportedOperationException("Unsupportted stocking mode: " + type + " on " + factor.toString());
 	}
 
 	@Deprecated
 	public <F extends Factor<F>> PairWrapped<FK, F> batching(Calculator calc, Class<F> factorClass, long batching, FK offset,
-			DataDetail<F> detail, FactorFilter... filters) {
+			FactroingConfig<F> detail, FactorFilter... filters) {
 		throw new UnsupportedOperationException("Unsupportted stocking mode with batching: " + type + " on " + factorClass.toString());
 	}
 
-	public <F extends Factor<F>> JavaPairDStream<FK, F> streaming(Calculator calc, Class<F> factor, DataDetail<F> detail,
+	public <F extends Factor<F>> JavaPairDStream<FK, F> streaming(Calculator calc, Class<F> factor, FactroingConfig<F> detail,
 			FactorFilter... filters) {
 		throw new UnsupportedOperationException("Unsupportted streaming mode: " + type + " on " + factor.toString());
 	}
 
-	public <F> boolean confirm(Class<F> factor, DataDetail<F> detail) {
+	public <F> boolean confirm(Class<F> factor, FactroingConfig<F> detail) {
 		return true;
 	}
 
@@ -124,7 +125,7 @@ public abstract class DataSource<FK, InK, InV, OutK, OutV> implements Serializab
 		return l.toArray(new FactorFilter[l.size()]);
 	}
 
-	public void save(JavaPairRDD<OutK, OutV> w, DataDetail<?> dd) {
+	public void save(JavaPairRDD<OutK, OutV> w, FactroingConfig<?> dd) {
 		debug(() -> "Writing to " + type + ", size: " + SizeEstimator.estimate(w));
 		w.saveAsNewAPIHadoopFile("", keyClass, valueClass, outputFormatClass, dd.outputConfiguration(this));
 	}
@@ -135,8 +136,8 @@ public abstract class DataSource<FK, InK, InV, OutK, OutV> implements Serializab
 		debug(() -> "Loading from datasource finished: " + SizeEstimator.estimate(raw) + " bytes (estimate).");
 		final Field idField = Marshaller.idField(factor);
 		final Field keyField = Marshaller.keyField(factor);
-		if (null != keyField && null == idField) throw new IllegalArgumentException(
-				"@MapReduceKey defined but @DBIdentity not defined on " + factor.toString() + ", key will lose in mapping.");
+		if (null != keyField && null == idField) throw new IllegalArgumentException("@MapReduceKey defined but @DBIdentity not defined on "
+				+ factor.toString() + ", key will lose in mapping.");
 		JavaPairRDD<FK, F> results = raw.mapToPair(t -> {
 			F v = marshaller.unmarshall(t._2, factor);
 			FK k = null == keyField ? marshaller.unmarshallId(t._1) : Reflections.get(v, keyField);
@@ -146,4 +147,6 @@ public abstract class DataSource<FK, InK, InV, OutK, OutV> implements Serializab
 		results = (expandPartitions > 1) ? results.repartition((int) Math.ceil(results.getNumPartitions() * expandPartitions)) : results;
 		return new PairRDS<>(new WrappedRDD<>(results));
 	}
+
+	public abstract String andQuery(String... ands);
 }

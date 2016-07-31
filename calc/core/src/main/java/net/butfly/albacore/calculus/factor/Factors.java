@@ -14,18 +14,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.butfly.albacore.calculus.Calculator;
-import net.butfly.albacore.calculus.Mode;
-import net.butfly.albacore.calculus.datasource.DataDetail;
+import net.butfly.albacore.calculus.Calculator.Mode;
 import net.butfly.albacore.calculus.datasource.DataSource;
-import net.butfly.albacore.calculus.datasource.HbaseDataDetail;
-import net.butfly.albacore.calculus.datasource.HiveDataDetail;
-import net.butfly.albacore.calculus.datasource.KafkaDataDetail;
-import net.butfly.albacore.calculus.datasource.MongoDataDetail;
-import net.butfly.albacore.calculus.factor.Directly.StockingDirectly;
-import net.butfly.albacore.calculus.factor.Factor.Stocking;
-import net.butfly.albacore.calculus.factor.Factor.Streaming;
-import net.butfly.albacore.calculus.factor.Factor.Type;
 import net.butfly.albacore.calculus.factor.Calculating.Calculatings;
+import net.butfly.albacore.calculus.factor.Factoring.Factorings;
+import net.butfly.albacore.calculus.factor.Factoring.Type;
+import net.butfly.albacore.calculus.factor.detail.HbaseFractoring;
+import net.butfly.albacore.calculus.factor.detail.HiveFractoring;
+import net.butfly.albacore.calculus.factor.detail.KafkaFractoring;
+import net.butfly.albacore.calculus.factor.detail.MongoFractoring;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.factor.rds.internal.WrappedDStream;
@@ -40,100 +37,106 @@ public final class Factors implements Serializable, Logable {
 	protected static final Logger logger = LoggerFactory.getLogger(Factors.class);
 	public Calculator calc;
 	@SuppressWarnings("rawtypes")
-	private static final Map<String, FactorConfig> CONFIGS = new HashMap<>();
-	// private Map<String, FactorConfig<?, ?>> pool;
+	private static final Map<String, CalculatingConfig> CONFIGS = new HashMap<>();
 
+	@SuppressWarnings("rawtypes")
 	public Factors(Calculator calc) {
 		this.calc = calc;
-		FactorConfig<?, ?> batch = null;
-		Set<Class<?>> cl = new HashSet<>();
-		for (Calculating f : valid(Reflections.multipleAnnotation(Calculating.class, Calculatings.class, calc.calculusClass))) {
-			if (CONFIGS.containsKey(f.key())) throw new IllegalArgumentException("Conflictted factoring key: " + f.key());
-			@SuppressWarnings("rawtypes")
-			Class fc = f.factor();
-			if (!fc.isAnnotationPresent(Streaming.class) && !fc.isAnnotationPresent(Stocking.class)) throw new IllegalArgumentException(
-					"Factor [" + fc.toString() + "] is annotated as neither @Streaming nor @Stocking, can't calculate it!");
-			FactorConfig<?, ?> config = config(fc, f.key());
-			cl.add(config.factorClass);
-			config.batching = f.batching();
-			config.streaming = f.stockOnStreaming();
-			config.expanding = f.expanding();
-			config.persisting = StorageLevel.fromString(f.persisting());
-			if (f.batching() > 0) {
-				if (batch != null) throw new IllegalArgumentException("Only one batch stocking source supported, now found second: "
-						+ batch.factorClass.toString() + " and " + config.factorClass.toString());
-				else batch = config;
+		CalculatingConfig<?> batchChacking = null;
+		Set<Class<?>> kryoClasses = new HashSet<>();
+		for (Calculating c : Reflections.multipleAnnotation(Calculating.class, Calculatings.class, calc.calculusClass)) {
+			if (CONFIGS.containsKey(c.key())) throw new IllegalArgumentException("Conflictted factoring key: " + c.key());
+			Class<? extends Factor> fc = (Class<? extends Factor>) c.factor();
+			CalculatingConfig config = buildConfig(fc, scanFractoring(calc.mode, Reflections.multipleAnnotation(Factoring.class,
+					Factorings.class, fc)));
+			if (null != config) {
+				config.key = c.key();
+				config.batching = c.batching();
+				config.streaming = c.stockOnStreaming();
+				config.expanding = c.expanding();
+				config.persisting = c.persisting().level();
+				config.factorClass = fc;
+				if (c.batching() > 0) {
+					if (batchChacking != null) throw new IllegalArgumentException(
+							"Only one batch stocking source supported, now found second: " + batchChacking.factorClass.toString() + " and "
+									+ config.factorClass.toString());
+					else batchChacking = config;
+				}
+				kryoClasses.add(fc);
+				CONFIGS.putIfAbsent(c.key(), config);
 			}
+		}
+		calc.sconf.registerKryoClasses(kryoClasses.toArray(new Class[kryoClasses.size()]));
+		for (Factoring f : Reflections.multipleAnnotation(Factoring.class, Factorings.class, calc.calculusClass)) {
+			CalculatingConfig c = CONFIGS.get(f.key().split(".")[0]);
+			if (null == c) throw new IllegalArgumentException("Parent @Calculating not found for @Factoring " + f.key());
+			CalculatingConfig config = buildConfig(c.factorClass, f);
+			config.key = f.key();
+			config.batching = c.batching;
+			config.streaming = c.streaming;
+			config.expanding = c.expanding;
+			config.persisting = c.persisting;
 			CONFIGS.put(f.key(), config);
 		}
-		calc.sconf.registerKryoClasses(cl.toArray(new Class[cl.size()]));
 	}
 
-	private List<Calculating> valid(List<Calculating> list) {
-		Map<String, Calculating> m = new HashMap<>();
-		for (Calculating f : list)
-			m.putIfAbsent(f.key(), f);
-		return new ArrayList<>(m.values());
-	}
-
-	public <K, F extends Factor<F>> PairRDS<K, F> directly(String factoringKey, String calcKey) {
-		FactorConfig<K, F> config = (FactorConfig<K, F>) CONFIGS.get(factoringKey);
+	private <F extends Factor<F>> CalculatingConfig<F> buildConfig(Class<F> factor, Factoring f) {
+		// ignore datasource not defined.
 		@SuppressWarnings("rawtypes")
-		Map<String, DataDetail> dds = config.directDBIDs.get(factoringKey);
-		if (null == dds) return PairRDS.emptyPair(calc.sc);
-		DataDetail<F> d = dds.get(calcKey);
-		if (null == d) return PairRDS.emptyPair(calc.sc);
-		DataSource<K, ?, ?, ?, ?> ds = calc.getDS(d.source);
-		if (ds == null) return PairRDS.emptyPair(calc.sc);
-		switch (calc.mode) {
-		case STOCKING:
-			if (config.batching <= 0) return ds.stocking(calc, config.factorClass, d, -1);
-			else throw new UnsupportedOperationException();
-		case STREAMING:
-			switch (config.mode) {
-			case STOCKING:
-				switch (config.streaming) {
-				case CONST:
-					return new PairRDS<K, F>(new WrappedDStream<>(
-							RDDDStream.pstream(calc.ssc.ssc(), Mechanism.CONST, () -> ds.stocking(calc, config.factorClass, d, -1))));
-				case FRESH:
-					return new PairRDS<K, F>(new WrappedDStream<>(
-							RDDDStream.pstream(calc.ssc.ssc(), Mechanism.FRESH, () -> ds.stocking(calc, config.factorClass, d, -1))));
-				default:
-					throw new UnsupportedOperationException();
-				}
-			case STREAMING:
-				return new PairRDS<K, F>(new WrappedDStream<>(ds.streaming(calc, config.factorClass, d)));
-			}
+		DataSource ds = calc.getDS(f.ds());
+		if (null == ds) return null;
+		CalculatingConfig<F> cfg = new CalculatingConfig<>();
+		cfg.mode = f.mode();
+		cfg.dbid = f.ds();
+		String table = parseTable(factor, f, calc.getDS(f.ds()).suffix);
+		String query = parseQuery(factor, f);
+
+		switch (f.type()) {
+		case HBASE:
+			cfg.factoring = new HbaseFractoring<F>(factor, f.ds(), table);
+			break;
+		case HIVE:
+			cfg.factoring = new HiveFractoring<F>(factor, f.ds(), table, query);
+			break;
+		case MONGODB:
+			cfg.factoring = new MongoFractoring<F>(factor, f.ds(), table, query);
+			break;
+		case KAFKA:
+			cfg.factoring = new KafkaFractoring<F>(factor, f.ds(), table, query);
+			break;
+		case CONSOLE:
+			cfg.factoring = null;
+			break;
 		default:
-			throw new UnsupportedOperationException();
+			throw new UnsupportedOperationException("Unsupportted stocking mode: " + f.type() + " on " + factor.toString());
 		}
+		if (ds.validate) ds.confirm(factor, cfg.factoring);
+		return cfg;
 	}
 
-	public <K, F extends Factor<F>> PairRDS<K, F> get(String factorKey, FactorFilter... filters) {
-		FactorConfig<K, F> config = (FactorConfig<K, F>) CONFIGS.get(factorKey);
+	public <K, F extends Factor<F>> PairRDS<K, F> get(String key, FactorFilter... filters) {
+		CalculatingConfig<F> config = (CalculatingConfig<F>) CONFIGS.get(key);
 		DataSource<K, ?, ?, ?, ?> ds = calc.getDS(config.dbid);
 		if (ds == null) return PairRDS.emptyPair(calc.sc);
-		DataDetail<F> d = config.detail;
+		FactroingConfig<F> d = config.factoring;
 		switch (calc.mode) {
 		case STOCKING:
 			if (config.batching <= 0) {
 				PairRDS<K, F> p = ds.stocking(calc, config.factorClass, d, config.expanding, filters);
 				if (config.persisting != null && !StorageLevel.NONE().equals(config.persisting)) p = p.persist(config.persisting);
 				return p;
-			} else return new PairRDS<K, F>(new WrappedDStream<>(RDDDStream.bpstream(calc.ssc.ssc(), config.batching,
-					(final Long limit, final K offset) -> ds.batching(calc, config.factorClass, limit, offset, d, filters),
-					ds.marshaller().comparator())));
+			} else return new PairRDS<K, F>(new WrappedDStream<>(RDDDStream.bpstream(calc.ssc.ssc(), config.batching, (final Long limit,
+					final K offset) -> ds.batching(calc, config.factorClass, limit, offset, d, filters), ds.marshaller().comparator())));
 		case STREAMING:
 			switch (config.mode) {
 			case STOCKING:
 				switch (config.streaming) {
 				case CONST:
-					return new PairRDS<K, F>(new WrappedDStream<>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.CONST,
-							() -> ds.stocking(calc, config.factorClass, d, -1, filters))));
+					return new PairRDS<K, F>(new WrappedDStream<>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.CONST, () -> ds.stocking(
+							calc, config.factorClass, d, -1, filters))));
 				case FRESH:
-					return new PairRDS<K, F>(new WrappedDStream<>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.FRESH,
-							() -> ds.stocking(calc, config.factorClass, d, -1, filters))));
+					return new PairRDS<K, F>(new WrappedDStream<>(RDDDStream.pstream(calc.ssc.ssc(), Mechanism.FRESH, () -> ds.stocking(
+							calc, config.factorClass, d, -1, filters))));
 				default:
 					throw new UnsupportedOperationException();
 				}
@@ -147,91 +150,55 @@ public final class Factors implements Serializable, Logable {
 	}
 
 	public <K, F extends Factor<F>> void put(String key, PairRDS<K, F> rds, Class<K> keyClass, Class<F> factorClass) {
-		FactorConfig<K, F> conf = config(factorClass, key);
+		CalculatingConfig<F> conf = CONFIGS.get(key);
+		if (null == conf) {
+			warn(() -> key + " not defined as output for " + factorClass.toString() + " .");
+			return;
+		}
 		DataSource<K, ?, ?, ?, ?> ds = calc.getDS(conf.dbid);
-		if (ds != null) rds.save(ds, conf.detail);
-	}
-
-	public <K, F extends Factor<F>> FactorConfig<K, F> config(Class<F> factor, String... key) {
-		String k = null == key || key.length == 0 ? null : key[0];
-		if (null != k && CONFIGS.containsKey(k)) return CONFIGS.get(k);
-		if (null == k) // query, but not found
-			throw new IllegalArgumentException("Configuration of [" + factor.toString() + "] not found.");
-		FactorConfig<K, F> config = new FactorConfig<>();
-		config.factorClass = factor;
-		config.key = k;
-
-		if (calc.mode == Mode.STREAMING && factor.isAnnotationPresent(Streaming.class)) buildStreaming(config, factor);
-		else buildStocking(config, factor);
-
-		buildDirectly(config, factor);
-		@SuppressWarnings("rawtypes")
-		DataSource mainDS = calc.getDS(config.dbid);
-		if (mainDS != null && mainDS.validate) calc.getDS(config.dbid).confirm(factor, config.detail);
-		CONFIGS.put(k, config);
-		return config;
-	}
-
-	private <K, F extends Factor<F>> void buildDirectly(FactorConfig<K, F> config, Class<F> factor) {
-		for (StockingDirectly sd : Reflections.multipleAnnotation(StockingDirectly.class, Directly.class, factor)) {
-			@SuppressWarnings("rawtypes")
-			Map<String, DataDetail> dds;
-			if (config.directDBIDs.containsKey(config.key)) dds = config.directDBIDs.get(config.key);
-			else {
-				dds = new HashMap<>();
-				config.directDBIDs.put(config.key, dds);
-			}
-			DataDetail<F> dd = buildDetail(calc.getDS(sd.source()), factor, sd.type(), sd.source(), null,
-					Reflections.construct(sd.query()));
-			if (null != dd) dds.putIfAbsent(sd.calc(), dd);
+		if (ds == null) {
+			warn(() -> conf.dbid + " not defined on outputing to it for " + factorClass.toString() + " .");
+			return;
 		}
+		rds.save(ds, conf.factoring);
 	}
 
-	private <K, F extends Factor<F>> DataDetail<F> buildDetail(@SuppressWarnings("rawtypes") DataSource ds, Class<F> factor, Type type,
-			String source, String filter, Supplier<String> query) {
-		if (null == ds) return null;
-		String q = parseTable(type, factor, source, ds.suffix, query.get());
-		switch (type) {
-		case HBASE:
-			return new HbaseDataDetail<F>(factor, source, q);
-		case HIVE:
-			return new HiveDataDetail<F>(factor, source, ds.schema, q);
-		case MONGODB:
-			return new MongoDataDetail<F>(factor, source, null != filter && Factor.NOT_DEFINED.equals(filter) ? null : filter, q);
-		case KAFKA:
-			return new KafkaDataDetail<F>(factor, source, q);
-		case CONSOLE:
-			return null;
-		default:
-			throw new UnsupportedOperationException("Unsupportted stocking mode: " + type + " on " + factor.toString());
-		}
-	}
-
-	private <K, F extends Factor<F>> void buildStocking(FactorConfig<K, F> config, Class<F> factor) {
-		Stocking s = factor.getAnnotation(Stocking.class);
-		config.mode = Mode.STOCKING;
-		config.dbid = s.source();
-		config.detail = buildDetail(calc.getDS(config.dbid), factor, s.type(), s.source(), s.query(), () -> s.table()[0]);
-	}
-
-	private <K, F extends Factor<F>> void buildStreaming(FactorConfig<K, F> config, Class<F> factor) {
-		config.mode = Mode.STREAMING;
-		Streaming s = factor.getAnnotation(Streaming.class);
-		config.dbid = s.source();
-		config.detail = buildDetail(calc.getDS(config.dbid), factor, s.type(), s.source(), s.query(), () -> s.table()[0]);
-	}
-
-	private String parseTable(Type type, Class<? extends Factor<?>> factor, String source, String suffix, String... table) {
-		if ((null == table || table.length == 0) && type != Type.CONSOLE)
-			throw new IllegalArgumentException("Table not defined for factor " + factor.toString());
-		// XXX: now multiple table is not supportted.
-		if (null == suffix) return table[0];
-		String[] nt = new String[table.length];
-		for (int i = 0; i < table.length; i++) {
-			nt[i] = table[i] + "_" + suffix;
+	private String parseTable(Class<? extends Factor<?>> factor, Factoring s, String suffix) {
+		if ((null == s.table() || s.table().length == 0) && s.type() != Type.CONSOLE) throw new IllegalArgumentException(
+				"Table not defined for factor " + factor.toString());
+		if (s.type() == Type.CONSOLE) return null;
+		info(() -> "Multiple tables defining in @Factoring is not supportted (currently).");
+		if (null == suffix) return s.table()[0];
+		String[] nt = new String[s.table().length];
+		for (int i = 0; i < s.table().length; i++) {
+			nt[i] = s.table()[i] + "_" + suffix;
 			final int j = i;
-			info(() -> "output redirected on [" + source + "]: [" + table[j] + " => " + nt[j] + "].");
+			info(() -> "output redirected on [" + s.ds() + "]: [" + s.table()[j] + " => " + nt[j] + "].");
 		}
 		return nt[0];
+	}
+
+	private String parseQuery(Class<? extends Factor<?>> factor, Factoring s) {
+		if (s.query().length == 0 && s.querying().length == 0) return null;
+		if (s.query().length > 0 && s.querying().length > 0) throw new IllegalArgumentException("Define either query or querying on " + s
+				.ds() + " at " + factor.toString() + ", both not supportted.");
+		if (s.query().length == 1) return s.query()[0];
+		if (s.querying().length == 1) return Reflections.construct(s.querying()[0]).get();
+		if (s.query().length == 0) {
+			List<String> qs = new ArrayList<>();
+			for (Class<? extends Supplier<String>> sp : s.querying())
+				qs.add(Reflections.construct(sp).get());
+			return calc.getDS(s.ds()).andQuery(qs.toArray(new String[qs.size()]));
+		}
+		if (s.querying().length == 0) return calc.getDS(s.ds()).andQuery(s.query());
+		throw new IllegalArgumentException("Why here?!");
+	}
+
+	private Factoring scanFractoring(Mode mode, List<Factoring> factorings) {
+		for (Factoring f : factorings)
+			if (f.mode() == mode) return f;
+		if (mode == Mode.STREAMING) for (Factoring f : factorings)
+			if (f.mode() == Mode.STOCKING) return f;
+		throw new IllegalArgumentException("Correct @Factoring for mode " + calc.mode + " not found.");
 	}
 }

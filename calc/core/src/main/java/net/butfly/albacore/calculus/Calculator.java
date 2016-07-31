@@ -1,13 +1,7 @@
 package net.butfly.albacore.calculus;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
 import java.io.Serializable;
-import java.net.URL;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
@@ -33,14 +27,19 @@ import net.butfly.albacore.calculus.datasource.HbaseDataSource;
 import net.butfly.albacore.calculus.datasource.HiveDataSource;
 import net.butfly.albacore.calculus.datasource.KafkaDataSource;
 import net.butfly.albacore.calculus.datasource.MongoDataSource;
-import net.butfly.albacore.calculus.factor.Factor.Type;
+import net.butfly.albacore.calculus.factor.Factoring.Type;
 import net.butfly.albacore.calculus.factor.Factors;
 import net.butfly.albacore.calculus.utils.Logable;
+import net.butfly.albacore.calculus.utils.Maps;
 import net.butfly.albacore.calculus.utils.Reflections;
 
 public class Calculator implements Logable, Serializable {
 	private static final long serialVersionUID = 7850755405377027618L;
 	protected static final Logger logger = LoggerFactory.getLogger(Calculator.class);
+
+	public enum Mode {
+		STOCKING, STREAMING
+	}
 
 	// devel configurations
 	public boolean debug;
@@ -50,35 +49,41 @@ public class Calculator implements Logable, Serializable {
 	public transient JavaSparkContext sc;
 	public transient JavaStreamingContext ssc;
 	public DataSources dss = new DataSources();
-	private int dura;
 
 	// calculus configurations
 	public Mode mode;
 	public Class<Calculus> calculusClass;
-	private String appname;
 
 	public static void main(String... args) {
-		final Properties props = new Properties();
-		CommandLine cmd;
-		try {
-			cmd = commandline(args);
-			props.load(scanInputStream(cmd.getOptionValue('f', "calculus.properties")));
-		} catch (IOException | ParseException e) {
-			throw new RuntimeException(e);
-		}
-		for (String key : System.getProperties().stringPropertyNames())
-			if (key.startsWith("calculus.")) props.put(key, System.getProperty(key));
-		if (cmd.hasOption('m')) props.setProperty("calculus.mode", cmd.getOptionValue('m').toUpperCase());
-		if (cmd.hasOption('c')) props.setProperty("calculus.class", cmd.getOptionValue('c'));
-		if (cmd.hasOption('d')) props.setProperty("calculus.debug", cmd.getOptionValue('d'));
-		for (Object key : props.keySet())
-			System.setProperty(key.toString(), props.getProperty(key.toString()));
-		Calculator c = new Calculator(props);
+		CommandLine cmd = commandline(args);
+		Properties cprops = new Properties(), sprops = new Properties();
+		mergeProps(cprops, sprops, System.getProperties(), Maps.fromFile(cmd.getOptionValue('f', "calculus.properties")), Maps.fromEnv(
+				"CALCULUS_", key -> CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_HYPHEN, key).replaceAll("-", ".")));
+
+		if (cmd.hasOption('m')) cprops.setProperty("calculus.mode", cmd.getOptionValue('m').toUpperCase());
+		if (cmd.hasOption('c')) cprops.setProperty("calculus.class", cmd.getOptionValue('c'));
+		if (cmd.hasOption('d')) cprops.setProperty("calculus.debug", cmd.getOptionValue('d'));
+		for (Object key : sprops.keySet())
+			System.setProperty(key.toString(), sprops.getProperty(key.toString()));
+		for (Object key : cprops.keySet())
+			if (System.getProperty(key.toString()) == null) System.setProperty(key.toString(), cprops.getProperty(key.toString()));
+
+		Calculator c = new Calculator(cprops, sprops);
 		c.calculate().end();
 	}
 
+	private static void mergeProps(Properties calcProps, Properties sparkProps, Properties... propses) {
+		for (Properties p : propses)
+			for (String key : p.stringPropertyNames()) {
+				if (key.startsWith("calculus.spark.")) {
+					String sk = key.substring(9);
+					if (!sparkProps.containsKey(sk)) sparkProps.setProperty(sk, p.getProperty(key));
+				} else if (!calcProps.containsKey(key)) calcProps.setProperty(key, p.getProperty(key));
+			}
+	}
+
 	private Calculator end() {
-		if (mode == Mode.STREAMING) {
+		if (mode == Calculator.Mode.STREAMING) {
 			ssc.start();
 			info(() -> calculusClass.getSimpleName() + " streaming started, warting for finish. ");
 			ssc.awaitTermination();
@@ -93,37 +98,40 @@ public class Calculator implements Logable, Serializable {
 	}
 
 	@SuppressWarnings("unchecked")
-	private Calculator(Properties props) {
-		mode = Mode.valueOf(props.getProperty("calculus.mode", "STREAMING").toUpperCase());
-		debug = Boolean.valueOf(props.getProperty("calculus.debug", "false").toLowerCase());
+	private Calculator(Properties calcProps, Properties sparkProps) {
+		mode = Mode.valueOf(calcProps.getProperty("calculus.mode", "STREAMING").toUpperCase());
+		debug = Boolean.valueOf(calcProps.getProperty("calculus.debug", "false").toLowerCase());
 		if (debug) error(() -> "Running in DEBUG mode, slowly!!!!!");
-		if (mode == Mode.STOCKING && props.containsKey("calculus.spark.duration.seconds"))
-			warn(() -> "Stocking does not support duration, but duration may be set by calculator for batching.");
-		dura = mode == Mode.STREAMING ? Integer.parseInt(props.getProperty("calculus.spark.duration.seconds", "30"))
-				: Integer.parseInt(props.getProperty("calculus.spark.duration.seconds", "1"));
-		if (!props.containsKey("calculus.class"))
-			throw new IllegalArgumentException("Calculus not defined (-c xxx.ClassName or -Dcalculus.class=xxx.ClassName).");
+		if (mode == Calculator.Mode.STOCKING && calcProps.containsKey("calculus.streaming.duration.seconds")) warn(
+				() -> "Stocking does not support duration, but duration may be set by calculator for batching.");
+
+		if (!calcProps.containsKey("calculus.class")) throw new IllegalArgumentException(
+				"Calculus not defined (-c xxx.ClassName or -Dcalculus.class=xxx.ClassName).");
 		// scan and run calculuses
 		try {
-			calculusClass = (Class<Calculus>) Class.forName(props.getProperty("calculus.class"));
+			calculusClass = (Class<Calculus>) Class.forName(calcProps.getProperty("calculus.class"));
 		} catch (ClassNotFoundException e) {
-			throw new IllegalArgumentException("Calculus " + props.getProperty("calculus.class") + " not found or not calculus.", e);
+			throw new IllegalArgumentException("Calculus " + calcProps.getProperty("calculus.class") + " not found or not calculus.", e);
 		}
-		this.appname = props.getProperty("calculus.app.name", "Calculuses:" + calculusClass.getSimpleName());
 		// dadatabse configurations parsing
-		sconf = new SparkConf();
-		if (props.containsKey("calculus.spark.url")) sconf.setMaster(props.getProperty("calculus.spark.url"));
-		sconf.setAppName(appname + "-Spark");
-		if (props.containsKey("calculus.spark.jars")) sconf.setJars(props.getProperty("calculus.spark.jars").split(","));
-		sconf.set("spark.app.id", appname + "[Spark-App]");
-		sconf.set("spark.testing", Boolean.toString(false));
-		if (props.containsKey("calculus.spark.jars")) sconf.setJars(props.getProperty("calculus.spark.jars").split(","));
-		if (props.containsKey("calculus.spark.home")) sconf.setSparkHome(props.getProperty("calculus.spark.home"));
-		if (debug) sconf.set("spark.testing", "true");
+		sconf = createSparkConf(sparkProps);
 		sc = new JavaSparkContext(sconf);
-		if (mode == Mode.STREAMING) ssc = new JavaStreamingContext(sc, Durations.seconds(dura));
-		parseDatasources(subprops(props, "calculus.ds."));
+		ssc = mode == Calculator.Mode.STREAMING ? new JavaStreamingContext(sc, Durations.seconds(Integer.parseInt(calcProps.getProperty(
+				"calculus.streaming.duration.seconds", mode == Calculator.Mode.STREAMING ? "30" : "1")))) : null;
+
+		parseDatasources(Maps.aggrProps(Maps.subprops(calcProps, "calculus.ds.", false)));
 		debug(() -> "Running " + calculusClass.getSimpleName());
+	}
+
+	private SparkConf createSparkConf(Properties sparkProps) {
+		SparkConf c = new SparkConf();
+		for (String k : sparkProps.stringPropertyNames())
+			c.setIfMissing(k, sparkProps.getProperty(k));
+		c.setIfMissing("spark.app.name", "Calculus[" + calculusClass.getSimpleName() + "]");
+		c.setIfMissing("spark.app.id", calculusClass.getName() + "@" + new Date().toString());
+		c.setIfMissing("spark.testing", Boolean.toString(debug));
+		c.validateSettings();
+		return c;
 	}
 
 	private Calculator calculate() {
@@ -134,28 +142,14 @@ public class Calculator implements Logable, Serializable {
 		return this;
 	}
 
-	private Map<String, Properties> subprops(Properties props, String prefix) {
-		Map<String, Properties> r = new HashMap<>();
-		for (String key : props.stringPropertyNames()) {
-			if (!key.startsWith(prefix)) continue;
-			String seg = key.substring(prefix.length());
-			int pos = seg.indexOf('.');
-			String mainkey = seg.substring(0, pos);
-			String subkey = seg.substring(pos + 1, seg.length());
-			if (!r.containsKey(mainkey)) r.put(mainkey, new Properties());
-			r.get(mainkey).put(subkey, props.getProperty(key));
-		}
-		return r;
-	}
-
 	private void parseDatasources(Map<String, Properties> dsprops) {
 		for (String dsid : dsprops.keySet()) {
 			Properties dbprops = dsprops.get(dsid);
 			Type type = Type.valueOf(dbprops.getProperty("type"));
-			CaseFormat srcf = dbprops.containsKey("field.name.format.src")
-					? CaseFormat.valueOf(dbprops.getProperty("field.name.format.src")) : CaseFormat.LOWER_CAMEL;
-			CaseFormat dstf = dbprops.containsKey("field.name.format.dst")
-					? CaseFormat.valueOf(dbprops.getProperty("field.name.format.dst")) : CaseFormat.UPPER_UNDERSCORE;
+			CaseFormat srcf = dbprops.containsKey("field.name.format.src") ? CaseFormat.valueOf(dbprops.getProperty(
+					"field.name.format.src")) : CaseFormat.LOWER_CAMEL;
+			CaseFormat dstf = dbprops.containsKey("field.name.format.dst") ? CaseFormat.valueOf(dbprops.getProperty(
+					"field.name.format.dst")) : CaseFormat.UPPER_UNDERSCORE;
 			String schema = dbprops.getProperty("schema");
 			DataSource<?, ?, ?, ?, ?> ds = null;
 			switch (type) {
@@ -173,13 +167,14 @@ public class Calculator implements Logable, Serializable {
 				ds = new HbaseDataSource(dbprops.getProperty("config", "hbase-site.xml"), srcf, dstf);
 				break;
 			case MONGODB:
-				ds = new MongoDataSource(dbprops.getProperty("uri"), schema, dbprops.getProperty("output.suffix"),
-						Boolean.parseBoolean(dbprops.getProperty("validate", "true")), srcf, dstf);
+				String tableSuffix = dbprops.getProperty("output.suffix");
+				boolean tableValid = Boolean.parseBoolean(dbprops.getProperty("validate", "true"));
+				ds = new MongoDataSource(dbprops.getProperty("uri"), schema, tableSuffix, tableValid, srcf, dstf);
 				break;
 			case KAFKA:
-				ds = new KafkaDataSource(dbprops.getProperty("servers"), dbprops.getProperty("schema"),
-						Integer.parseInt(dbprops.getProperty("topic.partitions", "1")),
-						debug ? appname + UUID.randomUUID().toString() : appname, srcf, dstf);
+				String group = debug ? sconf.get("spark.app.name") + UUID.randomUUID().toString() : sconf.get("spark.app.name");
+				ds = new KafkaDataSource(dbprops.getProperty("servers"), dbprops.getProperty("schema"), Integer.parseInt(dbprops
+						.getProperty("topic.partitions", "1")), group, srcf, dstf);
 				break;
 			default:
 				warn(() -> "Unsupportted type: " + type);
@@ -192,7 +187,7 @@ public class Calculator implements Logable, Serializable {
 		}
 	}
 
-	private static CommandLine commandline(String... args) throws ParseException {
+	private static CommandLine commandline(String... args) {
 		PosixParser parser = new PosixParser();
 		Options opts = new Options();
 		opts.addOption("f", "config", true, "Calculus configuration file location. Defalt calculus.properties in classpath schema.");
@@ -201,16 +196,19 @@ public class Calculator implements Logable, Serializable {
 		opts.addOption("d", "debug", true, "Debug mode, TRUE or FALSE. Default FALSE.");
 		opts.addOption("h", "help", false, "Print help information like this.");
 
-		CommandLine cmd = parser.parse(opts, args);
-		if (cmd.hasOption('h'))
+		CommandLine cmd;
+		try {
+			cmd = parser.parse(opts, args);
+		} catch (ParseException e) {
 			new HelpFormatter().printHelp("java net.butfly.albacore.calculus.Calculator xxx.xxx.XxxCalculus [option]...", opts);
+			return null;
+		}
+		if (cmd.hasOption('h')) new HelpFormatter().printHelp(
+				"java net.butfly.albacore.calculus.Calculator xxx.xxx.XxxCalculus [option]...", opts);
 		return cmd;
 	}
 
-	public static final InputStream scanInputStream(String file) throws FileNotFoundException, IOException {
-		URL url = Thread.currentThread().getContextClassLoader().getResource(file);
-		return null == url ? new FileInputStream(file) : url.openStream();
-	}
+	
 
 	@SuppressWarnings("rawtypes")
 	public <DS extends DataSource> DS getDS(String dbid) {
