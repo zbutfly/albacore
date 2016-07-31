@@ -32,7 +32,7 @@
 			<locationURI>$%7BPARENT-1-PROJECT_LOC%7D/calculus-parent.pom</locationURI>
 		</link>
 		<link>
-			<name>pom-parent.xml</name>
+			<name>parent.pom</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-1-PROJECT_LOC%7D/pom.xml</locationURI>
 		</link>
