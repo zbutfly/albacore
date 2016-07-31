@@ -86,11 +86,15 @@ public class Calculator implements Logable, Serializable {
 		if (mode == Calculator.Mode.STREAMING) {
 			ssc.start();
 			info(() -> calculusClass.getSimpleName() + " streaming started, warting for finish. ");
-			ssc.awaitTermination();
+			try {
+				ssc.awaitTermination();
+			} catch (Exception e) {
+				error(() -> "Streaming interrupted.", e);
+			}
 			try {
 				ssc.close();
-			} catch (Throwable th) {
-				error(() -> "Streaming error", th);
+			} catch (Exception e) {
+				error(() -> "Streaming close failure.", e);
 			}
 		}
 		sc.close();
@@ -207,8 +211,6 @@ public class Calculator implements Logable, Serializable {
 				"java net.butfly.albacore.calculus.Calculator xxx.xxx.XxxCalculus [option]...", opts);
 		return cmd;
 	}
-
-	
 
 	@SuppressWarnings("rawtypes")
 	public <DS extends DataSource> DS getDS(String dbid) {
