@@ -6,7 +6,6 @@
 		<artifactId>albacore-parent</artifactId>
 		<version>3.0.0-SNAPSHOT</version>
 	</parent>
-	<groupId>net.butfly.albacore.albacore-calc-parent</groupId>
 	<artifactId>albacore-calc-deps</artifactId>
 	<version>1.0.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
