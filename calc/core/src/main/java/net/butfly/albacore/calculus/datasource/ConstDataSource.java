@@ -19,7 +19,8 @@ import com.google.common.base.Joiner;
 
 import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
-import net.butfly.albacore.calculus.factor.Factor.Type;
+import net.butfly.albacore.calculus.factor.FactroingConfig;
+import net.butfly.albacore.calculus.factor.Factoring.Type;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.factor.rds.internal.WrappedRDD;
@@ -45,7 +46,7 @@ public class ConstDataSource extends DataSource<String, Void, String, Void, Stri
 	}
 
 	@Override
-	public <F extends Factor<F>> PairRDS<String, F> stocking(Calculator calc, Class<F> factor, DataDetail<F> detail, float expandPartitions,
+	public <F extends Factor<F>> PairRDS<String, F> stocking(Calculator calc, Class<F> factor, FactroingConfig<F> detail, float expandPartitions,
 			FactorFilter... filters) {
 		String[] values = this.values;
 		if (values == null) values = new String[0];
@@ -76,5 +77,10 @@ public class ConstDataSource extends DataSource<String, Void, String, Void, Stri
 		} finally {
 			r.close();
 		}
+	}
+
+	@Override
+	public String andQuery(String... ands) {
+		throw new UnsupportedOperationException();
 	}
 }
