@@ -47,8 +47,8 @@ public class WrappedDStream<T> implements Wrapped<T> {
 
 	@Override
 	public WrappedDStream<T> repartition(float ratio) {
-		return new WrappedDStream<T>(JavaDStream.fromDStream(dstream, classTag())
-				.transform((Function<JavaRDD<T>, JavaRDD<T>>) rdd -> rdd.repartition((int) Math.ceil(rdd.getNumPartitions() * ratio))));
+		return new WrappedDStream<T>(JavaDStream.fromDStream(dstream, classTag()).transform((Function<JavaRDD<T>, JavaRDD<T>>) rdd -> rdd
+				.repartition((int) Math.ceil(rdd.getNumPartitions() * ratio))));
 	}
 
 	@Override
@@ -83,10 +83,10 @@ public class WrappedDStream<T> implements Wrapped<T> {
 
 	@Override
 	public Wrapped<T> union(Wrapped<T> other) {
-		if (WrappedRDD.class.isAssignableFrom(other.getClass()))
-			return new WrappedDStream<T>(dstream.union(RDDDStream.stream(ssc, Mechanism.CONST, () -> other.jrdd()).dstream()));
-		else if (WrappedDStream.class.isAssignableFrom(other.getClass()))
-			return new WrappedDStream<T>(dstream.union(((WrappedDStream<T>) other).dstream));
+		if (WrappedRDD.class.isAssignableFrom(other.getClass())) return new WrappedDStream<T>(dstream.union(RDDDStream.stream(ssc,
+				Mechanism.CONST, () -> other.jrdd()).dstream()));
+		else if (WrappedDStream.class.isAssignableFrom(other.getClass())) return new WrappedDStream<T>(dstream.union(
+				((WrappedDStream<T>) other).dstream));
 		else throw new IllegalArgumentException();
 	}
 

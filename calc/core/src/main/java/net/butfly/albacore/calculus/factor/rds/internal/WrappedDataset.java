@@ -62,8 +62,8 @@ public class WrappedDataset<K, V> implements PairWrapped<K, V> {
 	}
 
 	public WrappedDataset(SQLContext ssc, List<V> t, Encoder<V> enc) {
-		this(ssc, ssc.sparkContext().parallelize(JavaConversions.asScalaBuffer(t).seq(), ssc.sparkContext().defaultMinPartitions(),
-				enc.clsTag()), enc);
+		this(ssc, ssc.sparkContext().parallelize(JavaConversions.asScalaBuffer(t).seq(), ssc.sparkContext().defaultMinPartitions(), enc
+				.clsTag()), enc);
 	}
 
 	public WrappedDataset(SQLContext ssc, RDD<V> rdd, Encoder<V> enc) {
@@ -151,10 +151,10 @@ public class WrappedDataset<K, V> implements PairWrapped<K, V> {
 		Wrapped<Tuple2<K, V2>> w = other.wrapped();
 		if (w instanceof WrappedDataset) {
 			WrappedDataset<K, V2> ds2 = (WrappedDataset<K, V2>) other.wrapped();
-			Dataset<Tuple2<V, V2>> ds = dataset.joinWith(ds2.dataset,
-					col1.equalTo(ds2.dataset.toDF().col(Marshaller.keyField(ds2.vClass).getName())));
-			return new PairRDS<>(
-					new WrappedRDD<>(ds.rdd().toJavaRDD().map(t -> new Tuple2<K, Tuple2<V, V2>>(Marshaller.key(t._1), t)).rdd()));
+			Dataset<Tuple2<V, V2>> ds = dataset.joinWith(ds2.dataset, col1.equalTo(ds2.dataset.toDF().col(Marshaller.keyField(ds2.vClass)
+					.getName())));
+			return new PairRDS<>(new WrappedRDD<>(ds.rdd().toJavaRDD().map(t -> new Tuple2<K, Tuple2<V, V2>>(Marshaller.key(t._1), t))
+					.rdd()));
 		} else return join(new WrappedDataset<K, V2>(dataset.sqlContext(), other.jrdd().map(t -> t._2), EncoderBuilder.with(vClass2)),
 				vClass2);
 	};
@@ -174,14 +174,12 @@ public class WrappedDataset<K, V> implements PairWrapped<K, V> {
 		Wrapped<Tuple2<K, V2>> w = other.wrapped();
 		if (w instanceof WrappedDataset) {
 			WrappedDataset<K, V2> ds2 = (WrappedDataset<K, V2>) other.wrapped();
-			Dataset<Tuple2<V, V2>> ds = dataset.joinWith(ds2.dataset,
-					col1.equalTo(ds2.dataset.toDF().col(Marshaller.keyField(ds2.vClass).getName())), "left_outer");
-			return new PairRDS<>(new WrappedRDD<>(ds.rdd().toJavaRDD()
-					.map(t -> new Tuple2<K, Tuple2<V, Optional<V2>>>(Marshaller.key(t._1), new Tuple2<>(t._1, Optional.fromNullable(t._2))))
-					.rdd()));
-		} else
-			return leftOuterJoin(new WrappedDataset<K, V2>(dataset.sqlContext(), other.jrdd().map(t -> t._2), EncoderBuilder.with(vClass2)),
-					vClass2);
+			Dataset<Tuple2<V, V2>> ds = dataset.joinWith(ds2.dataset, col1.equalTo(ds2.dataset.toDF().col(Marshaller.keyField(ds2.vClass)
+					.getName())), "left_outer");
+			return new PairRDS<>(new WrappedRDD<>(ds.rdd().toJavaRDD().map(t -> new Tuple2<K, Tuple2<V, Optional<V2>>>(Marshaller.key(t._1),
+					new Tuple2<>(t._1, Optional.fromNullable(t._2)))).rdd()));
+		} else return leftOuterJoin(new WrappedDataset<K, V2>(dataset.sqlContext(), other.jrdd().map(t -> t._2), EncoderBuilder.with(
+				vClass2)), vClass2);
 	}
 
 	@Override

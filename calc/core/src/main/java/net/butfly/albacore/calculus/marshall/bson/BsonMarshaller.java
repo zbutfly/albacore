@@ -51,10 +51,10 @@ public abstract class BsonMarshaller<FK, VK, VV> extends Marshaller<FK, VK, VV> 
 		super(mapping);
 	}
 
-	public static ObjectMapper bsoner = new ObjectMapper(MongoBsonFactory.createFactory())
-			.setPropertyNamingStrategy(new UpperCaseWithUnderscoresStrategy()).disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-			.disable(MapperFeature.USE_GETTERS_AS_SETTERS).disable(SerializationFeature.WRITE_NULL_MAP_VALUES)
-			.setSerializationInclusion(Include.NON_NULL).configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
+	public static ObjectMapper bsoner = new ObjectMapper(MongoBsonFactory.createFactory()).setPropertyNamingStrategy(
+			new UpperCaseWithUnderscoresStrategy()).disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES).disable(
+					MapperFeature.USE_GETTERS_AS_SETTERS).disable(SerializationFeature.WRITE_NULL_MAP_VALUES).setSerializationInclusion(
+							Include.NON_NULL).configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
 	// .enable(Feature.WRITE_BIGDECIMAL_AS_PLAIN)
 
 	@Override
@@ -153,11 +153,11 @@ public abstract class BsonMarshaller<FK, VK, VV> extends Marshaller<FK, VK, VV> 
 		return r;
 	}
 
-	private static ObjectMapper jsoner = new ObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-			.disable(MapperFeature.USE_GETTERS_AS_SETTERS).disable(SerializationFeature.WRITE_NULL_MAP_VALUES)
-			.setSerializationInclusion(Include.NON_NULL).configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true)
-			.configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true)
-			.configure(JsonParser.Feature.ALLOW_UNQUOTED_CONTROL_CHARS, true);
+	private static ObjectMapper jsoner = new ObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES).disable(
+			MapperFeature.USE_GETTERS_AS_SETTERS).disable(SerializationFeature.WRITE_NULL_MAP_VALUES).setSerializationInclusion(
+					Include.NON_NULL).configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true).configure(
+							JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true).configure(JsonParser.Feature.ALLOW_UNQUOTED_CONTROL_CHARS,
+									true);
 
 	public BSONObject bsonFromJSON(String json) {
 		try {

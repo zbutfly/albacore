@@ -160,8 +160,8 @@ public class BeanWrapper extends BaseWrapper {
 		} catch (RuntimeException e) {
 			throw e;
 		} catch (Throwable t) {
-			throw new ReflectionException(
-					"Could not get property '" + prop.getName() + "' from " + object.getClass() + ".  Cause: " + t.toString(), t);
+			throw new ReflectionException("Could not get property '" + prop.getName() + "' from " + object.getClass() + ".  Cause: " + t
+					.toString(), t);
 		}
 	}
 

@@ -14,13 +14,7 @@ import net.butfly.albacore.calculus.Calculator.Mode;
 @Repeatable(Factoring.Factorings.class)
 public @interface Factoring {
 
-	public enum Type {
-		CONSOLE, HBASE, MONGODB, KAFKA, ELASTIC, HIVE
-	}
-
 	Mode mode() default Mode.STOCKING;
-
-	Type type() default Type.MONGODB;
 
 	String key() default "";
 
@@ -29,7 +23,7 @@ public @interface Factoring {
 	String[] table() default {};
 
 	String[] query() default {};
-	
+
 	Class<? extends Supplier<String>>[] querying() default {};
 
 	@Retention(RetentionPolicy.RUNTIME)

@@ -56,8 +56,8 @@ public class WrappedDataFrame<K, V> implements PairWrapped<K, V> {
 	}
 
 	public WrappedDataFrame(SQLContext ssc, RowMarshaller marshaller, List<V> t) {
-		this(ssc, marshaller, ssc.sparkContext().parallelize(JavaConversions.asScalaBuffer(t).seq(),
-				ssc.sparkContext().defaultMinPartitions(), RDSupport.tag()));
+		this(ssc, marshaller, ssc.sparkContext().parallelize(JavaConversions.asScalaBuffer(t).seq(), ssc.sparkContext()
+				.defaultMinPartitions(), RDSupport.tag()));
 	}
 
 	public WrappedDataFrame(SQLContext ssc, RowMarshaller marshaller, RDD<V> rdd) {
@@ -73,8 +73,8 @@ public class WrappedDataFrame<K, V> implements PairWrapped<K, V> {
 
 	@Override
 	public Map<K, V> collectAsMap() {
-		return Reflections.transMapping(frame.collectAsList(),
-				row -> new Tuple2<K, V>((K) marshaller.unmarshallId(row), marshaller.unmarshall(row, vClass)));
+		return Reflections.transMapping(frame.collectAsList(), row -> new Tuple2<K, V>((K) marshaller.unmarshallId(row), marshaller
+				.unmarshall(row, vClass)));
 	}
 
 	@Override
@@ -208,10 +208,8 @@ public class WrappedDataFrame<K, V> implements PairWrapped<K, V> {
 
 	@Override
 	public Tuple2<K, V> reduce(Function2<Tuple2<K, V>, Tuple2<K, V>, Tuple2<K, V>> func) {
-		return JavaRDD.fromRDD(
-				frame.sqlContext().sparkContext().parallelize(JavaConversions.asScalaBuffer(Arrays.asList(jrdd().reduce(func))).seq(),
-						frame.sqlContext().sparkContext().defaultMinPartitions(), classTag()),
-				classTag()).reduce(func);
+		return JavaRDD.fromRDD(frame.sqlContext().sparkContext().parallelize(JavaConversions.asScalaBuffer(Arrays.asList(jrdd().reduce(
+				func))).seq(), frame.sqlContext().sparkContext().defaultMinPartitions(), classTag()), classTag()).reduce(func);
 	}
 
 	@Override
@@ -266,11 +264,10 @@ public class WrappedDataFrame<K, V> implements PairWrapped<K, V> {
 
 	@Override
 	public PairWrapped<K, V> union(Wrapped<Tuple2<K, V>> other) {
-		if (other instanceof WrappedDataFrame)
-			return new WrappedDataFrame<>(frame.unionAll(((WrappedDataFrame<K, V>) other).frame), marshaller, vClass);
-		else return new WrappedDataFrame<>(
-				frame.unionAll(new WrappedDataFrame<>(frame.sqlContext(), marshaller, other.jrdd().map(t -> t._2).rdd()).frame), marshaller,
-				vClass);
+		if (other instanceof WrappedDataFrame) return new WrappedDataFrame<>(frame.unionAll(((WrappedDataFrame<K, V>) other).frame),
+				marshaller, vClass);
+		else return new WrappedDataFrame<>(frame.unionAll(new WrappedDataFrame<>(frame.sqlContext(), marshaller, other.jrdd().map(t -> t._2)
+				.rdd()).frame), marshaller, vClass);
 	}
 
 	@Override

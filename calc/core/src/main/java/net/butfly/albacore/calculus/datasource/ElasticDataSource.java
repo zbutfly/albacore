@@ -11,7 +11,6 @@ import com.google.common.base.CaseFormat;
 import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.FactroingConfig;
-import net.butfly.albacore.calculus.factor.Factoring.Type;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
 import net.butfly.albacore.calculus.factor.modifier.DBIdentity;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
@@ -61,10 +60,10 @@ public class ElasticDataSource extends DataSource<String, String, Map, String, O
 	}
 
 	@Override
-	public <F extends Factor<F>> PairRDS<String, F> stocking(Calculator calc, Class<F> factor, FactroingConfig<F> detail,
-			float expandPartitions, FactorFilter... filters) {
-		JavaPairRDD<String, Map<String, Object>> records = JavaPairRDD.fromRDD(EsSpark.esRDD(calc.sc.sc(), baseUrl + detail.table, filter(
-				detail.query, filters)), RDSupport.tag(), RDSupport.tag());
+	public <F extends Factor<F>> PairRDS<String, F> stocking(Class<F> factor, FactroingConfig<F> detail, float expandPartitions,
+			FactorFilter... filters) {
+		JavaPairRDD<String, Map<String, Object>> records = JavaPairRDD.fromRDD(EsSpark.esRDD(Calculator.calculator.sc.sc(), baseUrl
+				+ detail.table, filter(detail.query, filters)), RDSupport.tag(), RDSupport.tag());
 		if (expandPartitions > 1) records = records.repartition((int) Math.ceil(records.getNumPartitions() * expandPartitions));
 		JavaPairRDD<String, F> r = records.mapToPair((Tuple2<String, Map<String, Object>> t) -> new Tuple2<>(marshaller.unmarshallId(t._1),
 				marshaller.unmarshall(t._2, factor)));

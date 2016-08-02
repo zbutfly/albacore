@@ -37,9 +37,8 @@ public interface PairWrapped<K, V> extends Wrapped<Tuple2<K, V>> {
 	}
 
 	default <RK, RV, WK, WV> void save(DataSource<K, RK, RV, WK, WV> ds, FactroingConfig<V> dd) {
-		foreachRDD(r -> ds.save(
-				r.mapToPair(t -> (Tuple2<WK, WV>) ds.beforeWriting(t._1, t._2)).filter(t -> t != null && t._1 != null && t._2 != null),
-				dd));
+		foreachRDD(r -> ds.save(r.mapToPair(t -> (Tuple2<WK, WV>) ds.beforeWriting(t._1, t._2)).filter(t -> t != null && t._1 != null
+				&& t._2 != null), dd));
 	}
 
 	default Map<K, V> collectAsMap() {
@@ -101,9 +100,8 @@ public interface PairWrapped<K, V> extends Wrapped<Tuple2<K, V>> {
 	default PairWrapped<K, V> repartition(float ratio, boolean rehash) {
 		if (!rehash) return repartition(ratio);
 		Partitioner p = new HashPartitioner((int) Math.ceil(getNumPartitions() * ratio));
-		return isStream()
-				? new PairRDS<>(new WrappedDStream<>(JavaPairDStream.fromPairDStream(dstream(Wrapped.streaming(this)), k(), v())
-						.transformToPair((Function<JavaPairRDD<K, V>, JavaPairRDD<K, V>>) rdd -> rdd.partitionBy(p))))
+		return isStream() ? new PairRDS<>(new WrappedDStream<>(JavaPairDStream.fromPairDStream(dstream(Wrapped.streaming(this)), k(), v())
+				.transformToPair((Function<JavaPairRDD<K, V>, JavaPairRDD<K, V>>) rdd -> rdd.partitionBy(p))))
 				: new PairRDS<>(new WrappedRDD<>(JavaPairRDD.fromJavaRDD(rdd().toJavaRDD()).partitionBy(p)));
 
 	};

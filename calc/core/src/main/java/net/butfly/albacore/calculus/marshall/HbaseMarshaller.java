@@ -48,8 +48,8 @@ public class HbaseMarshaller extends Marshaller<byte[], ImmutableBytesWritable, 
 			try {
 				Cell cell = from.getColumnLatestCell(Text.encode(qulifier[0]).array(), Text.encode(qulifier[1]).array());
 				if (cell != null) Reflections.set(t, f, fromBytes(f.getType(), CellUtil.cloneValue(cell)));
-				else if (logger.isTraceEnabled())
-					logger.trace("Rows of table for [" + to.toString() + "]: " + Joiner.on(',').join(rows(from)));
+				else if (logger.isTraceEnabled()) logger.trace("Rows of table for [" + to.toString() + "]: " + Joiner.on(',').join(rows(
+						from)));
 			} catch (Exception e) {
 				logger.error("Parse of hbase result failure on " + to.toString() + ", field " + f.getName(), e);
 			}
@@ -65,8 +65,8 @@ public class HbaseMarshaller extends Marshaller<byte[], ImmutableBytesWritable, 
 		String family = f.isAnnotationPresent(HbaseColumnFamily.class) ? f.getAnnotation(HbaseColumnFamily.class).value()
 				: (to.isAnnotationPresent(HbaseColumnFamily.class) ? to.getAnnotation(HbaseColumnFamily.class).value()
 						: HbaseColumnFamily.DEFAULT_COLUMN_FAMILY);
-		if (family == null)
-			throw new IllegalArgumentException("Column family is not defined on " + to.toString() + ", field " + f.getName());
+		if (family == null) throw new IllegalArgumentException("Column family is not defined on " + to.toString() + ", field " + f
+				.getName());
 		return family + ":" + col;
 	}
 

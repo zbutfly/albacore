@@ -2,11 +2,8 @@ package net.butfly.albacore.calculus.factor;
 
 import java.io.Serializable;
 
-import net.butfly.albacore.calculus.factor.Factoring.Type;
-
 public interface Factor<F extends Factor<F>> extends Serializable {
 	public static final String NOT_DEFINED = "";
-
 
 	public final static class VoidFactor implements Factor<VoidFactor> {
 		private static final long serialVersionUID = -5722216150920437482L;
@@ -14,7 +11,7 @@ public interface Factor<F extends Factor<F>> extends Serializable {
 		private VoidFactor() {}
 	}
 
-	@Factoring(type = Type.CONSOLE, ds = "")
+	@Factoring(ds = "CONSOLE")
 	public final static class Const<V> implements Factor<Const<V>> {
 		private static final long serialVersionUID = 9100426079561362807L;
 		public V value;

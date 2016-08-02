@@ -21,8 +21,8 @@ public class HiveBuilder<F extends Factor<F>> extends Builder<String, String, F>
 	}
 
 	public StringBuilder finalize(StringBuilder hql) {
-		if (random >= 0)
-			hql.insert(0, "select * from (").append(") where rand() <= + ").append(random).append(" distribute by rand() sort by rand");
+		if (random >= 0) hql.insert(0, "select * from (").append(") where rand() <= + ").append(random).append(
+				" distribute by rand() sort by rand");
 		if (offset >= 0) hql.insert(0, "select *, row_number() over () as hivern from (").append(") where hivern >= ").append(offset);
 		if (limit >= 0) hql.append(" limit ").append(limit);
 		return hql;
@@ -63,10 +63,10 @@ public class HiveBuilder<F extends Factor<F>> extends Builder<String, String, F>
 			Field field = Reflections.getDeclaredField(factor, ((FactorFilter.ByField<?>) filter).field);
 			String qulifier = marshaller.parseQualifier(field);
 			if (filter instanceof FactorFilter.ByFieldValue) {
-				if (!ops.containsKey(filter.getClass()))
-					throw new UnsupportedOperationException("Unsupportted filter: " + filter.getClass());
-				q.append(qulifier).append(ops.get(filter.getClass()))
-						.append(expression(field.getType(), ((FactorFilter.ByFieldValue<?>) filter).value));
+				if (!ops.containsKey(filter.getClass())) throw new UnsupportedOperationException("Unsupportted filter: " + filter
+						.getClass());
+				q.append(qulifier).append(ops.get(filter.getClass())).append(expression(field.getType(),
+						((FactorFilter.ByFieldValue<?>) filter).value));
 			} else if (filter.getClass().equals(FactorFilter.In.class) && ((FactorFilter.In) filter).values.size() > 0) {
 				q.append(" in (");
 				boolean first = true;
@@ -76,8 +76,8 @@ public class HiveBuilder<F extends Factor<F>> extends Builder<String, String, F>
 					q.append(expression(field.getType(), v));
 				}
 				q.append(")");
-			} else if (filter.getClass().equals(FactorFilter.Regex.class)) q.append(qulifier).append(" rlike \"")
-					.append(((FactorFilter.Regex) filter).regex.toString().replaceAll("\\\\", "\\\\\\\\")).append("\"");
+			} else if (filter.getClass().equals(FactorFilter.Regex.class)) q.append(qulifier).append(" rlike \"").append(
+					((FactorFilter.Regex) filter).regex.toString().replaceAll("\\\\", "\\\\\\\\")).append("\"");
 		} else if (filter.getClass().equals(FactorFilter.And.class) && ((FactorFilter.And) filter).filters.size() > 0) {
 			boolean first = true;
 			for (FactorFilter f : ((FactorFilter.And) filter).filters) {

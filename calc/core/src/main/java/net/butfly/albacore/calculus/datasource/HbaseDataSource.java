@@ -27,7 +27,6 @@ import com.google.common.base.CaseFormat;
 
 import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
-import net.butfly.albacore.calculus.factor.Factoring.Type;
 import net.butfly.albacore.calculus.factor.FactroingConfig;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
 import net.butfly.albacore.calculus.factor.filter.HbaseBuilder;
@@ -93,22 +92,22 @@ public class HbaseDataSource extends DataSource<byte[], ImmutableBytesWritable, 
 	}
 
 	@Override
-	public <F extends Factor<F>> PairRDS<byte[], F> stocking(Calculator calc, Class<F> factor, FactroingConfig<F> detail,
-			float expandPartitions, FactorFilter... filters) {
-		if (calc.debug) filters = enableDebug(filters);
+	public <F extends Factor<F>> PairRDS<byte[], F> stocking(Class<F> factor, FactroingConfig<F> detail, float expandPartitions,
+			FactorFilter... filters) {
+		if (Calculator.calculator.debug) filters = enableDebug(filters);
 		debug(() -> "Scaning begin: " + factor.toString() + " from table: " + detail.table + ".");
-		return readByInputFormat(calc.sc, addHbaseFilter(new HbaseBuilder<F>(factor, (HbaseMarshaller) this.marshaller), createHbaseConf(
-				detail.table), filters), factor, expandPartitions);
+		return readByInputFormat(Calculator.calculator.sc, addHbaseFilter(new HbaseBuilder<F>(factor, (HbaseMarshaller) this.marshaller),
+				createHbaseConf(detail.table), filters), factor, expandPartitions);
 	}
 
 	@Override
 	@Deprecated
-	public <F extends Factor<F>> PairWrapped<byte[], F> batching(Calculator calc, Class<F> factor, long limit, byte[] offset,
-			FactroingConfig<F> detail, FactorFilter... filters) {
+	public <F extends Factor<F>> PairWrapped<byte[], F> batching(Class<F> factor, long limit, byte[] offset, FactroingConfig<F> detail,
+			FactorFilter... filters) {
 		debug(() -> "Scaning begin: " + factor.toString() + " from table: " + detail.table + ".");
 		error(() -> "Batching mode is not supported now... BUG!!!!!");
-		return readByInputFormat(calc.sc, addHbaseFilter(new HbaseBuilder<F>(factor, (HbaseMarshaller) this.marshaller), createHbaseConf(
-				detail.table), new FactorFilter.Page<byte[]>(offset, limit)), factor, -1);
+		return readByInputFormat(Calculator.calculator.sc, addHbaseFilter(new HbaseBuilder<F>(factor, (HbaseMarshaller) this.marshaller),
+				createHbaseConf(detail.table), new FactorFilter.Page<byte[]>(offset, limit)), factor, -1);
 	}
 
 	private Configuration createHbaseConf(String table) {

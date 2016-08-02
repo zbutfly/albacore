@@ -30,7 +30,6 @@ import com.mongodb.hadoop.util.MongoConfigUtil;
 
 import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
-import net.butfly.albacore.calculus.factor.Factoring.Type;
 import net.butfly.albacore.calculus.factor.FactroingConfig;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
 import net.butfly.albacore.calculus.factor.modifier.DBIndex;
@@ -87,8 +86,8 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 	}
 
 	@Override
-	public <F extends Factor<F>> PairRDS<Object, F> stocking(Calculator calc, Class<F> factor, FactroingConfig<F> detail,
-			float expandPartitions, FactorFilter... filters) {
+	public <F extends Factor<F>> PairRDS<Object, F> stocking(Class<F> factor, FactroingConfig<F> detail, float expandPartitions,
+			FactorFilter... filters) {
 		debug(() -> "Stocking begin: " + factor.toString() + ", from table: " + detail.table + ".");
 		Configuration mconf = new Configuration();
 		mconf.setClass(MongoConfigUtil.JOB_INPUT_FORMAT, MongoInputFormat.class, InputFormat.class);
@@ -120,16 +119,16 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 			mconf.setClass(MongoConfigUtil.MONGO_SPLITTER_CLASS, MongoPaginatingSplitter.class, MongoSplitter.class);
 			debug(() -> "Use optimized spliter: " + MongoPaginatingSplitter.class.toString());
 			// }
-			trace(() -> "Run mongodb filter on " + factor.toString() + ": " + (inputquery.length() <= 200 || calc.debug ? inputquery
-					: inputquery.substring(0, 100) + "...(too long string eliminated)") + (mconf.get(MongoConfigUtil.INPUT_LIMIT) == null
-							? "" : ", chance: " + mconf.get(MongoConfigUtil.INPUT_LIMIT)) + (mconf.get(MongoConfigUtil.INPUT_SKIP) == null
-									? "" : ", offset: " + mconf.get(MongoConfigUtil.INPUT_SKIP)) + ".");
+			trace(() -> "Run mongodb filter on " + factor.toString() + ": " + (inputquery.length() <= 200 || Calculator.calculator.debug
+					? inputquery : inputquery.substring(0, 100) + "...(too long string eliminated)") + (mconf.get(
+							MongoConfigUtil.INPUT_LIMIT) == null ? "" : ", chance: " + mconf.get(MongoConfigUtil.INPUT_LIMIT)) + (mconf.get(
+									MongoConfigUtil.INPUT_SKIP) == null ? "" : ", offset: " + mconf.get(MongoConfigUtil.INPUT_SKIP)) + ".");
 		}
 		// conf.mconf.set(MongoConfigUtil.INPUT_FIELDS
 		mconf.setBoolean(MongoConfigUtil.INPUT_NOTIMEOUT, true);
 		// mconf.set("mongo.input.split.use_range_queries", "true");
 
-		return readByInputFormat(calc.sc, mconf, factor, expandPartitions);
+		return readByInputFormat(Calculator.calculator.sc, mconf, factor, expandPartitions);
 	}
 
 	@Override

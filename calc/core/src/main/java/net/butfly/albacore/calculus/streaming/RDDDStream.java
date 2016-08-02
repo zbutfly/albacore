@@ -24,7 +24,9 @@ import scala.collection.JavaConversions;
 
 public abstract class RDDDStream<T> extends InputDStream<T> {
 	public enum Mechanism {
-		CONST, STOCK, FRESH, @Deprecated BATCH, @Deprecated CACHE
+		CONST, STOCK, FRESH, @Deprecated
+		BATCH, @Deprecated
+		CACHE
 	}
 
 	protected SparkContext sc;
@@ -37,6 +39,7 @@ public abstract class RDDDStream<T> extends InputDStream<T> {
 
 	abstract protected RDD<T> load();
 
+	@Override
 	public Option<RDD<T>> compute(Time time) {
 		trace(() -> "RDD [" + name() + "] inputted as streaming, size: " + SizeEstimator.estimate(current));
 		return Option.apply(current);
@@ -77,9 +80,8 @@ public abstract class RDDDStream<T> extends InputDStream<T> {
 	public static <K, V> JavaPairDStream<K, V> bpstream(StreamingContext ssc, long batch, Func2<Long, K, PairWrapped<K, V>> batcher,
 			Comparator<K> comparator) {
 		try {
-			return JavaPairDStream.fromPairDStream(
-					new RDDBatchInputDStream<K, V>(ssc, batch, (limit, offset) -> batcher.call(limit, offset).rdd(), comparator),
-					RDSupport.tag(), RDSupport.tag());
+			return JavaPairDStream.fromPairDStream(new RDDBatchInputDStream<K, V>(ssc, batch, (limit, offset) -> batcher.call(limit, offset)
+					.rdd(), comparator), RDSupport.tag(), RDSupport.tag());
 		} catch (Exception ex) {
 			throw new RuntimeException(ex);
 		}

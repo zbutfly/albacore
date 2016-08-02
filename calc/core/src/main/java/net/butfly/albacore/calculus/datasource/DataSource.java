@@ -19,10 +19,8 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.CaseFormat;
 
-import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.FactroingConfig;
-import net.butfly.albacore.calculus.factor.Factoring.Type;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.factor.rds.internal.PairWrapped;
@@ -53,6 +51,10 @@ public abstract class DataSource<FK, InK, InV, OutK, OutV> implements Serializab
 	public int debugLimit;
 	public float debugRandomChance;
 
+	public enum Type {
+		CONSOLE, CONST, HBASE, MONGODB, KAFKA, ELASTIC, HIVE
+	}
+
 	public Type type() {
 		return type;
 	}
@@ -79,19 +81,18 @@ public abstract class DataSource<FK, InK, InV, OutK, OutV> implements Serializab
 		return "CalculatorDataSource:" + this.type;
 	}
 
-	public <F extends Factor<F>> PairRDS<FK, F> stocking(Calculator calc, Class<F> factor, FactroingConfig<F> detail,
-			float expandPartitions, FactorFilter... filters) {
+	public <F extends Factor<F>> PairRDS<FK, F> stocking(Class<F> factor, FactroingConfig<F> detail, float expandPartitions,
+			FactorFilter... filters) {
 		throw new UnsupportedOperationException("Unsupportted stocking mode: " + type + " on " + factor.toString());
 	}
 
 	@Deprecated
-	public <F extends Factor<F>> PairWrapped<FK, F> batching(Calculator calc, Class<F> factorClass, long batching, FK offset,
-			FactroingConfig<F> detail, FactorFilter... filters) {
+	public <F extends Factor<F>> PairWrapped<FK, F> batching(Class<F> factorClass, long batching, FK offset, FactroingConfig<F> detail,
+			FactorFilter... filters) {
 		throw new UnsupportedOperationException("Unsupportted stocking mode with batching: " + type + " on " + factorClass.toString());
 	}
 
-	public <F extends Factor<F>> JavaPairDStream<FK, F> streaming(Calculator calc, Class<F> factor, FactroingConfig<F> detail,
-			FactorFilter... filters) {
+	public <F extends Factor<F>> JavaPairDStream<FK, F> streaming(Class<F> factor, FactroingConfig<F> detail, FactorFilter... filters) {
 		throw new UnsupportedOperationException("Unsupportted streaming mode: " + type + " on " + factor.toString());
 	}
 

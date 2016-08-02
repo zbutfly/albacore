@@ -123,8 +123,8 @@ public class SingleColumnInValuesFilter extends FilterBase {
 		}
 		if (!CellUtil.matchingColumn(c, this.columnFamily, this.columnQualifier)) { return ReturnCode.INCLUDE; }
 		foundColumn = true;
-		if (filterColumnValue(c.getValueArray(), c.getValueOffset(),
-				c.getValueLength())) { return this.latestVersionOnly ? ReturnCode.NEXT_ROW : ReturnCode.INCLUDE; }
+		if (filterColumnValue(c.getValueArray(), c.getValueOffset(), c.getValueLength())) { return this.latestVersionOnly
+				? ReturnCode.NEXT_ROW : ReturnCode.INCLUDE; }
 		this.matchedColumn = true;
 		return ReturnCode.INCLUDE;
 	}
@@ -223,7 +223,7 @@ public class SingleColumnInValuesFilter extends FilterBase {
 
 	@Override
 	public String toString() {
-		return String.format("%s (%s, %s, %d)", this.getClass().getSimpleName(), Bytes.toStringBinary(this.columnFamily),
-				Bytes.toStringBinary(this.columnQualifier), this.comparators.length);
+		return String.format("%s (%s, %s, %d)", this.getClass().getSimpleName(), Bytes.toStringBinary(this.columnFamily), Bytes
+				.toStringBinary(this.columnQualifier), this.comparators.length);
 	}
 }

@@ -1,14 +1,16 @@
 package net.butfly.albacore.calculus.marshall.bson;
 
+import java.io.IOException;
+import java.io.InputStream;
+
+import org.bson.types.BSONTimestamp;
+
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.io.IOContext;
+
 import de.undercouch.bson4jackson.BsonParser;
 import de.undercouch.bson4jackson.types.ObjectId;
 import de.undercouch.bson4jackson.types.Timestamp;
-import org.bson.types.BSONTimestamp;
-
-import java.io.IOException;
-import java.io.InputStream;
 
 class MongoBsonParser extends BsonParser {
 

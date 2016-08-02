@@ -8,7 +8,7 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import com.google.common.base.Preconditions;
 
 import net.butfly.albacore.calculus.datasource.DataSource;
-import net.butfly.albacore.calculus.factor.Factoring.Type;
+import net.butfly.albacore.calculus.datasource.DataSource.Type;
 
 /**
  * Corresponds to {@code Factoring} annotation on {@code Factor} definition.

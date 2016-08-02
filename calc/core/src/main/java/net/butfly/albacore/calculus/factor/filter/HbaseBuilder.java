@@ -53,10 +53,10 @@ public class HbaseBuilder<F extends Factor<F>> extends Builder<Filter, byte[], F
 			String[] q = marshaller.parseQualifier(field).split(":");
 			byte[][] qulifiers = new byte[][] { Bytes.toBytes(q[0]), Bytes.toBytes(q[1]) };
 			if (filter instanceof FactorFilter.ByFieldValue) {
-				if (!ops.containsKey(filter.getClass()))
-					throw new UnsupportedOperationException("Unsupportted filter: " + filter.getClass());
-				SingleColumnValueFilter f = new SingleColumnValueFilter(qulifiers[0], qulifiers[1], ops.get(filter.getClass()),
-						expression(field.getType(), ((FactorFilter.ByFieldValue<?>) filter).value));
+				if (!ops.containsKey(filter.getClass())) throw new UnsupportedOperationException("Unsupportted filter: " + filter
+						.getClass());
+				SingleColumnValueFilter f = new SingleColumnValueFilter(qulifiers[0], qulifiers[1], ops.get(filter.getClass()), expression(
+						field.getType(), ((FactorFilter.ByFieldValue<?>) filter).value));
 				f.setFilterIfMissing(true);
 				return f;
 			}

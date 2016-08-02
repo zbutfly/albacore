@@ -1,6 +1,6 @@
 package net.butfly.albacore.calculus.factor.detail;
 
-import net.butfly.albacore.calculus.factor.Factoring.Type;
+import net.butfly.albacore.calculus.datasource.DataSource.Type;
 import net.butfly.albacore.calculus.factor.FactroingConfig;
 
 public class HbaseFractoring<F> extends FactroingConfig<F> {

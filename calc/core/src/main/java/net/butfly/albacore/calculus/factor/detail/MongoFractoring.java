@@ -7,9 +7,9 @@ import com.mongodb.hadoop.MongoOutputFormat;
 import com.mongodb.hadoop.util.MongoClientURIBuilder;
 
 import net.butfly.albacore.calculus.datasource.DataSource;
+import net.butfly.albacore.calculus.datasource.DataSource.Type;
 import net.butfly.albacore.calculus.datasource.MongoDataSource;
 import net.butfly.albacore.calculus.factor.FactroingConfig;
-import net.butfly.albacore.calculus.factor.Factoring.Type;
 
 public class MongoFractoring<F> extends FactroingConfig<F> {
 	private static final long serialVersionUID = 4206637701358532787L;

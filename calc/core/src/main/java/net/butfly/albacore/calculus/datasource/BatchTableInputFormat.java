@@ -89,8 +89,8 @@ public class BatchTableInputFormat extends org.apache.hadoop.hbase.mapreduce.Tab
 				if (null == regLoc) throw new IOException("Expecting at least one region.");
 				List<InputSplit> splits = new ArrayList<InputSplit>(1);
 				long regionSize = sizeCalculator.getRegionSize(regLoc.getRegionInfo().getRegionName());
-				TableSplit split = new TableSplit(getTable().getName(), HConstants.EMPTY_BYTE_ARRAY, HConstants.EMPTY_BYTE_ARRAY,
-						regLoc.getHostnamePort().split(Addressing.HOSTNAME_PORT_SEPARATOR)[0], regionSize);
+				TableSplit split = new TableSplit(getTable().getName(), HConstants.EMPTY_BYTE_ARRAY, HConstants.EMPTY_BYTE_ARRAY, regLoc
+						.getHostnamePort().split(Addressing.HOSTNAME_PORT_SEPARATOR)[0], regionSize);
 				splits.add(split);
 				return splits;
 			}
@@ -114,8 +114,8 @@ public class BatchTableInputFormat extends org.apache.hadoop.hbase.mapreduce.Tab
 				byte[] regionName = location.getRegionInfo().getRegionName();
 				long regionSize = sizeCalculator.getRegionSize(regionName);
 				// determine if the given start key fall into the region
-				if (offsets == null || offsets.length == 0)
-					splits.add(new TableSplit(getTable().getName(), keys.getFirst()[i], keys.getSecond()[i], regionLocation, regionSize));
+				if (offsets == null || offsets.length == 0) splits.add(new TableSplit(getTable().getName(), keys.getFirst()[i], keys
+						.getSecond()[i], regionLocation, regionSize));
 				else for (byte[] startRow : offsets)
 					if (startRow.length == 0 || keys.getSecond()[i].length == 0 || Bytes.compareTo(startRow, keys.getSecond()[i]) < 0) {
 						byte[] splitStart = startRow.length == 0 || Bytes.compareTo(keys.getFirst()[i], startRow) >= 0 ? keys.getFirst()[i]
