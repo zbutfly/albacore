@@ -68,6 +68,11 @@ public class WrappedDStream<T> implements Wrapped<T> {
 	}
 
 	@Override
+	public T first() {
+		return null;
+	}
+
+	@Override
 	public void foreachRDD(VoidFunction<JavaRDD<T>> consumer) {
 		JavaDStream.fromDStream(dstream, classTag()).foreachRDD(rdd -> {
 			consumer.call(rdd);

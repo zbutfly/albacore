@@ -72,6 +72,7 @@ public final class Factors implements Serializable, Logable {
 			config.streaming = c.streaming;
 			config.expanding = c.expanding;
 			config.persisting = c.persisting;
+			config.factorClass = c.factorClass;
 			CONFIGS.put(f.key(), config);
 		}
 	}
@@ -110,6 +111,7 @@ public final class Factors implements Serializable, Logable {
 
 	public <K, F extends Factor<F>> PairRDS<K, F> get(String key, FactorFilter... filters) {
 		CalculatingConfig<F> config = (CalculatingConfig<F>) CONFIGS.get(key);
+		if (config == null) throw new IllegalArgumentException("Config " + key + " not found!");
 		DataSource<K, ?, ?, ?, ?> ds = Calculator.calculator.getDS(config.dbid);
 		if (ds == null) return PairRDS.emptyPair(Calculator.calculator.sc);
 		FactroingConfig<F> d = config.factoring;

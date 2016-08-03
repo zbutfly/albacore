@@ -1,9 +1,5 @@
 package net.butfly.albacore.calculus.datasource;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.DataFrame;
@@ -18,7 +14,6 @@ import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.FactroingConfig;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
 import net.butfly.albacore.calculus.factor.filter.HiveBuilder;
-import net.butfly.albacore.calculus.factor.modifier.MapReduceKey;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.factor.rds.internal.RDSupport;
 import net.butfly.albacore.calculus.factor.rds.internal.WrappedRDD;
@@ -32,7 +27,7 @@ import scala.collection.JavaConversions;
 
 public class HiveDataSource extends DataSource<Object, Row, Row, Object, Row> {
 	private static final long serialVersionUID = 2229814193461610013L;
-	private final SparkContext sc;
+	private final transient SparkContext sc;
 	private HiveContext context = null;
 
 	public HiveDataSource(String schema, JavaSparkContext sc, CaseFormat srcFormat, CaseFormat dstFormat) {
@@ -53,26 +48,15 @@ public class HiveDataSource extends DataSource<Object, Row, Row, Object, Row> {
 
 			@Override
 			public Iterator<Tuple2<Object, F>> apply(Iterator<Row> rows) {
-				List<Tuple2<Object, F>> l = new ArrayList<>();
-				while (rows.hasNext()) {
-					Row r = rows.next();
-					F f = Reflections.construct(factor);
-					Object key = null;
-					for (Field ff : Reflections.getDeclaredFields(factor)) {
-						try {
-							Reflections.set(f, ff, r.get(r.fieldIndex(ff.getName())));
-						} catch (Exception ex) {}
-						if (ff.isAnnotationPresent(MapReduceKey.class) && key == null) key = Reflections.get(f, ff);
-					}
-					l.add(new Tuple2<>(key, f));
-				}
-				return JavaConversions.asScalaIterator(l.iterator());
+				return JavaConversions.asScalaIterator(Reflections.transform(JavaConversions.asJavaIterator(rows),
+						r -> new Tuple2<Object, F>(marshaller.unmarshallId(r), marshaller.unmarshall(r, factor))).iterator());
 			}
 		};
 		if (Calculator.calculator.debug) filters = enableDebug(filters);
-		debug(() -> "Scaning begin: " + factor.toString() + " from table: " + detail.table + ".");
+		String q = detail.table == null ? detail.query : detail.table;
+		trace(() -> "Scaning begin: " + factor.toString() + " from query: " + q + ".");
 		if (null == context) context = new HiveContext(sc);
-		DataFrame df = context.sql(detail.table);
+		DataFrame df = context.sql(q);
 		// df = context.sql(hql(factor, detail, filters));
 		return new PairRDS<Object, F>(new WrappedRDD<Tuple2<Object, F>>(df.mapPartitions(f, RDSupport.tag())));
 	}

@@ -14,7 +14,7 @@
 		<deps.version.scala.lib>${deps.version.scala}.6</deps.version.scala.lib>
 		<deps.version.hbase>1.2.2</deps.version.hbase>
 		<deps.version.spark>1.6.2</deps.version.spark>
-		<deps.version.jackson>2.8.1</deps.version.jackson>
+		<deps.version.jackson>2.7.3</deps.version.jackson>
 	</properties>
 	<dependencies>
 		<!-- fucking hbase-client old depends, methods closed in new version -->

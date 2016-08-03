@@ -185,10 +185,14 @@ public final class Reflections implements Serializable {
 
 	public static <T, R> List<R> transform(Iterable<T> original, Func<T, R> trans) {
 		if (original == null) return null;
+		return transform(original.iterator(), trans);
+	}
+
+	public static <T, R> List<R> transform(Iterator<T> original, Func<T, R> trans) {
+		if (original == null) return null;
 		List<R> r = new ArrayList<>();
-		Iterator<T> it = original.iterator();
-		while (it.hasNext()) {
-			r.add(trans.call(it.next()));
+		while (original.hasNext()) {
+			r.add(trans.call(original.next()));
 		}
 		return r;
 	}

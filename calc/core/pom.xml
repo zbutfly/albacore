@@ -68,7 +68,7 @@
 		<dependency>
 			<groupId>org.json4s</groupId>
 			<artifactId>json4s-jackson_${deps.version.scala}</artifactId>
-			<version>3.3.0</version>
+			<version>3.2.10</version>
 		</dependency>
 		<!-- end jackson -->
 		<dependency>

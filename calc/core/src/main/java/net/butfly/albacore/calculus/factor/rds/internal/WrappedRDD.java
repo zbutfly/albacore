@@ -72,6 +72,11 @@ public class WrappedRDD<T> implements Wrapped<T> {
 	}
 
 	@Override
+	public T first() {
+		return rdd.first();
+	}
+
+	@Override
 	public void foreachRDD(VoidFunction<JavaRDD<T>> consumer) {
 		try {
 			consumer.call(jrdd());
