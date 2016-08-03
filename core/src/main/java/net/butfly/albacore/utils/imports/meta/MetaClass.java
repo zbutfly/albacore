@@ -90,7 +90,8 @@ public class MetaClass {
 			MetaClass metaProp = metaClassForProperty(prop);
 			return metaProp.getGetterType(prop.getChildren());
 		} else {
-			return getGetterType(prop); // issue #506. Resolve the type inside a Collection Object
+			return getGetterType(prop); // issue #506. Resolve the type inside a
+										// Collection Object
 		}
 	}
 

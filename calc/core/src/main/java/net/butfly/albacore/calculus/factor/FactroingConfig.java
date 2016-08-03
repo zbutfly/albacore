@@ -8,7 +8,7 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import com.google.common.base.Preconditions;
 
 import net.butfly.albacore.calculus.datasource.DataSource;
-import net.butfly.albacore.calculus.factor.Factoring.Type;
+import net.butfly.albacore.calculus.datasource.DataSource.Type;
 
 /**
  * Corresponds to {@code Factoring} annotation on {@code Factor} definition.
@@ -26,7 +26,7 @@ public abstract class FactroingConfig<V> implements Serializable {
 	public final String source; // db key in config
 
 	protected FactroingConfig(Type type, Class<V> factor, String source, String table, String query) {
-		Preconditions.checkArgument(table != null);
+		Preconditions.checkArgument(table != null || query != null);
 		this.type = type;
 		this.source = source;
 		this.table = table;

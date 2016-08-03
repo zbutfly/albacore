@@ -35,8 +35,8 @@ public final class Tasks extends Utils {
 				errors.add(e.getCause());
 				logger.error("Sliced task failed at slices.", e.getCause());
 			}
-		if (!errors.isEmpty()) logger.error("Error in concurrence",
-				new AggregaedException("", "Error in concurrence", errors.toArray(new Throwable[errors.size()])));
+		if (!errors.isEmpty()) logger.error("Error in concurrence", new AggregaedException("", "Error in concurrence", errors.toArray(
+				new Throwable[errors.size()])));
 		T[] r = results.toArray((T[]) Array.newInstance(targetClass, results.size()));
 		return r;
 	}
@@ -60,8 +60,8 @@ public final class Tasks extends Utils {
 				logger.error("Sliced task failed at " + i + "th slice.", e.getCause());
 			}
 		}
-		if (!errors.isEmpty()) logger.error("Error in concurrence",
-				new AggregaedException("", "Error in concurrence", errors.toArray(new Throwable[errors.size()])));
+		if (!errors.isEmpty()) logger.error("Error in concurrence", new AggregaedException("", "Error in concurrence", errors.toArray(
+				new Throwable[errors.size()])));
 		T[] r = results.toArray((T[]) Array.newInstance(targetClass, results.size()));
 		return r;
 	}

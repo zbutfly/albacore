@@ -364,15 +364,15 @@ public class Reflector {
 
 	public Invoker getSetInvoker(String propertyName) {
 		Invoker method = setMethods.get(propertyName);
-		if (method == null) { throw new ReflectionException(
-				"There is no setter for property named '" + propertyName + "' in '" + type + "'"); }
+		if (method == null) { throw new ReflectionException("There is no setter for property named '" + propertyName + "' in '" + type
+				+ "'"); }
 		return method;
 	}
 
 	public Invoker getGetInvoker(String propertyName) {
 		Invoker method = getMethods.get(propertyName);
-		if (method == null) { throw new ReflectionException(
-				"There is no getter for property named '" + propertyName + "' in '" + type + "'"); }
+		if (method == null) { throw new ReflectionException("There is no getter for property named '" + propertyName + "' in '" + type
+				+ "'"); }
 		return method;
 	}
 
@@ -385,8 +385,8 @@ public class Reflector {
 	 */
 	public Class<?> getSetterType(String propertyName) {
 		Class<?> clazz = setTypes.get(propertyName);
-		if (clazz == null) { throw new ReflectionException(
-				"There is no setter for property named '" + propertyName + "' in '" + type + "'"); }
+		if (clazz == null) { throw new ReflectionException("There is no setter for property named '" + propertyName + "' in '" + type
+				+ "'"); }
 		return clazz;
 	}
 
@@ -399,8 +399,8 @@ public class Reflector {
 	 */
 	public Class<?> getGetterType(String propertyName) {
 		Class<?> clazz = getTypes.get(propertyName);
-		if (clazz == null) { throw new ReflectionException(
-				"There is no getter for property named '" + propertyName + "' in '" + type + "'"); }
+		if (clazz == null) { throw new ReflectionException("There is no getter for property named '" + propertyName + "' in '" + type
+				+ "'"); }
 		return clazz;
 	}
 

@@ -24,10 +24,10 @@ public class EncoderBuilder {
 		Class<?> vc = classes[0];
 		if (Tuple2.class.isAssignableFrom(vc)) return (Encoder<V>) Encoders.tuple(with(classes[1]), with(classes[2]));
 		if (Tuple3.class.isAssignableFrom(vc)) return (Encoder<V>) Encoders.tuple(with(classes[1]), with(classes[2]), with(classes[3]));
-		if (Tuple4.class.isAssignableFrom(vc))
-			return (Encoder<V>) Encoders.tuple(with(classes[1]), with(classes[2]), with(classes[3]), with(classes[4]));
-		if (Tuple5.class.isAssignableFrom(vc))
-			return (Encoder<V>) Encoders.tuple(with(classes[1]), with(classes[2]), with(classes[3]), with(classes[4]), with(classes[5]));
+		if (Tuple4.class.isAssignableFrom(vc)) return (Encoder<V>) Encoders.tuple(with(classes[1]), with(classes[2]), with(classes[3]),
+				with(classes[4]));
+		if (Tuple5.class.isAssignableFrom(vc)) return (Encoder<V>) Encoders.tuple(with(classes[1]), with(classes[2]), with(classes[3]),
+				with(classes[4]), with(classes[5]));
 		if (CharSequence.class.isAssignableFrom(vc)) return (Encoder<V>) Encoders.STRING();
 		if (byte[].class.isAssignableFrom(vc)) return (Encoder<V>) Encoders.BINARY();
 		if (Boolean.class.isAssignableFrom(vc) || boolean.class.isAssignableFrom(vc)) return (Encoder<V>) Encoders.BOOLEAN();

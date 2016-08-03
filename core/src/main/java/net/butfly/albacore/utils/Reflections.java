@@ -85,8 +85,7 @@ public final class Reflections extends Utils {
 				boolean overridden = false;
 
 				for (Method m2 : found) {
-					if (m2.getName().equals(m1.getName())
-							&& Arrays.deepEquals(m1.getParameterTypes(), m2.getParameterTypes())) {
+					if (m2.getName().equals(m1.getName()) && Arrays.deepEquals(m1.getParameterTypes(), m2.getParameterTypes())) {
 						overridden = true;
 						break;
 					}
@@ -109,8 +108,8 @@ public final class Reflections extends Utils {
 		boolean isStatic = Class.class.equals(targetOrClass.getClass());
 		final Class<?> targetClass = isStatic ? (Class<?>) targetOrClass : targetOrClass.getClass();
 		final Method method = getMatchingAccessibleMethod(targetClass, methodName, parameterTypes);
-		if (method == null) { throw new NoSuchMethodException(
-				"No such accessible method: " + methodName + "() on object: " + targetClass.getName()); }
+		if (method == null) { throw new NoSuchMethodException("No such accessible method: " + methodName + "() on object: " + targetClass
+				.getName()); }
 		return (T) method.invoke(isStatic ? null : targetOrClass, parameters);
 	}
 
@@ -149,8 +148,7 @@ public final class Reflections extends Utils {
 		for (Constructor<?> ctor : cls.getDeclaredConstructors())
 			if (isAssignable(parameterTypes, ctor.getParameterTypes(), true) && ctor != null) {
 				setAccessibleWorkaround(ctor);
-				if (result == null
-						|| compareParameterTypes(ctor.getParameterTypes(), result.getParameterTypes(), parameterTypes) < 0) {
+				if (result == null || compareParameterTypes(ctor.getParameterTypes(), result.getParameterTypes(), parameterTypes) < 0) {
 					result = (Constructor<T>) ctor;
 				}
 			}
@@ -207,7 +205,7 @@ public final class Reflections extends Utils {
 			final Set<Class<? extends T>> r = new HashSet<>();
 			new FastClasspathScanner(packagePrefix).matchSubclassesOf(parentClass, c -> r.add(c)).scan();
 			return r;
-		} , parentClass, j.join(packagePrefix));
+		}, parentClass, j.join(packagePrefix));
 	}
 
 	public static Class<?>[] getClassesAnnotatedWith(Class<? extends Annotation> annotation, String... packagePrefix) {
@@ -215,7 +213,7 @@ public final class Reflections extends Utils {
 			Set<Class<?>> r = new HashSet<>();
 			new FastClasspathScanner(packagePrefix).matchClassesWithAnnotation(annotation, c -> r.add(c)).scan();
 			return r.toArray(new Class[r.size()]);
-		} , annotation, j.join(packagePrefix));
+		}, annotation, j.join(packagePrefix));
 	}
 
 	public static Field[] getDeclaredFieldsAnnotatedWith(Class<?> clazz, Class<? extends Annotation> annotation) {
@@ -224,7 +222,7 @@ public final class Reflections extends Utils {
 			for (Field f : getDeclaredFields(clazz))
 				if (f.isAnnotationPresent(annotation)) s.add(f);
 			return s.toArray(new Field[s.size()]);
-		} , clazz, annotation);
+		}, clazz, annotation);
 	}
 
 	public static Class<?> getMainClass() {
@@ -351,8 +349,7 @@ public final class Reflections extends Utils {
 	 *            find method with most compatible parameters
 	 * @return The accessible method
 	 */
-	public static Method getMatchingAccessibleMethod(final Class<?> cls, final String methodName,
-			final Class<?>... parameterTypes) {
+	public static Method getMatchingAccessibleMethod(final Class<?> cls, final String methodName, final Class<?>... parameterTypes) {
 		try {
 			final Method method = cls.getMethod(methodName, parameterTypes);
 			setAccessibleWorkaround(method);
@@ -368,9 +365,8 @@ public final class Reflections extends Utils {
 			if (method.getName().equals(methodName) && isAssignable(parameterTypes, method.getParameterTypes(), true)) {
 				// get accessible version of method
 				final Method accessibleMethod = getAccessibleMethod(method);
-				if (accessibleMethod != null
-						&& (bestMatch == null || compareParameterTypes(accessibleMethod.getParameterTypes(),
-								bestMatch.getParameterTypes(), parameterTypes) < 0)) {
+				if (accessibleMethod != null && (bestMatch == null || compareParameterTypes(accessibleMethod.getParameterTypes(), bestMatch
+						.getParameterTypes(), parameterTypes) < 0)) {
 					bestMatch = accessibleMethod;
 				}
 			}
@@ -407,16 +403,15 @@ public final class Reflections extends Utils {
 	 * specified {@code Class} parameter can be converted to the type
 	 * represented by this {@code Class} object via an identity conversion
 	 * widening primitive or widening reference conversion. See
-	 * <em><a href="http://docs.oracle.com/javase/specs/">The Java Language Specification</a></em>
-	 * , sections 5.1.1, 5.1.2 and 5.1.4 for details.
+	 * <em><a href="http://docs.oracle.com/javase/specs/">The Java Language
+	 * Specification</a></em> , sections 5.1.1, 5.1.2 and 5.1.4 for details.
 	 * </p>
 	 *
 	 * <p>
 	 * <strong>Since Lang 3.0,</strong> this method will default behavior for
 	 * calculating assignability between primitive and wrapper types
-	 * <em>corresponding
-	 * to the running Java version</em>; i.e. autoboxing will be the default
-	 * behavior in VMs running Java versions &gt; 1.5.
+	 * <em>corresponding to the running Java version</em>; i.e. autoboxing will
+	 * be the default behavior in VMs running Java versions &gt; 1.5.
 	 * </p>
 	 *
 	 * @param cls
@@ -426,8 +421,11 @@ public final class Reflections extends Utils {
 	 * @return {@code true} if assignment possible
 	 */
 	public static boolean isAssignable(final Class<?> cls, final Class<?> toClass) {
-		return isAssignable(cls, toClass,
-				true/* SystemUtils.isJavaVersionAtLeast(JavaVersion.JAVA_1_5) */);
+		return isAssignable(cls, toClass, true/*
+												 * SystemUtils.
+												 * isJavaVersionAtLeast(
+												 * JavaVersion.JAVA_1_5)
+												 */);
 	}
 
 	/**
@@ -458,8 +456,8 @@ public final class Reflections extends Utils {
 	 * specified {@code Class} parameter can be converted to the type
 	 * represented by this {@code Class} object via an identity conversion
 	 * widening primitive or widening reference conversion. See
-	 * <em><a href="http://docs.oracle.com/javase/specs/">The Java Language Specification</a></em>
-	 * , sections 5.1.1, 5.1.2 and 5.1.4 for details.
+	 * <em><a href="http://docs.oracle.com/javase/specs/">The Java Language
+	 * Specification</a></em> , sections 5.1.1, 5.1.2 and 5.1.4 for details.
 	 * </p>
 	 *
 	 * @param cls
@@ -489,18 +487,17 @@ public final class Reflections extends Utils {
 		if (cls.equals(toClass)) { return true; }
 		if (cls.isPrimitive()) {
 			if (toClass.isPrimitive() == false) { return false; }
-			if (Integer.TYPE.equals(
-					cls)) { return Long.TYPE.equals(toClass) || Float.TYPE.equals(toClass) || Double.TYPE.equals(toClass); }
+			if (Integer.TYPE.equals(cls)) { return Long.TYPE.equals(toClass) || Float.TYPE.equals(toClass) || Double.TYPE.equals(toClass); }
 			if (Long.TYPE.equals(cls)) { return Float.TYPE.equals(toClass) || Double.TYPE.equals(toClass); }
 			if (Boolean.TYPE.equals(cls)) { return false; }
 			if (Double.TYPE.equals(cls)) { return false; }
 			if (Float.TYPE.equals(cls)) { return Double.TYPE.equals(toClass); }
-			if (Character.TYPE.equals(cls)) { return Integer.TYPE.equals(toClass) || Long.TYPE.equals(toClass)
+			if (Character.TYPE.equals(cls)) { return Integer.TYPE.equals(toClass) || Long.TYPE.equals(toClass) || Float.TYPE.equals(toClass)
+					|| Double.TYPE.equals(toClass); }
+			if (Short.TYPE.equals(cls)) { return Integer.TYPE.equals(toClass) || Long.TYPE.equals(toClass) || Float.TYPE.equals(toClass)
+					|| Double.TYPE.equals(toClass); }
+			if (Byte.TYPE.equals(cls)) { return Short.TYPE.equals(toClass) || Integer.TYPE.equals(toClass) || Long.TYPE.equals(toClass)
 					|| Float.TYPE.equals(toClass) || Double.TYPE.equals(toClass); }
-			if (Short.TYPE.equals(cls)) { return Integer.TYPE.equals(toClass) || Long.TYPE.equals(toClass)
-					|| Float.TYPE.equals(toClass) || Double.TYPE.equals(toClass); }
-			if (Byte.TYPE.equals(cls)) { return Short.TYPE.equals(toClass) || Integer.TYPE.equals(toClass)
-					|| Long.TYPE.equals(toClass) || Float.TYPE.equals(toClass) || Double.TYPE.equals(toClass); }
 			// should never get here
 			return false;
 		}
@@ -543,8 +540,8 @@ public final class Reflections extends Utils {
 	 * specified {@code Class} parameter can be converted to the type
 	 * represented by this {@code Class} object via an identity conversion
 	 * widening primitive or widening reference conversion. See
-	 * <em><a href="http://docs.oracle.com/javase/specs/">The Java Language Specification</a></em>
-	 * , sections 5.1.1, 5.1.2 and 5.1.4 for details.
+	 * <em><a href="http://docs.oracle.com/javase/specs/">The Java Language
+	 * Specification</a></em> , sections 5.1.1, 5.1.2 and 5.1.4 for details.
 	 * </p>
 	 *
 	 * @param classArray
@@ -680,8 +677,7 @@ public final class Reflections extends Utils {
 	 *            The parameter type signatures
 	 * @return the accessible method or {@code null} if not found
 	 */
-	private static Method getAccessibleMethodFromInterfaceNest(Class<?> cls, final String methodName,
-			final Class<?>... parameterTypes) {
+	private static Method getAccessibleMethodFromInterfaceNest(Class<?> cls, final String methodName, final Class<?>... parameterTypes) {
 		// Search up the superclass chain
 		for (; cls != null; cls = cls.getSuperclass()) {
 
@@ -724,8 +720,7 @@ public final class Reflections extends Utils {
 	 *            The parameter type signatures
 	 * @return the accessible method or {@code null} if not found
 	 */
-	private static Method getAccessibleMethodFromSuperclass(final Class<?> cls, final String methodName,
-			final Class<?>... parameterTypes) {
+	private static Method getAccessibleMethodFromSuperclass(final Class<?> cls, final String methodName, final Class<?>... parameterTypes) {
 		Class<?> parentClass = cls.getSuperclass();
 		while (parentClass != null) {
 			if (Modifier.isPublic(parentClass.getModifiers())) {
@@ -852,8 +847,8 @@ public final class Reflections extends Utils {
 	}
 
 	/** Array of primitive number types ordered by "promotability" */
-	private static final Class<?>[] ORDERED_PRIMITIVE_TYPES = { Byte.TYPE, Short.TYPE, Character.TYPE, Integer.TYPE, Long.TYPE,
-			Float.TYPE, Double.TYPE };
+	private static final Class<?>[] ORDERED_PRIMITIVE_TYPES = { Byte.TYPE, Short.TYPE, Character.TYPE, Integer.TYPE, Long.TYPE, Float.TYPE,
+			Double.TYPE };
 
 	/**
 	 * Gets the number of steps required to promote a primitive number to
@@ -915,8 +910,8 @@ public final class Reflections extends Utils {
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> T constructInterface(Class<T> interfaceType) {
-		if (!Modifier.isInterface(interfaceType.getModifiers()))
-			throw new IllegalArgumentException("Only interfaces have default implementation.");
+		if (!Modifier.isInterface(interfaceType.getModifiers())) throw new IllegalArgumentException(
+				"Only interfaces have default implementation.");
 		Class<?> impl = interfaceImplementations.get(interfaceType);
 		if (impl != null) try {
 			return (T) impl.newInstance();
@@ -925,9 +920,8 @@ public final class Reflections extends Utils {
 		}
 		throw new IllegalArgumentException("Stripes needed to instantiate a property who's declared type as an "
 				+ "interface (which obviously cannot be instantiated. The interface is not "
-				+ "one that Stripes is aware of, so no implementing class was known. The " + "interface type was: '"
-				+ interfaceType.getName() + "'. To fix this "
-				+ "you'll need to do one of three things. 1) Change the getter/setter methods "
+				+ "one that Stripes is aware of, so no implementing class was known. The " + "interface type was: '" + interfaceType
+						.getName() + "'. To fix this " + "you'll need to do one of three things. 1) Change the getter/setter methods "
 				+ "to use a concrete type so that Stripes can instantiate it. 2) in the bean's "
 				+ "setContext() method pre-instantiate the property so Stripes doesn't have to. "
 				+ "3) Bug the Stripes author ;)  If the interface is a JDK type it can easily be "
@@ -939,8 +933,8 @@ public final class Reflections extends Utils {
 	 * The set of method that annotation classes inherit, and should be avoided
 	 * when toString()ing an annotation class.
 	 */
-	private static final Set<String> INHERITED_ANNOTATION_METHODS = new HashSet<>(
-			Arrays.asList("toString", "equals", "hashCode", "annotationType", "getClass"));
+	private static final Set<String> INHERITED_ANNOTATION_METHODS = new HashSet<>(Arrays.asList("toString", "equals", "hashCode",
+			"annotationType", "getClass"));
 
 	/**
 	 * <p>
@@ -988,8 +982,8 @@ public final class Reflections extends Utils {
 
 					// Only print an attribute if it isn't set to the default
 					// value
-					if ((defaultArray != null && !Arrays.equals(defaultArray, actualArray))
-							|| (defaultArray == null && !actualValue.equals(defaultValue))) {
+					if ((defaultArray != null && !Arrays.equals(defaultArray, actualArray)) || (defaultArray == null && !actualValue.equals(
+							defaultValue))) {
 
 						if (appendedAnyParameters) {
 							builder.append(", ");

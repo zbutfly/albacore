@@ -16,7 +16,6 @@ import kafka.serializer.DefaultDecoder;
 import kafka.serializer.StringDecoder;
 import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
-import net.butfly.albacore.calculus.factor.Factoring.Type;
 import net.butfly.albacore.calculus.factor.FactroingConfig;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
 import net.butfly.albacore.calculus.marshall.KafkaMarshaller;
@@ -50,8 +49,7 @@ public class KafkaDataSource extends DataSource<String, String, byte[], Void, Vo
 	}
 
 	@Override
-	public <F extends Factor<F>> JavaPairDStream<String, F> streaming(Calculator calc, Class<F> factor, FactroingConfig<F> detail,
-			FactorFilter... filters) {
+	public <F extends Factor<F>> JavaPairDStream<String, F> streaming(Class<F> factor, FactroingConfig<F> detail, FactorFilter... filters) {
 		debug(() -> "Streaming begin: " + factor.toString());
 		JavaPairDStream<String, byte[]> kafka;
 		Map<String, String> params = new HashMap<>();
@@ -60,8 +58,8 @@ public class KafkaDataSource extends DataSource<String, String, byte[], Void, Vo
 			// params.put("bootstrap.servers", ks.getServers());
 			// params.put("auto.commit.enable", "false");
 			params.put("group.id", group);
-			kafka = KafkaUtils.createDirectStream(calc.ssc, String.class, byte[].class, StringDecoder.class, DefaultDecoder.class, params,
-					new HashSet<String>(Arrays.asList(detail.table)));
+			kafka = KafkaUtils.createDirectStream(Calculator.calculator.ssc, String.class, byte[].class, StringDecoder.class,
+					DefaultDecoder.class, params, new HashSet<String>(Arrays.asList(detail.table)));
 		} else {
 			params.put("bootstrap.servers", servers);
 			params.put("auto.commit.enable", "false");
@@ -69,8 +67,8 @@ public class KafkaDataSource extends DataSource<String, String, byte[], Void, Vo
 			Map<String, Integer> topicsMap = new HashMap<>();
 			for (String t : detail.table.split(","))
 				topicsMap.put(t, topicPartitions);
-			kafka = KafkaUtils.createStream(calc.ssc, String.class, byte[].class, StringDecoder.class, DefaultDecoder.class, params,
-					topicsMap, StorageLevel.MEMORY_ONLY());
+			kafka = KafkaUtils.createStream(Calculator.calculator.ssc, String.class, byte[].class, StringDecoder.class,
+					DefaultDecoder.class, params, topicsMap, StorageLevel.MEMORY_ONLY());
 		}
 		return kafka.mapToPair((final Tuple2<String, byte[]> t) -> new Tuple2<String, F>(marshaller.unmarshallId(t._1), marshaller
 				.unmarshall(t._2, factor)));

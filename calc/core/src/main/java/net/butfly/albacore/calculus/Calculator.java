@@ -20,14 +20,15 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.CaseFormat;
 
+import net.butfly.albacore.calculus.datasource.ConsoleDataSource;
 import net.butfly.albacore.calculus.datasource.ConstDataSource;
 import net.butfly.albacore.calculus.datasource.DataSource;
 import net.butfly.albacore.calculus.datasource.DataSource.DataSources;
+import net.butfly.albacore.calculus.datasource.DataSource.Type;
 import net.butfly.albacore.calculus.datasource.HbaseDataSource;
 import net.butfly.albacore.calculus.datasource.HiveDataSource;
 import net.butfly.albacore.calculus.datasource.KafkaDataSource;
 import net.butfly.albacore.calculus.datasource.MongoDataSource;
-import net.butfly.albacore.calculus.factor.Factoring.Type;
 import net.butfly.albacore.calculus.factor.Factors;
 import net.butfly.albacore.calculus.utils.Logable;
 import net.butfly.albacore.calculus.utils.Maps;
@@ -48,11 +49,12 @@ public class Calculator implements Logable, Serializable {
 	public transient SparkConf sconf;
 	public transient JavaSparkContext sc;
 	public transient JavaStreamingContext ssc;
-	public DataSources dss = new DataSources();
+	private DataSources dss = new DataSources();
 
 	// calculus configurations
 	public Mode mode;
 	public Class<Calculus> calculusClass;
+	public static Calculator calculator;
 
 	public static void main(String... args) {
 		CommandLine cmd = commandline(args);
@@ -68,8 +70,8 @@ public class Calculator implements Logable, Serializable {
 		for (Object key : cprops.keySet())
 			if (System.getProperty(key.toString()) == null) System.setProperty(key.toString(), cprops.getProperty(key.toString()));
 
-		Calculator c = new Calculator(cprops, sprops);
-		c.calculate().end();
+		calculator = new Calculator(cprops, sprops);
+		calculator.calculate().stop();
 	}
 
 	private static void mergeProps(Properties calcProps, Properties sparkProps, Properties... propses) {
@@ -82,7 +84,7 @@ public class Calculator implements Logable, Serializable {
 			}
 	}
 
-	private Calculator end() {
+	public Calculator stop() {
 		if (mode == Calculator.Mode.STREAMING) {
 			ssc.start();
 			info(() -> calculusClass.getSimpleName() + " streaming started, warting for finish. ");
@@ -141,7 +143,7 @@ public class Calculator implements Logable, Serializable {
 	private Calculator calculate() {
 		info(() -> calculusClass.getSimpleName() + " starting... ");
 		long now = new Date().getTime();
-		Reflections.construct(calculusClass, this, new Factors(this)).calculate();
+		Reflections.construct(calculusClass, this, new Factors()).calculate();
 		info(() -> calculusClass.getSimpleName() + " ended, spent: " + (new Date().getTime() - now) + " ms.");
 		return this;
 	}
@@ -158,13 +160,13 @@ public class Calculator implements Logable, Serializable {
 			DataSource<?, ?, ?, ?, ?> ds = null;
 			switch (type) {
 			case HIVE:
-				ds = new HiveDataSource(schema, this.sc, srcf, dstf);
+				ds = new HiveDataSource(schema, sc, srcf, dstf);
 				break;
-			case CONSOLE:
+			case CONST:
 				String[] values;
 				if (dbprops.containsKey("values")) values = dbprops.getProperty("values").split(dbprops.getProperty("values.split", ","));
-				else if (dbprops.containsKey("uris")) values = ConstDataSource.readLines(dbprops.getProperty("uris").split(","));
-				else values = ConstDataSource.readLines();
+				else if (dbprops.containsKey("files")) values = ConsoleDataSource.readLines(dbprops.getProperty("files").split(","));
+				else values = ConsoleDataSource.readLines();
 				ds = new ConstDataSource(values, srcf, dstf);
 				break;
 			case HBASE:

@@ -33,8 +33,8 @@ class RDDBatchInputDStream<K, V> extends RDDDStream<Tuple2<K, V>> {
 		if (null != offset) current = current.toJavaRDD().subtract(RDDDStream.rddValue(sc, new Tuple2<K, V>(offset, null))).rdd();
 		if (current.isEmpty()) ssc.stop(true, true);
 		// next offset is last item this time
-		else offset = current.toJavaRDD()
-				.treeReduce((final Tuple2<K, V> t1, final Tuple2<K, V> t2) -> comparator.compare(t1._1, t2._1) < 0 ? t1 : t2)._1;
+		else offset = current.toJavaRDD().treeReduce((final Tuple2<K, V> t1, final Tuple2<K, V> t2) -> comparator.compare(t1._1, t2._1) < 0
+				? t1 : t2)._1;
 		return super.compute(time);
 	}
 

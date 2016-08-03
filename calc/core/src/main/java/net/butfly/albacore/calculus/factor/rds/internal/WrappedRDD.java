@@ -72,6 +72,11 @@ public class WrappedRDD<T> implements Wrapped<T> {
 	}
 
 	@Override
+	public T first() {
+		return rdd.first();
+	}
+
+	@Override
 	public void foreachRDD(VoidFunction<JavaRDD<T>> consumer) {
 		try {
 			consumer.call(jrdd());
@@ -89,8 +94,8 @@ public class WrappedRDD<T> implements Wrapped<T> {
 	public Wrapped<T> union(Wrapped<T> other) {
 		if (RDS.class.isAssignableFrom(other.getClass())) return union(((RDS<T>) other).wrapped());
 		if (WrappedRDD.class.isAssignableFrom(other.getClass())) return new WrappedRDD<>(jrdd().union(other.jrdd()));
-		else if (WrappedDStream.class.isAssignableFrom(other.getClass()))
-			return new WrappedDStream<>(jdstream(((WrappedDStream<T>) other).ssc).union(other.jdstream(((WrappedDStream<T>) other).ssc)));
+		else if (WrappedDStream.class.isAssignableFrom(other.getClass())) return new WrappedDStream<>(jdstream(
+				((WrappedDStream<T>) other).ssc).union(other.jdstream(((WrappedDStream<T>) other).ssc)));
 		else throw new IllegalArgumentException();
 	}
 

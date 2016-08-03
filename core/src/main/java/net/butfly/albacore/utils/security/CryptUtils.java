@@ -1,10 +1,12 @@
 package net.butfly.albacore.utils.security;
 
 import java.security.MessageDigest;
+
 import javax.crypto.KeyGenerator;
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+
 import net.butfly.albacore.utils.encrypt.BASE64Encryptor;
 
 /**

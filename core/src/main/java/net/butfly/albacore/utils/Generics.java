@@ -22,9 +22,9 @@ public final class Generics extends Utils {
 			TypeVariable<?>[] vv = declareClass.getTypeParameters();
 			for (TypeVariable<?> v : vv) {
 				types.put(v.getName(), (Class<?>) TypeToken.of(implType).resolveType(v).getRawType());
-			};
+			} ;
 			return types;
-		} , implType, declareClass);
+		}, implType, declareClass);
 	}
 
 	public static Class<?> resolveReturnType(final Type implType, Method method) {

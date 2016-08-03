@@ -13,6 +13,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.base.Defaults;
+
 import net.butfly.albacore.exception.NotImplementedException;
 import net.butfly.albacore.support.Bean;
 import net.butfly.albacore.support.Beans;
@@ -21,8 +23,6 @@ import net.butfly.albacore.utils.imports.meta.factory.DefaultObjectFactory;
 import net.butfly.albacore.utils.imports.meta.factory.ObjectFactory;
 import net.butfly.albacore.utils.imports.meta.wrapper.DefaultObjectWrapperFactory;
 import net.butfly.albacore.utils.imports.meta.wrapper.ObjectWrapperFactory;
-
-import com.google.common.base.Defaults;
 
 @SuppressWarnings("rawtypes")
 public class Objects extends Utils {
@@ -80,10 +80,10 @@ public class Objects extends Utils {
 		MetaObject meta = MetaObject.forObject(target, DEFAULT_OBJECT_FACTORY, DEFAULT_OBJECT_WRAPPER_FACTORY);
 		if (null == target) return meta;
 		while (!meta.isMetaNull() && Proxy.isProxyClass(meta.getOriginalClass()))
-			if (meta.hasGetter("h"))
-				meta = MetaObject.forObject(meta.getValue("h"), DEFAULT_OBJECT_FACTORY, DEFAULT_OBJECT_WRAPPER_FACTORY);
-			else if (meta.hasGetter("target"))
-				meta = MetaObject.forObject(meta.getValue("target"), DEFAULT_OBJECT_FACTORY, DEFAULT_OBJECT_WRAPPER_FACTORY);
+			if (meta.hasGetter("h")) meta = MetaObject.forObject(meta.getValue("h"), DEFAULT_OBJECT_FACTORY,
+					DEFAULT_OBJECT_WRAPPER_FACTORY);
+			else if (meta.hasGetter("target")) meta = MetaObject.forObject(meta.getValue("target"), DEFAULT_OBJECT_FACTORY,
+					DEFAULT_OBJECT_WRAPPER_FACTORY);
 		return meta;
 	}
 
@@ -181,8 +181,8 @@ public class Objects extends Utils {
 				} catch (Exception e) {
 					return Defaults.defaultValue(dstClass);
 				}
-				if (null == vof || !Modifier.isStatic(vof.getModifiers()))
-					throw new IllegalArgumentException("Could not parse Number class: " + dstNumCat.boxedClass.getName());
+				if (null == vof || !Modifier.isStatic(vof.getModifiers())) throw new IllegalArgumentException(
+						"Could not parse Number class: " + dstNumCat.boxedClass.getName());
 				try {
 					return vof.invoke(null, value);
 				} catch (Exception e) {
@@ -299,10 +299,10 @@ public class Objects extends Utils {
 		if (o1.getClass().isPrimitive()) throw new NotImplementedException();
 		if (Number.class.isAssignableFrom(o1.getClass()) && Number.class.isAssignableFrom(o2.getClass()))
 			return TypeComparators.numberComparator.compare((Number) o1, (Number) o2);
-		if (o1.getClass().isArray() && o2.getClass().isArray())
-			return TypeComparators.arrayComparator.compare((Object[]) o1, (Object[]) o2);
-		if (Map.class.isAssignableFrom(o1.getClass()) && Map.class.isAssignableFrom(o2.getClass()))
-			return TypeComparators.mapComparator.compare((Map) o1, (Map) o2);
+		if (o1.getClass().isArray() && o2.getClass().isArray()) return TypeComparators.arrayComparator.compare((Object[]) o1,
+				(Object[]) o2);
+		if (Map.class.isAssignableFrom(o1.getClass()) && Map.class.isAssignableFrom(o2.getClass())) return TypeComparators.mapComparator
+				.compare((Map) o1, (Map) o2);
 		if (Iterable.class.isAssignableFrom(o1.getClass()) && Iterable.class.isAssignableFrom(o2.getClass()))
 			return TypeComparators.iterableComparator.compare((Iterable) o1, (Iterable) o2);
 
@@ -314,10 +314,10 @@ public class Objects extends Utils {
 		if (null == o1 || null == o2) return false;
 		if (o1.getClass().isPrimitive()) return o1 == o2;
 		if (Number.class.isAssignableFrom(o1.getClass()) && Number.class.isAssignableFrom(o2.getClass())) return o1.equals(o2);
-		if (o1.getClass().isArray() && o2.getClass().isArray())
-			return TypeComparators.arrayComparator.compare((Object[]) o1, (Object[]) o2) == 0;
-		if (Map.class.isAssignableFrom(o1.getClass()) && Map.class.isAssignableFrom(o2.getClass()))
-			return TypeComparators.mapComparator.compare((Map) o1, (Map) o2) == 0;
+		if (o1.getClass().isArray() && o2.getClass().isArray()) return TypeComparators.arrayComparator.compare((Object[]) o1,
+				(Object[]) o2) == 0;
+		if (Map.class.isAssignableFrom(o1.getClass()) && Map.class.isAssignableFrom(o2.getClass())) return TypeComparators.mapComparator
+				.compare((Map) o1, (Map) o2) == 0;
 		if (Iterable.class.isAssignableFrom(o1.getClass()) && Iterable.class.isAssignableFrom(o2.getClass()))
 			return TypeComparators.iterableComparator.compare((Iterable) o1, (Iterable) o2) == 0;
 
@@ -381,8 +381,8 @@ public class Objects extends Utils {
 	private static final Set<Class<?>> ALL_NUMBER_CLASSES = new HashSet<Class<?>>();
 
 	private enum NumberCategory {
-		INT(int.class, Integer.class), LONG(long.class, Long.class), BYTE(byte.class, Byte.class), SHORT(short.class,
-				Short.class), FLOAT(float.class, Float.class), DOUBLE(double.class, Double.class), NUMBER(null, null);
+		INT(int.class, Integer.class), LONG(long.class, Long.class), BYTE(byte.class, Byte.class), SHORT(short.class, Short.class), FLOAT(
+				float.class, Float.class), DOUBLE(double.class, Double.class), NUMBER(null, null);
 		private Class<?> primitiveClass;
 		private Class<? extends Number> boxedClass;
 

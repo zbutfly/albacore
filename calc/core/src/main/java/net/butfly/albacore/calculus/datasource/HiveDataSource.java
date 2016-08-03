@@ -1,9 +1,6 @@
 package net.butfly.albacore.calculus.datasource;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.List;
-
+import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.Row;
@@ -14,11 +11,9 @@ import com.google.common.base.Joiner;
 
 import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
-import net.butfly.albacore.calculus.factor.Factoring.Type;
 import net.butfly.albacore.calculus.factor.FactroingConfig;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
 import net.butfly.albacore.calculus.factor.filter.HiveBuilder;
-import net.butfly.albacore.calculus.factor.modifier.MapReduceKey;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.factor.rds.internal.RDSupport;
 import net.butfly.albacore.calculus.factor.rds.internal.WrappedRDD;
@@ -32,11 +27,12 @@ import scala.collection.JavaConversions;
 
 public class HiveDataSource extends DataSource<Object, Row, Row, Object, Row> {
 	private static final long serialVersionUID = 2229814193461610013L;
-	public final HiveContext context;
+	private final transient SparkContext sc;
+	private HiveContext context = null;
 
 	public HiveDataSource(String schema, JavaSparkContext sc, CaseFormat srcFormat, CaseFormat dstFormat) {
 		super(Type.HIVE, schema, false, RowMarshaller.class, Row.class, Row.class, null, null, srcFormat, dstFormat);
-		this.context = new HiveContext(sc.sc());
+		this.sc = sc.sc();
 	}
 
 	@Override
@@ -45,32 +41,22 @@ public class HiveDataSource extends DataSource<Object, Row, Row, Object, Row> {
 	}
 
 	@Override
-	public <F extends Factor<F>> PairRDS<Object, F> stocking(Calculator calc, Class<F> factor, FactroingConfig<F> detail,
-			float expandPartitions, FactorFilter... filters) {
+	public <F extends Factor<F>> PairRDS<Object, F> stocking(Class<F> factor, FactroingConfig<F> detail, float expandPartitions,
+			FactorFilter... filters) {
 		Function1<Iterator<Row>, Iterator<Tuple2<Object, F>>> f = new ScalarFunc1<Iterator<Row>, Iterator<Tuple2<Object, F>>>() {
 			private static final long serialVersionUID = -8328868785608422254L;
 
 			@Override
 			public Iterator<Tuple2<Object, F>> apply(Iterator<Row> rows) {
-				List<Tuple2<Object, F>> l = new ArrayList<>();
-				while (rows.hasNext()) {
-					Row r = rows.next();
-					F f = Reflections.construct(factor);
-					Object key = null;
-					for (Field ff : Reflections.getDeclaredFields(factor)) {
-						try {
-							Reflections.set(f, ff, r.get(r.fieldIndex(ff.getName())));
-						} catch (Exception ex) {}
-						if (ff.isAnnotationPresent(MapReduceKey.class) && key == null) key = Reflections.get(f, ff);
-					}
-					l.add(new Tuple2<>(key, f));
-				}
-				return JavaConversions.asScalaIterator(l.iterator());
+				return JavaConversions.asScalaIterator(Reflections.transform(JavaConversions.asJavaIterator(rows),
+						r -> new Tuple2<Object, F>(marshaller.unmarshallId(r), marshaller.unmarshall(r, factor))).iterator());
 			}
 		};
-		if (calc.debug) filters = enableDebug(filters);
-		debug(() -> "Scaning begin: " + factor.toString() + " from table: " + detail.table + ".");
-		DataFrame df = context.sql(detail.table);
+		if (Calculator.calculator.debug) filters = enableDebug(filters);
+		String q = detail.table == null ? detail.query : detail.table;
+		trace(() -> "Scaning begin: " + factor.toString() + " from query: " + q + ".");
+		if (null == context) context = new HiveContext(sc);
+		DataFrame df = context.sql(q);
 		// df = context.sql(hql(factor, detail, filters));
 		return new PairRDS<Object, F>(new WrappedRDD<Tuple2<Object, F>>(df.mapPartitions(f, RDSupport.tag())));
 	}
