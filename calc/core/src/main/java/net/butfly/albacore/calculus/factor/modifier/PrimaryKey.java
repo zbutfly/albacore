@@ -6,11 +6,5 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.FIELD, ElementType.TYPE })
-public @interface DBIndex {
-	String[] value() default {};
-
-	boolean descending() default true;
-
-	boolean hashed() default false;
-}
+@Target(ElementType.FIELD)
+public @interface PrimaryKey {}

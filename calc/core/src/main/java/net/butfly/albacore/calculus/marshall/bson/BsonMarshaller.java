@@ -54,7 +54,8 @@ public abstract class BsonMarshaller<FK, VK, VV> extends Marshaller<FK, VK, VV> 
 	public static ObjectMapper bsoner = new ObjectMapper(MongoBsonFactory.createFactory()).setPropertyNamingStrategy(
 			new UpperCaseWithUnderscoresStrategy()).disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES).disable(
 					MapperFeature.USE_GETTERS_AS_SETTERS).disable(SerializationFeature.WRITE_NULL_MAP_VALUES).setSerializationInclusion(
-							Include.NON_NULL).configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
+							Include.NON_NULL).configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true).configure(
+									JsonParser.Feature.IGNORE_UNDEFINED, true);
 	// .enable(Feature.WRITE_BIGDECIMAL_AS_PLAIN)
 
 	@Override
