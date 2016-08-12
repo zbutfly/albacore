@@ -32,7 +32,7 @@ import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.FactroingConfig;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
-import net.butfly.albacore.calculus.factor.modifier.DBIndex;
+import net.butfly.albacore.calculus.factor.modifier.Index;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.marshall.Marshaller;
 import net.butfly.albacore.calculus.marshall.MongoMarshaller;
@@ -71,8 +71,8 @@ public class MongoDataSource extends DataSource<Object, Object, BSONObject, Obje
 				MongoDatabase db = mclient.getDatabase(muri.getDatabase());
 				db.createCollection(detail.table);
 				MongoCollection<Document> col = db.getCollection(detail.table);
-				for (Map.Entry<Field, ? extends Annotation> f : Marshaller.parseAllForAny(factor, DBIndex.class).entrySet()) {
-					DBIndex idx = (DBIndex) f.getValue();
+				for (Map.Entry<Field, ? extends Annotation> f : Marshaller.parseAllForAny(factor, Index.class).entrySet()) {
+					Index idx = (Index) f.getValue();
 					Object v = 1;
 					if (idx.hashed()) v = "hashed";
 					else if (idx.descending()) v = -1;

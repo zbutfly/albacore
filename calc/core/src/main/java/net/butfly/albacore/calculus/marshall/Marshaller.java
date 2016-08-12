@@ -16,9 +16,9 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.CaseFormat;
 
-import net.butfly.albacore.calculus.factor.modifier.DBIdentity;
-import net.butfly.albacore.calculus.factor.modifier.DBIgnore;
-import net.butfly.albacore.calculus.factor.modifier.MapReduceKey;
+import net.butfly.albacore.calculus.factor.modifier.PrimaryKey;
+import net.butfly.albacore.calculus.factor.modifier.Ignore;
+import net.butfly.albacore.calculus.factor.modifier.Key;
 import net.butfly.albacore.calculus.lambda.Func;
 import net.butfly.albacore.calculus.utils.Reflections;
 import scala.Tuple2;
@@ -83,15 +83,15 @@ public class Marshaller<FK, VK, VV> implements Serializable {
 	}
 
 	public static <V> Field keyField(Class<V> c) {
-		return parseFirstOfAny(c, MapReduceKey.class)._1;
+		return parseFirstOfAny(c, Key.class)._1;
 	}
 
 	public static <V> Field[] keyFields(Class<V> c) {
-		return parseAll(c, MapReduceKey.class);
+		return parseAll(c, Key.class);
 	}
 
 	public static <V> Field idField(Class<V> c) {
-		return parseFirstOfAny(c, DBIdentity.class)._1;
+		return parseFirstOfAny(c, PrimaryKey.class)._1;
 	}
 
 	@SafeVarargs
@@ -118,14 +118,14 @@ public class Marshaller<FK, VK, VV> implements Serializable {
 
 	public static <K, V> K key(V v) {
 		try {
-			return null == v ? null : (K) Marshaller.parseFirstOfAny(v.getClass(), MapReduceKey.class)._1.get(v);
+			return null == v ? null : (K) Marshaller.parseFirstOfAny(v.getClass(), Key.class)._1.get(v);
 		} catch (IllegalArgumentException | IllegalAccessException e) {
 			return null;
 		}
 	}
 
 	public static boolean enableDB(Field f) {
-		if (f.isAnnotationPresent(DBIgnore.class)) return false;
+		if (f.isAnnotationPresent(Ignore.class)) return false;
 		int m = f.getModifiers();
 		if (Modifier.isTransient(m) || Modifier.isFinal(m) || Modifier.isStatic(m)) return false;
 		return true;

@@ -12,7 +12,7 @@ import net.butfly.albacore.calculus.Calculator;
 import net.butfly.albacore.calculus.factor.Factor;
 import net.butfly.albacore.calculus.factor.FactroingConfig;
 import net.butfly.albacore.calculus.factor.filter.FactorFilter;
-import net.butfly.albacore.calculus.factor.modifier.DBIdentity;
+import net.butfly.albacore.calculus.factor.modifier.PrimaryKey;
 import net.butfly.albacore.calculus.factor.rds.PairRDS;
 import net.butfly.albacore.calculus.factor.rds.internal.RDSupport;
 import net.butfly.albacore.calculus.factor.rds.internal.WrappedRDD;
@@ -48,14 +48,14 @@ public class ElasticDataSource extends DataSource<String, String, Map, String, O
 	@Override
 	public <V> Tuple2<String, Object> beforeWriting(String key, V value) {
 		if (null == value) return null;
-		Reflections.set(value, Marshaller.parseFirstOfAny(value.getClass(), DBIdentity.class)._1, key);
+		Reflections.set(value, Marshaller.parseFirstOfAny(value.getClass(), PrimaryKey.class)._1, key);
 		return new Tuple2<>(null, value);
 	}
 
 	@Override
 	public void save(JavaPairRDD<String, Object> rdd, FactroingConfig<?> dd) {
 		java.util.Map<String, String> m = new HashMap<>();
-		m.put("es.mapping.id", marshaller.parseQualifier(Marshaller.parseFirstOfAny(dd.factorClass, DBIdentity.class)._1));
+		m.put("es.mapping.id", marshaller.parseQualifier(Marshaller.parseFirstOfAny(dd.factorClass, PrimaryKey.class)._1));
 		EsSpark.saveToEs(rdd.values().rdd(), dd.table, JavaConverters.asScalaMapConverter(m).asScala());
 	}
 
