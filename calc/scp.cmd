@@ -1,1 +1,0 @@
-scp core\target\albacore-calc-core.jar work@hzga138:/share/mapred/narc/target/dependency/albacore-calc-core-1.0.0-SNAPSHOT.jar
