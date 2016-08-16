@@ -160,4 +160,11 @@ public class WrappedDStream<T> implements Wrapped<T> {
 	public boolean isStream() {
 		return true;
 	}
+
+	@Override
+	public List<T> collect() {
+		List<T> l = new ArrayList<>();
+		foreach(t -> l.add(t));
+		return l;
+	}
 }

@@ -1,5 +1,6 @@
 package net.butfly.albacore.calculus.factor.rds.internal;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -278,5 +279,13 @@ public class WrappedDataFrame<K, V> implements PairWrapped<K, V> {
 	@Override
 	public PairWrapped<K, V> wrapped() {
 		return this;
+	}
+
+	@Override
+	public List<Tuple2<K, V>> collect() {
+		List<Tuple2<K, V>> l = new ArrayList<>();
+		for (Row row : frame.collect())
+			l.add(new Tuple2<>((K) marshaller.unmarshallId(row), marshaller.unmarshall(row, vClass)));
+		return l;
 	}
 }

@@ -145,4 +145,9 @@ public class WrappedRDD<T> implements Wrapped<T> {
 	public Wrapped<T> wrapped() {
 		return this;
 	}
+
+	@Override
+	public List<T> collect() {
+		return jrdd().collect();
+	}
 }

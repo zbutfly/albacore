@@ -1,5 +1,6 @@
 package net.butfly.albacore.calculus.factor.rds.internal;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -78,7 +79,6 @@ public class WrappedDataset<K, V> implements PairWrapped<K, V> {
 
 	@Override
 	public Map<K, V> collectAsMap() {
-
 		return Reflections.transMapping(dataset.collectAsList(), v -> new Tuple2<K, V>(Marshaller.key(v), v));
 	}
 
@@ -116,7 +116,7 @@ public class WrappedDataset<K, V> implements PairWrapped<K, V> {
 
 	@Override
 	public void foreach(VoidFunction2<K, V> consumer) {
-
+		dataset.foreach(v -> consumer.call(Marshaller.key(v), v));
 	}
 
 	@Override
@@ -313,5 +313,12 @@ public class WrappedDataset<K, V> implements PairWrapped<K, V> {
 	@Override
 	public PairWrapped<K, V> wrapped() {
 		return this;
+	}
+
+	@Override
+	public List<Tuple2<K, V>> collect() {
+		List<Tuple2<K, V>> l = new ArrayList<>();
+		foreach(t -> l.add(t));
+		return l;
 	}
 }
