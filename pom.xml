@@ -2,32 +2,29 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
-		<groupId>net.butfly.parent</groupId>
+		<groupId>net.butfly</groupId>
 		<artifactId>parent</artifactId>
 		<version>3.0.0-SNAPSHOT</version>
+		<relativePath>parent.pom</relativePath>
 	</parent>
 	<groupId>net.butfly.albacore</groupId>
-	<artifactId>albacore-parent</artifactId>
-	<name>albacore-parent</name>
-	<version>3.0.0-SNAPSHOT</version>
+	<artifactId>albacore</artifactId>
 	<packaging>pom</packaging>
-	<scm>
-		<connection>git@github.com:zbutfly/albacore.git</connection>
-		<developerConnection>git@github.com:zbutfly/albacore.git</developerConnection>
-		<tag>MASTER</tag>
-		<url>https://github.com/zbutfly/albacore</url>
-	</scm>
 	<modules>
 		<module>core</module>
 		<module>serializer</module>
 		<module>async</module>
 		<module>frame</module>
-		<module>orm</module>
 		<module>utils</module>
-		<module>calc</module>
-		<!--<module>extra</module>-->
+		<module>valid</module>
+		<!--<module>extra</module> -->
 		<module>cache</module>
 		<module>test</module>
-		<module>demo</module>
+		<!-- <module>demo</module> -->
 	</modules>
+	<scm>
+		<connection>https://bitbucket.org/butfly/albacore.git</connection>
+		<developerConnection>https://butfly@bitbucket.org/butfly/albacore.git</developerConnection>
+		<url>https://bitbucket.org/butfly/albacore</url>
+	</scm>
 </project>

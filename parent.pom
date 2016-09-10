@@ -1,7 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>net.butfly.parent</groupId>
+	<groupId>net.butfly</groupId>
 	<artifactId>parent</artifactId>
 	<version>3.0.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
@@ -9,8 +9,6 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.test.skip.exec>true</maven.test.skip.exec>
 		<deps.version.spring>4.2.5.RELEASE</deps.version.spring>
-		<deps.version.albacore>3.0.0-SNAPSHOT</deps.version.albacore>
-		<deps.version.albus>3.0.0-SNAPSHOT</deps.version.albus>
 	</properties>
 	<build>
 		<finalName>${project.artifactId}</finalName>
