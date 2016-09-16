@@ -1,3 +1,4 @@
+package net.butfly.albacore.meta;
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
@@ -5,10 +6,9 @@ import java.beans.MethodDescriptor;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Method;
 
-import com.jcabi.log.Logger;
-
 import net.butfly.albacore.utils.Generics;
 import net.butfly.albacore.utils.Reflections;
+import net.butfly.albacore.utils.logger.Loggers;
 
 public class MetaTest {
 	static class A<T> {
@@ -76,15 +76,15 @@ public class MetaTest {
 			NoSuchFieldException, SecurityException {
 		BeanInfo info = Introspector.getBeanInfo(B.class);
 		for (PropertyDescriptor p : info.getPropertyDescriptors())
-			Logger.info(p, p.toString());
+			Loggers.info(() -> p.toString());
 
 		for (MethodDescriptor m : info.getMethodDescriptors())
-			Logger.info(m, m.toString());
+			Loggers.info(() -> m.toString());
 
-		Logger.info("T", Generics.resolveGenericParameter(B.class, A.class, "T").toString());
-		Logger.info("T", Generics.resolveFieldType(B.class, Reflections.getDeclaredField(B.class, "t")).toString());
+		Loggers.info(() -> Generics.resolveGenericParameter(B.class, A.class, "T").toString());
+		Loggers.info(() -> Generics.resolveFieldType(B.class, Reflections.getDeclaredField(B.class, "t")).toString());
 		for (Method m : Reflections.getDeclaredMethods(B.class))
-			if ("getT".equals(m.getName())) Logger.info("T", "getT return: " + Generics.resolveReturnType(B.class, m));
+			if ("getT".equals(m.getName())) Loggers.info(() -> "getT return: " + Generics.resolveReturnType(B.class, m));
 
 	}
 }
