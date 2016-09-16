@@ -3,8 +3,12 @@ package net.butfly.albacore.utils.logger;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.impl.Log4jLoggerAdapter;
+import org.slf4j.impl.Log4jLoggerFactory;
+
 import net.butfly.albacore.utils.Utils;
 
 public final class Loggers extends Utils {
@@ -87,18 +91,12 @@ public final class Loggers extends Utils {
 		if (l.isErrorEnabled()) l.error(msg.get(), t);
 	}
 
-	private static Class<?> currentClass() {
-		try {
-			return Class.forName(Thread.currentThread().getStackTrace()[1].getClassName());
-		} catch (ClassNotFoundException e) {
-			return null;
-		}
-	}
-
-	private static Map<Class<?>, Logger> loggers = new HashMap<>();
+	private static Map<String, Logger> loggers = new HashMap<>();
 
 	private static Logger logger() {
-		Class<?> c = currentClass();
+		// 0: thread, 1: logger(this method), 2: info/trace/...
+		// 3: real class/method
+		String c = Thread.currentThread().getStackTrace()[3].getClassName();
 		Logger l = loggers.get(c);
 		if (null == l) {
 			l = LoggerFactory.getLogger(c);

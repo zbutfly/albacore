@@ -30,6 +30,7 @@ import com.google.common.base.Joiner;
 
 import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
 import net.butfly.albacore.utils.imports.meta.MetaObject;
+import net.butfly.albacore.utils.logger.Loggers;
 
 public final class Reflections extends Utils {
 	private static final Logger logger = LoggerFactory.getLogger(Reflections.class);
@@ -1013,5 +1014,9 @@ public final class Reflections extends Utils {
 		} catch (Exception e) {
 			return ann.toString();
 		}
+	}
+
+	public static void main(String[] args) {
+		Loggers.error(() -> "Should be main class, 105 line.");
 	}
 }
