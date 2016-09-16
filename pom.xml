@@ -22,6 +22,10 @@
 		<module>test</module>
 		<!-- <module>demo</module> -->
 	</modules>
+	<properties>
+		<version.suffix.scala>_2.10</version.suffix.scala>
+		<deps.version.scala.lib>2.10.6</deps.version.scala.lib>
+	</properties>
 	<scm>
 		<connection>https://bitbucket.org/butfly/albacore.git</connection>
 		<developerConnection>https://butfly@bitbucket.org/butfly/albacore.git</developerConnection>

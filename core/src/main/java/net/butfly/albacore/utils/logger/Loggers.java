@@ -6,8 +6,6 @@ import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.impl.Log4jLoggerAdapter;
-import org.slf4j.impl.Log4jLoggerFactory;
 
 import net.butfly.albacore.utils.Utils;
 
