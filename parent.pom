@@ -8,7 +8,10 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.test.skip.exec>true</maven.test.skip.exec>
-		<deps.version.spring>4.2.5.RELEASE</deps.version.spring>
+		<version.spring>4.3.2.RELEASE</version.spring>
+		<version.scala.main>2.10</version.scala.main>
+		<version.scala.suffix>_${version.scala.main}</version.scala.suffix>
+		<version.scala>${version.scala.main}.6</version.scala>
 	</properties>
 	<build>
 		<finalName>${project.artifactId}</finalName>

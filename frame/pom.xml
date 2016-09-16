@@ -22,7 +22,7 @@
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-beans</artifactId>
-			<version>${deps.version.spring}</version>
+			<version>${version.spring}</version>
 		</dependency>
 		<dependency>
 			<groupId>aopalliance</groupId>

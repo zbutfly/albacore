@@ -28,31 +28,31 @@
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-core</artifactId>
-			<version>${deps.version.jackson}</version>
+			<version>${version.jackson}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>
-			<version>${deps.version.jackson}</version>
+			<version>${version.jackson}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-annotations</artifactId>
-			<version>${deps.version.jackson}</version>
+			<version>${version.jackson}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.fasterxml.jackson.jaxrs</groupId>
 			<artifactId>jackson-jaxrs-json-provider</artifactId>
-			<version>${deps.version.jackson}</version>
+			<version>${version.jackson}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.fasterxml.jackson.module</groupId>
-			<artifactId>jackson-module-scala${version.suffix.scala}</artifactId>
-			<version>2.7.2</version><!-- ${deps.version.jackson} slow update -->
+			<artifactId>jackson-module-scala${version.scala.suffix}</artifactId>
+			<version>2.7.2</version><!-- ${version.jackson} slow update -->
 		</dependency>
 		<dependency>
 			<groupId>org.json4s</groupId>
-			<artifactId>json4s-jackson${version.suffix.scala}</artifactId>
+			<artifactId>json4s-jackson${version.scala.suffix}</artifactId>
 			<version>3.2.10</version>
 		</dependency>
 		<dependency>
