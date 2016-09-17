@@ -10,21 +10,27 @@ import java.util.function.Function;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.Text;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Defaults;
 import com.google.common.base.Joiner;
 
 import net.butfly.albacore.calculus.factor.modifier.HbaseColumnFamily;
+import net.butfly.albacore.calculus.factor.modifier.Property;
+import net.butfly.albacore.serializer.Serializer;
 import net.butfly.albacore.utils.Reflections;
 
-public class HbaseMarshaller extends Marshaller<byte[], ImmutableBytesWritable, Result> {
-	private static final long serialVersionUID = -4529825710243214685L;
+@SuppressWarnings({ "unchecked", "rawtypes" })
+public class HbaseResultSerializer implements Serializer<Result> {
+	private static final long serialVersionUID = 1152380944308233135L;
+	private static final Logger logger = LoggerFactory.getLogger(HbaseResultSerializer.class);
+	private final Function<String, String> mapping;
 
-	public HbaseMarshaller(Function<String, String> mapping) {
-		super(mapping);
+	public HbaseResultSerializer(Function<String, String> mapping) {
+		this.mapping = mapping;
 	}
 
 	private String[] rows(Result result) {
@@ -35,14 +41,9 @@ public class HbaseMarshaller extends Marshaller<byte[], ImmutableBytesWritable, 
 	}
 
 	@Override
-	public <T> T unmarshall(Result from, Class<T> to) {
+	public Object deserialize(Result from, Class to) {
 		if (null == from) return null;
-		T t;
-		try {
-			t = to.newInstance();
-		} catch (InstantiationException | IllegalAccessException e) {
-			throw new RuntimeException(e);
-		}
+		Object t = Reflections.construct(to);
 		for (Field f : Reflections.getDeclaredFields(to)) {
 			String[] qulifier = parseQualifier(f).split(":");
 			try {
@@ -57,9 +58,9 @@ public class HbaseMarshaller extends Marshaller<byte[], ImmutableBytesWritable, 
 		return t;
 	}
 
-	@Override
 	public final String parseQualifier(Field f) {
-		String col = super.parseQualifier(f);
+		Reflections.noneNull("", f);
+		String col = f.isAnnotationPresent(Property.class) ? f.getAnnotation(Property.class).value() : mapping.apply(f.getName());
 		Class<?> to = f.getDeclaringClass();
 		// XXX: field in parent class could not found annotation on sub-class.
 		String family = f.isAnnotationPresent(HbaseColumnFamily.class) ? f.getAnnotation(HbaseColumnFamily.class).value()
@@ -71,22 +72,11 @@ public class HbaseMarshaller extends Marshaller<byte[], ImmutableBytesWritable, 
 	}
 
 	@Override
-	public <T> Result marshall(T from) {
+	public Result serialize(Object src) {
 		throw new UnsupportedOperationException("Hbase marshall / write not supported.");
 	}
 
-	@Override
-	public byte[] unmarshallId(ImmutableBytesWritable id) {
-		return null == id ? null : id.get();
-	}
-
-	@Override
-	public ImmutableBytesWritable marshallId(byte[] id) {
-		return null == id ? null : new ImmutableBytesWritable(id);
-	}
-
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-	private static <R> R fromBytes(Class<R> type, byte[] value) {
+	public static <R> R fromBytes(Class<R> type, byte[] value) {
 		if (null == value || value.length == 0) return null;
 		if (Reflections.isAny(type, CharSequence.class)) return (R) Bytes.toString(value);
 		if (Reflections.isAny(type, long.class, Long.class)) return (R) (Long) Bytes.toLong(value);
@@ -113,7 +103,7 @@ public class HbaseMarshaller extends Marshaller<byte[], ImmutableBytesWritable, 
 		throw new UnsupportedOperationException("Not supportted marshall: " + type.toString());
 	}
 
-	private static <R> byte[] toBytes(Class<R> type, R value) {
+	public static <R> byte[] toBytes(Class<R> type, R value) {
 		if (null == value) return null;
 		if (Reflections.isAny(type, CharSequence.class)) return Bytes.toBytes(((CharSequence) value).toString());
 		if (Reflections.isAny(type, long.class, Long.class)) return Bytes.toBytes((Long) value);
@@ -125,12 +115,12 @@ public class HbaseMarshaller extends Marshaller<byte[], ImmutableBytesWritable, 
 		throw new UnsupportedOperationException("Not supportted marshall: " + type.toString());
 	}
 
-	@SuppressWarnings("unchecked")
-	private static <R> byte[][] toByteArray(Class<R> type, R[] value) {
+	public static <R> byte[][] toByteArray(Class<R> type, R[] value) {
 		if (null == value) return null;
 		byte[][] r = new byte[value.length][];
 		for (int i = 0; i < value.length; i++)
 			r[i] = toBytes((Class<R>) type.getComponentType(), value[i]);
 		return r;
 	}
+
 }

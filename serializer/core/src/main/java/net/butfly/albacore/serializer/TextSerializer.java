@@ -1,24 +1,24 @@
 package net.butfly.albacore.serializer;
 
 import java.io.IOException;
-import java.io.Serializable;
 
 import com.google.common.io.CharStreams;
 
-public interface TextSerializer extends Serializer<CharSequence> {
-	default void serialize(Appendable writer, Serializable src) throws IOException {
+@SuppressWarnings({ "rawtypes", "unchecked" })
+public interface TextSerializer extends ContentSerializer<CharSequence> {
+	default void serialize(Appendable writer, Object src) throws IOException {
 		writer.append(this.serialize(src));
 	}
 
-	default Serializable deserialize(Readable reader, Class<? extends Serializable> srcClass) throws IOException {
+	default Object deserialize(Readable reader, Class srcClass) throws IOException {
 		return deserialize(CharStreams.toString(reader), srcClass);
 	}
 
-	default byte[] toBytes(Serializable src) {
+	default byte[] toBytes(Object src) {
 		return serialize(src).toString().getBytes(contentType().getCharset());
 	}
 
-	default Serializable fromBytes(byte[] bytes, Class<? extends Serializable> srcClass) {
+	default Object fromBytes(byte[] bytes, Class srcClass) {
 		return deserialize(new String(bytes, contentType().getCharset()), srcClass);
 	}
 }

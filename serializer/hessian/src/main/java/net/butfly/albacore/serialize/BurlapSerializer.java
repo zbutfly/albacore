@@ -5,7 +5,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.Serializable;
 
 import org.apache.http.entity.ContentType;
 
@@ -16,12 +15,17 @@ import com.caucho.hessian.io.SerializerFactory;
 import com.google.common.base.Charsets;
 
 import net.butfly.albacore.exception.SystemException;
+import net.butfly.albacore.serializer.ArraySerializer;
 import net.butfly.albacore.serializer.BinarySerializer;
-import net.butfly.albacore.serializer.SerializerBase;
+import net.butfly.albacore.serializer.ContentSerializerBase;
 import net.butfly.albacore.serializer.SerializerFactorySupport;
 import net.butfly.albacore.utils.Reflections;
 
-public class BurlapSerializer extends SerializerBase<byte[]> implements BinarySerializer, SerializerFactorySupport {
+@SuppressWarnings("rawtypes")
+public class BurlapSerializer extends ContentSerializerBase<byte[]> implements BinarySerializer, ArraySerializer<byte[]>,
+		SerializerFactorySupport {
+	private static final long serialVersionUID = 691937271877170782L;
+
 	public BurlapSerializer() {
 		super(ContentType.create("x-application/burlap", Charsets.UTF_8));
 	}
@@ -31,7 +35,7 @@ public class BurlapSerializer extends SerializerBase<byte[]> implements BinarySe
 	}
 
 	@Override
-	public byte[] serialize(Serializable src) {
+	public byte[] serialize(Object src) {
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		try {
 			this.serialize(out, src);
@@ -48,10 +52,10 @@ public class BurlapSerializer extends SerializerBase<byte[]> implements BinarySe
 	}
 
 	@Override
-	public Serializable deserialize(byte[] dst, Class<? extends Serializable> srcClass) {
+	public Object deserialize(byte[] dst, Class srcClass) {
 		ByteArrayInputStream in = new ByteArrayInputStream(dst);
 		try {
-			return (Serializable) this.deserialize(in, srcClass);
+			return deserialize(in, srcClass);
 		} catch (IOException ex) {
 			throw new SystemException("", ex);
 		} finally {
@@ -62,7 +66,7 @@ public class BurlapSerializer extends SerializerBase<byte[]> implements BinarySe
 	}
 
 	@Override
-	public void serialize(OutputStream out, Serializable src) throws IOException {
+	public void serialize(OutputStream out, Object src) throws IOException {
 		BurlapOutput ho = new BurlapOutput(out);
 		if (null != factory) ho.setSerializerFactory(factory);
 		try {
@@ -74,21 +78,21 @@ public class BurlapSerializer extends SerializerBase<byte[]> implements BinarySe
 	}
 
 	@Override
-	public Object deserialize(InputStream in, Class<? extends Serializable> srcClass) throws IOException {
+	public Object deserialize(InputStream in, Class srcClass) throws IOException {
 		BurlapInput hi = new BurlapInput(in);
 		if (null != factory) hi.setSerializerFactory(factory);
 		try {
-			return (Serializable) hi.readObject();
+			return hi.readObject();
 		} finally {
 			hi.close();
 		}
 	}
 
 	@Override
-	public Serializable[] deserialize(byte[] dst, Class<? extends Serializable>[] types) {
+	public Object[] deserialize(byte[] dst, Class[] types) {
 		ByteArrayInputStream in = new ByteArrayInputStream(dst);
 		try {
-			return (Serializable[]) deserialize(in, null);
+			return (Object[]) deserialize(in, null);
 		} catch (IOException e) {
 			throw new SystemException("", e);
 		} finally {

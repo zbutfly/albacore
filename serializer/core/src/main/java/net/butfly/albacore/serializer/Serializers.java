@@ -2,8 +2,11 @@ package net.butfly.albacore.serializer;
 
 import java.lang.reflect.Modifier;
 import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.http.entity.ContentType;
 
@@ -18,16 +21,16 @@ public final class Serializers extends Utils {
 	public static final Class<? extends Serializer<?>> DEFAULT_SERIALIZER_CLASS = scanDefaultSerializer();
 
 	@SuppressWarnings("unchecked")
-	public static Class<? extends Serializer<?>> serializerClass(String mimeType) {
-		return (Class<? extends Serializer<?>>) Instances.fetch(Serializers::scanAllSerializers).get(mimeType);
+	public static Class<? extends ContentSerializer<?>> contentSerializers(String mimeType) {
+		return (Class<? extends ContentSerializer<?>>) Instances.fetch(Serializers::scanContentSerializers).get(mimeType);
 	}
 
 	@SuppressWarnings("rawtypes")
-	private static Map<String, Class<? extends Serializer>> scanAllSerializers() {
-		Map<String, Class<? extends Serializer>> map = new HashMap<String, Class<? extends Serializer>>();
-		for (Class<? extends Serializer> serClass : Reflections.getSubClasses(Serializer.class)) {
+	private static Map<String, Class<? extends ContentSerializer>> scanContentSerializers() {
+		Map<String, Class<? extends ContentSerializer>> map = new HashMap<String, Class<? extends ContentSerializer>>();
+		for (Class<? extends ContentSerializer> serClass : Reflections.getSubClasses(ContentSerializer.class)) {
 			if (Modifier.isAbstract(serClass.getModifiers())) continue;
-			Serializer<?> def = Instances.fetch(serClass, DEFAULT_CONTENT_TYPE.getMimeType());
+			ContentSerializer<?> def = Instances.fetch(serClass, DEFAULT_CONTENT_TYPE.getMimeType());
 			for (String mime : def.supportedMimeTypes())
 				map.put(mime, serClass);
 		}
@@ -55,8 +58,11 @@ public final class Serializers extends Utils {
 		throw new RuntimeException("Could not found any serializer class implementation in classpath.");
 	}
 
-	public static boolean isSupportClass(Class<? extends TextSerializer> class1) {
-		// TODO Auto-generated method stub
-		return false;
+	private static final Set<String> NO_CLASS_SER = new HashSet<>(Arrays.asList("net.butfly.albacore.serialize.HessianSerializer",
+			"net.butfly.albacore.serialize.JSONSerializer", "net.butfly.albacore.serialize.BurlapSerializer"));
+
+	// XXX: check the serializer need class info.
+	public static boolean isSupportClass(Class<? extends Serializer<?>> ser) {
+		return NO_CLASS_SER.contains(ser.getName());
 	}
 }

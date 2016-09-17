@@ -6,11 +6,12 @@ import java.util.Set;
 
 import org.apache.http.entity.ContentType;
 
-public abstract class SerializerBase<D> implements Serializer<D> {
+public abstract class ContentSerializerBase<D> implements ContentSerializer<D> {
+	private static final long serialVersionUID = -6920151785963241027L;
 	private final Map<String, ContentType> contentTypes;
 	private final ContentType defaultContentType;
 
-	public SerializerBase(ContentType... contentType) {
+	public ContentSerializerBase(ContentType... contentType) {
 		super();
 		contentTypes = new HashMap<>();
 		if (contentType != null && contentType.length == 0) {
@@ -22,7 +23,7 @@ public abstract class SerializerBase<D> implements Serializer<D> {
 
 	@Override
 	public ContentType contentType() {
-		return null == defaultContentType ? Serializer.super.contentType() : defaultContentType;
+		return null == defaultContentType ? ContentSerializer.super.contentType() : defaultContentType;
 	}
 
 	@Override

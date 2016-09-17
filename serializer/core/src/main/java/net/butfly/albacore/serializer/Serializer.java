@@ -1,25 +1,14 @@
 package net.butfly.albacore.serializer;
 
-import java.io.Serializable;
-import java.util.Set;
+import java.lang.reflect.Field;
 
-import org.apache.http.entity.ContentType;
+public interface Serializer<D> extends ConfirmSerializer<Object, D> {
+	D serialize(Object src);
 
-import com.google.common.base.Charsets;
+	@SuppressWarnings("rawtypes")
+	Object deserialize(D dst, Class srcClass);
 
-public interface Serializer<D> {
-	// XXX: need Serializable? or Type?
-	D serialize(Serializable src);
-
-	Serializable deserialize(D dst, Class<? extends Serializable> srcClass);
-
-	default ContentType contentType() {
-		return ContentType.WILDCARD.withCharset(Charsets.UTF_8);
+	default String mapFieldName(Field field) {
+		return field.getName();
 	}
-
-	ContentType contentType(String mimeType);
-
-	Set<String> supportedMimeTypes();
-
-	Serializable[] deserialize(D dst, Class<? extends Serializable>[] types);
 }
