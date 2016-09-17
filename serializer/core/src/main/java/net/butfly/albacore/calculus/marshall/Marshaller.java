@@ -24,6 +24,7 @@ import net.butfly.albacore.utils.Reflections;
 import scala.Tuple2;
 
 @SuppressWarnings("unchecked")
+@Deprecated
 public class Marshaller<FK, VK, VV> implements Serializable {
 	private static final long serialVersionUID = 6678021328832491260L;
 	private static final CaseFormat DEFAULT_SRC_FORMAT = CaseFormat.LOWER_CAMEL;

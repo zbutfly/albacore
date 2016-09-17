@@ -1,4 +1,4 @@
-package net.butfly.albacore.calculus.marshall.bson;
+package net.butfly.albacore.calculus.marshall.bson.fastxml;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategy.PropertyNamingStrategyBase;
 import com.google.common.base.CaseFormat;

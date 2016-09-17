@@ -1,4 +1,4 @@
-package net.butfly.albacore.calculus.marshall.bson;
+package net.butfly.albacore.calculus.marshall;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -39,8 +39,11 @@ import com.mongodb.DefaultDBEncoder;
 import com.mongodb.LazyDBObject;
 
 import net.butfly.albacore.calculus.marshall.Marshaller;
+import net.butfly.albacore.calculus.marshall.bson.bson4jackson.MongoBsonFactory;
+import net.butfly.albacore.calculus.marshall.bson.fastxml.UpperCaseWithUnderscoresStrategy;
 
-public abstract class BsonMarshaller<FK, VK, VV> extends Marshaller<FK, VK, VV> {
+@Deprecated
+abstract class BsonMarshaller<FK, VK, VV> extends Marshaller<FK, VK, VV> {
 	private static final long serialVersionUID = -7385678674433019238L;
 
 	public BsonMarshaller() {
@@ -120,7 +123,6 @@ public abstract class BsonMarshaller<FK, VK, VV> extends Marshaller<FK, VK, VV> 
 		}
 	}
 
-	@SuppressWarnings("deprecation")
 	private <T> T unmarshallFromBSON(BSONObject bson, Class<T> to) {
 		OutputBuffer buf = new BasicOutputBuffer();
 		try {

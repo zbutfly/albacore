@@ -4,8 +4,7 @@ import java.util.function.Function;
 
 import org.bson.BSONObject;
 
-import net.butfly.albacore.calculus.marshall.bson.BsonMarshaller;
-
+@Deprecated
 public class MongoMarshaller extends BsonMarshaller<Object, Object, BSONObject> {
 	private static final long serialVersionUID = 8467183278278572295L;
 
