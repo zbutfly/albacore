@@ -1,4 +1,4 @@
-package net.butfly.albacore.calculus.factor.modifier;
+package net.butfly.albacore.serializer.modifier;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

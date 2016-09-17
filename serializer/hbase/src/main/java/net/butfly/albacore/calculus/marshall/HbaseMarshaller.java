@@ -17,9 +17,10 @@ import org.apache.hadoop.io.Text;
 import com.google.common.base.Defaults;
 import com.google.common.base.Joiner;
 
-import net.butfly.albacore.calculus.factor.modifier.HbaseColumnFamily;
+import net.butfly.albacore.serializer.modifier.HbaseColumnFamily;
 import net.butfly.albacore.utils.Reflections;
 
+@Deprecated
 public class HbaseMarshaller extends Marshaller<byte[], ImmutableBytesWritable, Result> {
 	private static final long serialVersionUID = -4529825710243214685L;
 

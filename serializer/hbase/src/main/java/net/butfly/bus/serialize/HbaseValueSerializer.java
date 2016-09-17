@@ -1,4 +1,4 @@
-package net.butfly.albacore.calculus.marshall;
+package net.butfly.bus.serialize;
 
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 

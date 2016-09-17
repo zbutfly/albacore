@@ -1,4 +1,4 @@
-package net.butfly.albacore.calculus.marshall;
+package net.butfly.bus.serialize;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
@@ -18,9 +18,9 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Defaults;
 import com.google.common.base.Joiner;
 
-import net.butfly.albacore.calculus.factor.modifier.HbaseColumnFamily;
-import net.butfly.albacore.calculus.factor.modifier.Property;
 import net.butfly.albacore.serializer.Serializer;
+import net.butfly.albacore.serializer.modifier.HbaseColumnFamily;
+import net.butfly.albacore.serializer.modifier.Property;
 import net.butfly.albacore.utils.Reflections;
 
 @SuppressWarnings({ "unchecked", "rawtypes" })

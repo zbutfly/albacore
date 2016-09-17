@@ -16,11 +16,11 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.CaseFormat;
 
-import net.butfly.albacore.calculus.factor.modifier.PrimaryKey;
-import net.butfly.albacore.calculus.factor.modifier.Property;
+import net.butfly.albacore.serializer.modifier.Ignore;
+import net.butfly.albacore.serializer.modifier.Key;
+import net.butfly.albacore.serializer.modifier.PrimaryKey;
+import net.butfly.albacore.serializer.modifier.Property;
 import net.butfly.albacore.utils.Reflections;
-import net.butfly.albacore.calculus.factor.modifier.Ignore;
-import net.butfly.albacore.calculus.factor.modifier.Key;
 import scala.Tuple2;
 
 @SuppressWarnings("unchecked")
