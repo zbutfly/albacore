@@ -124,15 +124,15 @@ public class Objects extends Utils {
 	private static final ObjectWrapperFactory DEFAULT_OBJECT_WRAPPER_FACTORY = new DefaultObjectWrapperFactory();
 
 	@SuppressWarnings("unchecked")
-	public static Object castValue(Object value, Class<?> dstClass) {
-		if (dstClass == null) return value;
-		if (null == value) return dstClass.isPrimitive() ? Defaults.defaultValue(dstClass) : null;
+	public static Object castValue(Object value, Class<?> to) {
+		if (to == null) return value;
+		if (null == value) return to.isPrimitive() ? Defaults.defaultValue(to) : null;
 
-		Class<?> srcClass = value.getClass();
-		if (dstClass.isAssignableFrom(srcClass)) return value;
+		Class<?> from = value.getClass();
+		if (to.isAssignableFrom(from)) return value;
 
-		PrimaryCategory srcCat = TypeChecker.getPrimaryCategory(srcClass);
-		PrimaryCategory dstCat = TypeChecker.getPrimaryCategory(dstClass);
+		PrimaryCategory srcCat = TypeChecker.getPrimaryCategory(from);
+		PrimaryCategory dstCat = TypeChecker.getPrimaryCategory(to);
 
 		switch (srcCat) {
 		case BOOL: {
@@ -140,71 +140,71 @@ public class Objects extends Utils {
 			case BOOL:
 				return value;
 			case NUMBER:
-				return value != Defaults.defaultValue(dstClass);
+				return value != Defaults.defaultValue(to);
 			case STRING:
 				return Boolean.parseBoolean((String) value);
 			default:
-				return Defaults.defaultValue(dstClass);
+				return Defaults.defaultValue(to);
 			}
 		}
 		case ENUM:
 			switch (dstCat) {
 			case ENUM:
-				return Enums.parse((Class<Enum>) dstClass, Enums.value((Enum) value));
+				return Enums.parse((Class<Enum>) to, Enums.value((Enum) value));
 			case NUMBER:
 				return Enums.value((Enum) value);
 			case STRING:
 				return ((Enum) value).name();
 			default:
-				return Defaults.defaultValue(dstClass);
+				return Defaults.defaultValue(to);
 			}
 		case NUMBER:
-			NumberCategory srcNumCat = NumberCategory.classify(srcClass);
+			NumberCategory srcNumCat = NumberCategory.classify(from);
 			switch (dstCat) {
 			case NUMBER:
 				// TODO: different number type casting!
 				return value;
 			case ENUM:
-				return Enums.parse((Class<Enum>) dstClass, byte.class.cast(srcNumCat.primitiveClass.cast(value)));
+				return Enums.parse((Class<Enum>) to, byte.class.cast(srcNumCat.primitiveClass.cast(value)));
 			case STRING:
 				return srcNumCat.boxedClass.cast(value).toString();
 			default:
-				return Defaults.defaultValue(dstClass);
+				return Defaults.defaultValue(to);
 			}
 		case STRING:
 			switch (dstCat) {
 			case NUMBER:
-				NumberCategory dstNumCat = NumberCategory.classify(dstClass);
+				NumberCategory dstNumCat = NumberCategory.classify(to);
 				Method vof;
 				try {
 					vof = dstNumCat.boxedClass.getMethod("valueOf", String.class);
 				} catch (Exception e) {
-					return Defaults.defaultValue(dstClass);
+					return Defaults.defaultValue(to);
 				}
 				if (null == vof || !Modifier.isStatic(vof.getModifiers())) throw new IllegalArgumentException(
 						"Could not parse Number class: " + dstNumCat.boxedClass.getName());
 				try {
 					return vof.invoke(null, value);
 				} catch (Exception e) {
-					return Defaults.defaultValue(dstClass);
+					return Defaults.defaultValue(to);
 				}
 			case ENUM:
-				return Enum.valueOf((Class<Enum>) dstClass, (String) value);
+				return Enum.valueOf((Class<Enum>) to, (String) value);
 			case STRING:
 				return (String) value;
 			case BOOL:
 				return Boolean.parseBoolean((String) value);
 			default:
-				return Defaults.defaultValue(dstClass);
+				return Defaults.defaultValue(to);
 			}
 		case MAP:
 			switch (dstCat) {
 			case STRING:
 				return value.toString();
 			case MAP:
-				return clone((Beans) value, (Class<? extends Beans>) dstClass);
+				return clone((Beans) value, (Class<? extends Beans>) to);
 			default:
-				return Defaults.defaultValue(dstClass);
+				return Defaults.defaultValue(to);
 			}
 		case RAW_OBJ:
 			switch (dstCat) {
@@ -213,74 +213,74 @@ public class Objects extends Utils {
 			case RAW_OBJ:
 				return value;
 			default:
-				return Defaults.defaultValue(dstClass);
+				return Defaults.defaultValue(to);
 			}
 		case LIST:
 			switch (dstCat) {
 			case LIST:
-				if (srcClass.isArray()) {
+				if (from.isArray()) {
 					int len = Array.getLength(value);
-					if (dstClass.isArray()) { // source is an Array
-						Object dst = Array.newInstance(dstClass.getComponentType(), len);
+					if (to.isArray()) { // source is an Array
+						Object dst = Array.newInstance(to.getComponentType(), len);
 						for (int i = 0; i < len; i++)
-							Array.set(dst, i, castValue(Array.get(value, i), dstClass.getComponentType()));
+							Array.set(dst, i, castValue(Array.get(value, i), to.getComponentType()));
 						return dst;
-					} else if (Collection.class.isAssignableFrom(dstClass)) {
-						Class<?> dstComponentType = TypeChecker.getIterableClass(dstClass);
+					} else if (Collection.class.isAssignableFrom(to)) {
+						Class<?> dstComponentType = TypeChecker.getIterableClass(to);
 						Collection dst;
 						try {
-							dst = (Collection) dstClass.newInstance();
+							dst = (Collection) to.newInstance();
 						} catch (Exception e) {
-							return Defaults.defaultValue(dstClass);
+							return Defaults.defaultValue(to);
 						}
 						for (int i = 0; i < len; i++)
 							dst.add(castValue(Array.get(value, i), dstComponentType));
 						return dst;
-					} else return Defaults.defaultValue(dstClass);
+					} else return Defaults.defaultValue(to);
 				} else {
-					if (Collection.class.isAssignableFrom(srcClass)) {
+					if (Collection.class.isAssignableFrom(from)) {
 						// source is a Collection
 						Collection co = (Collection) value;
 						Iterator it = co.iterator();
 						int size = co.size();
-						if (dstClass.isArray()) {
-							Object dst = Array.newInstance(dstClass.getComponentType(), size);
+						if (to.isArray()) {
+							Object dst = Array.newInstance(to.getComponentType(), size);
 							for (int i = 0; i < size; i++)
-								Array.set(dst, i, castValue(it.next(), dstClass.getComponentType()));
+								Array.set(dst, i, castValue(it.next(), to.getComponentType()));
 							return dst;
-						} else if (Collection.class.isAssignableFrom(dstClass)) {
+						} else if (Collection.class.isAssignableFrom(to)) {
 							Collection dst;
 							try {
-								dst = (Collection) dstClass.newInstance();
+								dst = (Collection) to.newInstance();
 							} catch (Exception e) {
-								return Defaults.defaultValue(dstClass);
+								return Defaults.defaultValue(to);
 							}
-							Class<?> dstComponentType = TypeChecker.getIterableClass(dstClass);
+							Class<?> dstComponentType = TypeChecker.getIterableClass(to);
 							for (int i = 0; i < size; i++)
 								dst.add(castValue(it.next(), dstComponentType));
 							return dst;
-						} else return Defaults.defaultValue(dstClass);
+						} else return Defaults.defaultValue(to);
 					} else { // source is an Iterable
 						Iterable itt = (Iterable) value;
 						Iterator it = itt.iterator();
-						Class<?> srcComponentType = TypeChecker.getIterableClass(srcClass);
-						Class<?> dstComponentType = TypeChecker.getIterableClass(dstClass);
-						if (dstClass.isArray()) {
+						Class<?> srcComponentType = TypeChecker.getIterableClass(from);
+						Class<?> dstComponentType = TypeChecker.getIterableClass(to);
+						if (to.isArray()) {
 							ArrayList dst = new ArrayList();
 							while (it.hasNext())
-								dst.add(castValue(castValue(it.next(), dstComponentType), dstClass.getComponentType()));
+								dst.add(castValue(castValue(it.next(), dstComponentType), to.getComponentType()));
 							return dst.toArray((Object[]) Array.newInstance(srcComponentType, dst.size()));
-						} else if (Collection.class.isAssignableFrom(dstClass)) {
+						} else if (Collection.class.isAssignableFrom(to)) {
 							Collection dst;
 							try {
-								dst = (Collection) dstClass.newInstance();
+								dst = (Collection) to.newInstance();
 							} catch (Exception e) {
-								return Defaults.defaultValue(dstClass);
+								return Defaults.defaultValue(to);
 							}
 							while (it.hasNext())
 								dst.add(castValue(it.next(), dstComponentType));
 							return dst;
-						} else return Defaults.defaultValue(dstClass);
+						} else return Defaults.defaultValue(to);
 					}
 				}
 			default:

@@ -6,7 +6,7 @@ import org.apache.http.entity.ContentType;
 
 import com.google.common.base.Charsets;
 
-public interface ContentSerder<D> extends Serder<D> {
+public interface ContentSerder<S, D> extends ArrableSerder<S, D> {
 	default ContentType contentType() {
 		return ContentType.WILDCARD.withCharset(Charsets.UTF_8);
 	}

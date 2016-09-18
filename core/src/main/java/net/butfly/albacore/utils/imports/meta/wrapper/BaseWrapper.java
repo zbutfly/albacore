@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 import net.butfly.albacore.utils.imports.meta.MetaObject;
-import net.butfly.albacore.utils.imports.meta.ReflectionException;
+import net.butfly.albacore.exception.ReflectionException;
 import net.butfly.albacore.utils.imports.meta.property.PropertyTokenizer;
 
 /**

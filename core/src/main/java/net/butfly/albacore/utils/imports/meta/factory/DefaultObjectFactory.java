@@ -28,7 +28,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import net.butfly.albacore.utils.imports.meta.ReflectionException;
+import net.butfly.albacore.exception.ReflectionException;
 
 /**
  * @author Clinton Begin

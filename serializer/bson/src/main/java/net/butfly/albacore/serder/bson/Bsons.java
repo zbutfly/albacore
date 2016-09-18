@@ -1,5 +1,7 @@
 package net.butfly.albacore.serder.bson;
 
+import org.bson.BSONObject;
+
 import com.mongodb.BasicDBObject;
 
 import net.butfly.albacore.utils.Utils;

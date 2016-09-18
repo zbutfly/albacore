@@ -6,7 +6,7 @@ import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.util.List;
 
-import com.google.common.base.CaseFormat;
+import net.butfly.albacore.utils.CaseFormat;
 import com.google.common.base.Splitter;
 
 import net.butfly.albacore.utils.Utils;

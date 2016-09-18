@@ -1,5 +1,5 @@
 package net.butfly.albacore.serder;
 
-public interface ArrableSerder<D> extends Serder<D> {
-	Object[] deserialize(D dst, Class<?>[] types);
+public interface ArrableSerder<S, D> extends Serder<S, D> {
+	Object[] deserialize(D from, Class<?>[] tos);
 }

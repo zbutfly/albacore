@@ -17,7 +17,7 @@ package net.butfly.albacore.utils.imports.meta.property;
 
 import java.util.Locale;
 
-import net.butfly.albacore.utils.imports.meta.ReflectionException;
+import net.butfly.albacore.exception.ReflectionException;
 
 /**
  * @author Clinton Begin

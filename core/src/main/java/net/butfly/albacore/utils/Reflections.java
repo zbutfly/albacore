@@ -503,17 +503,17 @@ public final class Reflections extends Utils {
 	 * the destination class. This represents the number of steps in the object
 	 * hierarchy graph.
 	 * 
-	 * @param srcClass
+	 * @param from
 	 *            The source class
-	 * @param destClass
+	 * @param to
 	 *            The destination class
 	 * @return The cost of transforming an object
 	 */
-	private static float getObjectTransformationCost(Class<?> srcClass, final Class<?> destClass) {
-		if (destClass.isPrimitive()) { return getPrimitivePromotionCost(srcClass, destClass); }
+	private static float getObjectTransformationCost(Class<?> from, final Class<?> to) {
+		if (to.isPrimitive()) return getPrimitivePromotionCost(from, to);
 		float cost = 0.0f;
-		while (srcClass != null && !destClass.equals(srcClass)) {
-			if (destClass.isInterface() && isAssignable(srcClass, destClass)) {
+		while (from != null && !to.equals(from)) {
+			if (to.isInterface() && isAssignable(from, to)) {
 				// slight penalty for interface match.
 				// we still want an exact match to override an interface match,
 				// but
@@ -523,13 +523,13 @@ public final class Reflections extends Utils {
 				break;
 			}
 			cost++;
-			srcClass = srcClass.getSuperclass();
+			from = from.getSuperclass();
 		}
 		/*
 		 * If the destination class is null, we've travelled all the way up to
 		 * an Object match. We'll penalize this by adding 1.5 to the cost.
 		 */
-		if (srcClass == null) {
+		if (from == null) {
 			cost += 1.5f;
 		}
 		return cost;
@@ -539,21 +539,21 @@ public final class Reflections extends Utils {
 	 * Gets the number of steps required to promote a primitive number to
 	 * another type.
 	 * 
-	 * @param srcClass
+	 * @param from
 	 *            the (primitive) source class
-	 * @param destClass
+	 * @param to
 	 *            the (primitive) destination class
 	 * @return The cost of promoting the primitive
 	 */
-	private static float getPrimitivePromotionCost(final Class<?> srcClass, final Class<?> destClass) {
+	private static float getPrimitivePromotionCost(final Class<?> from, final Class<?> to) {
 		float cost = 0.0f;
-		Class<?> cls = srcClass;
+		Class<?> cls = from;
 		if (!cls.isPrimitive()) {
 			// slight unwrapping penalty
 			cost += 0.1f;
 			cls = wrapperToPrimitive(cls);
 		}
-		for (int i = 0; cls != destClass && i < ORDERED_PRIMITIVE_TYPES.length; i++) {
+		for (int i = 0; cls != to && i < ORDERED_PRIMITIVE_TYPES.length; i++) {
 			if (cls == ORDERED_PRIMITIVE_TYPES[i]) {
 				cost += 0.1f;
 				if (i < ORDERED_PRIMITIVE_TYPES.length - 1) {
@@ -576,19 +576,19 @@ public final class Reflections extends Utils {
 	 * Returns the sum of the object transformation cost for each class in the
 	 * source argument list.
 	 * 
-	 * @param srcArgs
+	 * @param from
 	 *            The source arguments
-	 * @param destArgs
+	 * @param to
 	 *            The destination arguments
 	 * @return The total transformation cost
 	 */
-	private static float getTotalTransformationCost(final Class<?>[] srcArgs, final Class<?>[] destArgs) {
+	private static float getTotalTransformationCost(final Class<?>[] from, final Class<?>[] to) {
 		float totalCost = 0.0f;
-		for (int i = 0; i < srcArgs.length; i++) {
-			Class<?> srcClass, destClass;
-			srcClass = srcArgs[i];
-			destClass = destArgs[i];
-			totalCost += getObjectTransformationCost(srcClass, destClass);
+		for (int i = 0; i < from.length; i++) {
+			Class<?> fromc, toc;
+			fromc = from[i];
+			toc = to[i];
+			totalCost += getObjectTransformationCost(fromc, toc);
 		}
 		return totalCost;
 	}

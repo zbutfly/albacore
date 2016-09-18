@@ -1,80 +1,21 @@
-package net.butfly.albacore.calculus.marshall;
+package net.butfly.albacore.serder.support;
 
-import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.base.CaseFormat;
 
 import net.butfly.albacore.serder.modifier.Ignore;
 import net.butfly.albacore.serder.modifier.Key;
 import net.butfly.albacore.serder.modifier.PrimaryKey;
-import net.butfly.albacore.serder.modifier.Property;
 import net.butfly.albacore.utils.Reflections;
+import net.butfly.albacore.utils.Utils;
 import scala.Tuple2;
 
-@SuppressWarnings("unchecked")
-@Deprecated
-public class Marshaller<FK, VK, VV> implements Serializable {
-	private static final long serialVersionUID = 6678021328832491260L;
-	private static final CaseFormat DEFAULT_SRC_FORMAT = CaseFormat.LOWER_CAMEL;
-	private static final CaseFormat DEFAULT_DST_FORMAT = CaseFormat.UPPER_UNDERSCORE;
-
-	protected final Logger logger = LoggerFactory.getLogger(this.getClass());
-	private final Function<String, String> mapping;
-
-	public Marshaller() {
-		this(s -> DEFAULT_SRC_FORMAT.to(DEFAULT_DST_FORMAT, s));
-	}
-
-	public Marshaller(CaseFormat dstFormat) {
-		this(s -> DEFAULT_SRC_FORMAT.to(dstFormat, s));
-	}
-
-	public Marshaller(CaseFormat srcFormat, CaseFormat dstFormat) {
-		this(s -> srcFormat.to(dstFormat, s));
-	}
-
-	public Marshaller(Function<String, String> mapping) {
-		super();
-		this.mapping = mapping;
-	}
-
-	public FK unmarshallId(VK id) {
-		return null == id ? null : (FK) id;
-	}
-
-	public <T> T unmarshall(VV from, Class<T> to) {
-		return (T) from;
-	}
-
-	public VK marshallId(FK id) {
-		return (VK) id;
-	}
-
-	public <T> VV marshall(T from) {
-		return (VV) from;
-	}
-
-	public Comparator<FK> comparator() {
-		throw new UnsupportedOperationException();
-	}
-
-	public String parseQualifier(Field f) {
-		Reflections.noneNull("", f);
-		return f.isAnnotationPresent(Property.class) ? f.getAnnotation(Property.class).value() : mapping.apply(f.getName());
-	}
-
+public final class Qualifiers extends Utils {
 	@SafeVarargs
 	public static <V> Tuple2<Field, ? extends Annotation> parseFirstOfAny(Class<V> c, Class<? extends Annotation>... annotation) {
 		for (Field f : Reflections.getDeclaredFields(c))
@@ -117,9 +58,10 @@ public class Marshaller<FK, VK, VV> implements Serializable {
 		return fs.toArray(new Field[fs.size()]);
 	}
 
+	@SuppressWarnings("unchecked")
 	public static <K, V> K key(V v) {
 		try {
-			return null == v ? null : (K) Marshaller.parseFirstOfAny(v.getClass(), Key.class)._1.get(v);
+			return null == v ? null : (K) parseFirstOfAny(v.getClass(), Key.class)._1.get(v);
 		} catch (IllegalArgumentException | IllegalAccessException e) {
 			return null;
 		}

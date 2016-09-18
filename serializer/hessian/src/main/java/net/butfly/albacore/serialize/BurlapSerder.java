@@ -12,22 +12,23 @@ import com.caucho.burlap.io.BurlapInput;
 import com.caucho.burlap.io.BurlapOutput;
 import com.caucho.hessian.io.AbstractSerializerFactory;
 import com.caucho.hessian.io.SerializerFactory;
-import com.google.common.base.Charsets;
 
 import net.butfly.albacore.exception.SystemException;
-import net.butfly.albacore.serder.ArrableSerder;
 import net.butfly.albacore.serder.BinarySerder;
 import net.butfly.albacore.serder.ContentSerderBase;
-import net.butfly.albacore.serder.SerderFactorySupport;
+import net.butfly.albacore.serder.support.ClassInfo;
+import net.butfly.albacore.serder.support.ClassInfo.ClassInfoSupport;
+import net.butfly.albacore.serder.support.ContentTypes;
+import net.butfly.albacore.serder.support.SerderFactorySupport;
 import net.butfly.albacore.utils.Reflections;
 
 @SuppressWarnings("rawtypes")
-public class BurlapSerder extends ContentSerderBase<byte[]> implements BinarySerder, ArrableSerder<byte[]>,
-		SerderFactorySupport {
+@ClassInfo(ClassInfoSupport.RESTRICT)
+public class BurlapSerder<PRESENT> extends ContentSerderBase<PRESENT, byte[]> implements BinarySerder<PRESENT>, SerderFactorySupport {
 	private static final long serialVersionUID = 691937271877170782L;
 
 	public BurlapSerder() {
-		super(ContentType.create("x-application/burlap", Charsets.UTF_8));
+		super(ContentTypes.APPLICATION_BURLAP);
 	}
 
 	public BurlapSerder(ContentType contentType) {
@@ -52,10 +53,10 @@ public class BurlapSerder extends ContentSerderBase<byte[]> implements BinarySer
 	}
 
 	@Override
-	public Object deserialize(byte[] dst, Class srcClass) {
+	public Object deserialize(byte[] dst, Class to) {
 		ByteArrayInputStream in = new ByteArrayInputStream(dst);
 		try {
-			return deserialize(in, srcClass);
+			return deserialize(in, to);
 		} catch (IOException ex) {
 			throw new SystemException("", ex);
 		} finally {
@@ -78,7 +79,7 @@ public class BurlapSerder extends ContentSerderBase<byte[]> implements BinarySer
 	}
 
 	@Override
-	public Object deserialize(InputStream in, Class srcClass) throws IOException {
+	public Object deserialize(InputStream in, Class to) throws IOException {
 		BurlapInput hi = new BurlapInput(in);
 		if (null != factory) hi.setSerializerFactory(factory);
 		try {
@@ -115,5 +116,4 @@ public class BurlapSerder extends ContentSerderBase<byte[]> implements BinarySer
 				throw new SystemException("", e);
 			}
 	}
-
 }

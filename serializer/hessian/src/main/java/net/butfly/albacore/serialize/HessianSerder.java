@@ -10,22 +10,23 @@ import com.caucho.hessian.io.AbstractSerializerFactory;
 import com.caucho.hessian.io.Hessian2StreamingInput;
 import com.caucho.hessian.io.Hessian2StreamingOutput;
 import com.caucho.hessian.io.SerializerFactory;
-import com.google.common.base.Charsets;
 
 import net.butfly.albacore.exception.SystemException;
-import net.butfly.albacore.serder.ArrableSerder;
-import net.butfly.albacore.serder.ContentSerderBase;
-import net.butfly.albacore.serder.SerderFactorySupport;
 import net.butfly.albacore.serder.TextSerder;
+import net.butfly.albacore.serder.TextSerderBase;
+import net.butfly.albacore.serder.support.ClassInfo;
+import net.butfly.albacore.serder.support.ClassInfo.ClassInfoSupport;
+import net.butfly.albacore.serder.support.ContentTypes;
+import net.butfly.albacore.serder.support.SerderFactorySupport;
 import net.butfly.albacore.utils.Reflections;
 
 @SuppressWarnings("rawtypes")
-public class HessianSerder extends ContentSerderBase<CharSequence> implements TextSerder, ArrableSerder<CharSequence>,
-		SerderFactorySupport {
+@ClassInfo(ClassInfoSupport.RESTRICT)
+public class HessianSerder<PRESENT> extends TextSerderBase<PRESENT> implements TextSerder<PRESENT>, SerderFactorySupport {
 	private static final long serialVersionUID = -593535528324149595L;
 
 	public HessianSerder() {
-		super(ContentType.create("x-application/hessian", Charsets.UTF_8));
+		super(ContentTypes.APPLICATION_HESSIAN);
 	}
 
 	public HessianSerder(ContentType contentType) {
@@ -58,7 +59,7 @@ public class HessianSerder extends ContentSerderBase<CharSequence> implements Te
 	}
 
 	@Override
-	public Object deserialize(CharSequence dst, Class srcClass) {
+	public Object deserialize(CharSequence dst, Class to) {
 		ByteArrayInputStream in = new ByteArrayInputStream(dst.toString().getBytes(contentType().getCharset()));
 		Hessian2StreamingInput hi = new Hessian2StreamingInput(in);
 		if (null != factory) hi.setSerializerFactory(factory);
@@ -77,7 +78,7 @@ public class HessianSerder extends ContentSerderBase<CharSequence> implements Te
 	}
 
 	@Override
-	public Object[] deserialize(CharSequence dst, Class[] types) {
+	public Object[] deserialize(CharSequence dst, Class<?>[] types) {
 		ByteArrayInputStream in = new ByteArrayInputStream(dst.toString().getBytes(contentType().getCharset()));
 		Hessian2StreamingInput hi = new Hessian2StreamingInput(in);
 		if (null != factory) hi.setSerializerFactory(factory);

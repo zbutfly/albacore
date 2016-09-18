@@ -6,10 +6,10 @@ import java.util.Set;
 
 import org.apache.http.entity.ContentType;
 
-public abstract class ContentSerderBase<D> implements ContentSerder<D> {
+public abstract class ContentSerderBase<PRESENT, DATA> extends SerderBase<PRESENT, DATA> implements ContentSerder<PRESENT, DATA> {
 	private static final long serialVersionUID = -6920151785963241027L;
-	private final Map<String, ContentType> contentTypes;
-	private final ContentType defaultContentType;
+	protected final Map<String, ContentType> contentTypes;
+	protected ContentType defaultContentType;
 
 	public ContentSerderBase(ContentType... contentType) {
 		super();
@@ -34,5 +34,10 @@ public abstract class ContentSerderBase<D> implements ContentSerder<D> {
 	@Override
 	public Set<String> supportedMimeTypes() {
 		return contentTypes.keySet();
+	}
+
+	final protected void enable(ContentType contentType) {
+		if (defaultContentType == null) defaultContentType = contentType;
+		if (!contentTypes.containsKey(contentType.getMimeType())) contentTypes.put(contentType.getMimeType(), contentType);
 	}
 }
