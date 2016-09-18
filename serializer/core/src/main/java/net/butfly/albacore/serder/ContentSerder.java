@@ -1,4 +1,4 @@
-package net.butfly.albacore.serializer;
+package net.butfly.albacore.serder;
 
 import java.util.Set;
 
@@ -6,7 +6,7 @@ import org.apache.http.entity.ContentType;
 
 import com.google.common.base.Charsets;
 
-public interface ContentSerializer<D> extends Serializer<D> {
+public interface ContentSerder<D> extends Serder<D> {
 	default ContentType contentType() {
 		return ContentType.WILDCARD.withCharset(Charsets.UTF_8);
 	}

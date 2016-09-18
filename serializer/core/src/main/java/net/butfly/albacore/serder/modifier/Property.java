@@ -1,4 +1,4 @@
-package net.butfly.albacore.serializer.modifier;
+package net.butfly.albacore.serder.modifier;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -7,4 +7,6 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
-public @interface Key {}
+public @interface Property {
+	String value();
+}

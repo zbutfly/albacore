@@ -18,18 +18,18 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Defaults;
 import com.google.common.base.Joiner;
 
-import net.butfly.albacore.serializer.Serializer;
-import net.butfly.albacore.serializer.modifier.HbaseColumnFamily;
-import net.butfly.albacore.serializer.modifier.Property;
+import net.butfly.albacore.serder.Serder;
+import net.butfly.albacore.serder.modifier.HbaseColumnFamily;
+import net.butfly.albacore.serder.modifier.Property;
 import net.butfly.albacore.utils.Reflections;
 
 @SuppressWarnings({ "unchecked", "rawtypes" })
-public class HbaseResultSerializer implements Serializer<Result> {
+public class HbaseResultSerder implements Serder<Result> {
 	private static final long serialVersionUID = 1152380944308233135L;
-	private static final Logger logger = LoggerFactory.getLogger(HbaseResultSerializer.class);
+	private static final Logger logger = LoggerFactory.getLogger(HbaseResultSerder.class);
 	private final Function<String, String> mapping;
 
-	public HbaseResultSerializer(Function<String, String> mapping) {
+	public HbaseResultSerder(Function<String, String> mapping) {
 		this.mapping = mapping;
 	}
 

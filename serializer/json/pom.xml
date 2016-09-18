@@ -3,14 +3,14 @@
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>net.butfly.albacore</groupId>
-		<artifactId>albacore-serializer</artifactId>
+		<artifactId>albacore-serder</artifactId>
 		<version>1.0.0-SNAPSHOT</version>
 	</parent>
-	<artifactId>albacore-serializer-json</artifactId>
+	<artifactId>albacore-serder-json</artifactId>
 	<dependencies>
 		<dependency>
 			<groupId>net.butfly.albacore</groupId>
-			<artifactId>albacore-serializer-core</artifactId>
+			<artifactId>albacore-serder-core</artifactId>
 			<version>1.0.0-SNAPSHOT</version>
 		</dependency>
 		<!-- jackson dependencies -->

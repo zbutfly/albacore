@@ -13,22 +13,22 @@ import com.caucho.hessian.io.SerializerFactory;
 import com.google.common.base.Charsets;
 
 import net.butfly.albacore.exception.SystemException;
-import net.butfly.albacore.serializer.ArraySerializer;
-import net.butfly.albacore.serializer.ContentSerializerBase;
-import net.butfly.albacore.serializer.SerializerFactorySupport;
-import net.butfly.albacore.serializer.TextSerializer;
+import net.butfly.albacore.serder.ArrableSerder;
+import net.butfly.albacore.serder.ContentSerderBase;
+import net.butfly.albacore.serder.SerderFactorySupport;
+import net.butfly.albacore.serder.TextSerder;
 import net.butfly.albacore.utils.Reflections;
 
 @SuppressWarnings("rawtypes")
-public class HessianSerializer extends ContentSerializerBase<CharSequence> implements TextSerializer, ArraySerializer<CharSequence>,
-		SerializerFactorySupport {
+public class HessianSerder extends ContentSerderBase<CharSequence> implements TextSerder, ArrableSerder<CharSequence>,
+		SerderFactorySupport {
 	private static final long serialVersionUID = -593535528324149595L;
 
-	public HessianSerializer() {
+	public HessianSerder() {
 		super(ContentType.create("x-application/hessian", Charsets.UTF_8));
 	}
 
-	public HessianSerializer(ContentType contentType) {
+	public HessianSerder(ContentType contentType) {
 		super(contentType);
 	}
 

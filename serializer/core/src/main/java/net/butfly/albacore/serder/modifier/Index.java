@@ -1,4 +1,4 @@
-package net.butfly.albacore.serializer.modifier;
+package net.butfly.albacore.serder.modifier;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -7,8 +7,10 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.FIELD, ElementType.TYPE })
-public @interface HbaseColumnFamily {
-	public static final String DEFAULT_COLUMN_FAMILY = "cf1";
+public @interface Index {
+	String[] value() default {};
 
-	String value() default DEFAULT_COLUMN_FAMILY;
+	boolean descending() default true;
+
+	boolean hashed() default false;
 }

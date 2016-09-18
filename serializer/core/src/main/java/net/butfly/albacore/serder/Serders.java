@@ -1,4 +1,4 @@
-package net.butfly.albacore.serializer;
+package net.butfly.albacore.serder;
 
 import java.lang.reflect.Modifier;
 import java.nio.charset.Charset;
@@ -16,21 +16,21 @@ import net.butfly.albacore.utils.Instances;
 import net.butfly.albacore.utils.Reflections;
 import net.butfly.albacore.utils.Utils;
 
-public final class Serializers extends Utils {
+public final class Serders extends Utils {
 	public static final ContentType DEFAULT_CONTENT_TYPE = ContentType.WILDCARD.withCharset(Charsets.UTF_8);
-	public static final Class<? extends Serializer<?>> DEFAULT_SERIALIZER_CLASS = scanDefaultSerializer();
+	public static final Class<? extends Serder<?>> DEFAULT_SERIALIZER_CLASS = scanDefaultSerializer();
 
 	@SuppressWarnings("unchecked")
-	public static Class<? extends ContentSerializer<?>> contentSerializers(String mimeType) {
-		return (Class<? extends ContentSerializer<?>>) Instances.fetch(Serializers::scanContentSerializers).get(mimeType);
+	public static Class<? extends ContentSerder<?>> contentSerializers(String mimeType) {
+		return (Class<? extends ContentSerder<?>>) Instances.fetch(Serders::scanContentSerializers).get(mimeType);
 	}
 
 	@SuppressWarnings("rawtypes")
-	private static Map<String, Class<? extends ContentSerializer>> scanContentSerializers() {
-		Map<String, Class<? extends ContentSerializer>> map = new HashMap<String, Class<? extends ContentSerializer>>();
-		for (Class<? extends ContentSerializer> serClass : Reflections.getSubClasses(ContentSerializer.class)) {
+	private static Map<String, Class<? extends ContentSerder>> scanContentSerializers() {
+		Map<String, Class<? extends ContentSerder>> map = new HashMap<String, Class<? extends ContentSerder>>();
+		for (Class<? extends ContentSerder> serClass : Reflections.getSubClasses(ContentSerder.class)) {
 			if (Modifier.isAbstract(serClass.getModifiers())) continue;
-			ContentSerializer<?> def = Instances.fetch(serClass, DEFAULT_CONTENT_TYPE.getMimeType());
+			ContentSerder<?> def = Instances.fetch(serClass, DEFAULT_CONTENT_TYPE.getMimeType());
 			for (String mime : def.supportedMimeTypes())
 				map.put(mime, serClass);
 		}
@@ -38,7 +38,7 @@ public final class Serializers extends Utils {
 
 	}
 
-	public static Serializer<?> serializer(final Class<? extends Serializer<?>> serializerClass, final Charset charset) {
+	public static Serder<?> serializer(final Class<? extends Serder<?>> serializerClass, final Charset charset) {
 		return Instances.fetch(serializerClass, charset);
 	}
 
@@ -46,13 +46,13 @@ public final class Serializers extends Utils {
 			"net.butfly.albacore.serialize.JSONSerializer" };
 
 	@SuppressWarnings("unchecked")
-	private static Class<? extends Serializer<?>> scanDefaultSerializer() {
+	private static Class<? extends Serder<?>> scanDefaultSerializer() {
 		for (@SuppressWarnings("rawtypes")
-		Class<? extends Serializer> cl : Reflections.getSubClasses(Serializer.class))
+		Class<? extends Serder> cl : Reflections.getSubClasses(Serder.class))
 			if (!Modifier.isAbstract(cl.getModifiers()) && !cl.getName().startsWith("net.butfly.albacore.serialize."))
-				return (Class<? extends Serializer<?>>) cl;
+				return (Class<? extends Serder<?>>) cl;
 		for (String s : INTERN_SER) {
-			Class<? extends Serializer<?>> cl = Reflections.forClassName(s);
+			Class<? extends Serder<?>> cl = Reflections.forClassName(s);
 			if (null != cl) return cl;
 		}
 		throw new RuntimeException("Could not found any serializer class implementation in classpath.");
@@ -62,7 +62,7 @@ public final class Serializers extends Utils {
 			"net.butfly.albacore.serialize.JSONSerializer", "net.butfly.albacore.serialize.BurlapSerializer"));
 
 	// XXX: check the serializer need class info.
-	public static boolean isSupportClass(Class<? extends Serializer<?>> ser) {
+	public static boolean isSupportClass(Class<? extends Serder<?>> ser) {
 		return NO_CLASS_SER.contains(ser.getName());
 	}
 }

@@ -1,4 +1,4 @@
-package net.butfly.albacore.serializer.bson;
+package net.butfly.albacore.serder.bson;
 
 import com.mongodb.BasicDBObject;
 

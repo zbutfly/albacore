@@ -12,22 +12,22 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
 import net.butfly.albacore.exception.SystemException;
-import net.butfly.albacore.serializer.ArraySerializer;
-import net.butfly.albacore.serializer.ContentSerializerBase;
-import net.butfly.albacore.serializer.TextSerializer;
+import net.butfly.albacore.serder.ArrableSerder;
+import net.butfly.albacore.serder.ContentSerderBase;
+import net.butfly.albacore.serder.TextSerder;
 
 @SuppressWarnings("rawtypes")
-public class JSONSerializer extends ContentSerializerBase<CharSequence> implements TextSerializer, ArraySerializer<CharSequence> {
+public class JsonSerder extends ContentSerderBase<CharSequence> implements TextSerder, ArrableSerder<CharSequence> {
 	private static final long serialVersionUID = -4394900785541475884L;
 	private static ObjectMapper mapper = new ObjectMapper().enable(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS).enable(
 			SerializationFeature.WRITE_ENUMS_USING_INDEX).enable(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL).enable(
 					SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS).enable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
-	public JSONSerializer() {
+	public JsonSerder() {
 		super(ContentType.APPLICATION_JSON);
 	}
 
-	public JSONSerializer(ContentType contentType) {
+	public JsonSerder(ContentType contentType) {
 		super(contentType);
 	}
 

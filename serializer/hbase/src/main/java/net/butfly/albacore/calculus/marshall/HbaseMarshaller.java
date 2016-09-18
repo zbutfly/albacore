@@ -17,7 +17,7 @@ import org.apache.hadoop.io.Text;
 import com.google.common.base.Defaults;
 import com.google.common.base.Joiner;
 
-import net.butfly.albacore.serializer.modifier.HbaseColumnFamily;
+import net.butfly.albacore.serder.modifier.HbaseColumnFamily;
 import net.butfly.albacore.utils.Reflections;
 
 @Deprecated

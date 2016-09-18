@@ -1,10 +1,10 @@
-package net.butfly.albacore.serializer;
+package net.butfly.albacore.serder;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public interface BinarySerializer extends ContentSerializer<byte[]> {
+public interface BinarySerder extends ContentSerder<byte[]> {
 	void serialize(OutputStream out, Object src) throws IOException;
 
 	@SuppressWarnings("rawtypes")

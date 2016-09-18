@@ -1,8 +1,8 @@
-package net.butfly.albacore.serializer;
+package net.butfly.albacore.serder;
 
 import java.lang.reflect.Field;
 
-public interface Serializer<D> extends ConfirmSerializer<Object, D> {
+public interface Serder<D> extends ValueSerder<Object, D> {
 	D serialize(Object src);
 
 	@SuppressWarnings("rawtypes")

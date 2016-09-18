@@ -15,22 +15,22 @@ import com.caucho.hessian.io.SerializerFactory;
 import com.google.common.base.Charsets;
 
 import net.butfly.albacore.exception.SystemException;
-import net.butfly.albacore.serializer.ArraySerializer;
-import net.butfly.albacore.serializer.BinarySerializer;
-import net.butfly.albacore.serializer.ContentSerializerBase;
-import net.butfly.albacore.serializer.SerializerFactorySupport;
+import net.butfly.albacore.serder.ArrableSerder;
+import net.butfly.albacore.serder.BinarySerder;
+import net.butfly.albacore.serder.ContentSerderBase;
+import net.butfly.albacore.serder.SerderFactorySupport;
 import net.butfly.albacore.utils.Reflections;
 
 @SuppressWarnings("rawtypes")
-public class BurlapSerializer extends ContentSerializerBase<byte[]> implements BinarySerializer, ArraySerializer<byte[]>,
-		SerializerFactorySupport {
+public class BurlapSerder extends ContentSerderBase<byte[]> implements BinarySerder, ArrableSerder<byte[]>,
+		SerderFactorySupport {
 	private static final long serialVersionUID = 691937271877170782L;
 
-	public BurlapSerializer() {
+	public BurlapSerder() {
 		super(ContentType.create("x-application/burlap", Charsets.UTF_8));
 	}
 
-	public BurlapSerializer(ContentType contentType) {
+	public BurlapSerder(ContentType contentType) {
 		super(contentType);
 	}
 

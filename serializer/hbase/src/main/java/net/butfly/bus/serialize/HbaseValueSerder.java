@@ -2,9 +2,9 @@ package net.butfly.bus.serialize;
 
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 
-import net.butfly.albacore.serializer.ConfirmSerializer;
+import net.butfly.albacore.serder.ValueSerder;
 
-public class HbaseValueSerializer implements ConfirmSerializer<byte[], ImmutableBytesWritable> {
+public class HbaseValueSerder implements ValueSerder<byte[], ImmutableBytesWritable> {
 	private static final long serialVersionUID = 1152380944308233135L;
 
 	@Override

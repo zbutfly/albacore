@@ -1,11 +1,11 @@
-package net.butfly.albacore.serializer;
+package net.butfly.albacore.serder;
 
 import java.io.IOException;
 
 import com.google.common.io.CharStreams;
 
 @SuppressWarnings({ "rawtypes", "unchecked" })
-public interface TextSerializer extends ContentSerializer<CharSequence> {
+public interface TextSerder extends ContentSerder<CharSequence> {
 	default void serialize(Appendable writer, Object src) throws IOException {
 		writer.append(this.serialize(src));
 	}

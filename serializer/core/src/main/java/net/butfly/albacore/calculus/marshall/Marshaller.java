@@ -16,10 +16,10 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.CaseFormat;
 
-import net.butfly.albacore.serializer.modifier.Ignore;
-import net.butfly.albacore.serializer.modifier.Key;
-import net.butfly.albacore.serializer.modifier.PrimaryKey;
-import net.butfly.albacore.serializer.modifier.Property;
+import net.butfly.albacore.serder.modifier.Ignore;
+import net.butfly.albacore.serder.modifier.Key;
+import net.butfly.albacore.serder.modifier.PrimaryKey;
+import net.butfly.albacore.serder.modifier.Property;
 import net.butfly.albacore.utils.Reflections;
 import scala.Tuple2;
 

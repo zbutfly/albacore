@@ -1,9 +1,9 @@
-package net.butfly.albacore.serializer;
+package net.butfly.albacore.serder;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
 
-public interface ConfirmSerializer<S, D> extends Serializable {
+public interface ValueSerder<S, D> extends Serializable {
 	D serialize(S src);
 
 	S deserialize(D dst, Class<S> srcClass);
