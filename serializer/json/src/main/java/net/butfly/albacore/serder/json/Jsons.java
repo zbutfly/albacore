@@ -55,7 +55,7 @@ public final class Jsons extends Utils {
 		}
 	}
 
-	public static JsonNode[] deArray(JsonNode node) throws JsonProcessingException, IOException {
+	public static JsonNode[] array(JsonNode node) throws JsonProcessingException, IOException {
 		if (node.isNull()) return null;
 		if (node.isArray()) {
 			List<JsonNode> nodes = new ArrayList<>();
@@ -74,6 +74,13 @@ public final class Jsons extends Utils {
 			return nodes.toArray(new JsonNode[nodes.size()]);
 		}
 		return new JsonNode[] { node };
+	}
+
+	public static int arraySize(JsonNode node) {
+		if (node.isArray()) return node.size();
+		int len = 0;
+		for (;; len++)
+			if (!node.has(Integer.toString(len))) return len;
 	}
 
 	private static final JsonSerder jsd = new JsonSerder();
