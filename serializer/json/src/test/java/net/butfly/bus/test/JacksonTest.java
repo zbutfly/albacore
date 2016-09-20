@@ -2,14 +2,11 @@ package net.butfly.bus.test;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.List;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import org.apache.commons.lang3.RandomStringUtils;
+
+import net.butfly.albacore.serder.BsonSerder;
+import net.butfly.albacore.serder.JsonSerder;
 
 public class JacksonTest {
 	public enum Enums {
@@ -18,39 +15,43 @@ public class JacksonTest {
 
 	public static class Bean implements Serializable {
 		private static final long serialVersionUID = -2963162163893587423L;
-		public int ivalue;
-		public long lvalue;
-		public Enums evalue;
-		public String svalue;
-		public Bean bvalue;
+		public int number;
+		public long size;
+		public Enums type;
+		public String title;
+		public Bean bean;
 
-		public Bean() {
+		private Bean() {
+			this(true);
+		}
+
+		private Bean(boolean embed) {
 			super();
-			this.ivalue = (int) (Math.random() * 10);
-			this.lvalue = (long) (Math.random() * 10);
-			this.svalue = "asdasd";
-			this.evalue = Enums.values()[(int) (Math.random() * 3)];
+			this.number = (int) (Math.random() * 10);
+			this.size = (long) (Math.random() * 10);
+			this.title = RandomStringUtils.randomAlphanumeric(16);
+			this.type = Enums.values()[(int) (Math.random() * 3)];
+			bean = embed ? new Bean(false) : null;
+		}
+
+		public String titles() {
+			return title + (null == bean ? "" : " / " + bean.title);
 		}
 	}
 
-	public static void main(String[] args) throws IOException {
-		Bean[] beans = new Bean[] { new Bean(), new Bean(), new Bean() };
-		beans[2].bvalue = beans[1];
+	public static void main(String... arg) throws IOException {
+		final JsonSerder jsd = new JsonSerder();
+		final BsonSerder bsd = new BsonSerder();
 
-		ObjectMapper mapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT)
-				.enable(SerializationFeature.WRITE_ENUMS_USING_INDEX)
-				.enable(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS)
-				.enable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-				.enable(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS)
-				.enable(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL);
+		Bean o = new Bean();
+		String s = jsd.ser(o);
+		System.out.println("Origin: " + s);
+		System.out.println("JSON: " + o.titles() + " => " + jsd.der(s, Bean.class).titles());
+		System.out.println("BSON: " + o.titles() + " => " + bsd.der(bsd.ser(o), Bean.class).titles());
 
-		String json = mapper.writeValueAsString(Arrays.asList(beans));
-		System.out.println(json);
-		List<Bean> rl = mapper.readValue(json, new TypeReference<List<Bean>>() {});
-		assert (rl.size() == 3);
-		Bean[] ra = mapper.readValue(json, Bean[].class);
-		assert (ra.length == 3);
-		JsonNode tree = mapper.readTree(json);
-		assert (tree.isArray());
+		System.out.println("JSON args: " + o.titles() + " => " + ((Bean) jsd.der(jsd.ser(new Object[] { o, 1, true }), Bean.class,
+				int.class, boolean.class)[0]).titles());
+		System.out.println("BSON args: " + o.titles() + " => " + ((Bean) bsd.der(bsd.ser(new Object[] { o, 1, true }), Bean.class,
+				int.class, boolean.class)[0]).titles());
 	}
 }

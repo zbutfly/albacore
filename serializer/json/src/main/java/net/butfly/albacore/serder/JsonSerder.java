@@ -34,7 +34,7 @@ public class JsonSerder extends TextSerderBase<Object> implements ArrableTextSer
 	@Override
 	public Object[] der(CharSequence from, Class<?>... tos) {
 		try {
-			JsonNode[] n = Jsons.dearray(Jsons.mapper.readTree(from.toString()));
+			JsonNode[] n = Jsons.deArray(Jsons.mapper.readTree(from.toString()));
 			if (n == null) return null;
 			Object[] r = new Object[Math.min(tos.length, n.length)];
 			for (int i = 0; i < r.length; i++)

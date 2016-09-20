@@ -55,15 +55,25 @@ public final class Jsons extends Utils {
 		}
 	}
 
-	public static JsonNode[] dearray(JsonNode node) throws JsonProcessingException, IOException {
-		// final JsonNode node = Jsons.mapper.readTree(src.toString());
+	public static JsonNode[] deArray(JsonNode node) throws JsonProcessingException, IOException {
 		if (node.isNull()) return null;
-		if (!node.isArray()) return new JsonNode[] { node };
-		List<JsonNode> nodes = new ArrayList<>();
-		Iterator<JsonNode> it = node.iterator();
-		while (it.hasNext())
-			nodes.add(it.next());
-		return nodes.toArray(new JsonNode[nodes.size()]);
+		if (node.isArray()) {
+			List<JsonNode> nodes = new ArrayList<>();
+			Iterator<JsonNode> it = node.iterator();
+			while (it.hasNext())
+				nodes.add(it.next());
+			return nodes.toArray(new JsonNode[nodes.size()]);
+		}
+		int len = 0;
+		for (;; len++)
+			if (!node.has(Integer.toString(len))) break;
+		if (len > 0) {
+			List<JsonNode> nodes = new ArrayList<>();
+			for (int i = 0; i < len; i++)
+				nodes.add(node.get(Integer.toString(i)));
+			return nodes.toArray(new JsonNode[nodes.size()]);
+		}
+		return new JsonNode[] { node };
 	}
 
 	private static final JsonSerder jsd = new JsonSerder();
@@ -80,4 +90,5 @@ public final class Jsons extends Utils {
 	public static String simpleJSON(Map<String, ?> map) {
 		return jsd.ser(map);
 	}
+
 }
