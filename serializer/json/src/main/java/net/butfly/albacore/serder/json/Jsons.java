@@ -18,7 +18,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
 import de.undercouch.bson4jackson.BsonFactory;
-import de.undercouch.bson4jackson.BsonGenerator;
 import de.undercouch.bson4jackson.BsonParser;
 import net.butfly.albacore.serder.JsonSerder;
 import net.butfly.albacore.utils.Utils;
@@ -32,10 +31,12 @@ public final class Jsons extends Utils {
 			.enable(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS)//
 			.enable(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS)//
 			.enable(SerializationFeature.WRITE_ENUMS_USING_INDEX)//
-			.enable(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL);
+			.enable(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL)//
+	;
 	private static JsonFactory bsoner_fact = new BsonFactory()//
-			.enable(BsonGenerator.Feature.ENABLE_STREAMING)//
-			.enable(BsonParser.Feature.HONOR_DOCUMENT_LENGTH);
+			// .enable(BsonGenerator.Feature.ENABLE_STREAMING)//cause EOF
+			.enable(BsonParser.Feature.HONOR_DOCUMENT_LENGTH)//
+	;
 	public static ObjectMapper bsoner = new ObjectMapper(bsoner_fact)//
 			.setPropertyNamingStrategy(new UpperCaseWithUnderscoresStrategy())//
 			.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)//
@@ -43,7 +44,8 @@ public final class Jsons extends Utils {
 			.disable(SerializationFeature.WRITE_NULL_MAP_VALUES)//
 			.setSerializationInclusion(Include.NON_NULL)//
 			.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true)//
-			.configure(JsonParser.Feature.IGNORE_UNDEFINED, true);
+			.configure(JsonParser.Feature.IGNORE_UNDEFINED, true)//
+	;
 
 	public static <T> T parse(JsonNode node, Class<T> to) {
 		try {
