@@ -40,8 +40,9 @@ public class BsonSerder extends BinarySerderBase<Object> implements ArrableBinar
 		}
 	}
 
+	@SafeVarargs
 	@Override
-	public Object[] der(byte[] from, Class<?>... tos) {
+	public final Object[] der(byte[] from, Class<? extends Object>... tos) {
 		try {
 			JsonNode[] n = Jsons.deArray(Jsons.bsoner.readTree(from));
 			if (n == null) return null;

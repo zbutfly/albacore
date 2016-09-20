@@ -10,4 +10,8 @@ public interface Serder<PRESENT, DATA> extends Serializable {
 	default <RESULT> Serder<PRESENT, RESULT> next(Serder<DATA, RESULT> next, Class<DATA> data) {
 		return new WrapperSerder<PRESENT, DATA, RESULT>(this, next, data);
 	}
+
+	default <RESULT> ArrableSerder<PRESENT, RESULT> next(ArrableSerder<DATA, RESULT> next, Class<DATA> data) {
+		return new WrapperArrableSerder<PRESENT, DATA, RESULT>(this, next, data);
+	}
 }

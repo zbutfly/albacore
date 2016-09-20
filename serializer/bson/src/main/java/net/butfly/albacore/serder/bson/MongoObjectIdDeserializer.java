@@ -1,4 +1,4 @@
-package net.butfly.albacore.calculus.marshall.bson.fastxml;
+package net.butfly.albacore.serder.bson;
 
 import java.io.IOException;
 

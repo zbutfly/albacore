@@ -9,6 +9,22 @@ import net.butfly.albacore.serder.BsonSerder;
 import net.butfly.albacore.serder.JsonSerder;
 
 public class JacksonTest {
+	public static void main(String... arg) throws IOException {
+		final JsonSerder jsd = new JsonSerder();
+		final BsonSerder bsd = new BsonSerder();
+
+		Bean o = new Bean();
+		String s = jsd.ser(o);
+		System.out.println("Origin: " + s);
+		System.out.println("JSON: " + o.titles() + " => " + jsd.der(s, Bean.class).titles());
+		System.out.println("BSON: " + o.titles() + " => " + bsd.der(bsd.ser(o), Bean.class).titles());
+
+		System.out.println("JSON args: " + o.titles() + " => " + ((Bean) jsd.der(jsd.ser(new Object[] { o, 1, true }), Bean.class,
+				int.class, boolean.class)[0]).titles());
+		System.out.println("BSON args: " + o.titles() + " => " + ((Bean) bsd.der(bsd.ser(new Object[] { o, 1, true }), Bean.class,
+				int.class, boolean.class)[0]).titles());
+	}
+
 	public enum Enums {
 		V1, V2, V3
 	}
@@ -21,7 +37,7 @@ public class JacksonTest {
 		public String title;
 		public Bean bean;
 
-		private Bean() {
+		public Bean() {
 			this(true);
 		}
 
@@ -37,21 +53,5 @@ public class JacksonTest {
 		public String titles() {
 			return title + (null == bean ? "" : " / " + bean.title);
 		}
-	}
-
-	public static void main(String... arg) throws IOException {
-		final JsonSerder jsd = new JsonSerder();
-		final BsonSerder bsd = new BsonSerder();
-
-		Bean o = new Bean();
-		String s = jsd.ser(o);
-		System.out.println("Origin: " + s);
-		System.out.println("JSON: " + o.titles() + " => " + jsd.der(s, Bean.class).titles());
-		System.out.println("BSON: " + o.titles() + " => " + bsd.der(bsd.ser(o), Bean.class).titles());
-
-		System.out.println("JSON args: " + o.titles() + " => " + ((Bean) jsd.der(jsd.ser(new Object[] { o, 1, true }), Bean.class,
-				int.class, boolean.class)[0]).titles());
-		System.out.println("BSON args: " + o.titles() + " => " + ((Bean) bsd.der(bsd.ser(new Object[] { o, 1, true }), Bean.class,
-				int.class, boolean.class)[0]).titles());
 	}
 }

@@ -1,4 +1,4 @@
-package net.butfly.albacore.calculus.marshall.bson.bson4jackson;
+package net.butfly.albacore.serder.bson;
 
 import java.io.IOException;
 import java.io.OutputStream;

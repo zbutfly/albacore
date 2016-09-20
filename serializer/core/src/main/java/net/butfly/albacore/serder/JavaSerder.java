@@ -27,7 +27,8 @@ public class JavaSerder extends BinarySerderBase<Object> implements ArrableBinar
 	}
 
 	@Override
-	public Object[] der(byte[] from, Class<?>... tos) {
+	@SafeVarargs
+	public final Object[] der(byte[] from, Class<? extends Object>... tos) {
 		try {
 			return (Object[]) der(new ByteArrayInputStream(from), null);
 		} catch (IOException e) {

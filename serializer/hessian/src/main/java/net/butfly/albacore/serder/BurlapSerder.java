@@ -86,7 +86,8 @@ public class BurlapSerder extends BinarySerderBase<Object> implements ArrableBin
 	}
 
 	@Override
-	public Object[] der(byte[] from, Class<?>... tos) {
+	@SafeVarargs
+	public final Object[] der(byte[] from, Class<? extends Object>... tos) {
 		ByteArrayInputStream in = new ByteArrayInputStream(from);
 		try {
 			return (Object[]) der(in, null);

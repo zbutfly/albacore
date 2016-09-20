@@ -1,5 +1,6 @@
 package net.butfly.albacore.serder;
 
-public interface ArrableSerder<S, D> extends Serder<S, D> {
-	Object[] der(D from, Class<?>... tos);
+public interface ArrableSerder<PRESENT, DATA> extends Serder<PRESENT, DATA> {
+	@SuppressWarnings("unchecked")
+	PRESENT[] der(DATA from, Class<? extends PRESENT>... tos);
 }

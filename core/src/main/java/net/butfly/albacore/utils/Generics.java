@@ -5,7 +5,9 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import com.google.common.reflect.TypeToken;
@@ -48,5 +50,17 @@ public final class Generics extends Utils {
 	public static <E> E[] toArray(Collection<E> list, Class<E> clazz) {
 		if (null == list || list.isEmpty()) return (E[]) Array.newInstance(clazz, 0);
 		return list.toArray((E[]) Array.newInstance(clazz, list.size()));
+	}
+
+	@SafeVarargs
+	public static <T> T[] array(T... elems) {
+		return elems;
+	}
+
+	public static <T> T[] array(T elem, int len) {
+		List<T> l = new ArrayList<T>(len);
+		for (int i = 0; i < len; i++)
+			l.add(elem);
+		return l.toArray(array());
 	}
 }
