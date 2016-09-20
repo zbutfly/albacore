@@ -1,4 +1,4 @@
-package net.butfly.albacore.serialize;
+package net.butfly.albacore.serder;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -14,32 +14,27 @@ import com.caucho.hessian.io.AbstractSerializerFactory;
 import com.caucho.hessian.io.SerializerFactory;
 
 import net.butfly.albacore.exception.SystemException;
-import net.butfly.albacore.serder.BinarySerder;
-import net.butfly.albacore.serder.ContentSerderBase;
-import net.butfly.albacore.serder.support.ClassInfo;
-import net.butfly.albacore.serder.support.ClassInfo.ClassInfoSupport;
 import net.butfly.albacore.serder.support.ContentTypes;
 import net.butfly.albacore.serder.support.SerderFactorySupport;
 import net.butfly.albacore.utils.Reflections;
 
-@SuppressWarnings("rawtypes")
-@ClassInfo(ClassInfoSupport.RESTRICT)
-public class BurlapSerder<PRESENT> extends ContentSerderBase<PRESENT, byte[]> implements BinarySerder<PRESENT>, SerderFactorySupport {
+public class BurlapSerder extends BinarySerderBase<Object> implements ArrableBinarySerder<Object>, SerderFactorySupport,
+		ClassInfoSerder<Object, byte[]>, BeanSerder<byte[]> {
 	private static final long serialVersionUID = 691937271877170782L;
 
 	public BurlapSerder() {
 		super(ContentTypes.APPLICATION_BURLAP);
 	}
 
-	public BurlapSerder(ContentType contentType) {
-		super(contentType);
+	public BurlapSerder(ContentType... contentType) {
+		super(ContentTypes.APPLICATION_BURLAP, contentType);
 	}
 
 	@Override
-	public byte[] serialize(Object src) {
+	public <T> byte[] ser(T from) {
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		try {
-			this.serialize(out, src);
+			ser(from, out);
 		} catch (IOException ex) {
 			throw new SystemException("", ex);
 		}
@@ -53,10 +48,10 @@ public class BurlapSerder<PRESENT> extends ContentSerderBase<PRESENT, byte[]> im
 	}
 
 	@Override
-	public Object deserialize(byte[] dst, Class to) {
+	public <T> T der(byte[] dst, Class<T> to) {
 		ByteArrayInputStream in = new ByteArrayInputStream(dst);
 		try {
-			return deserialize(in, to);
+			return der(in, to);
 		} catch (IOException ex) {
 			throw new SystemException("", ex);
 		} finally {
@@ -67,33 +62,34 @@ public class BurlapSerder<PRESENT> extends ContentSerderBase<PRESENT, byte[]> im
 	}
 
 	@Override
-	public void serialize(OutputStream out, Object src) throws IOException {
-		BurlapOutput ho = new BurlapOutput(out);
+	public void ser(Object from, OutputStream to) throws IOException {
+		BurlapOutput ho = new BurlapOutput(to);
 		if (null != factory) ho.setSerializerFactory(factory);
 		try {
-			ho.writeObject(src);
+			ho.writeObject(from);
 		} finally {
 			ho.close();
 		}
-		out.flush();
+		to.flush();
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
-	public Object deserialize(InputStream in, Class to) throws IOException {
+	public <T> T der(InputStream in, Class<T> to) throws IOException {
 		BurlapInput hi = new BurlapInput(in);
 		if (null != factory) hi.setSerializerFactory(factory);
 		try {
-			return hi.readObject();
+			return (T) hi.readObject();
 		} finally {
 			hi.close();
 		}
 	}
 
 	@Override
-	public Object[] deserialize(byte[] dst, Class[] types) {
-		ByteArrayInputStream in = new ByteArrayInputStream(dst);
+	public Object[] der(byte[] from, Class<?>... tos) {
+		ByteArrayInputStream in = new ByteArrayInputStream(from);
 		try {
-			return (Object[]) deserialize(in, null);
+			return (Object[]) der(in, null);
 		} catch (IOException e) {
 			throw new SystemException("", e);
 		} finally {

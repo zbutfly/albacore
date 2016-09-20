@@ -6,12 +6,12 @@ import org.apache.http.entity.ContentType;
 
 import com.google.common.base.Charsets;
 
-public interface ContentSerder<S, D> extends ArrableSerder<S, D> {
+public interface ContentSerder<S, D> extends Serder<S, D> {
 	default ContentType contentType() {
 		return ContentType.WILDCARD.withCharset(Charsets.UTF_8);
 	}
 
 	ContentType contentType(String mimeType);
 
-	Set<String> supportedMimeTypes();
+	Set<String> mimeTypes();
 }

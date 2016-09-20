@@ -11,37 +11,23 @@ import org.bson.types.BasicBSONList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.LazyDBObject;
 
-import net.butfly.albacore.calculus.marshall.bson.bson4jackson.MongoBsonFactory;
-import net.butfly.albacore.calculus.marshall.bson.fastxml.UpperCaseWithUnderscoresStrategy;
 import net.butfly.albacore.serder.ArrableSerder;
-import net.butfly.albacore.serder.SerderBase;
+import net.butfly.albacore.serder.BeanSerder;
 
-@SuppressWarnings({ "rawtypes", "unchecked" })
-public class BsonObjectSerder extends SerderBase<Object, BSONObject> implements ArrableSerder<Object, BSONObject> {
+public class BsonObjectSerder implements BeanSerder<BSONObject>, ArrableSerder<Object, BSONObject> {
 	private static final long serialVersionUID = 6664350391207228363L;
 	private static final Logger logger = LoggerFactory.getLogger(BsonObjectSerder.class);
-	private static ObjectMapper bsoner = new ObjectMapper(MongoBsonFactory.createFactory()).setPropertyNamingStrategy(
-			new UpperCaseWithUnderscoresStrategy()).disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES).disable(
-					MapperFeature.USE_GETTERS_AS_SETTERS).disable(SerializationFeature.WRITE_NULL_MAP_VALUES).setSerializationInclusion(
-							Include.NON_NULL).configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true).configure(
-									JsonParser.Feature.IGNORE_UNDEFINED, true);
 
 	@Override
-	public BSONObject serialize(Object from) {
+	public <T> BSONObject ser(T from) {
 		if (null == from) return null;
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		try {
-			bsoner.writer().writeValue(baos, from);
+			Bsons.bsoner.writer().writeValue(baos, from);
 		} catch (IOException e) {
 			logger.error("BSON marshall failure from " + from.getClass().toString(), e);
 			return null;
@@ -52,13 +38,13 @@ public class BsonObjectSerder extends SerderBase<Object, BSONObject> implements 
 	}
 
 	@Override
-	public Object deserialize(BSONObject from, Class to) {
+	public <T> T der(BSONObject from, Class<T> to) {
 		if (null == from) return null;
 		return fromBSON(from, to);
 	}
 
 	@Override
-	public Object[] deserialize(BSONObject from, Class<?>[] tos) {
+	public Object[] der(BSONObject from, Class<?>... tos) {
 		if (null == from) return null;
 		if (!(from instanceof BasicBSONList)) return new Object[] { fromBSON(from, tos[0]) };
 		BasicBSONList bl = (BasicBSONList) from;
@@ -79,7 +65,7 @@ public class BsonObjectSerder extends SerderBase<Object, BSONObject> implements 
 				return null;
 			}
 			try {
-				return bsoner.reader(to).readValue(buf.toByteArray());
+				return Bsons.bsoner.reader(to).readValue(buf.toByteArray());
 			} catch (IOException ex) {
 				logger.error("BSON unmarshall failure from " + to.toString(), ex);
 				return null;
@@ -88,6 +74,4 @@ public class BsonObjectSerder extends SerderBase<Object, BSONObject> implements 
 			buf.close();
 		}
 	}
-
-	public static void main(String... args) {}
 }

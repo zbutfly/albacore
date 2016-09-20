@@ -1,4 +1,4 @@
-package net.butfly.albacore.serialize.converter;
+package net.butfly.albacore.serder.converter;
 
 import java.io.IOException;
 

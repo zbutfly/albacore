@@ -6,19 +6,24 @@ import java.util.Set;
 
 import org.apache.http.entity.ContentType;
 
-public abstract class ContentSerderBase<PRESENT, DATA> extends SerderBase<PRESENT, DATA> implements ContentSerder<PRESENT, DATA> {
+public abstract class ContentSerderBase<PRESENT, DATA> implements ContentSerder<PRESENT, DATA> {
 	private static final long serialVersionUID = -6920151785963241027L;
 	protected final Map<String, ContentType> contentTypes;
-	protected ContentType defaultContentType;
+	protected ContentType defaultContentType = null;
 
 	public ContentSerderBase(ContentType... contentType) {
 		super();
 		contentTypes = new HashMap<>();
-		if (contentType != null && contentType.length == 0) {
-			defaultContentType = contentType[0];
-			for (ContentType ct : contentType)
-				contentTypes.put(ct.getMimeType(), ct);
-		} else defaultContentType = null;
+		if (null != contentType && contentType.length > 0) for (int i = contentType.length - 1; i >= 0; i--)
+			enable(contentType[i]);
+	}
+
+	protected ContentSerderBase(ContentType base, ContentType[] supported) {
+		super();
+		contentTypes = new HashMap<>();
+		enable(base);
+		if (null != supported && supported.length > 0) for (int i = supported.length - 1; i >= 0; i--)
+			enable(supported[i]);
 	}
 
 	@Override
@@ -32,12 +37,12 @@ public abstract class ContentSerderBase<PRESENT, DATA> extends SerderBase<PRESEN
 	}
 
 	@Override
-	public Set<String> supportedMimeTypes() {
+	public Set<String> mimeTypes() {
 		return contentTypes.keySet();
 	}
 
 	final protected void enable(ContentType contentType) {
-		if (defaultContentType == null) defaultContentType = contentType;
-		if (!contentTypes.containsKey(contentType.getMimeType())) contentTypes.put(contentType.getMimeType(), contentType);
+		defaultContentType = contentType;
+		contentTypes.put(contentType.getMimeType(), contentType);
 	}
 }

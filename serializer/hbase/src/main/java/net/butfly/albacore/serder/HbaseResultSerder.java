@@ -1,11 +1,10 @@
-package net.butfly.bus.serialize;
+package net.butfly.albacore.serder;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.function.Function;
 
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
@@ -18,31 +17,33 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Defaults;
 import com.google.common.base.Joiner;
 
-import net.butfly.albacore.serder.Serder;
-import net.butfly.albacore.serder.SerderBase;
 import net.butfly.albacore.serder.modifier.HbaseColumnFamily;
+import net.butfly.albacore.utils.CaseFormat;
 import net.butfly.albacore.utils.Reflections;
 
-@SuppressWarnings({ "unchecked", "rawtypes" })
-public class HbaseResultSerder extends SerderBase<Object, Result> implements Serder<Object, Result> {
+public class HbaseResultSerder extends BeanSerderBase<Result> implements BeanSerder<Result> {
 	private static final long serialVersionUID = 1152380944308233135L;
 	private static final Logger logger = LoggerFactory.getLogger(HbaseResultSerder.class);
 
-	public HbaseResultSerder(Function<String, String> mapping) {
-		super(mapping);
+	public HbaseResultSerder() {
+		super();
+	}
+
+	public HbaseResultSerder(CaseFormat format) {
+		super(format);
 	}
 
 	@Override
-	public Result serialize(Object src) {
+	public <T> Result ser(T src) {
 		throw new UnsupportedOperationException("Hbase marshall / write not supported.");
 	}
 
 	@Override
-	public Object deserialize(Result from, Class to) {
+	public <T> T der(Result from, Class<T> to) {
 		if (null == from) return null;
-		Object t = Reflections.construct(to);
+		T t = Reflections.construct(to);
 		for (Field f : Reflections.getDeclaredFields(to)) {
-			String[] qulifier = parseQualifier(f).split(":");
+			String[] qulifier = mapping(f).split(":");
 			try {
 				Cell cell = from.getColumnLatestCell(Text.encode(qulifier[0]).array(), Text.encode(qulifier[1]).array());
 				if (cell != null) Reflections.set(t, f, fromBytes(f.getType(), CellUtil.cloneValue(cell)));
@@ -62,9 +63,9 @@ public class HbaseResultSerder extends SerderBase<Object, Result> implements Ser
 		return rows.toArray(new String[rows.size()]);
 	}
 
-	public final String parseQualifier(Field f) {
+	public final String mapping(Field f) {
 		Reflections.noneNull("", f);
-		String col = super.parseQualifier(f);
+		String col = mapping(f);
 		Class<?> to = f.getDeclaringClass();
 		// XXX: field in parent class could not found annotation on sub-class.
 		String family = f.isAnnotationPresent(HbaseColumnFamily.class) ? f.getAnnotation(HbaseColumnFamily.class).value()
@@ -75,6 +76,7 @@ public class HbaseResultSerder extends SerderBase<Object, Result> implements Ser
 		return family + ":" + col;
 	}
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	private static <R> R fromBytes(Class<R> type, byte[] value) {
 		if (null == value || value.length == 0) return null;
 		if (Reflections.isAny(type, CharSequence.class)) return (R) Bytes.toString(value);
@@ -114,6 +116,7 @@ public class HbaseResultSerder extends SerderBase<Object, Result> implements Ser
 		throw new UnsupportedOperationException("Not supportted marshall: " + type.toString());
 	}
 
+	@SuppressWarnings("unchecked")
 	private static <R> byte[][] toByteArray(Class<R> type, R[] value) {
 		if (null == value) return null;
 		byte[][] r = new byte[value.length][];

@@ -1,4 +1,4 @@
-package net.butfly.albacore.calculus.marshall.bson.fastxml;
+package net.butfly.albacore.serder.json;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategy.PropertyNamingStrategyBase;
 import net.butfly.albacore.utils.CaseFormat;

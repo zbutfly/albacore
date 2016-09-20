@@ -1127,4 +1127,9 @@ public final class Reflections extends Utils {
 		if (!Proxy.isProxyClass(object.getClass())) return object;
 		return get(object, "h");
 	}
+
+	@SuppressWarnings("unchecked")
+	public static <D, S extends D> S wrap(D from, Class<S> to) {
+		return to.isAssignableFrom(from.getClass()) ? (S) from : Reflections.construct(to, from);
+	}
 }
