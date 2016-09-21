@@ -3,19 +3,12 @@ package net.butfly.albacore.serder;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.google.common.reflect.TypeToken;
+
 import net.butfly.albacore.serder.MapSerder.SerderMap;
-import net.butfly.albacore.utils.CaseFormat;
 
 public class MapSerder extends BeanSerderBase<SerderMap> implements BeanSerder<SerderMap> {
 	private static final long serialVersionUID = 7252864504025324603L;
-
-	public MapSerder() {
-		super();
-	}
-
-	public MapSerder(CaseFormat format) {
-		super(format);
-	}
 
 	@Override
 	public <T> SerderMap ser(T from) {
@@ -24,7 +17,7 @@ public class MapSerder extends BeanSerderBase<SerderMap> implements BeanSerder<S
 	}
 
 	@Override
-	public <T> T der(SerderMap from, Class<T> to) {
+	public <T> T der(SerderMap from, TypeToken<T> to) {
 		// TODO Auto-generated method stub
 		return null;
 	}

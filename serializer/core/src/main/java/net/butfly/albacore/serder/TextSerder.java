@@ -3,6 +3,7 @@ package net.butfly.albacore.serder;
 import java.io.IOException;
 
 import com.google.common.io.CharStreams;
+import com.google.common.reflect.TypeToken;
 
 public interface TextSerder<PRESENT> extends ContentSerder<PRESENT, CharSequence> {
 	@Override
@@ -12,7 +13,7 @@ public interface TextSerder<PRESENT> extends ContentSerder<PRESENT, CharSequence
 		writer.append(ser(src));
 	}
 
-	default <T extends PRESENT> T der(Readable reader, Class<T> to) throws IOException {
+	default <T extends PRESENT> T der(Readable reader, TypeToken<T> to) throws IOException {
 		return der(CharStreams.toString(reader), to);
 	}
 
@@ -20,7 +21,7 @@ public interface TextSerder<PRESENT> extends ContentSerder<PRESENT, CharSequence
 		return ser(src).getBytes(contentType().getCharset());
 	}
 
-	default <T extends PRESENT> T fromBytes(byte[] from, Class<T> to) {
+	default <T extends PRESENT> T fromBytes(byte[] from, TypeToken<T> to) {
 		return der(new String(from, contentType().getCharset()), to);
 	}
 }

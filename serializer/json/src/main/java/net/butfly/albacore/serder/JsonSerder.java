@@ -6,9 +6,11 @@ import org.apache.http.entity.ContentType;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.reflect.TypeToken;
 
 import net.butfly.albacore.exception.SystemException;
 import net.butfly.albacore.serder.json.Jsons;
+import net.butfly.albacore.utils.CaseFormat;
 
 public class JsonSerder extends TextSerderBase<Object> implements ArrableTextSerder<Object>, BeanSerder<CharSequence> {
 	private static final long serialVersionUID = -4394900785541475884L;
@@ -33,13 +35,13 @@ public class JsonSerder extends TextSerderBase<Object> implements ArrableTextSer
 
 	@Override
 	@SafeVarargs
-	public final Object[] der(CharSequence from, Class<? extends Object>... tos) {
+	public final Object[] der(CharSequence from, TypeToken<? extends Object>... tos) {
 		try {
 			JsonNode[] n = Jsons.array(Jsons.mapper.readTree(from.toString()));
 			if (n == null) return null;
 			Object[] r = new Object[Math.min(tos.length, n.length)];
 			for (int i = 0; i < r.length; i++)
-				r[i] = Jsons.mapper.treeToValue(n[i], tos[i]);
+				r[i] = Jsons.mapper.readValue(Jsons.mapper.treeAsTokens(n[i]), Jsons.mapper.constructType(tos[i].getType()));
 			return r;
 		} catch (IOException e) {
 			return null;
@@ -47,11 +49,24 @@ public class JsonSerder extends TextSerderBase<Object> implements ArrableTextSer
 	}
 
 	@Override
-	public <T> T der(CharSequence from, Class<T> to) {
+	public <T> T der(CharSequence from, TypeToken<T> to) {
 		try {
-			return Jsons.mapper.readValue(from.toString(), to);
+			return Jsons.mapper.readValue(from.toString(), Jsons.mapper.constructType(to.getType()));
 		} catch (IOException e) {
 			return null;
 		}
+	}
+
+	private CaseFormat format = CaseFormat.NO_CHANGE;
+
+	@Override
+	public JsonSerder mapping(CaseFormat to) {
+		this.format = to;
+		return this;
+	}
+
+	@Override
+	public CaseFormat mapping() {
+		return format;
 	}
 }

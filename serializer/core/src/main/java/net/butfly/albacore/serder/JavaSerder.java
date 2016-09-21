@@ -10,12 +10,13 @@ import java.io.OutputStream;
 
 import org.apache.http.entity.ContentType;
 
+import com.google.common.reflect.TypeToken;
+
 import net.butfly.albacore.serder.support.ClassInfo;
 import net.butfly.albacore.utils.Reflections;
 
 @ClassInfo
-public class JavaSerder extends BinarySerderBase<Object> implements ArrableBinarySerder<Object>, ClassInfoSerder<Object, byte[]>,
-		BeanSerder<byte[]> {
+public class JavaSerder extends BinarySerderBase<Object> implements ArrableBinarySerder<Object>, ClassInfoSerder<Object, byte[]> {
 	private static final long serialVersionUID = 2446148201514088203L;
 
 	public JavaSerder() {
@@ -28,7 +29,7 @@ public class JavaSerder extends BinarySerderBase<Object> implements ArrableBinar
 
 	@Override
 	@SafeVarargs
-	public final Object[] der(byte[] from, Class<? extends Object>... tos) {
+	public final Object[] der(byte[] from, TypeToken<? extends Object>... tos) {
 		try {
 			return (Object[]) der(new ByteArrayInputStream(from), null);
 		} catch (IOException e) {
@@ -48,7 +49,7 @@ public class JavaSerder extends BinarySerderBase<Object> implements ArrableBinar
 	}
 
 	@Override
-	public <T> T der(byte[] from, Class<T> to) {
+	public <T> T der(byte[] from, TypeToken<T> to) {
 		try {
 			return der(new ByteArrayInputStream(from), to);
 		} catch (IOException e) {
@@ -69,7 +70,7 @@ public class JavaSerder extends BinarySerderBase<Object> implements ArrableBinar
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T> T der(InputStream from, Class<T> to) throws IOException {
+	public <T> T der(InputStream from, TypeToken<T> to) throws IOException {
 		ObjectInputStream ois = Reflections.wrap(from, ObjectInputStream.class);
 		try {
 			return (T) ois.readObject();

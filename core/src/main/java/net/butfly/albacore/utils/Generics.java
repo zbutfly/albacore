@@ -63,4 +63,16 @@ public final class Generics extends Utils {
 			l.add(elem);
 		return l.toArray(array());
 	}
+
+	@SuppressWarnings("restriction")
+	public static <T> Type type(Class<T> generic, Class<?>... param) {
+		return sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl.make(generic, param, null);
+	}
+
+	public static TypeToken<?>[] tokens(Class<?>... parameterClasses) {
+		TypeToken<?>[] ts = new TypeToken[parameterClasses.length];
+		for (int i = 0; i < parameterClasses.length; i++)
+			ts[i] = null == parameterClasses[i] ? null : TypeToken.of(parameterClasses[i]);
+		return ts;
+	}
 }

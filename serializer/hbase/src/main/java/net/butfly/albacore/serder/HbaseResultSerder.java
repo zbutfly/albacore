@@ -16,9 +16,9 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Defaults;
 import com.google.common.base.Joiner;
+import com.google.common.reflect.TypeToken;
 
 import net.butfly.albacore.serder.modifier.HbaseColumnFamily;
-import net.butfly.albacore.utils.CaseFormat;
 import net.butfly.albacore.utils.Reflections;
 
 public class HbaseResultSerder extends BeanSerderBase<Result> implements BeanSerder<Result> {
@@ -29,20 +29,18 @@ public class HbaseResultSerder extends BeanSerderBase<Result> implements BeanSer
 		super();
 	}
 
-	public HbaseResultSerder(CaseFormat format) {
-		super(format);
-	}
-
 	@Override
 	public <T> Result ser(T src) {
 		throw new UnsupportedOperationException("Hbase marshall / write not supported.");
 	}
 
 	@Override
-	public <T> T der(Result from, Class<T> to) {
+	public <T> T der(Result from, TypeToken<T> to) {
 		if (null == from) return null;
-		T t = Reflections.construct(to);
-		for (Field f : Reflections.getDeclaredFields(to)) {
+		@SuppressWarnings("unchecked")
+		Class<T> type = (Class<T>) to.getRawType();
+		T t = Reflections.construct(type);
+		for (Field f : Reflections.getDeclaredFields(type)) {
 			String[] qulifier = mapping(f).split(":");
 			try {
 				Cell cell = from.getColumnLatestCell(Text.encode(qulifier[0]).array(), Text.encode(qulifier[1]).array());

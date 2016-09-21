@@ -24,27 +24,11 @@ import net.butfly.albacore.utils.Utils;
 import scala.Tuple2;
 
 public final class Jsons extends Utils {
-	public static ObjectMapper mapper = new ObjectMapper()//
-			.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true)//
-			.configure(JsonParser.Feature.IGNORE_UNDEFINED, true)//
-			.enable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)//
-			.enable(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS)//
-			.enable(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS)//
-			.enable(SerializationFeature.WRITE_ENUMS_USING_INDEX)//
-			.enable(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL)//
-	;
-	private static JsonFactory bsoner_fact = new BsonFactory()//
+	private static final JsonFactory DEFAULT_BSON_FACTORY = new BsonFactory()//
 			// .enable(BsonGenerator.Feature.ENABLE_STREAMING)//cause EOF
-			.enable(BsonParser.Feature.HONOR_DOCUMENT_LENGTH)//
-	;
-	public static ObjectMapper bsoner = new ObjectMapper(bsoner_fact)//
-			.setPropertyNamingStrategy(new UpperCaseWithUnderscoresStrategy())//
-			.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)//
-			.disable(MapperFeature.USE_GETTERS_AS_SETTERS)//
-			.disable(SerializationFeature.WRITE_NULL_MAP_VALUES)//
-			.setSerializationInclusion(Include.NON_NULL)//
-			.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true)//
-			.configure(JsonParser.Feature.IGNORE_UNDEFINED, true)//
+			.enable(BsonParser.Feature.HONOR_DOCUMENT_LENGTH);
+	public static ObjectMapper mapper = defaultJsonMapper();
+	public static ObjectMapper bsoner = defaultBsonMapper();//
 	;
 
 	public static <T> T parse(JsonNode node, Class<T> to) {
@@ -53,6 +37,31 @@ public final class Jsons extends Utils {
 		} catch (JsonProcessingException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	private static ObjectMapper defaultBsonMapper() {
+		return new ObjectMapper(DEFAULT_BSON_FACTORY) //
+				// .setPropertyNamingStrategy(new
+				// UpperCaseWithUnderscoresStrategy())//
+				.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)//
+				.disable(MapperFeature.USE_GETTERS_AS_SETTERS)//
+				.disable(SerializationFeature.WRITE_NULL_MAP_VALUES)//
+				.setSerializationInclusion(Include.NON_NULL)//
+				.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true)//
+				.configure(JsonParser.Feature.IGNORE_UNDEFINED, true);
+	}
+
+	private static ObjectMapper defaultJsonMapper() {
+		// TODO Auto-generated method stub
+		return new ObjectMapper()//
+				.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true)//
+				.configure(JsonParser.Feature.IGNORE_UNDEFINED, true)//
+				.enable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)//
+				.enable(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS)//
+				.enable(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS)//
+				.enable(SerializationFeature.WRITE_ENUMS_USING_INDEX)//
+				.enable(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL)//
+		;
 	}
 
 	public static JsonNode[] array(JsonNode node) throws JsonProcessingException, IOException {
@@ -97,5 +106,4 @@ public final class Jsons extends Utils {
 	public static String simpleJSON(Map<String, ?> map) {
 		return jsd.ser(map);
 	}
-
 }

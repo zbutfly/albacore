@@ -17,12 +17,14 @@ public interface BeanSerder<DATA> extends Serder<Object, DATA> {
 		Reflections.noneNull("", field);
 		if (field.isAnnotationPresent(Property.class)) return field.getAnnotation(Property.class).value();
 		else {
-			CaseFormat to = mappingFormat();
+			CaseFormat to = mapping();
 			return null == to ? field.getName() : CaseFormat.LOWER_CAMEL.to(to, field.getName());
 		}
 	}
 
-	default CaseFormat mappingFormat() {
-		return null;
+	default CaseFormat mapping() {
+		return CaseFormat.NO_CHANGE;
 	}
+
+	BeanSerder<DATA> mapping(CaseFormat to);
 }

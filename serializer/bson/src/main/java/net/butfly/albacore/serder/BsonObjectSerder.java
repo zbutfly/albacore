@@ -9,7 +9,8 @@ import org.bson.io.OutputBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.butfly.albacore.serder.Serder;
+import com.google.common.reflect.TypeToken;
+
 import net.butfly.albacore.serder.bson.DBEncoder;
 
 public class BsonObjectSerder implements Serder<byte[], BSONObject> {
@@ -25,7 +26,7 @@ public class BsonObjectSerder implements Serder<byte[], BSONObject> {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T> T der(BSONObject from, Class<T> to) {
+	public <T> T der(BSONObject from, TypeToken<T> to) {
 		if (null == from) return null;
 		OutputBuffer buf = new BasicOutputBuffer();
 		try {
@@ -40,16 +41,4 @@ public class BsonObjectSerder implements Serder<byte[], BSONObject> {
 			buf.close();
 		}
 	}
-
-//	@Override
-//	@SafeVarargs
-//	public final byte[][] der(BSONObject from, Class<? extends byte[]>... tos) {
-//		if (null == from) return null;
-//		if (!(from instanceof BasicBSONList)) return new byte[][] { der(from, tos[0]) };
-//		BasicBSONList bl = (BasicBSONList) from;
-//		byte[][] r = new byte[Math.min(bl.size(), tos.length)][];
-//		for (int i = 0; i < r.length; i++)
-//			r[i] = der((BSONObject) bl.get(Integer.toString(i)), tos[i]);
-//		return r;
-//	}
 }

@@ -1,57 +1,68 @@
 package net.butfly.bus.test;
 
 import java.io.IOException;
-import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.commons.lang3.RandomStringUtils;
 
+import com.google.common.reflect.TypeToken;
+
 import net.butfly.albacore.serder.BsonSerder;
 import net.butfly.albacore.serder.JsonSerder;
+import net.butfly.albacore.utils.CaseFormat;
 
 public class JacksonTest {
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static void main(String... arg) throws IOException {
-		final JsonSerder jsd = new JsonSerder();
-		final BsonSerder bsd = new BsonSerder();
+		final JsonSerder jsonSerder = new JsonSerder().mapping(CaseFormat.NO_CHANGE);
+		final BsonSerder bsonSerder = new BsonSerder().mapping(CaseFormat.NO_CHANGE);
 
-		Bean o = new Bean();
-		String s = jsd.ser(o);
-		System.out.println("Origin: " + s);
-		System.out.println("JSON: " + o.titles() + " => " + jsd.der(s, Bean.class).titles());
-		System.out.println("BSON: " + o.titles() + " => " + bsd.der(bsd.ser(o), Bean.class).titles());
+		Bean obj = new Bean();
+		String json = jsonSerder.ser(obj);
+		System.out.println("Bean => JSON: " + json);
+		System.out.println("Bean => JSON title: " + obj.titles() + " => " + jsonSerder.der(json, TypeToken.of(Bean.class)).titles());
+		System.out.println();
 
-		System.out.println("JSON args: " + o.titles() + " => " + ((Bean) jsd.der(jsd.ser(new Object[] { o, 1, true }), Bean.class,
-				int.class, boolean.class)[0]).titles());
-		System.out.println("BSON args: " + o.titles() + " => " + ((Bean) bsd.der(bsd.ser(new Object[] { o, 1, true }), Bean.class,
-				int.class, boolean.class)[0]).titles());
+		byte[] bson = bsonSerder.ser(obj);
+		System.out.println("Bean => BSON length: " + bson.length);
+		System.out.println("BSON => Bean title: " + obj.titles() + " => " + bsonSerder.der(bson, TypeToken.of(Bean.class)).titles());
+		System.out.println();
+
+		Object[] args = new Object[] { obj, 1, true };
+		System.out.println("Orig args [title: " + obj.titles() + " => " + ((Bean) args[0]).titles() + "], " + args[1] + ", " + args[2]);
+		args = jsonSerder.der(jsonSerder.ser(args), TypeToken.of(Bean.class), TypeToken.of(int.class), TypeToken.of(boolean.class));
+		System.out.println("JSON args [title: " + obj.titles() + " => " + ((Bean) args[0]).titles() + "], " + args[1] + ", " + args[2]);
+		args = bsonSerder.der(bsonSerder.ser(new Object[] { obj, 1, true }), TypeToken.of(Bean.class), TypeToken.of(int.class), TypeToken
+				.of(boolean.class));
+		System.out.println("BSON args [title: " + obj.titles() + " => " + ((Bean) args[0]).titles() + "], " + args[1] + ", " + args[2]);
+		System.out.println();
+
+		Map<String, ?> map = map();
+		System.out.println("Origin Map: " + map + ", title: " + ((Bean) map.get("object")).titles());
+		json = jsonSerder.ser(map);
+		System.out.println("Map => JSON: " + json);
+		map = jsonSerder.der(json, new TypeToken<Map<String, ?>>() {
+			private static final long serialVersionUID = -4110131747435668077L;
+		});
+		System.out.println("JSON => Map: " + map.toString());
+		System.out.println("JSON => Map sub title: " + ((Map) ((Map) map.get("object")).get("bean")).get("title"));
+		System.out.println();
+
+		map = map();
+		System.out.println("Origin Map: " + map + ", title: " + ((Bean) map.get("object")).titles());
+		bson = bsonSerder.ser(map);
+		System.out.println("Map => BSON length: " + bson.length);
+		map = bsonSerder.der(bson, TypeToken.of(Map.class));
+		System.out.println("BSON => Map sub title: " + ((Map) ((Map) map.get("object")).get("bean")).get("title"));
+		System.out.println();
 	}
 
-	public enum Enums {
-		V1, V2, V3
-	}
-
-	public static class Bean implements Serializable {
-		private static final long serialVersionUID = -2963162163893587423L;
-		public int number;
-		public long size;
-		public Enums type;
-		public String title;
-		public Bean bean;
-
-		public Bean() {
-			this(true);
-		}
-
-		private Bean(boolean embed) {
-			super();
-			this.number = (int) (Math.random() * 10);
-			this.size = (long) (Math.random() * 10);
-			this.title = RandomStringUtils.randomAlphanumeric(16);
-			this.type = Enums.values()[(int) (Math.random() * 3)];
-			bean = embed ? new Bean(false) : null;
-		}
-
-		public String titles() {
-			return title + (null == bean ? "" : " / " + bean.title);
-		}
+	private static Map<String, ?> map() {
+		Map<String, Object> map = new HashMap<>();
+		map.put("name", RandomStringUtils.randomAlphabetic(8));
+		map.put("count", (int) (Math.random() * 10));
+		map.put("object", new Bean());
+		return map;
 	}
 }

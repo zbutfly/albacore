@@ -1,12 +1,14 @@
 package net.butfly.albacore.serder;
 
+import com.google.common.reflect.TypeToken;
+
 class WrapperSerder<PRESENT, DATA, RESULT> implements Serder<PRESENT, RESULT> {
 	private static final long serialVersionUID = 167713381996507955L;
 	protected Serder<PRESENT, DATA> first;
 	protected Serder<DATA, RESULT> second;
-	protected Class<DATA> data;
+	protected TypeToken<DATA> data;
 
-	public WrapperSerder(Serder<PRESENT, DATA> first, Serder<DATA, RESULT> second, Class<DATA> data) {
+	public WrapperSerder(Serder<PRESENT, DATA> first, Serder<DATA, RESULT> second, TypeToken<DATA> data) {
 		super();
 		this.first = first;
 		this.second = second;
@@ -19,7 +21,7 @@ class WrapperSerder<PRESENT, DATA, RESULT> implements Serder<PRESENT, RESULT> {
 	}
 
 	@Override
-	public <T extends PRESENT> T der(RESULT from, Class<T> to) {
+	public <T extends PRESENT> T der(RESULT from, TypeToken<T> to) {
 		return first.der(second.der(from, data), to);
 	}
 }

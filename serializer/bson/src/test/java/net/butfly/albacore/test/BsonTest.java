@@ -6,6 +6,7 @@ import java.io.Serializable;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.bson.BSONObject;
 
+import com.google.common.reflect.TypeToken;
 import com.mongodb.BasicDBObject;
 
 import net.butfly.albacore.serder.BsonObjectSerder;
@@ -14,12 +15,12 @@ import net.butfly.albacore.serder.Serder;
 
 public class BsonTest {
 	public static void main(String... arg) throws IOException {
-		Serder<Object, BSONObject> ser = new BsonSerder().next(new BsonObjectSerder(), byte[].class);
+		Serder<Object, BSONObject> ser = new BsonSerder().next(new BsonObjectSerder(), TypeToken.of(byte[].class));
 
 		Bean o = new Bean();
 		BSONObject s = ser.ser(o);
 		System.out.println("Origin: " + ((BasicDBObject) s).toJson());
-		System.out.println("BSON: " + o.titles() + " => " + ser.der(s, Bean.class).titles());
+		System.out.println("BSON: " + o.titles() + " => " + ser.der(s, TypeToken.of(Bean.class)).titles());
 
 		// System.out.println("BSON args: " + o.titles() + " => " + ((Bean)
 		// ser.der(ser.ser(new Object[] { o, 1, true }), Bean.class,

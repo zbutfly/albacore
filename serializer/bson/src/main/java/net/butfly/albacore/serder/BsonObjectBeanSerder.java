@@ -11,11 +11,13 @@ import org.bson.io.OutputBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.reflect.TypeToken;
 import com.mongodb.BasicDBObject;
 import com.mongodb.LazyDBObject;
 
 import net.butfly.albacore.serder.bson.DBEncoder;
 import net.butfly.albacore.serder.json.Jsons;
+import net.butfly.albacore.utils.CaseFormat;
 
 public class BsonObjectBeanSerder implements Serder<Object, BSONObject>, BeanSerder<BSONObject> {
 	private static final long serialVersionUID = 8050515547072577482L;
@@ -36,7 +38,7 @@ public class BsonObjectBeanSerder implements Serder<Object, BSONObject>, BeanSer
 	}
 
 	@Override
-	public <T> T der(BSONObject from, Class<T> to) {
+	public <T> T der(BSONObject from, TypeToken<T> to) {
 		OutputBuffer buf = new BasicOutputBuffer();
 		try {
 			try {
@@ -46,7 +48,7 @@ public class BsonObjectBeanSerder implements Serder<Object, BSONObject>, BeanSer
 				return null;
 			}
 			try {
-				return Jsons.bsoner.readValue(buf.toByteArray(), to);
+				return Jsons.bsoner.readValue(buf.toByteArray(), Jsons.mapper.constructType(to.getType()));
 			} catch (IOException ex) {
 				logger.error("BSON unmarshall failure from " + to.toString(), ex);
 				return null;
@@ -54,5 +56,18 @@ public class BsonObjectBeanSerder implements Serder<Object, BSONObject>, BeanSer
 		} finally {
 			buf.close();
 		}
+	}
+
+	private CaseFormat format = CaseFormat.NO_CHANGE;
+
+	@Override
+	public BsonObjectBeanSerder mapping(CaseFormat to) {
+		this.format = to;
+		return this;
+	}
+
+	@Override
+	public CaseFormat mapping() {
+		return format;
 	}
 }

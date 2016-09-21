@@ -10,6 +10,7 @@ import com.caucho.hessian.io.AbstractSerializerFactory;
 import com.caucho.hessian.io.Hessian2StreamingInput;
 import com.caucho.hessian.io.Hessian2StreamingOutput;
 import com.caucho.hessian.io.SerializerFactory;
+import com.google.common.reflect.TypeToken;
 
 import net.butfly.albacore.exception.SystemException;
 import net.butfly.albacore.serder.support.ContentTypes;
@@ -17,7 +18,7 @@ import net.butfly.albacore.serder.support.SerderFactorySupport;
 import net.butfly.albacore.utils.Reflections;
 
 public class HessianSerder extends TextSerderBase<Object> implements ArrableTextSerder<Object>, SerderFactorySupport,
-		ClassInfoSerder<Object, CharSequence>, BeanSerder<CharSequence> {
+		ClassInfoSerder<Object, CharSequence> {
 	private static final long serialVersionUID = -593535528324149595L;
 
 	public HessianSerder() {
@@ -55,7 +56,7 @@ public class HessianSerder extends TextSerderBase<Object> implements ArrableText
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T> T der(CharSequence dst, Class<T> to) {
+	public <T> T der(CharSequence dst, TypeToken<T> to) {
 		ByteArrayInputStream in = new ByteArrayInputStream(dst.toString().getBytes(contentType().getCharset()));
 		Hessian2StreamingInput hi = new Hessian2StreamingInput(in);
 		if (null != factory) hi.setSerializerFactory(factory);
@@ -75,7 +76,7 @@ public class HessianSerder extends TextSerderBase<Object> implements ArrableText
 
 	@Override
 	@SafeVarargs
-	public final Object[] der(CharSequence from, Class<? extends Object>... to) {
+	public final Object[] der(CharSequence from, TypeToken<? extends Object>... to) {
 		ByteArrayInputStream in = new ByteArrayInputStream(from.toString().getBytes(contentType().getCharset()));
 		Hessian2StreamingInput hi = new Hessian2StreamingInput(in);
 		if (null != factory) hi.setSerializerFactory(factory);

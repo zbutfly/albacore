@@ -37,44 +37,13 @@ import com.google.common.base.Joiner;
 import com.google.common.reflect.TypeToken;
 
 import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
+import net.butfly.albacore.support.Values;
 import scala.Tuple2;
 
 public final class Reflections extends Utils {
 	private static final Logger logger = LoggerFactory.getLogger(Reflections.class);
 
 	private static final Joiner j = Joiner.on(";");
-
-	/**
-	 * Maps primitive {@code Class}es to their corresponding wrapper
-	 * {@code Class}.
-	 */
-	private static final Map<Class<?>, Class<?>> primitiveWrapperMap = new HashMap<Class<?>, Class<?>>();
-
-	static {
-		primitiveWrapperMap.put(Boolean.TYPE, Boolean.class);
-		primitiveWrapperMap.put(Byte.TYPE, Byte.class);
-		primitiveWrapperMap.put(Character.TYPE, Character.class);
-		primitiveWrapperMap.put(Short.TYPE, Short.class);
-		primitiveWrapperMap.put(Integer.TYPE, Integer.class);
-		primitiveWrapperMap.put(Long.TYPE, Long.class);
-		primitiveWrapperMap.put(Double.TYPE, Double.class);
-		primitiveWrapperMap.put(Float.TYPE, Float.class);
-		primitiveWrapperMap.put(Void.TYPE, Void.TYPE);
-	}
-
-	/**
-	 * Maps wrapper {@code Class}es to their corresponding primitive types.
-	 */
-	private static final Map<Class<?>, Class<?>> wrapperPrimitiveMap = new HashMap<Class<?>, Class<?>>();
-
-	static {
-		for (final Class<?> primitiveClass : primitiveWrapperMap.keySet()) {
-			final Class<?> wrapperClass = primitiveWrapperMap.get(primitiveClass);
-			if (!primitiveClass.equals(wrapperClass)) {
-				wrapperPrimitiveMap.put(wrapperClass, primitiveClass);
-			}
-		}
-	}
 
 	private static final int ACCESS_TEST = Modifier.PUBLIC | Modifier.PROTECTED | Modifier.PRIVATE;
 
@@ -551,7 +520,7 @@ public final class Reflections extends Utils {
 		if (!cls.isPrimitive()) {
 			// slight unwrapping penalty
 			cost += 0.1f;
-			cls = wrapperToPrimitive(cls);
+			cls = Values.wrapperToPrimitive(cls);
 		}
 		for (int i = 0; cls != to && i < ORDERED_PRIMITIVE_TYPES.length; i++) {
 			if (cls == ORDERED_PRIMITIVE_TYPES[i]) {
@@ -622,6 +591,11 @@ public final class Reflections extends Utils {
 		for (Class<?> t : target)
 			if (t.isAssignableFrom(cl)) return true;
 		return false;
+	}
+
+	public static boolean isAny(Object v, Class<?>... target) {
+		Class<?> cl = null == v ? Void.class : v.getClass();
+		return isAny(cl, target);
 	}
 
 	/**
@@ -725,11 +699,11 @@ public final class Reflections extends Utils {
 		// autoboxing:
 		if (autoboxing) {
 			if (cls.isPrimitive() && !toClass.isPrimitive()) {
-				cls = primitiveToWrapper(cls);
+				cls = Values.primitiveToWrapper(cls);
 				if (cls == null) { return false; }
 			}
 			if (toClass.isPrimitive() && !cls.isPrimitive()) {
-				cls = wrapperToPrimitive(cls);
+				cls = Values.wrapperToPrimitive(cls);
 				if (cls == null) { return false; }
 			}
 		}
@@ -861,31 +835,6 @@ public final class Reflections extends Utils {
 	public static void noneNull(String msg, Object... value) {
 		for (Object v : value)
 			if (null == v) throw new IllegalArgumentException(msg);
-	}
-
-	/**
-	 * <p>
-	 * Converts the specified primitive Class object to its corresponding
-	 * wrapper Class object.
-	 * </p>
-	 *
-	 * <p>
-	 * NOTE: From v2.2, this method handles {@code Void.TYPE}, returning
-	 * {@code Void.TYPE}.
-	 * </p>
-	 *
-	 * @param cls
-	 *            the class to convert, may be null
-	 * @return the wrapper class for {@code cls} or {@code cls} if {@code cls}
-	 *         is not a primitive. {@code null} if null input.
-	 * @since 2.1
-	 */
-	public static Class<?> primitiveToWrapper(final Class<?> cls) {
-		Class<?> convertedClass = cls;
-		if (cls != null && cls.isPrimitive()) {
-			convertedClass = primitiveWrapperMap.get(cls);
-		}
-		return convertedClass;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -1095,31 +1044,6 @@ public final class Reflections extends Utils {
 			map.put(e._1, e._2);
 		});
 		return map;
-	}
-
-	/**
-	 * <p>
-	 * Converts the specified wrapper class to its corresponding primitive
-	 * class.
-	 * </p>
-	 *
-	 * <p>
-	 * This method is the counter part of {@code primitiveToWrapper()}. If the
-	 * passed in class is a wrapper class for a primitive type, this primitive
-	 * type will be returned (e.g. {@code Integer.TYPE} for
-	 * {@code Integer.class}). For other classes, or if the parameter is
-	 * <b>null</b>, the return value is <b>null</b>.
-	 * </p>
-	 *
-	 * @param cls
-	 *            the class to convert, may be <b>null</b>
-	 * @return the corresponding primitive type if {@code cls} is a wrapper
-	 *         class, <b>null</b> otherwise
-	 * @see #primitiveToWrapper(Class)
-	 * @since 2.4
-	 */
-	public static Class<?> wrapperToPrimitive(final Class<?> cls) {
-		return wrapperPrimitiveMap.get(cls);
 	}
 
 	public <T> T unwrapProxy(T object) {

@@ -12,6 +12,7 @@ import com.caucho.burlap.io.BurlapInput;
 import com.caucho.burlap.io.BurlapOutput;
 import com.caucho.hessian.io.AbstractSerializerFactory;
 import com.caucho.hessian.io.SerializerFactory;
+import com.google.common.reflect.TypeToken;
 
 import net.butfly.albacore.exception.SystemException;
 import net.butfly.albacore.serder.support.ContentTypes;
@@ -19,7 +20,7 @@ import net.butfly.albacore.serder.support.SerderFactorySupport;
 import net.butfly.albacore.utils.Reflections;
 
 public class BurlapSerder extends BinarySerderBase<Object> implements ArrableBinarySerder<Object>, SerderFactorySupport,
-		ClassInfoSerder<Object, byte[]>, BeanSerder<byte[]> {
+		ClassInfoSerder<Object, byte[]> {
 	private static final long serialVersionUID = 691937271877170782L;
 
 	public BurlapSerder() {
@@ -48,7 +49,7 @@ public class BurlapSerder extends BinarySerderBase<Object> implements ArrableBin
 	}
 
 	@Override
-	public <T> T der(byte[] dst, Class<T> to) {
+	public <T> T der(byte[] dst, TypeToken<T> to) {
 		ByteArrayInputStream in = new ByteArrayInputStream(dst);
 		try {
 			return der(in, to);
@@ -75,7 +76,7 @@ public class BurlapSerder extends BinarySerderBase<Object> implements ArrableBin
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T> T der(InputStream in, Class<T> to) throws IOException {
+	public <T> T der(InputStream in, TypeToken<T> to) throws IOException {
 		BurlapInput hi = new BurlapInput(in);
 		if (null != factory) hi.setSerializerFactory(factory);
 		try {
@@ -87,7 +88,7 @@ public class BurlapSerder extends BinarySerderBase<Object> implements ArrableBin
 
 	@Override
 	@SafeVarargs
-	public final Object[] der(byte[] from, Class<? extends Object>... tos) {
+	public final Object[] der(byte[] from, TypeToken<? extends Object>... tos) {
 		ByteArrayInputStream in = new ByteArrayInputStream(from);
 		try {
 			return (Object[]) der(in, null);

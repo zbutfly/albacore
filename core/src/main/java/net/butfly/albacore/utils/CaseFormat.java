@@ -6,6 +6,7 @@ import com.google.common.annotations.GwtCompatible;
 
 @GwtCompatible
 public enum CaseFormat {
+	NO_CHANGE(null),
 	/**
 	 * Dotted variable naming convention, e.g., "lower.hyphen".
 	 */
@@ -41,18 +42,17 @@ public enum CaseFormat {
 		this.format = format;
 	}
 
-	public final String to(CaseFormat dstCaseFormat, String str) {
-		checkNotNull(dstCaseFormat);
+	public final String to(CaseFormat to, String str) {
+		checkNotNull(to);
 		checkNotNull(str);
-		return (dstCaseFormat == this) ? str : convert(dstCaseFormat, str);
+		return (to == this || to == CaseFormat.NO_CHANGE) ? str : convert(to, str);
 	}
 
-	String convert(CaseFormat dstCaseFormat, String str) {
-		if (format == dstCaseFormat.format) return str;
-		else if (format == null) return com.google.common.base.CaseFormat.LOWER_UNDERSCORE.to(dstCaseFormat.format, str.replaceAll("\\.",
-				"_"));
-		else if (dstCaseFormat.format == null) return format.to(com.google.common.base.CaseFormat.LOWER_UNDERSCORE, str).replaceAll("_",
-				"\\.");
-		else return format.to(dstCaseFormat.format, str);
+	String convert(CaseFormat to, String str) {
+		if (format == to.format) return str;
+		else if (format == null) // LOWER_DOT
+			return com.google.common.base.CaseFormat.LOWER_UNDERSCORE.to(to.format, str.replaceAll("\\.", "_"));
+		else if (to.format == null) return format.to(com.google.common.base.CaseFormat.LOWER_UNDERSCORE, str).replaceAll("_", "\\.");
+		else return format.to(to.format, str);
 	}
 }
