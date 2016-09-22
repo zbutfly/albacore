@@ -2,11 +2,11 @@ package net.butfly.albacore.utils.logger;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.butfly.albacore.lambda.Supplier;
 import net.butfly.albacore.utils.Utils;
 
 public final class Loggers extends Utils {

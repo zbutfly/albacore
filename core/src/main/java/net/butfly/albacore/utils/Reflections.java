@@ -27,8 +27,8 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.function.Consumer;
-import java.util.function.Function;
+
+import net.butfly.albacore.lambda.Converter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1001,20 +1001,15 @@ public final class Reflections extends Utils {
 		}
 	}
 
-	public static <T, R> List<R> transform(Collection<T> original, Function<T, R> trans) {
+	public static <T, R> List<R> transform(Collection<T> original, Converter<T, R> trans) {
 		if (original == null) return null;
 		List<R> r = new ArrayList<>(original.size());
-		original.forEach(new Consumer<T>() {
-			@Override
-			public void accept(T o) {
-				r.add(trans.apply(o));
-			}
-		});
+		original.forEach(o -> r.add(trans.apply(o)));
 		return r;
 	}
 
 	@SafeVarargs
-	public static <T, R> List<R> transform(Function<T, R> trans, T... original) {
+	public static <T, R> List<R> transform(Converter<T, R> trans, T... original) {
 		if (original == null) return null;
 		List<R> r = new ArrayList<>(original.length);
 		for (T t : original) {
@@ -1023,12 +1018,12 @@ public final class Reflections extends Utils {
 		return r;
 	}
 
-	public static <T, R> List<R> transform(Iterable<T> original, Function<T, R> trans) {
+	public static <T, R> List<R> transform(Iterable<T> original, Converter<T, R> trans) {
 		if (original == null) return null;
 		return transform(original.iterator(), trans);
 	}
 
-	public static <T, R> List<R> transform(Iterator<T> original, Function<T, R> trans) {
+	public static <T, R> List<R> transform(Iterator<T> original, Converter<T, R> trans) {
 		if (original == null) return null;
 		List<R> r = new ArrayList<>();
 		while (original.hasNext()) {
@@ -1037,7 +1032,7 @@ public final class Reflections extends Utils {
 		return r;
 	}
 
-	public static <T, K, V> Map<K, V> transMapping(Collection<T> list, Function<T, Tuple2<K, V>> mapping) {
+	public static <T, K, V> Map<K, V> transMapping(Collection<T> list, Converter<T, Tuple2<K, V>> mapping) {
 		Map<K, V> map = new HashMap<>();
 		list.forEach(t -> {
 			Tuple2<K, V> e = mapping.apply(t);
