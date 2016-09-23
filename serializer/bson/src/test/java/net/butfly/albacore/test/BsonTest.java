@@ -15,7 +15,7 @@ import net.butfly.albacore.serder.Serder;
 
 public class BsonTest {
 	public static void main(String... arg) throws IOException {
-		Serder<Object, BSONObject> ser = new BsonSerder().next(new BsonObjectSerder(), TypeToken.of(byte[].class));
+		Serder<Object, BSONObject> ser = new BsonSerder().then(new BsonObjectSerder(), TypeToken.of(byte[].class));
 
 		Bean o = new Bean();
 		BSONObject s = ser.ser(o);
