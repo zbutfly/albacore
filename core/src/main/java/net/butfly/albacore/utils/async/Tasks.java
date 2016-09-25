@@ -9,6 +9,7 @@ import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -79,9 +80,7 @@ public final class Tasks extends Utils {
 				result = handle(task, ex);
 				retried++;
 			}
-			try {
-				Thread.sleep(task.options.interval);
-			} catch (InterruptedException e) {}
+			waitSleep(task.options.interval);
 		}
 		return result;
 	}
@@ -188,5 +187,28 @@ public final class Tasks extends Utils {
 				return CORE_EXECUTOR = Executors.newFixedThreadPool(c);
 			}
 		}
+	}
+
+	public static void waitFull(ExecutorService executor) {
+		ThreadPoolExecutor pool = (ThreadPoolExecutor) executor;
+		while (pool.getActiveCount() >= pool.getMaximumPoolSize()) {
+			logger.trace("Waiting for thread executor...");
+			waitSleep(1000);
+		}
+	}
+
+	public static void waitShutdown(ExecutorService executor) {
+		executor.shutdown();
+		try {
+			executor.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
+		} catch (InterruptedException e) {
+			logger.warn("Not all processing thread finished correctly.");
+		}
+	}
+
+	public static void waitSleep(long millis) {
+		try {
+			Thread.sleep(millis);
+		} catch (InterruptedException e) {}
 	}
 }
