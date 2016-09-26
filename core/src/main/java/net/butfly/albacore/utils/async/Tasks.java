@@ -197,13 +197,20 @@ public final class Tasks extends Utils {
 		}
 	}
 
-	public static void waitShutdown(ExecutorService executor) {
+	public static void waitShutdown(ExecutorService executor, long seconds) {
 		executor.shutdown();
-		try {
-			executor.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
-		} catch (InterruptedException e) {
-			logger.warn("Not all processing thread finished correctly.");
-		}
+		boolean running = true;
+		while (!running)
+			try {
+				logger.info("Waiting for executor terminate...");
+				running = executor.awaitTermination(seconds, TimeUnit.SECONDS);
+			} catch (InterruptedException e) {
+				logger.warn("Not all processing thread finished correctly, waiting interrupted.");
+			}
+	}
+
+	public static void waitShutdown(ExecutorService executor) {
+		waitShutdown(executor, 10);
 	}
 
 	public static void waitSleep(long millis) {
