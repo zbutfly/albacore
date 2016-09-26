@@ -16,6 +16,8 @@ import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Joiner;
+
 import net.butfly.albacore.exception.AggregaedException;
 import net.butfly.albacore.utils.Instances;
 import net.butfly.albacore.utils.Utils;
@@ -47,7 +49,7 @@ public final class Tasks extends Utils {
 			final List<? extends Task.Callable<T>> tasks) {
 		List<T> results = new ArrayList<T>();
 		List<Throwable> errors = new ArrayList<Throwable>();
-		CompletionService<T> cs = Instances.fetch(() -> new ExecutorCompletionService<T>(executor), executor);
+		CompletionService<T> cs = Instances.fetch(() -> new ExecutorCompletionService<T>(executor), CompletionService.class, executor);
 		for (Task.Callable<T> t : tasks) {
 			cs.submit(t);
 		}
@@ -213,9 +215,13 @@ public final class Tasks extends Utils {
 		waitShutdown(executor, 10);
 	}
 
-	public static void waitSleep(long millis) {
+	public static boolean waitSleep(long millis, Object... causes) {
 		try {
+			if (null != causes && causes.length > 0) logger.info("Sleeping for " + millis + " ms, cause: " + Joiner.on(' ').join(causes));
 			Thread.sleep(millis);
-		} catch (InterruptedException e) {}
+			return true;
+		} catch (InterruptedException e) {
+			return false;
+		}
 	}
 }

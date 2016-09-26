@@ -34,7 +34,7 @@ public final class Generics extends Utils {
 				types.put(v.getName(), (Class<?>) TypeToken.of(implType).resolveType(v).getRawType());
 			} ;
 			return types;
-		}, implType, declareClass);
+		}, Map.class, implType, declareClass);
 	}
 
 	public static <E> Class<E> resolveGenericParameter(final Type implType, final Class<?> declareClass, final String genericParamName) {

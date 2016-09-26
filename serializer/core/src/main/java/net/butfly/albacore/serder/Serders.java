@@ -42,7 +42,7 @@ public final class Serders extends Utils {
 
 	@SuppressWarnings("unchecked")
 	public static Class<? extends ContentSerder<?, ?>> getSerderByMimeType(String mimeType) {
-		return (Class<? extends ContentSerder<?, ?>>) Instances.fetch(Serders::scanContentSerders).get(mimeType);
+		return (Class<? extends ContentSerder<?, ?>>) Instances.fetch(Serders::scanContentSerders, Map.class).get(mimeType);
 	}
 
 	private static Map<String, Class<? extends ContentSerder>> scanContentSerders() {

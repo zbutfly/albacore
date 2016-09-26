@@ -3,7 +3,7 @@ package net.butfly.albacore.utils;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import net.butfly.albacore.utils.async.Task;
+import net.butfly.albacore.lambda.Supplier;
 
 /**
  * Replacement of "private static final ..."
@@ -18,8 +18,8 @@ public class Instances extends Utils {
 		return fetchFrom(instanceClass, INSTANCE_POOL, instanceClass, instanceKey, 0);
 	}
 
-	public static <T> T fetch(Task.Callable<T> instantiator, Object... instanceKey) {
-		return fetchFrom(instantiator, INSTANCE_POOL, instantiator.getClass(), instanceKey, 0);
+	public static <T> T fetch(Supplier<T> supplier, Class<T> cl, Object... instanceKey) {
+		return fetchFrom(supplier, INSTANCE_POOL, cl, instanceKey, 0);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -37,8 +37,8 @@ public class Instances extends Utils {
 	@SuppressWarnings("unchecked")
 	private static <T> T construct(Object instantiator, Object... params) {
 		if (instantiator instanceof Class) return Reflections.construct((Class<T>) instantiator, params);
-		if (instantiator instanceof Task.Callable) try {
-			return ((Task.Callable<T>) instantiator).call();
+		if (instantiator instanceof Supplier) try {
+			return ((Supplier<T>) instantiator).get();
 		} catch (Exception e) {
 			return null;
 		}

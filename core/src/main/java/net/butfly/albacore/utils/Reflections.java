@@ -1,5 +1,7 @@
 package net.butfly.albacore.utils;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Array;
@@ -21,6 +23,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Queue;
 import java.util.Set;
 import java.util.SortedMap;
@@ -316,7 +319,7 @@ public final class Reflections extends Utils {
 			Set<Class<?>> r = new HashSet<>();
 			new FastClasspathScanner(packagePrefix).matchClassesWithAnnotation(annotation, c -> r.add(c)).scan();
 			return r.toArray(new Class[r.size()]);
-		}, annotation, j.join(packagePrefix));
+		}, Class[].class, annotation, j.join(packagePrefix));
 	}
 
 	public static Field getDeclaredField(Class<?> clazz, String name) {
@@ -353,7 +356,7 @@ public final class Reflections extends Utils {
 			for (Field f : getDeclaredFields(clazz))
 				if (f.isAnnotationPresent(annotation)) s.add(f);
 			return s.toArray(new Field[s.size()]);
-		}, clazz, annotation);
+		}, Field[].class, clazz, annotation);
 	}
 
 	public static Method getDeclaredMethod(Class<?> clazz, String name, Class<?>... paramTypes) {
@@ -533,12 +536,13 @@ public final class Reflections extends Utils {
 		return cost;
 	}
 
+	@SuppressWarnings("unchecked")
 	public static <T> Set<Class<? extends T>> getSubClasses(Class<T> parentClass, String... packagePrefix) {
 		return Instances.fetch(() -> {
 			final Set<Class<? extends T>> r = new HashSet<>();
 			new FastClasspathScanner(packagePrefix).matchSubclassesOf(parentClass, c -> r.add(c)).scan();
 			return r;
-		}, parentClass, j.join(packagePrefix));
+		}, Set.class, parentClass, j.join(packagePrefix));
 	}
 
 	/**
@@ -1050,5 +1054,16 @@ public final class Reflections extends Utils {
 	@SuppressWarnings("unchecked")
 	public static <D, S extends D> S wrap(D from, Class<S> to) {
 		return to.isAssignableFrom(from.getClass()) ? (S) from : Reflections.construct(to, from);
+	}
+
+	public static Properties loadAsProps(String classpathPropsFile) {
+		Properties props = new Properties();
+		InputStream ips = Thread.currentThread().getContextClassLoader().getResourceAsStream(classpathPropsFile);
+		if (null != ips) try {
+			props.load(ips);
+		} catch (IOException e) {
+			logger.error("Properties file " + classpathPropsFile + " loading failure", e);
+		}
+		return props;
 	}
 }
