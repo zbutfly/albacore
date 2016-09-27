@@ -16,6 +16,7 @@
 		<module>json</module>
 		<module>bson</module>
 		<module>kryo</module>
+		<module>hbase</module>
 		<!-- <module>avro</module> -->
 		<module>protobuf</module>
 	</modules>
