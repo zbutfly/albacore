@@ -13,8 +13,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.butfly.albacore.utils.logger.Logger;
 
 import com.google.common.base.Joiner;
 
@@ -23,7 +22,7 @@ import net.butfly.albacore.utils.Instances;
 import net.butfly.albacore.utils.Utils;
 
 public final class Tasks extends Utils {
-	private static final Logger logger = LoggerFactory.getLogger(Tasks.class);
+	private static final Logger logger = Logger.getLogger(Tasks.class);
 	// static ExecutorService MORE_EX = Executors.newWorkStealingPool();
 	static ExecutorService CORE_EXECUTOR = createExecutor();
 

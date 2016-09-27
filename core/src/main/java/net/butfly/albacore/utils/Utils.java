@@ -5,7 +5,7 @@ public abstract class Utils/* <U extends Utils<U>> */ {
 	// Task.Callable<Logger>() {
 	// @Override
 	// public Logger call() {
-	// return LoggerFactory.getLogger(Utils.this.getClass());
+	// return Logger.getLogger(Utils.this.getClass());
 	// }
 	// }, getClass());
 

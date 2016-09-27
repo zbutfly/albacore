@@ -9,12 +9,11 @@ import net.butfly.albacore.exception.SystemException;
 import net.butfly.albacore.utils.encrypt.Algorithm.DigesterAlgorithm;
 import net.butfly.albacore.utils.encrypt.DigesterEncryptor;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.butfly.albacore.utils.logger.Logger;
 
 public class SerializeKeyGenerator implements IKeyGenerator {
 	private static final DigesterEncryptor encrypt = new DigesterEncryptor(DigesterAlgorithm.MD5);
-	protected final Logger logger = LoggerFactory.getLogger(this.getClass());
+	protected final Logger logger = Logger.getLogger(this.getClass());
 
 	public String getKey(Key o) {
 		String key = null;

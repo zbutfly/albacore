@@ -7,11 +7,10 @@ import net.butfly.albacore.cache.config.CacheConfigManager;
 import net.butfly.albacore.cache.utils.impl.BaseCacheImpl;
 import net.butfly.albacore.exception.SystemException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.butfly.albacore.utils.logger.Logger;
 
 public class CacheFactory {
-	private final static Logger logger = LoggerFactory.getLogger(CacheFactory.class);
+	private final static Logger logger = Logger.getLogger(CacheFactory.class);
 	private static final Map<String, ICacheHelper> cacheHelperCache = new WeakHashMap<String, ICacheHelper>();
 
 	private CacheFactory() {}

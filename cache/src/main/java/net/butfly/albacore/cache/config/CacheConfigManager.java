@@ -13,8 +13,7 @@ import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.butfly.albacore.utils.logger.Logger;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
@@ -26,7 +25,7 @@ import net.butfly.albacore.utils.Reflections;
 
 @SuppressWarnings({ "unchecked" })
 public class CacheConfigManager {
-	private final static Logger logger = LoggerFactory.getLogger(CacheConfigManager.class);
+	private final static Logger logger = Logger.getLogger(CacheConfigManager.class);
 	public static final String CACHE_TYPE_BASE = "base";
 	public static final String OPTYPE_USER = "use";
 	public static final String OPTYPE_DESTORY = "destory";

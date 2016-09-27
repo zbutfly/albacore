@@ -33,8 +33,7 @@ import java.util.TreeSet;
 
 import net.butfly.albacore.lambda.Converter;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.butfly.albacore.utils.logger.Logger;
 
 import com.google.common.base.Joiner;
 import com.google.common.reflect.TypeToken;
@@ -44,7 +43,7 @@ import net.butfly.albacore.support.Values;
 import scala.Tuple2;
 
 public final class Reflections extends Utils {
-	private static final Logger logger = LoggerFactory.getLogger(Reflections.class);
+	private static final Logger logger = Logger.getLogger(Reflections.class);
 
 	private static final Joiner j = Joiner.on(";");
 

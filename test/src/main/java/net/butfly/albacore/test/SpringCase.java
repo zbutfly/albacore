@@ -14,14 +14,14 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
-import com.jcabi.log.Logger;
+import net.butfly.albacore.utils.logger.Logger;
 
 public abstract class SpringCase {
-	protected org.slf4j.Logger logger = LoggerFactory.getLogger(this.getClass());
+	private static Logger slogger = Logger.getLogger(SpringCase.class);
+	protected Logger logger = Logger.getLogger(this.getClass());
 
 	private static Map<String, DataSource> allDS = null;
 	private ApplicationContext context;
@@ -35,12 +35,12 @@ public abstract class SpringCase {
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws NamingException {
-		Logger.debug(SpringCase.class, "JUnit BeforeClass entered.");
+		slogger.debug("JUnit BeforeClass entered.");
 	}
 
 	@AfterClass
 	public static void tearDownAfterClass() {
-		Logger.debug(SpringCase.class, "JUnit AfterClass entered.");
+		slogger.debug("JUnit AfterClass entered.");
 	}
 
 	@Before
@@ -81,8 +81,8 @@ public abstract class SpringCase {
 			Context root = new InitialContext();
 			for (Binding b : Collections.list(root.listBindings(JNDI_JDBC_PREFIX))) {
 				if (b.getObject() instanceof DataSource) {
-					Logger.info(b.getObject(),
-							"DataSource found: [" + JNDI_JDBC_PREFIX + "/" + b.getName() + "]:[" + b.getObject().toString() + "]");
+					Logger.getLogger(b.getObject().getClass()).info("DataSource found: [" + JNDI_JDBC_PREFIX + "/" + b.getName() + "]:[" + b
+							.getObject().toString() + "]");
 					allDS.put(b.getName(), (DataSource) b.getObject());
 				}
 			}

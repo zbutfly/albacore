@@ -2,11 +2,10 @@ package net.butfly.albacore.utils.aop;
 
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.butfly.albacore.utils.logger.Logger;
 
 public class AsyncInterceptor implements MethodInterceptor {
-	private static final Logger logger = LoggerFactory.getLogger(AsyncInterceptor.class);
+	private static final Logger logger = Logger.getLogger(AsyncInterceptor.class);
 
 	@Override
 	public Object invoke(MethodInvocation invocation) throws Throwable {

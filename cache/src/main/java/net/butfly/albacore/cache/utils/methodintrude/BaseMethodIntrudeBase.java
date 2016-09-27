@@ -4,11 +4,10 @@ import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.butfly.albacore.utils.logger.Logger;
 
 public class BaseMethodIntrudeBase {
-	protected static final Logger logger = LoggerFactory.getLogger(BaseMethodIntrudeBase.class);
+	protected static final Logger logger = Logger.getLogger(BaseMethodIntrudeBase.class);
 	public Set<Method> useMap = new HashSet<Method>();
 
 	public Set<Method> getUseMethods() {

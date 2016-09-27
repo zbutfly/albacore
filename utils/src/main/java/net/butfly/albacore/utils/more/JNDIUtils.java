@@ -22,11 +22,10 @@ import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.butfly.albacore.utils.logger.Logger;
 
 public final class JNDIUtils extends Utils {
-	protected static final Logger logger = LoggerFactory.getLogger(JNDIUtils.class);
+	protected static final Logger logger = Logger.getLogger(JNDIUtils.class);
 
 	public static void attachContext(String contextFileLocation) {
 		try {

@@ -1,10 +1,9 @@
 package net.butfly.albacore.utils.key;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.butfly.albacore.utils.logger.Logger;
 
 public abstract class IdGenerator<K> {
-	protected final Logger logger = LoggerFactory.getLogger(this.getClass());
+	protected final Logger logger = Logger.getLogger(this.getClass());
 
 	public abstract K generate();
 

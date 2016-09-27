@@ -8,8 +8,7 @@ import org.bson.BasicBSONObject;
 import org.bson.LazyBSONCallback;
 import org.bson.io.BasicOutputBuffer;
 import org.bson.io.OutputBuffer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.butfly.albacore.utils.logger.Logger;
 
 import com.google.common.reflect.TypeToken;
 import com.mongodb.BasicDBObject;
@@ -21,7 +20,7 @@ import net.butfly.albacore.utils.CaseFormat;
 
 public class BsonObjectBeanSerder implements Serder<Object, BSONObject>, BeanSerder<BSONObject> {
 	private static final long serialVersionUID = 8050515547072577482L;
-	private static final Logger logger = LoggerFactory.getLogger(BsonObjectBeanSerder.class);
+	private static final Logger logger = Logger.getLogger(BsonObjectBeanSerder.class);
 
 	@Override
 	public <T> BasicBSONObject ser(T from) {

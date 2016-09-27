@@ -11,11 +11,10 @@ import net.butfly.albacore.cache.utils.strategy.ICacheStrategy;
 import net.butfly.albacore.cache.utils.strategy.StrategyFactory;
 import net.butfly.albacore.exception.SystemException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.butfly.albacore.utils.logger.Logger;
 
 public class BaseCacheImpl implements ICacheHelper {
-	private final Logger logger = LoggerFactory.getLogger(this.getClass());
+	private final Logger logger = Logger.getLogger(this.getClass());
 	protected ICacheStrategy strategy;
 
 	public void setStrategy(String strategyId) {

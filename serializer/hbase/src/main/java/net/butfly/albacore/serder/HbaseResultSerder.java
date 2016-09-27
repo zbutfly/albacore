@@ -11,8 +11,7 @@ import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.Text;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.butfly.albacore.utils.logger.Logger;
 
 import com.google.common.base.Defaults;
 import com.google.common.base.Joiner;
@@ -23,7 +22,7 @@ import net.butfly.albacore.utils.Reflections;
 
 public class HbaseResultSerder extends BeanSerderBase<Result> implements BeanSerder<Result> {
 	private static final long serialVersionUID = 1152380944308233135L;
-	private static final Logger logger = LoggerFactory.getLogger(HbaseResultSerder.class);
+	private static final Logger logger = Logger.getLogger(HbaseResultSerder.class);
 
 	public HbaseResultSerder() {
 		super();

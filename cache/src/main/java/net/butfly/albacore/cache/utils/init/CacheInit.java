@@ -13,8 +13,7 @@ import net.butfly.albacore.cache.utils.control.CacheControl;
 import net.butfly.albacore.exception.BusinessException;
 import net.butfly.albacore.exception.SystemException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.butfly.albacore.utils.logger.Logger;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
@@ -65,7 +64,7 @@ public class CacheInit {
 }
 
 class CacheTask extends Thread {
-	public static Logger log = LoggerFactory.getLogger(CacheTask.class);
+	public static Logger log = Logger.getLogger(CacheTask.class);
 
 	public CacheTask(String name) {
 		super(name);

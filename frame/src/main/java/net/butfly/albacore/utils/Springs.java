@@ -5,8 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.butfly.albacore.utils.logger.Logger;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.beans.factory.config.PropertyPlaceholderConfigurer;
 import org.springframework.core.Ordered;
@@ -15,7 +14,7 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
 
 public final class Springs extends Utils {
-	private static final Logger logger = LoggerFactory.getLogger(Springs.class);
+	private static final Logger logger = Logger.getLogger(Springs.class);
 
 	public static void appendPlaceholderByProperties(ConfigurableBeanFactory beanFactory, int order, String... propertyNameAndValue) {
 		beanFactory.registerSingleton(Keys.key(String.class), buildPlaceholder(order, propertyNameAndValue));

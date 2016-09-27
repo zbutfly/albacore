@@ -14,8 +14,7 @@ import net.rubyeye.xmemcached.impl.KetamaMemcachedSessionLocator;
 import net.rubyeye.xmemcached.transcoders.SerializingTranscoder;
 import net.rubyeye.xmemcached.utils.AddrUtil;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.butfly.albacore.utils.logger.Logger;
 
 import com.google.code.yanf4j.core.impl.StandardSocketOption;
 
@@ -173,5 +172,5 @@ public class MemCachePond {
 		}
 	}
 
-	private Logger log = LoggerFactory.getLogger(this.getClass());
+	private Logger log = Logger.getLogger(this.getClass());
 }

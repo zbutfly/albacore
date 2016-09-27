@@ -3,11 +3,10 @@ package net.butfly.albacore.cache.utils.strategy.keygenerate;
 import net.butfly.albacore.cache.utils.Key;
 import net.butfly.albacore.exception.SystemException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.butfly.albacore.utils.logger.Logger;
 
 public class StringKeyGenerator implements IKeyGenerator {
-	protected final Logger logger = LoggerFactory.getLogger(this.getClass());
+	protected final Logger logger = Logger.getLogger(this.getClass());
 	public static StringKeyGenerator instance = new StringKeyGenerator();
 
 	public String getKey(Key o) {
