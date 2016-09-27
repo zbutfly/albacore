@@ -75,8 +75,8 @@ public final class Reflections extends Utils {
 	 * The set of method that annotation classes inherit, and should be avoided
 	 * when toString()ing an annotation class.
 	 */
-	private static final Set<String> INHERITED_ANNOTATION_METHODS = new HashSet<>(Arrays.asList("toString", "equals", "hashCode",
-			"annotationType", "getClass"));
+	private static final Set<String> INHERITED_ANNOTATION_METHODS = new HashSet<>(
+			Arrays.asList("toString", "equals", "hashCode", "annotationType", "getClass"));
 
 	public static boolean anyEmpty(Object... value) {
 		for (Object v : value) {
@@ -152,8 +152,8 @@ public final class Reflections extends Utils {
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> T constructInterface(Class<T> interfaceType) {
-		if (!Modifier.isInterface(interfaceType.getModifiers())) throw new IllegalArgumentException(
-				"Only interfaces have default implementation.");
+		if (!Modifier.isInterface(interfaceType.getModifiers()))
+			throw new IllegalArgumentException("Only interfaces have default implementation.");
 		Class<?> impl = interfaceImplementations.get(interfaceType);
 		if (impl != null) try {
 			return (T) impl.newInstance();
@@ -162,8 +162,9 @@ public final class Reflections extends Utils {
 		}
 		throw new IllegalArgumentException("Stripes needed to instantiate a property who's declared type as an "
 				+ "interface (which obviously cannot be instantiated. The interface is not "
-				+ "one that Stripes is aware of, so no implementing class was known. The " + "interface type was: '" + interfaceType
-						.getName() + "'. To fix this " + "you'll need to do one of three things. 1) Change the getter/setter methods "
+				+ "one that Stripes is aware of, so no implementing class was known. The " + "interface type was: '"
+				+ interfaceType.getName() + "'. To fix this "
+				+ "you'll need to do one of three things. 1) Change the getter/setter methods "
 				+ "to use a concrete type so that Stripes can instantiate it. 2) in the bean's "
 				+ "setContext() method pre-instantiate the property so Stripes doesn't have to. "
 				+ "3) Bug the Stripes author ;)  If the interface is a JDK type it can easily be "
@@ -217,10 +218,10 @@ public final class Reflections extends Utils {
 	 * @return The accessible method
 	 */
 	public static Method getAccessibleMethod(Method method) {
-		if (!isAccessible(method)) { return null; }
+		if (!isAccessible(method)) return null;
 		// If the declaring class is public, we are done
 		final Class<?> cls = method.getDeclaringClass();
-		if (Modifier.isPublic(cls.getModifiers())) { return method; }
+		if (Modifier.isPublic(cls.getModifiers())) return method;
 		final String methodName = method.getName();
 		final Class<?>[] parameterTypes = method.getParameterTypes();
 
@@ -278,7 +279,7 @@ public final class Reflections extends Utils {
 				}
 				// Recursively check our parent interfaces
 				Method method = getAccessibleMethodFromInterfaceNest(interfaces[i], methodName, parameterTypes);
-				if (method != null) { return method; }
+				if (method != null) return method;
 			}
 		}
 		return null;
@@ -443,8 +444,8 @@ public final class Reflections extends Utils {
 			if (method.getName().equals(methodName) && isAssignable(parameterTypes, method.getParameterTypes(), true)) {
 				// get accessible version of method
 				final Method accessibleMethod = getAccessibleMethod(method);
-				if (accessibleMethod != null && (bestMatch == null || compareParameterTypes(accessibleMethod.getParameterTypes(), bestMatch
-						.getParameterTypes(), parameterTypes) < 0)) {
+				if (accessibleMethod != null && (bestMatch == null || compareParameterTypes(accessibleMethod.getParameterTypes(),
+						bestMatch.getParameterTypes(), parameterTypes) < 0)) {
 					bestMatch = accessibleMethod;
 				}
 			}
@@ -463,9 +464,8 @@ public final class Reflections extends Utils {
 		for (Constructor<?> ctor : cls.getDeclaredConstructors())
 			if (isAssignable(parameterTypes, ctor.getParameterTypes(), true) && ctor != null) {
 				setAccessibleWorkaround(ctor);
-				if (result == null || compareParameterTypes(ctor.getParameterTypes(), result.getParameterTypes(), parameterTypes) < 0) {
+				if (result == null || compareParameterTypes(ctor.getParameterTypes(), result.getParameterTypes(), parameterTypes) < 0)
 					result = (Constructor<T>) ctor;
-				}
 			}
 		return result;
 	}
@@ -567,16 +567,16 @@ public final class Reflections extends Utils {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static <T> T invoke(Object targetOrClass, String methodName, Object... parameters) throws NoSuchMethodException,
-			IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+	public static <T> T invoke(Object targetOrClass, String methodName, Object... parameters)
+			throws NoSuchMethodException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
 		Objects.notEmpty(targetOrClass);
 		if (null == parameters) parameters = new Object[0];
 		final Class<?>[] parameterTypes = toClass(parameters);
 		boolean isStatic = Class.class.equals(targetOrClass.getClass());
 		final Class<?> targetClass = isStatic ? (Class<?>) targetOrClass : targetOrClass.getClass();
 		final Method method = getMatchingAccessibleMethod(targetClass, methodName, parameterTypes);
-		if (method == null) throw new NoSuchMethodException("No such accessible method: " + methodName + "() on object: " + targetClass
-				.getName());
+		if (method == null)
+			throw new NoSuchMethodException("No such accessible method: " + methodName + "() on object: " + targetClass.getName());
 		return (T) method.invoke(isStatic ? null : targetOrClass, parameters);
 	}
 
@@ -648,11 +648,10 @@ public final class Reflections extends Utils {
 	 * @return {@code true} if assignment possible
 	 */
 	public static boolean isAssignable(final Class<?> cls, final Class<?> toClass) {
-		return isAssignable(cls, toClass, true/*
-												 * SystemUtils.
-												 * isJavaVersionAtLeast(
-												 * JavaVersion.JAVA_1_5)
-												 */);
+		return isAssignable(cls, toClass,
+				true/*
+					 * SystemUtils. isJavaVersionAtLeast( JavaVersion.JAVA_1_5)
+					 */);
 	}
 
 	/**
@@ -697,28 +696,28 @@ public final class Reflections extends Utils {
 	 * @return {@code true} if assignment possible
 	 */
 	public static boolean isAssignable(Class<?> cls, final Class<?> toClass, final boolean autoboxing) {
-		if (toClass == null) { return false; }
+		if (toClass == null) return false;
 		// have to check for null, as isAssignableFrom doesn't
-		if (cls == null) { return !toClass.isPrimitive(); }
+		if (cls == null) return !toClass.isPrimitive();
 		// autoboxing:
 		if (autoboxing) {
 			if (cls.isPrimitive() && !toClass.isPrimitive()) {
 				cls = Values.primitiveToWrapper(cls);
-				if (cls == null) { return false; }
+				if (cls == null) return false;
 			}
 			if (toClass.isPrimitive() && !cls.isPrimitive()) {
 				cls = Values.wrapperToPrimitive(cls);
-				if (cls == null) { return false; }
+				if (cls == null) return false;
 			}
 		}
-		if (cls.equals(toClass)) { return true; }
+		if (cls.equals(toClass)) return true;
 		if (cls.isPrimitive()) {
-			if (toClass.isPrimitive() == false) { return false; }
-			if (Integer.TYPE.equals(cls)) { return Long.TYPE.equals(toClass) || Float.TYPE.equals(toClass) || Double.TYPE.equals(toClass); }
-			if (Long.TYPE.equals(cls)) { return Float.TYPE.equals(toClass) || Double.TYPE.equals(toClass); }
-			if (Boolean.TYPE.equals(cls)) { return false; }
-			if (Double.TYPE.equals(cls)) { return false; }
-			if (Float.TYPE.equals(cls)) { return Double.TYPE.equals(toClass); }
+			if (toClass.isPrimitive() == false) return false;
+			if (Integer.TYPE.equals(cls)) return Long.TYPE.equals(toClass) || Float.TYPE.equals(toClass) || Double.TYPE.equals(toClass);
+			if (Long.TYPE.equals(cls)) return Float.TYPE.equals(toClass) || Double.TYPE.equals(toClass);
+			if (Boolean.TYPE.equals(cls)) return false;
+			if (Double.TYPE.equals(cls)) return false;
+			if (Float.TYPE.equals(cls)) return Double.TYPE.equals(toClass);
 			if (Character.TYPE.equals(cls)) { return Integer.TYPE.equals(toClass) || Long.TYPE.equals(toClass) || Float.TYPE.equals(toClass)
 					|| Double.TYPE.equals(toClass); }
 			if (Short.TYPE.equals(cls)) { return Integer.TYPE.equals(toClass) || Long.TYPE.equals(toClass) || Float.TYPE.equals(toClass)
@@ -782,7 +781,7 @@ public final class Reflections extends Utils {
 	 * @return {@code true} if assignment possible
 	 */
 	public static boolean isAssignable(Class<?>[] classArray, Class<?>[] toClassArray, final boolean autoboxing) {
-		if (isSameLength(classArray, toClassArray) == false) { return false; }
+		if (isSameLength(classArray, toClassArray) == false) return false;
 		if (classArray == null) {
 			classArray = new Class[0];
 		}
@@ -790,7 +789,7 @@ public final class Reflections extends Utils {
 			toClassArray = new Class[0];
 		}
 		for (int i = 0; i < classArray.length; i++) {
-			if (isAssignable(classArray[i], toClassArray[i], autoboxing) == false) { return false; }
+			if (isAssignable(classArray[i], toClassArray[i], autoboxing) == false) return false;
 		}
 		return true;
 	}
@@ -813,7 +812,8 @@ public final class Reflections extends Utils {
 	 */
 	public static boolean isSameLength(final Object[] array1, final Object[] array2) {
 		if ((array1 == null && array2 != null && array2.length > 0) || (array2 == null && array1 != null && array1.length > 0)
-				|| (array1 != null && array2 != null && array1.length != array2.length)) { return false; }
+				|| (array1 != null && array2 != null && array1.length != array2.length))
+			return false;
 		return true;
 	}
 
@@ -972,8 +972,8 @@ public final class Reflections extends Utils {
 
 					// Only print an attribute if it isn't set to the default
 					// value
-					if ((defaultArray != null && !Arrays.equals(defaultArray, actualArray)) || (defaultArray == null && !actualValue.equals(
-							defaultValue))) {
+					if ((defaultArray != null && !Arrays.equals(defaultArray, actualArray))
+							|| (defaultArray == null && !actualValue.equals(defaultValue))) {
 
 						if (appendedAnyParameters) {
 							builder.append(", ");
@@ -1016,9 +1016,8 @@ public final class Reflections extends Utils {
 	public static <T, R> List<R> transform(Converter<T, R> trans, T... original) {
 		if (original == null) return null;
 		List<R> r = new ArrayList<>(original.length);
-		for (T t : original) {
+		for (T t : original)
 			r.add(trans.apply(t));
-		}
 		return r;
 	}
 
@@ -1030,9 +1029,8 @@ public final class Reflections extends Utils {
 	public static <T, R> List<R> transform(Iterator<T> original, Converter<T, R> trans) {
 		if (original == null) return null;
 		List<R> r = new ArrayList<>();
-		while (original.hasNext()) {
+		while (original.hasNext())
 			r.add(trans.apply(original.next()));
-		}
 		return r;
 	}
 
