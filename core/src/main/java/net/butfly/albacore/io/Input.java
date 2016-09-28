@@ -6,7 +6,7 @@ import java.io.Serializable;
 import java.util.List;
 
 public interface Input<D> extends Serializable, Closeable {
-	List<D> read();
+	List<D> reading();
 
 	void commit();
 

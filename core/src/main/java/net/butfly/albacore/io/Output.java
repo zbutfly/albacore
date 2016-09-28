@@ -6,7 +6,7 @@ import java.io.Serializable;
 
 public interface Output<D> extends Serializable, Closeable {
 	@SuppressWarnings("unchecked")
-	void write(D... data);
+	void writing(D... data);
 
 	@Override
 	default void close() throws IOException {}
