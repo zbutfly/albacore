@@ -1,4 +1,4 @@
-package net.butfly.bus.serialize.converter;
+package net.butfly.albacore.serder.support.converter;
 
 @SuppressWarnings("rawtypes")
 public class EnumConverter implements Converter<Enum, Integer> {

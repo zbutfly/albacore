@@ -1,4 +1,4 @@
-package net.butfly.bus.serialize.converter;
+package net.butfly.albacore.serder.support.converter;
 
 import net.butfly.albacore.utils.Instances;
 

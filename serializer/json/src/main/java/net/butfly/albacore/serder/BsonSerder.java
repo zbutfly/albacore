@@ -6,17 +6,17 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.http.entity.ContentType;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.reflect.TypeToken;
 
 import net.butfly.albacore.serder.json.Jsons;
+import net.butfly.albacore.serder.support.ByteArray;
 import net.butfly.albacore.serder.support.ContentTypes;
 import net.butfly.albacore.utils.CaseFormat;
 
-public class BsonSerder extends BinarySerderBase<Object> implements ArrableBinarySerder<Object>, BeanSerder<byte[]> {
+public class BsonSerder extends BinarySerderBase<Object> implements ArrableBinarySerder<Object>, BeanSerder<ByteArray> {
 	private static final long serialVersionUID = 6664350391207228363L;
 
 	public BsonSerder() {
@@ -28,11 +28,11 @@ public class BsonSerder extends BinarySerderBase<Object> implements ArrableBinar
 	}
 
 	@Override
-	public <T> byte[] ser(T from) {
+	public <T> ByteArray ser(T from) {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		try {
 			Jsons.bsoner.writeValue(baos, from);
-			return baos.toByteArray();
+			return new ByteArray(baos);
 		} catch (IOException e) {
 			return null;
 		} finally {
@@ -44,9 +44,9 @@ public class BsonSerder extends BinarySerderBase<Object> implements ArrableBinar
 
 	@SafeVarargs
 	@Override
-	public final Object[] der(byte[] from, TypeToken<? extends Object>... tos) {
+	public final Object[] der(ByteArray from, TypeToken<? extends Object>... tos) {
 		try {
-			JsonNode[] n = Jsons.array(Jsons.bsoner.readTree(from));
+			JsonNode[] n = Jsons.array(Jsons.bsoner.readTree(from.get()));
 			if (n == null) return null;
 			Object[] r = new Object[Math.min(tos.length, n.length)];
 			for (int i = 0; i < r.length; i++)
@@ -58,9 +58,9 @@ public class BsonSerder extends BinarySerderBase<Object> implements ArrableBinar
 	}
 
 	@Override
-	public <T> T der(byte[] from, TypeToken<T> to) {
+	public <T> T der(ByteArray from, TypeToken<T> to) {
 		if (null == from) return null;
-		ByteArrayInputStream bais = new ByteArrayInputStream(from);
+		ByteArrayInputStream bais = from.input();
 		try {
 			return Jsons.bsoner.readValue(bais, Jsons.mapper.constructType(to.getType()));
 		} catch (IOException e) {
@@ -74,12 +74,12 @@ public class BsonSerder extends BinarySerderBase<Object> implements ArrableBinar
 
 	@Override
 	public void ser(Object from, OutputStream to) throws IOException {
-		to.write(ser(from));
+		to.write(ser(from).get());
 	}
 
 	@Override
 	public <T> T der(InputStream in, TypeToken<T> to) throws IOException {
-		return der(IOUtils.toByteArray(in), to);
+		return der(new ByteArray(in), to);
 	}
 
 	private CaseFormat format = CaseFormat.NO_CHANGE;

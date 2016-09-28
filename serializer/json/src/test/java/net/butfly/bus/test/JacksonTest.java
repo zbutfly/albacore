@@ -10,6 +10,7 @@ import com.google.common.reflect.TypeToken;
 
 import net.butfly.albacore.serder.BsonSerder;
 import net.butfly.albacore.serder.JsonSerder;
+import net.butfly.albacore.serder.support.ByteArray;
 import net.butfly.albacore.utils.CaseFormat;
 
 public class JacksonTest {
@@ -24,8 +25,8 @@ public class JacksonTest {
 		System.out.println("Bean => JSON title: " + obj.titles() + " => " + jsonSerder.der(json, TypeToken.of(Bean.class)).titles());
 		System.out.println();
 
-		byte[] bson = bsonSerder.ser(obj);
-		System.out.println("Bean => BSON length: " + bson.length);
+		ByteArray bson = bsonSerder.ser(obj);
+		System.out.println("Bean => BSON length: " + bson.get().length);
 		System.out.println("BSON => Bean title: " + obj.titles() + " => " + bsonSerder.der(bson, TypeToken.of(Bean.class)).titles());
 		System.out.println();
 
@@ -52,7 +53,7 @@ public class JacksonTest {
 		map = map();
 		System.out.println("Origin Map: " + map + ", title: " + ((Bean) map.get("object")).titles());
 		bson = bsonSerder.ser(map);
-		System.out.println("Map => BSON length: " + bson.length);
+		System.out.println("Map => BSON length: " + bson.get().length);
 		map = bsonSerder.der(bson, TypeToken.of(Map.class));
 		System.out.println("BSON => Map sub title: " + ((Map) ((Map) map.get("object")).get("bean")).get("title"));
 		System.out.println();

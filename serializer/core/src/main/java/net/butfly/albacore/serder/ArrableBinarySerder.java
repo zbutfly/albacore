@@ -1,3 +1,5 @@
 package net.butfly.albacore.serder;
 
-public interface ArrableBinarySerder<PRESENT> extends ArrableSerder<PRESENT, byte[]>, BinarySerder<PRESENT> {}
+import net.butfly.albacore.serder.support.ByteArray;
+
+public interface ArrableBinarySerder<PRESENT> extends ArrableSerder<PRESENT, ByteArray>, BinarySerder<PRESENT> {}

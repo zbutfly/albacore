@@ -1,6 +1,5 @@
 package net.butfly.albacore.serder;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,11 +11,12 @@ import org.apache.http.entity.ContentType;
 
 import com.google.common.reflect.TypeToken;
 
+import net.butfly.albacore.serder.support.ByteArray;
 import net.butfly.albacore.serder.support.ClassInfo;
 import net.butfly.albacore.utils.Reflections;
 
 @ClassInfo
-public class JavaSerder extends BinarySerderBase<Object> implements ArrableBinarySerder<Object>, ClassInfoSerder<Object, byte[]> {
+public class JavaSerder extends BinarySerderBase<Object> implements ArrableBinarySerder<Object>, ClassInfoSerder<Object, ByteArray> {
 	private static final long serialVersionUID = 2446148201514088203L;
 
 	public JavaSerder() {
@@ -29,36 +29,39 @@ public class JavaSerder extends BinarySerderBase<Object> implements ArrableBinar
 
 	@Override
 	@SafeVarargs
-	public final Object[] der(byte[] from, TypeToken<? extends Object>... tos) {
+	public final Object[] der(ByteArray from, TypeToken<? extends Object>... tos) {
 		try {
-			return (Object[]) der(new ByteArrayInputStream(from), null);
+			return (Object[]) der(from.input(), null);
 		} catch (IOException e) {
 			return null;
 		}
 	}
 
 	@Override
-	public <T> byte[] ser(T from) {
-		ByteArrayOutputStream os = new ByteArrayOutputStream();
-		try {
+	public <T> ByteArray ser(T from) {
+		try (ByteArrayOutputStream os = new ByteArrayOutputStream();) {
 			ser(from, os);
+			return new ByteArray(os);
 		} catch (IOException e) {
 			return null;
 		}
-		return os.toByteArray();
 	}
 
 	@Override
-	public <T> T der(byte[] from, TypeToken<T> to) {
+	public <T> T der(ByteArray from, TypeToken<T> to) {
 		try {
-			return der(new ByteArrayInputStream(from), to);
+			return der(from.input(), to);
 		} catch (IOException e) {
 			return null;
 		}
 	}
 
 	@Override
-	public void ser(Object from, OutputStream to) throws IOException {
+	public <T> void ser(T from, OutputStream to) throws IOException {
+		if (from == null) return;
+		Class<?> cl = from.getClass();
+		if (byte[].class.isAssignableFrom(cl)) to.write((byte[]) from);
+		else if (ByteArray.class.isAssignableFrom(cl)) to.write(((ByteArray) from).get());
 		ObjectOutputStream oos = Reflections.wrap(to, ObjectOutputStream.class);
 		try {
 			oos.writeObject(from);

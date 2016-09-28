@@ -6,8 +6,10 @@ import java.io.OutputStream;
 
 import com.google.common.reflect.TypeToken;
 
-public interface BinarySerder<PRESENT> extends ContentSerder<PRESENT, byte[]> {
-	<T> void ser(T from, OutputStream to) throws IOException;
+import net.butfly.albacore.serder.support.ByteArray;
 
-	<T> T der(InputStream from, TypeToken<T> to) throws IOException;
+public interface BinarySerder<PRESENT> extends ContentSerder<PRESENT, ByteArray> {
+	<T extends PRESENT> void ser(T from, OutputStream to) throws IOException;
+
+	<T extends PRESENT> T der(InputStream from, TypeToken<T> to) throws IOException;
 }

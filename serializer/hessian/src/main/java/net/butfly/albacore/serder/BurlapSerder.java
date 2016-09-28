@@ -15,12 +15,13 @@ import com.caucho.hessian.io.SerializerFactory;
 import com.google.common.reflect.TypeToken;
 
 import net.butfly.albacore.exception.SystemException;
+import net.butfly.albacore.serder.support.ByteArray;
 import net.butfly.albacore.serder.support.ContentTypes;
 import net.butfly.albacore.serder.support.SerderFactorySupport;
 import net.butfly.albacore.utils.Reflections;
 
 public class BurlapSerder extends BinarySerderBase<Object> implements ArrableBinarySerder<Object>, SerderFactorySupport,
-		ClassInfoSerder<Object, byte[]> {
+		ClassInfoSerder<Object, ByteArray> {
 	private static final long serialVersionUID = 691937271877170782L;
 
 	public BurlapSerder() {
@@ -32,33 +33,22 @@ public class BurlapSerder extends BinarySerderBase<Object> implements ArrableBin
 	}
 
 	@Override
-	public <T> byte[] ser(T from) {
-		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		try {
+	public <T> ByteArray ser(T from) {
+
+		try (ByteArrayOutputStream out = new ByteArrayOutputStream();) {
 			ser(from, out);
+			return new ByteArray(out);
 		} catch (IOException ex) {
-			throw new SystemException("", ex);
-		}
-		try {
-			return out.toByteArray();
-		} finally {
-			try {
-				out.close();
-			} catch (IOException e) {}
+			return null;
 		}
 	}
 
 	@Override
-	public <T> T der(byte[] dst, TypeToken<T> to) {
-		ByteArrayInputStream in = new ByteArrayInputStream(dst);
-		try {
+	public <T> T der(ByteArray from, TypeToken<T> to) {
+		try (ByteArrayInputStream in = from.input();) {
 			return der(in, to);
 		} catch (IOException ex) {
-			throw new SystemException("", ex);
-		} finally {
-			try {
-				in.close();
-			} catch (IOException e) {}
+			return null;
 		}
 	}
 
@@ -88,16 +78,11 @@ public class BurlapSerder extends BinarySerderBase<Object> implements ArrableBin
 
 	@Override
 	@SafeVarargs
-	public final Object[] der(byte[] from, TypeToken<? extends Object>... tos) {
-		ByteArrayInputStream in = new ByteArrayInputStream(from);
-		try {
+	public final Object[] der(ByteArray from, TypeToken<? extends Object>... tos) {
+		try (ByteArrayInputStream in = from.input();) {
 			return (Object[]) der(in, null);
 		} catch (IOException e) {
-			throw new SystemException("", e);
-		} finally {
-			try {
-				in.close();
-			} catch (IOException e) {}
+			return null;
 		}
 	}
 
