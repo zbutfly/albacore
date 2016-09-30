@@ -7,6 +7,7 @@ import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -28,7 +29,7 @@ public final class Generics extends Utils {
 
 	public static Map<String, Class<?>> resolveGenericParameters(final Type implType, final Class<?> declareClass) {
 		return Instances.fetch(() -> {
-			Map<String, Class<?>> types = Reflections.constructInterface(Map.class);
+			Map<String, Class<?>> types = new HashMap<>();
 			TypeVariable<?>[] vv = declareClass.getTypeParameters();
 			for (TypeVariable<?> v : vv) {
 				types.put(v.getName(), (Class<?>) TypeToken.of(implType).resolveType(v).getRawType());

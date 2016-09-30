@@ -67,7 +67,7 @@ public final class Values extends Utils {
 
 	/**
 	 * <p>
-	 * Converts the specified primitive Class object to its corresponding
+	 * Collections the specified primitive Class object to its corresponding
 	 * wrapper Class object.
 	 * </p>
 	 *
@@ -92,7 +92,7 @@ public final class Values extends Utils {
 
 	/**
 	 * <p>
-	 * Converts the specified wrapper class to its corresponding primitive
+	 * Collections the specified wrapper class to its corresponding primitive
 	 * class.
 	 * </p>
 	 *

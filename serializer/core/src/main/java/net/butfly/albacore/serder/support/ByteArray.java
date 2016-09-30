@@ -10,6 +10,7 @@ import net.butfly.albacore.utils.Reflections;
 
 public final class ByteArray implements Serializable {
 	private static final long serialVersionUID = -1384990797210247805L;
+	public static final Class<byte[]> TYPE = byte[].class;
 	private final byte[] data;
 
 	public ByteArray(final byte[] data) {

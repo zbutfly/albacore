@@ -18,6 +18,7 @@ import com.google.common.base.Joiner;
 import com.google.common.reflect.TypeToken;
 
 import net.butfly.albacore.serder.modifier.HbaseColumnFamily;
+import net.butfly.albacore.utils.Generics;
 import net.butfly.albacore.utils.Reflections;
 
 public class HbaseResultSerder extends BeanSerderBase<Result> implements BeanSerder<Result> {
@@ -93,7 +94,7 @@ public class HbaseResultSerder extends BeanSerderBase<Result> implements BeanSer
 		if (Reflections.isAny(type, Collection.class)) {
 			byte[][] v = Bytes.toByteArrays(value);
 			Collection r = (Collection) Defaults.defaultValue(type);
-			Class<?> t = Reflections.resolveGenericParameter(type, Collection.class, "E");
+			Class<?> t = Generics.resolveGenericParameter(type, Collection.class, "E");
 			for (int i = 0; i < v.length; i++)
 				r.add(fromBytes(t, v[i]));
 			return (R) r;

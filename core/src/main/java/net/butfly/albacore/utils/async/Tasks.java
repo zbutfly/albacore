@@ -13,13 +13,10 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import net.butfly.albacore.utils.logger.Logger;
-
-import com.google.common.base.Joiner;
-
 import net.butfly.albacore.exception.AggregaedException;
 import net.butfly.albacore.utils.Instances;
 import net.butfly.albacore.utils.Utils;
+import net.butfly.albacore.utils.logger.Logger;
 
 public final class Tasks extends Utils {
 	private static final Logger logger = Logger.getLogger(Tasks.class);
@@ -214,9 +211,13 @@ public final class Tasks extends Utils {
 		waitShutdown(executor, 10);
 	}
 
-	public static boolean waitSleep(long millis, Object... causes) {
+	public static boolean waitSleep(long millis) {
+		return waitSleep(millis, null);
+	}
+
+	public static boolean waitSleep(long millis, net.butfly.albacore.lambda.Task t) {
 		try {
-			if (null != causes && causes.length > 0) logger.info("Sleeping for " + millis + " ms, cause: " + Joiner.on(' ').join(causes));
+			if (null != t) t.call();
 			Thread.sleep(millis);
 			return true;
 		} catch (InterruptedException e) {
