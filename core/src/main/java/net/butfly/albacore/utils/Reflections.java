@@ -70,16 +70,16 @@ public final class Reflections extends Utils {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static <T> T invoke(Object targetOrClass, String methodName, Object... parameters)
-			throws NoSuchMethodException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+	public static <T> T invoke(Object targetOrClass, String methodName, Object... parameters) throws NoSuchMethodException,
+			IllegalAccessException, IllegalArgumentException, InvocationTargetException {
 		Objects.notEmpty(targetOrClass);
 		if (null == parameters) parameters = new Object[0];
 		final Class<?>[] parameterTypes = Refs.toClass(parameters);
 		boolean isStatic = Class.class.equals(targetOrClass.getClass());
 		final Class<?> targetClass = isStatic ? (Class<?>) targetOrClass : targetOrClass.getClass();
 		final Method method = Refs.getMatchingAccessibleMethod(targetClass, methodName, parameterTypes);
-		if (method == null)
-			throw new NoSuchMethodException("No such accessible method: " + methodName + "() on object: " + targetClass.getName());
+		if (method == null) throw new NoSuchMethodException("No such accessible method: " + methodName + "() on object: " + targetClass
+				.getName());
 		return (T) method.invoke(isStatic ? null : targetOrClass, parameters);
 	}
 
@@ -239,13 +239,5 @@ public final class Reflections extends Utils {
 	@SuppressWarnings("unchecked")
 	public static <D, S extends D> S wrap(D from, Class<S> to) {
 		return to.isAssignableFrom(from.getClass()) ? (S) from : Reflections.construct(to, from);
-	}
-
-	public static Class<?> getMainClass() {
-		try {
-			return Class.forName(System.getProperty("sun.java.command"));
-		} catch (ClassNotFoundException e) {
-			throw new RuntimeException(e);
-		}
 	}
 }

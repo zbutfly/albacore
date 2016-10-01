@@ -9,11 +9,12 @@ import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import net.butfly.albacore.exception.AggregaedException;
+import net.butfly.albacore.lambda.Callable;
+import net.butfly.albacore.lambda.Consumer;
 import net.butfly.albacore.utils.Instances;
 import net.butfly.albacore.utils.Utils;
 import net.butfly.albacore.utils.logger.Logger;
@@ -21,32 +22,32 @@ import net.butfly.albacore.utils.logger.Logger;
 public final class Tasks extends Utils {
 	private static final Logger logger = Logger.getLogger(Tasks.class);
 	// static ExecutorService MORE_EX = Executors.newWorkStealingPool();
-	static ExecutorService CORE_EXECUTOR = createExecutor();
+	static ExecutorService CORE_EXECUTOR = executor();
 
 	@SuppressWarnings("unchecked")
-	public static <T> T[] executeSequential(ExecutorService executor, Class<T> targetClass, final List<Task.Callable<T>> tasks) {
+	public static <T> T[] executeSequential(ExecutorService executor, Class<T> targetClass, final List<Callable<T>> tasks) {
 		List<T> results = new ArrayList<T>();
 		List<Throwable> errors = new ArrayList<Throwable>();
-		for (Task.Callable<T> t : tasks)
+		for (Callable<T> t : tasks)
 			try {
 				results.add(t.call());
 			} catch (Exception e) {
 				errors.add(e.getCause());
 				logger.error("Sliced task failed at slices.", e.getCause());
 			}
-		if (!errors.isEmpty()) logger.error("Error in concurrence",
-				new AggregaedException("", "Error in concurrence", errors.toArray(new Throwable[errors.size()])));
+		if (!errors.isEmpty()) logger.error("Error in concurrence", new AggregaedException("", "Error in concurrence", errors.toArray(
+				new Throwable[errors.size()])));
 		T[] r = results.toArray((T[]) Array.newInstance(targetClass, results.size()));
 		return r;
 	}
 
 	@SuppressWarnings("unchecked")
 	public static <T> T[] executeConcurrently(final ExecutorService executor, Class<T> targetClass,
-			final List<? extends Task.Callable<T>> tasks) {
+			final List<? extends Callable<T>> tasks) {
 		List<T> results = new ArrayList<T>();
 		List<Throwable> errors = new ArrayList<Throwable>();
 		CompletionService<T> cs = Instances.fetch(() -> new ExecutorCompletionService<T>(executor), CompletionService.class, executor);
-		for (Task.Callable<T> t : tasks) {
+		for (Callable<T> t : tasks) {
 			cs.submit(t);
 		}
 		for (int i = 0; i < tasks.size(); i++) {
@@ -59,8 +60,8 @@ public final class Tasks extends Utils {
 				logger.error("Sliced task failed at " + i + "th slice.", e.getCause());
 			}
 		}
-		if (!errors.isEmpty()) logger.error("Error in concurrence",
-				new AggregaedException("", "Error in concurrence", errors.toArray(new Throwable[errors.size()])));
+		if (!errors.isEmpty()) logger.error("Error in concurrence", new AggregaedException("", "Error in concurrence", errors.toArray(
+				new Throwable[errors.size()])));
 		T[] r = results.toArray((T[]) Array.newInstance(targetClass, results.size()));
 		return r;
 	}
@@ -78,7 +79,7 @@ public final class Tasks extends Utils {
 				result = handle(task, ex);
 				retried++;
 			}
-			waitSleep(task.options.interval);
+			Concurrents.waitSleep(task.options.interval);
 		}
 		return result;
 	}
@@ -131,9 +132,9 @@ public final class Tasks extends Utils {
 		return task.handler.handle(ex);
 	}
 
-	private static <OUT> OUT callback(OUT result, Task.Callback<OUT> callback) {
+	private static <OUT> OUT callback(OUT result, Consumer<OUT> callback) {
 		if (null == callback) return result;
-		callback.callback(result);
+		callback.accept(result);
 		return null;
 	}
 
@@ -161,67 +162,28 @@ public final class Tasks extends Utils {
 		}
 	}
 
-	private static ExecutorService createExecutor() {
-		{
-			int c;
-			try {
-				c = Integer.parseInt(System.getProperty("albacore.tasks.concurrence"));
-			} catch (Exception ex) {
-				c = 0;
-			}
-			if (c < -1) {
-				logger.warn("Albacore task concurrence configuration negative (" + c + "), use work stealing thread pool with " + -c
-						+ " parallelism.");
-				return Executors.newWorkStealingPool(-c);
-			} else if (c == -1) {
-				logger.warn("Albacore task concurrence configuration negative (-1), use work stealing thread pool with AUTO parallelism.");
-				return Executors.newWorkStealingPool(-c);
-			} else if (c == 0) {
-				logger.info("Albacore task concurrence configuration (" + c + "), use inlimited cached thread pool.");
-				return CORE_EXECUTOR = Executors.newCachedThreadPool();
-			} else {
-				logger.info("Albacore task concurrence configuration (" + c + "), use fixed size thread pool.");
-				if (c < 5) logger.warn("Albacore task concurrence configuration too small (" + c + "), debugging? ");
-				return CORE_EXECUTOR = Executors.newFixedThreadPool(c);
-			}
-		}
-	}
-
-	public static void waitFull(ExecutorService executor) {
-		ThreadPoolExecutor pool = (ThreadPoolExecutor) executor;
-		while (pool.getActiveCount() >= pool.getMaximumPoolSize()) {
-			logger.trace("Thread executor (pool) is full, waiting...");
-			waitSleep(1000);
-		}
-	}
-
-	public static void waitShutdown(ExecutorService executor, long seconds) {
-		executor.shutdown();
-		boolean running = true;
-		while (!running)
-			try {
-				logger.info("Waiting for executor terminate...");
-				running = executor.awaitTermination(seconds, TimeUnit.SECONDS);
-			} catch (InterruptedException e) {
-				logger.warn("Not all processing thread finished correctly, waiting interrupted.");
-			}
-	}
-
-	public static void waitShutdown(ExecutorService executor) {
-		waitShutdown(executor, 10);
-	}
-
-	public static boolean waitSleep(long millis) {
-		return waitSleep(millis, null);
-	}
-
-	public static boolean waitSleep(long millis, net.butfly.albacore.lambda.Task t) {
+	private static ExecutorService executor() {
+		int c;
 		try {
-			if (null != t) t.call();
-			Thread.sleep(millis);
-			return true;
-		} catch (InterruptedException e) {
-			return false;
+			c = Integer.parseInt(System.getProperty("albacore.tasks.concurrence"));
+		} catch (Exception ex) {
+			c = 0;
+		}
+		if (c < -1) {
+			logger.warn("Albacore task concurrence configuration negative (" + c + "), use work stealing thread pool with " + -c
+					+ " parallelism.");
+			return Executors.newWorkStealingPool(-c);
+		} else if (c == -1) {
+			logger.warn("Albacore task concurrence configuration negative (-1), use work stealing thread pool with AUTO parallelism.");
+			return Executors.newWorkStealingPool(-c);
+		} else if (c == 0) {
+			logger.info("Albacore task concurrence configuration (" + c + "), use inlimited cached thread pool.");
+			return CORE_EXECUTOR = Executors.newCachedThreadPool();
+		} else {
+			logger.info("Albacore task concurrence configuration (" + c + "), use fixed size thread pool.");
+			if (c < 5) logger.warn("Albacore task concurrence configuration too small (" + c + "), debugging? ");
+			return CORE_EXECUTOR = Executors.newFixedThreadPool(c);
 		}
 	}
+
 }

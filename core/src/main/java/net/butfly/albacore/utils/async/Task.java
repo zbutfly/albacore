@@ -3,9 +3,12 @@ package net.butfly.albacore.utils.async;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 
+import net.butfly.albacore.lambda.Callable;
+import net.butfly.albacore.lambda.Consumer;
+
 public class Task<T> {
 	protected Callable<T> call;
-	protected Callback<T> back;
+	protected Consumer<T> back;
 	protected Options options;
 	protected ExceptionHandler<T> handler = null;
 
@@ -14,23 +17,13 @@ public class Task<T> {
 		R handle(final Exception exception) throws Exception;
 	}
 
-	@FunctionalInterface
-	public interface Callback<R> {
-		public void callback(final R result);
-	}
-
-	@FunctionalInterface
-	public interface Callable<R> extends java.util.concurrent.Callable<R> {
-		public R call() throws Exception;
-	}
-
 	protected Task() {}
 
 	public Task(Callable<T> task) {
 		this(task, null, null);
 	}
 
-	public Task(Callable<T> task, Callback<T> callback) {
+	public Task(Callable<T> task, Consumer<T> callback) {
 		this(task, callback, null);
 	}
 
@@ -38,7 +31,7 @@ public class Task<T> {
 		this(task, null, options);
 	}
 
-	public Task(Callable<T> task, Callback<T> callback, Options options) {
+	public Task(Callable<T> task, Consumer<T> callback, Options options) {
 		this.call = task;
 		this.back = callback;
 		this.options = options;
@@ -48,7 +41,7 @@ public class Task<T> {
 		return call;
 	}
 
-	public Callback<T> back() {
+	public Consumer<T> back() {
 		return back;
 	}
 

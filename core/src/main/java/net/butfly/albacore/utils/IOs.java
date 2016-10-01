@@ -9,10 +9,6 @@ import net.butfly.albacore.utils.logger.Logger;
 public final class IOs extends Utils {
 	private static final Logger logger = Logger.getLogger(IOs.class);
 
-	public static boolean debug() {
-		return Boolean.parseBoolean(System.getProperty("albacore.debug"));
-	}
-
 	public static Properties loadAsProps(String classpathPropsFile) {
 		Properties props = new Properties();
 		InputStream ips = Thread.currentThread().getContextClassLoader().getResourceAsStream(classpathPropsFile);

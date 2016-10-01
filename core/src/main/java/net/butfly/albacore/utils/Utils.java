@@ -2,7 +2,7 @@ package net.butfly.albacore.utils;
 
 public abstract class Utils/* <U extends Utils<U>> */ {
 	// protected final Logger logger = Instances.fetch(new
-	// Task.Callable<Logger>() {
+	// Runnable.Callable<Logger>() {
 	// @Override
 	// public Logger call() {
 	// return Logger.getLogger(Utils.this.getClass());
@@ -13,7 +13,7 @@ public abstract class Utils/* <U extends Utils<U>> */ {
 
 	// protected static final <U extends Utils<U>> U instance(final Class<U>
 	// utilsClass) {
-	// return Instances.fetch(new Task.Callable<U>() {
+	// return Instances.fetch(new Runnable.Callable<U>() {
 	// @SuppressWarnings("unchecked")
 	// @Override
 	// public U create() {
