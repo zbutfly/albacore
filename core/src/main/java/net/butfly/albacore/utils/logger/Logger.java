@@ -43,7 +43,10 @@ public class Logger implements Serializable {
 	}
 
 	public boolean trace(Supplier<String> msg) {
-		if (logger.isTraceEnabled()) logger.trace(msg.get());
+		if (logger.isTraceEnabled()) {
+			String m = msg.get();
+			if (null != m) logger.trace(m);
+		}
 		return true;
 	}
 
@@ -57,7 +60,10 @@ public class Logger implements Serializable {
 	}
 
 	public boolean debug(Supplier<String> msg) {
-		if (logger.isDebugEnabled()) logger.debug(msg.get());
+		if (logger.isDebugEnabled()) {
+			String m = msg.get();
+			if (null != m) logger.debug(m);
+		}
 		return true;
 	}
 
@@ -71,7 +77,10 @@ public class Logger implements Serializable {
 	}
 
 	public boolean info(Supplier<String> msg) {
-		if (logger.isInfoEnabled()) logger.info(msg.get());
+		if (logger.isInfoEnabled()) {
+			String m = msg.get();
+			if (null != m) logger.info(m);
+		}
 		return true;
 	}
 
@@ -85,7 +94,10 @@ public class Logger implements Serializable {
 	}
 
 	public boolean warn(Supplier<String> msg) {
-		if (logger.isWarnEnabled()) logger.warn(msg.get());
+		if (logger.isWarnEnabled()) {
+			String m = msg.get();
+			if (null != m) logger.warn(m);
+		}
 		return true;
 	}
 
@@ -99,32 +111,50 @@ public class Logger implements Serializable {
 	}
 
 	public boolean error(Supplier<String> msg) {
-		if (logger.isErrorEnabled()) logger.error(msg.get());
+		if (logger.isErrorEnabled()) {
+			String m = msg.get();
+			if (null != m) logger.error(m);
+		}
 		return true;
 	}
 
 	public boolean trace(Supplier<String> msg, Throwable t) {
-		if (logger.isTraceEnabled()) logger.trace(msg.get(), t);
+		if (logger.isTraceEnabled()) {
+			String m = msg.get();
+			if (null != m) logger.trace(m, t);
+		}
 		return true;
 	}
 
 	public boolean debug(Supplier<String> msg, Throwable t) {
-		if (logger.isDebugEnabled()) logger.debug(msg.get(), t);
+		if (logger.isDebugEnabled()) {
+			String m = msg.get();
+			if (null != m) logger.debug(m, t);
+		}
 		return true;
 	}
 
 	public boolean info(Supplier<String> msg, Throwable t) {
-		if (logger.isInfoEnabled()) logger.info(msg.get(), t);
+		if (logger.isInfoEnabled()) {
+			String m = msg.get();
+			if (null != m) logger.info(m, t);
+		}
 		return true;
 	}
 
 	public boolean warn(Supplier<String> msg, Throwable t) {
-		if (logger.isWarnEnabled()) logger.warn(msg.get(), t);
+		if (logger.isWarnEnabled()) {
+			String m = msg.get();
+			if (null != m) logger.warn(m, t);
+		}
 		return true;
 	}
 
 	public boolean error(Supplier<String> msg, Throwable t) {
-		if (logger.isErrorEnabled()) logger.error(msg.get(), t);
+		if (logger.isErrorEnabled()) {
+			String m = msg.get();
+			if (null != m) logger.error(m, t);
+		}
 		return true;
 	}
 

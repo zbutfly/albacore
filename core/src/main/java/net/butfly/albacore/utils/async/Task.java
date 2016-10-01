@@ -59,7 +59,7 @@ public class Task<T> {
 	}
 
 	public T execute() throws Exception {
-		return this.execute(Tasks.CORE_EXECUTOR);
+		return this.execute(Concurrents.CORE_EXECUTOR);
 	}
 
 	public T execute(ExecutorService executor) throws Exception {
@@ -67,6 +67,6 @@ public class Task<T> {
 	}
 
 	public static Executor getDefaultExecutor() {
-		return Tasks.CORE_EXECUTOR;
+		return Concurrents.CORE_EXECUTOR;
 	}
 }

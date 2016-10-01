@@ -7,7 +7,6 @@ import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -22,7 +21,6 @@ import net.butfly.albacore.utils.logger.Logger;
 public final class Tasks extends Utils {
 	private static final Logger logger = Logger.getLogger(Tasks.class);
 	// static ExecutorService MORE_EX = Executors.newWorkStealingPool();
-	static ExecutorService CORE_EXECUTOR = executor();
 
 	@SuppressWarnings("unchecked")
 	public static <T> T[] executeSequential(ExecutorService executor, Class<T> targetClass, final List<Callable<T>> tasks) {
@@ -67,7 +65,7 @@ public final class Tasks extends Utils {
 	}
 
 	static <T> T execute(final Task<T> task, ExecutorService executor) throws Exception {
-		if (executor == null) executor = CORE_EXECUTOR;
+		if (executor == null) executor = Concurrents.CORE_EXECUTOR;
 		if (task.options == null) task.options = new Options();
 		int repeated = 0, retried = 0;
 		T result = null;
@@ -159,30 +157,6 @@ public final class Tasks extends Utils {
 		} catch (TimeoutException e) {
 			future.cancel(true);
 			throw e;
-		}
-	}
-
-	private static ExecutorService executor() {
-		int c;
-		try {
-			c = Integer.parseInt(System.getProperty("albacore.tasks.concurrence"));
-		} catch (Exception ex) {
-			c = 0;
-		}
-		if (c < -1) {
-			logger.warn("Albacore task concurrence configuration negative (" + c + "), use work stealing thread pool with " + -c
-					+ " parallelism.");
-			return Executors.newWorkStealingPool(-c);
-		} else if (c == -1) {
-			logger.warn("Albacore task concurrence configuration negative (-1), use work stealing thread pool with AUTO parallelism.");
-			return Executors.newWorkStealingPool(-c);
-		} else if (c == 0) {
-			logger.info("Albacore task concurrence configuration (" + c + "), use inlimited cached thread pool.");
-			return CORE_EXECUTOR = Executors.newCachedThreadPool();
-		} else {
-			logger.info("Albacore task concurrence configuration (" + c + "), use fixed size thread pool.");
-			if (c < 5) logger.warn("Albacore task concurrence configuration too small (" + c + "), debugging? ");
-			return CORE_EXECUTOR = Executors.newFixedThreadPool(c);
 		}
 	}
 
