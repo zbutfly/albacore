@@ -4,7 +4,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import net.butfly.albacore.lambda.Runnable;
 import net.butfly.albacore.utils.Utils;
 import net.butfly.albacore.utils.logger.Logger;
 
@@ -34,12 +33,13 @@ public final class Concurrents extends Utils {
 	}
 
 	public static boolean waitSleep(long millis) {
-		return waitSleep(millis, null);
+		return waitSleep(millis, null, null);
 	}
 
-	public static boolean waitSleep(long millis, Runnable t) {
+	public static boolean waitSleep(long millis, Logger logger, CharSequence cause) {
 		try {
-			if (null != t) t.run();
+			if (null != logger && logger.isTraceEnabled()) logger.trace("Thread [" + Thread.currentThread().getName() + "] sleep for ["
+					+ millis + "ms], cause [" + cause + "].");
 			Thread.sleep(millis);
 			return true;
 		} catch (InterruptedException e) {
