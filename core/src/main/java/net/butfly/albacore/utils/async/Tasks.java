@@ -20,7 +20,6 @@ import net.butfly.albacore.utils.logger.Logger;
 
 public final class Tasks extends Utils {
 	private static final Logger logger = Logger.getLogger(Tasks.class);
-	// static ExecutorService MORE_EX = Executors.newWorkStealingPool();
 
 	@SuppressWarnings("unchecked")
 	public static <T> T[] executeSequential(ExecutorService executor, Class<T> targetClass, final List<Callable<T>> tasks) {

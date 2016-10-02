@@ -2,17 +2,19 @@ package net.butfly.albacore.utils.async;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import net.butfly.albacore.lambda.Callable;
+import net.butfly.albacore.utils.Instances;
 import net.butfly.albacore.utils.Utils;
 import net.butfly.albacore.utils.logger.Logger;
 
 public final class Concurrents extends Utils {
 	private static final Logger logger = Logger.getLogger(Concurrents.class);
-	static ExecutorService CORE_EXECUTOR = executor();
+	static ExecutorService CORE_EXECUTOR = executor(null);
 
 	public static void waitFull(ExecutorService executor, Logger logger) {
 		ThreadPoolExecutor pool = (ThreadPoolExecutor) executor;
@@ -71,27 +73,64 @@ public final class Concurrents extends Utils {
 		return CORE_EXECUTOR.submit(thread);
 	}
 
-	private static ExecutorService executor() {
-		int c;
-		try {
-			c = Integer.parseInt(System.getProperty("albacore.tasks.concurrence"));
-		} catch (Exception ex) {
-			c = 0;
-		}
-		if (c < -1) {
-			logger.warn("Albacore task concurrence configuration negative (" + c + "), use work stealing thread pool with " + -c
-					+ " parallelism.");
-			return Executors.newWorkStealingPool(-c);
-		} else if (c == -1) {
-			logger.warn("Albacore task concurrence configuration negative (-1), use work stealing thread pool with AUTO parallelism.");
-			return Executors.newWorkStealingPool(-c);
-		} else if (c == 0) {
-			logger.info("Albacore task concurrence configuration (" + c + "), use inlimited cached thread pool.");
-			return CORE_EXECUTOR = Executors.newCachedThreadPool();
+	/**
+	 * @param key
+	 *            Create or fetch {@link ExecutorService} with key based on
+	 *            {@link Concurrents#executor(int)}, with concurrence defined by
+	 *            System Property "albacore.concurrence", default 0.
+	 * @return
+	 */
+	public static ExecutorService executor(String key) {
+		final int c = Integer.parseInt(System.getProperty("albacore.concurrence", "0"));
+		logger.info(() -> {
+			StringBuilder sb = new StringBuilder("Albacore task concurrence configuration ").append(c < -1 ? "negitive" : "").append(" ("
+					+ c + "), use ");
+			if (c < -1) sb.append("fixed size (").append(-c).append(") thread pool.");
+			else if (c == -1) sb.append("inlimited cached thread pool.");
+			else if (c == 0) sb.append("fork join (work stealing) thread pool with AUTO parallelism.");
+			else sb.append("fork join (work stealing) thread pool with ").append(-c).append(" parallelism.");
+			return sb;
+		});
+		return executor(key, c);
+	}
+
+	/**
+	 * @param key
+	 *            Create or fetch {@link ExecutorService} with key based on
+	 *            {@link Concurrents#executor(int)} with concurrence by System
+	 *            Property "albacore.concurrence", default 0.
+	 * @return
+	 */
+	public static ExecutorService executor(String key, int concurrence) {
+		return Instances.fetch(() -> {
+			return executor(concurrence);
+		}, ExecutorService.class, key);
+	}
+
+	/**
+	 * @param concurrence
+	 *            <br>
+	 *            -N: {@link Executors#newFixedThreadPool} with size N <br>
+	 *            -1: {@link Executors#newCachedThreadPool} <br>
+	 *            0: {@link ForkJoinPool} with SYSTEM parallelism <br>
+	 *            N: {@link ForkJoinPool} with parallelism N
+	 */
+	public static ExecutorService executor(int concurrence) {
+		if (concurrence < -1) {
+			logger.info("Albacore task concurrence configuration (" + concurrence + "), use fixed size thread pool.");
+			if (concurrence < 5) logger.warn("Albacore task concurrence configuration too small (" + concurrence + "), debugging? ");
+			return Executors.newFixedThreadPool(-concurrence);
+		} else if (concurrence == -1) {
+			logger.info("Albacore task concurrence configuration (" + concurrence + "), use inlimited cached thread pool.");
+			return Executors.newCachedThreadPool();
+		} else if (concurrence == 0) {
+			logger.info("Albacore task concurrence configuration (" + concurrence
+					+ "), use fork join (work stealing) thread pool with AUTO parallelism.");
+			return Executors.newWorkStealingPool();
 		} else {
-			logger.info("Albacore task concurrence configuration (" + c + "), use fixed size thread pool.");
-			if (c < 5) logger.warn("Albacore task concurrence configuration too small (" + c + "), debugging? ");
-			return CORE_EXECUTOR = Executors.newFixedThreadPool(c);
+			logger.info("Albacore task concurrence configuration negative (" + concurrence
+					+ "), use fork join (work stealing) thread pool with " + -concurrence + " parallelism.");
+			return Executors.newWorkStealingPool(concurrence);
 		}
 	}
 }

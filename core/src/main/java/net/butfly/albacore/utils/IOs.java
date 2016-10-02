@@ -19,4 +19,12 @@ public final class IOs extends Utils {
 		}
 		return props;
 	}
+
+	public static String config(String key, String defaultValue, Properties... props) {
+		String value = System.getenv(key);
+		if (null != value) return value;
+		for (Properties p : props)
+			if (null != p && p.containsKey(key)) return p.getProperty(key);
+		return defaultValue;
+	}
 }
