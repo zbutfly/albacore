@@ -78,7 +78,7 @@ public class BurlapSerder extends BinarySerderBase<Object> implements ArrableBin
 
 	@Override
 	@SafeVarargs
-	public final Object[] der(ByteArray from, TypeToken<? extends Object>... tos) {
+	public final Object[] der(ByteArray from, Class<?>... tos) {
 		try (ByteArrayInputStream in = from.input();) {
 			return (Object[]) der(in, null);
 		} catch (IOException e) {

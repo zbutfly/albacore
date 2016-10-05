@@ -18,7 +18,8 @@ import net.butfly.albacore.serder.bson.DBEncoder;
 import net.butfly.albacore.serder.json.Jsons;
 import net.butfly.albacore.utils.CaseFormat;
 
-public class BsonObjectBeanSerder implements Serder<Object, BSONObject>, BeanSerder<BSONObject> {
+@Deprecated
+public class BsonObjectBeanSerder implements Serder<Object, BSONObject>, BeanSerder<Object, BSONObject> {
 	private static final long serialVersionUID = 8050515547072577482L;
 	private static final Logger logger = Logger.getLogger(BsonObjectBeanSerder.class);
 

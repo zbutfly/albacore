@@ -29,7 +29,7 @@ public class JavaSerder extends BinarySerderBase<Object> implements ArrableBinar
 
 	@Override
 	@SafeVarargs
-	public final Object[] der(ByteArray from, TypeToken<? extends Object>... tos) {
+	public final Object[] der(ByteArray from, Class<?>... tos) {
 		try {
 			return (Object[]) der(from.input(), null);
 		} catch (IOException e) {

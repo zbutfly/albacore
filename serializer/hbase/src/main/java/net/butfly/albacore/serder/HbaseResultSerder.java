@@ -21,7 +21,7 @@ import net.butfly.albacore.serder.modifier.HbaseColumnFamily;
 import net.butfly.albacore.utils.Generics;
 import net.butfly.albacore.utils.Reflections;
 
-public class HbaseResultSerder extends BeanSerderBase<Result> implements BeanSerder<Result> {
+public class HbaseResultSerder extends BeanSerderBase<Object, Result> implements BeanSerder<Object, Result> {
 	private static final long serialVersionUID = 1152380944308233135L;
 	private static final Logger logger = Logger.getLogger(HbaseResultSerder.class);
 

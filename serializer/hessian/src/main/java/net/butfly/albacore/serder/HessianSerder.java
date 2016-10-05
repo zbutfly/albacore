@@ -76,7 +76,7 @@ public class HessianSerder extends TextSerderBase<Object> implements ArrableText
 
 	@Override
 	@SafeVarargs
-	public final Object[] der(CharSequence from, TypeToken<? extends Object>... to) {
+	public final Object[] der(CharSequence from, Class<?>... to) {
 		ByteArrayInputStream in = new ByteArrayInputStream(from.toString().getBytes(contentType().getCharset()));
 		Hessian2StreamingInput hi = new Hessian2StreamingInput(in);
 		if (null != factory) hi.setSerializerFactory(factory);

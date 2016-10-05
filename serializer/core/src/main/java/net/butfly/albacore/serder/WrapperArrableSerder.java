@@ -14,17 +14,19 @@ class WrapperArrableSerder<PRESENT, DATA, RESULT> extends WrapperSerder<PRESENT,
 		super(first, second, data);
 	}
 
+	@SuppressWarnings({ "unchecked", "serial" })
 	@SafeVarargs
 	@Override
-	public final PRESENT[] der(RESULT from, TypeToken<? extends PRESENT>... tos) {
+	public final Object[] der(RESULT from, Class<?>... tos) {
 		List<TypeToken<DATA>> ds = new ArrayList<>();
 		for (int i = 0; i < tos.length; i++)
 			ds.add(data);
-		DATA[] d = ((ArrableSerder<DATA, RESULT>) second).der(from, ds.toArray(Generics.array()));
+		Object[] d = ((ArrableSerder<DATA, RESULT>) second).der(from, ds.toArray(Generics.array())); // DATA[]
+
 		if (null == d) return null;
 		List<PRESENT> results = new ArrayList<>();
 		for (int i = 0; i < d.length; i++)
-			results.add(first.der(d[i], tos[i]));
+			results.add(first.der((DATA) d[i], new TypeToken<PRESENT>(tos[i]) {}));
 		return results.toArray(Generics.array());
 	}
 }

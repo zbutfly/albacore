@@ -6,7 +6,7 @@ import net.butfly.albacore.serder.modifier.Property;
 import net.butfly.albacore.utils.CaseFormat;
 import net.butfly.albacore.utils.Reflections;
 
-public interface BeanSerder<DATA> extends Serder<Object, DATA> {
+public interface BeanSerder<P, D> extends MappingSerder<P, D> {
 	/**
 	 * Mapping the field name based on different ser/der implementation.
 	 * 
@@ -16,15 +16,16 @@ public interface BeanSerder<DATA> extends Serder<Object, DATA> {
 	default String mapping(Field field) {
 		Reflections.noneNull("", field);
 		if (field.isAnnotationPresent(Property.class)) return field.getAnnotation(Property.class).value();
-		else {
-			CaseFormat to = mapping();
-			return null == to ? field.getName() : CaseFormat.LOWER_CAMEL.to(to, field.getName());
-		}
+		else return MappingSerder.super.mapping(field.getName());
 	}
 
-	default CaseFormat mapping() {
-		return CaseFormat.NO_CHANGE;
+	@Override
+	default String mapping(String fieldName) {
+		return MappingSerder.super.mapping(fieldName);
 	}
 
-	BeanSerder<DATA> mapping(CaseFormat to);
+	@Override
+	default BeanSerder<P, D> mapping(CaseFormat to) {
+		return this;
+	}
 }

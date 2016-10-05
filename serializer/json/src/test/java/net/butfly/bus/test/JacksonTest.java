@@ -32,10 +32,9 @@ public class JacksonTest {
 
 		Object[] args = new Object[] { obj, 1, true };
 		System.out.println("Orig args [title: " + obj.titles() + " => " + ((Bean) args[0]).titles() + "], " + args[1] + ", " + args[2]);
-		args = jsonSerder.der(jsonSerder.ser(args), TypeToken.of(Bean.class), TypeToken.of(int.class), TypeToken.of(boolean.class));
+		args = jsonSerder.der(jsonSerder.ser(args), Bean.class, int.class, boolean.class);
 		System.out.println("JSON args [title: " + obj.titles() + " => " + ((Bean) args[0]).titles() + "], " + args[1] + ", " + args[2]);
-		args = bsonSerder.der(bsonSerder.ser(new Object[] { obj, 1, true }), TypeToken.of(Bean.class), TypeToken.of(int.class), TypeToken
-				.of(boolean.class));
+		args = bsonSerder.der(bsonSerder.ser(new Object[] { obj, 1, true }), Bean.class, int.class, boolean.class);
 		System.out.println("BSON args [title: " + obj.titles() + " => " + ((Bean) args[0]).titles() + "], " + args[1] + ", " + args[2]);
 		System.out.println();
 

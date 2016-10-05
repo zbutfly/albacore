@@ -27,6 +27,10 @@ public final class Generics extends Utils {
 		return (Class<E>) TypeToken.of(entity.getClass().getComponentType()).getType();
 	}
 
+	public static <E> Class<E> getGenericClass(E entity) {
+		return (Class<E>) TypeToken.of(entity.getClass()).getType();
+	}
+
 	public static Map<String, Class<?>> resolveGenericParameters(final Type implType, final Class<?> declareClass) {
 		return Instances.fetch(() -> {
 			Map<String, Class<?>> types = new HashMap<>();
