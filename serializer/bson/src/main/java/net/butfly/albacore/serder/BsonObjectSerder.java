@@ -14,21 +14,22 @@ import net.butfly.albacore.utils.logger.Logger;
 import com.google.common.reflect.TypeToken;
 
 import net.butfly.albacore.serder.bson.DBEncoder;
+import net.butfly.albacore.serder.support.ByteArray;
 
-public class BsonObjectSerder implements Serder<ByteArrayOutputStream, BSONObject> {
+public class BsonObjectSerder implements Serder<ByteArray, BSONObject> {
 	private static final long serialVersionUID = 6664350391207228363L;
 	private static final Logger logger = Logger.getLogger(BsonObjectSerder.class);
 
 	@Override
-	public <T extends ByteArrayOutputStream> BasicBSONObject ser(T from) {
+	public <T extends ByteArray> BasicBSONObject ser(T from) {
 		BasicBSONObject r = new BasicBSONObject();
-		r.putAll(new LazyBSONObject(from.toByteArray(), new LazyBSONCallback()));
+		r.putAll(new LazyBSONObject(from.get(), new LazyBSONCallback()));
 		return r;
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T extends ByteArrayOutputStream> T der(BSONObject from, TypeToken<T> to) {
+	public <T extends ByteArray> T der(BSONObject from, TypeToken<T> to) {
 		if (null == from) return null;
 		OutputBuffer buf = new BasicOutputBuffer();
 		try {
@@ -44,7 +45,7 @@ public class BsonObjectSerder implements Serder<ByteArrayOutputStream, BSONObjec
 			} catch (IOException e) {
 				return null;
 			}
-			return (T) bao;
+			return (T) new ByteArray(bao.toByteArray());
 		} finally {
 			buf.close();
 		}

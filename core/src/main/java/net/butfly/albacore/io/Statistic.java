@@ -9,7 +9,7 @@ import net.butfly.albacore.utils.logger.Logger;
 
 class Statistic implements Serializable {
 	private static final long serialVersionUID = 8773599197517842009L;
-	private static final long DEFAULT_STATS_STEP = 100000;
+	private static final long DEFAULT_STATS_STEP = 1000000;
 	private final Logger logger;
 	private final AtomicLong packsStep;
 

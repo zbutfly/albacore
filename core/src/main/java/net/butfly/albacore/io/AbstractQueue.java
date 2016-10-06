@@ -1,6 +1,6 @@
 package net.butfly.albacore.io;
 
-import java.util.Iterator;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -12,8 +12,8 @@ public abstract class AbstractQueue<E> implements Queue<E> {
 	private static final long serialVersionUID = 7082069605335516902L;
 	private static final Logger logger = Logger.getLogger(AbstractQueue.class);
 	static final long INFINITE_SIZE = -1;
-	static final long FULL_WAIT_MS = 5000;
-	static final long EMPTY_WAIT_MS = 5000;
+	static final long FULL_WAIT_MS = 500;
+	static final long EMPTY_WAIT_MS = 500;
 
 	private AtomicLong capacity = new AtomicLong(INFINITE_SIZE);
 	private AtomicBoolean orderlyRead = new AtomicBoolean(false);
@@ -26,7 +26,8 @@ public abstract class AbstractQueue<E> implements Queue<E> {
 	protected AbstractQueue(String name, long capacity) {
 		this.name = name;
 		this.capacity = new AtomicLong(capacity);
-		stats = statsSize(null) == Long.MIN_VALUE ? new Statistic(Logger.getLogger(this.getClass().getSimpleName() + ".Statistic")) : null;
+		stats = statsSize(null) == Long.MIN_VALUE ? new Statistic(Logger.getLogger("Queue.Statistic." + this.getClass().getSimpleName()))
+				: null;
 	}
 
 	@Override
@@ -74,12 +75,14 @@ public abstract class AbstractQueue<E> implements Queue<E> {
 		orderlyWrite.set(orderly);
 	}
 
-	@Override
-	public final void stats(E e, boolean trueInOrFalseOut) {
-		if (null != stats) {
-			if (trueInOrFalseOut) stats.in(statsSize(e));
-			else stats.out(statsSize(e));
-		}
+	protected final boolean statsIn(E e) {
+		if (null != stats && null != e) stats.in(statsSize(e));
+		return true;
+	}
+
+	protected final E statsOut(E e) {
+		if (null != stats && null != e) stats.out(statsSize(e));
+		return e;
 	}
 
 	protected long statsSize(E e) {
@@ -94,36 +97,42 @@ public abstract class AbstractQueue<E> implements Queue<E> {
 	}
 
 	@Override
-	public final long enqueue(Iterator<E> iter) {
-		return Queue.super.enqueue(iter);
-	}
-
-	@Override
-	public final long enqueue(Iterable<E> it) {
-		return Queue.super.enqueue(it);
-	}
-
-	@Override
-	public final List<E> dequeue(long batchSize) {
-		return Queue.super.dequeue(batchSize);
+	public final boolean full() {
+		return Queue.super.full();
 	}
 
 	@Override
 	public final boolean enqueue(E e) {
 		while (full())
 			if (!Concurrents.waitSleep(FULL_WAIT_MS)) logger.warn("Wait for full interrupted");
-		return enqueueRaw(e);
+		return (enqueueRaw(e) && statsIn(e));
+
 	}
 
 	@Override
 	public final E dequeue() {
 		while (true) {
+			E e = statsOut(dequeueRaw());
+			if (null != e) return e;
+			else if (!Concurrents.waitSleep(EMPTY_WAIT_MS)) return null;
+		}
+	}
+
+	@Override
+	public List<E> dequeue(long batchSize) {
+		List<E> batch = new ArrayList<>();
+		long prev;
+		do {
+			prev = batch.size();
 			E e = dequeueRaw();
 			if (null != e) {
-				stats.out(statsSize(e));
-				return e;
-			} else if (!Concurrents.waitSleep(EMPTY_WAIT_MS)) return null;
-		}
+				batch.add(statsOut(e));
+				if (empty()) gc();
+			}
+			if (batch.size() == 0) Concurrents.waitSleep(EMPTY_WAIT_MS);
+		} while (batch.size() < batchSize && (prev != batch.size() || batch.size() == 0));
+		if (empty()) gc();
+		return batch;
 	}
 
 	abstract protected boolean enqueueRaw(E e);

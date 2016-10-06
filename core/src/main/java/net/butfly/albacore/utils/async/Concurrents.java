@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit;
 
 import net.butfly.albacore.lambda.Callable;
 import net.butfly.albacore.utils.Instances;
+import net.butfly.albacore.utils.Systems;
 import net.butfly.albacore.utils.Utils;
 import net.butfly.albacore.utils.logger.Logger;
 
@@ -103,7 +104,9 @@ public final class Concurrents extends Utils {
 	 */
 	public static ExecutorService executor(String key, int concurrence) {
 		return Instances.fetch(() -> {
-			return executor(concurrence);
+			ExecutorService e = executor(concurrence);
+			logger.info("ExecutorService [" + e.getClass() + "] with key: [" + key + "] will be created.");
+			return e;
 		}, ExecutorService.class, key);
 	}
 
@@ -126,10 +129,18 @@ public final class Concurrents extends Utils {
 		} else if (concurrence == 0) {
 			logger.info("Albacore task concurrence configuration (" + concurrence
 					+ "), use fork join (work stealing) thread pool with AUTO parallelism.");
+			if (Systems.isDebug()) {
+				logger.warn("Debug mode, use fix pool to enable breakpoints.");
+				return Executors.newCachedThreadPool();
+			}
 			return Executors.newWorkStealingPool();
 		} else {
 			logger.info("Albacore task concurrence configuration negative (" + concurrence
 					+ "), use fork join (work stealing) thread pool with " + -concurrence + " parallelism.");
+			if (Systems.isDebug()) {
+				logger.warn("Debug mode, use fix pool to enable breakpoints.");
+				return Executors.newFixedThreadPool(concurrence);
+			}
 			return Executors.newWorkStealingPool(concurrence);
 		}
 	}

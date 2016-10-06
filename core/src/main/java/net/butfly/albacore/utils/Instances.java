@@ -25,6 +25,7 @@ public class Instances extends Utils {
 	@SuppressWarnings("unchecked")
 	private static <T> T fetchFrom(Object instantiator, Map<Object, Object> pool, Object currKey, Object[] otherKeys, int pos) {
 		boolean bottom = otherKeys.length <= pos;
+		currKey = null == currKey ? "" : currKey;
 		Object obj = pool.get(currKey);
 		if (null == obj) {
 			obj = bottom ? obj = construct(instantiator, otherKeys) : new ConcurrentHashMap<Object, Object>();

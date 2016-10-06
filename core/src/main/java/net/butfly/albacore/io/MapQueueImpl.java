@@ -6,25 +6,22 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import net.butfly.albacore.lambda.Converter;
+import net.butfly.albacore.utils.async.Concurrents;
 
-class MapQueueImpl<K, E, Q extends AbstractQueue<E>> extends AbstractQueue<E> implements MapQueue<K, E> {
+public abstract class MapQueueImpl<K, E, Q extends AbstractQueue<E>> extends AbstractQueue<E> implements MapQueue<K, E> {
 	private static final long serialVersionUID = 3551659378491886759L;
 	private final Map<K, Q> queues;
-	final Converter<K, Q> constructor;
 	final Converter<E, K> keying;
 
-	private final ReentrantReadWriteLock locker;
-
-	protected MapQueueImpl(String name, Converter<E, K> keying, Converter<K, Q> constructor, long capacity) {
+	@SafeVarargs
+	protected MapQueueImpl(String name, Converter<E, K> keying, Converter<K, Q> queuing, long capacity, K... keys) {
 		super(name, capacity);
 		queues = new ConcurrentHashMap<>();
-		this.constructor = constructor;
+		for (K k : keys)
+			queues.put(k, queuing.apply(k));
 		this.keying = keying;
-		locker = new ReentrantReadWriteLock();
 	}
 
 	@Override
@@ -36,13 +33,18 @@ class MapQueueImpl<K, E, Q extends AbstractQueue<E>> extends AbstractQueue<E> im
 
 	@Override
 	protected final E dequeueRaw() {
-		List<E> l = dequeue(1);
+		List<E> l = dequeue(1, (K[]) null);
 		return l.isEmpty() ? null : l.get(0);
 	}
 
 	@Override
 	public final E dequeue(K key) {
-		return q(key).dequeue();
+		return queues.get(key).dequeue();
+	}
+
+	@Override
+	public List<E> dequeue(long batchSize) {
+		return dequeue(batchSize, (K[]) null);
 	}
 
 	@Override
@@ -54,15 +56,15 @@ class MapQueueImpl<K, E, Q extends AbstractQueue<E>> extends AbstractQueue<E> im
 		do {
 			prev = batch.size();
 			for (K k : ks) {
-				Q q = q(k);
-				E e = q.dequeue();
+				Q q = queues.get(k);
+				E e = q.dequeueRaw();
 				if (null != e) {
-					batch.add(e);
-					stats(e, false);
+					batch.add(statsOut(e));
+					if (q.empty()) q.gc();
 				}
-				if (q.empty()) q.gc();
 			}
-		} while (batch.size() < batchSize && prev != batch.size());
+			if (batch.size() == 0) Concurrents.waitSleep(EMPTY_WAIT_MS);
+		} while (batch.size() < batchSize && (prev != batch.size() || batch.size() == 0));
 		return batch;
 	}
 
@@ -73,28 +75,34 @@ class MapQueueImpl<K, E, Q extends AbstractQueue<E>> extends AbstractQueue<E> im
 
 	@Override
 	public final boolean enqueue(K key, E e) {
-		return q(key).enqueue(e);
+		return queues.get(key).enqueue(e);
+	}
+
+	@SafeVarargs
+	@Override
+	public final long enqueue(E... e) {
+		return enqueue(keying, e);
 	}
 
 	@SafeVarargs
 	@Override
 	public final long enqueue(Converter<E, K> key, E... e) {
+		while (full())
+			Concurrents.waitSleep(FULL_WAIT_MS);
 		List<E> remain = new ArrayList<>(Arrays.asList(e));
-		AtomicLong c = new AtomicLong(0);
+		long c = 0;
 		while (!remain.isEmpty())
 			remain = enqueue(key, remain, c);
-		return c.get();
+		return c;
 	}
 
-	private final List<E> enqueue(Converter<E, K> key, List<E> l, AtomicLong c) {
+	private final List<E> enqueue(Converter<E, K> key, List<E> l, long... c) {
 		List<E> remain = new ArrayList<>();
 		for (E ee : l)
 			if (ee != null) {
-				Q q = q(key.apply(ee));
-				if (!q.full()) {
-					q.enqueueRaw(ee);
-					c.getAndIncrement();
-				} else remain.add(ee);
+				Q q = queues.get(key.apply(ee));
+				if (!q.full() && q.enqueueRaw(ee) && statsIn(ee)) c[0]++;
+				else remain.add(ee);
 			}
 		return remain;
 	}
@@ -114,16 +122,6 @@ class MapQueueImpl<K, E, Q extends AbstractQueue<E>> extends AbstractQueue<E> im
 		return c;
 	}
 
-	protected final Q q(K key) {
-		locker.writeLock().lock();
-		try {
-			if (!queues.containsKey(key)) queues.put(key, constructor.apply(key));
-			return queues.get(key);
-		} finally {
-			locker.writeLock().unlock();
-		}
-	}
-
 	@Override
 	public final long size() {
 		long s = 0;
@@ -134,6 +132,6 @@ class MapQueueImpl<K, E, Q extends AbstractQueue<E>> extends AbstractQueue<E> im
 
 	@Override
 	public final long size(K key) {
-		return q(key).size();
+		return queues.get(key).size();
 	}
 }
