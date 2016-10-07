@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import net.butfly.albacore.utils.async.Concurrents;
 import net.butfly.albacore.utils.logger.Logger;
 
-public abstract class AbstractQueue<E> implements Queue<E> {
+public abstract class AbstractQueue<E> implements Queue<E>, Statistical<E> {
 	private static final long serialVersionUID = 7082069605335516902L;
 	private static final Logger logger = Logger.getLogger(AbstractQueue.class);
 	static final long INFINITE_SIZE = -1;
@@ -18,7 +18,6 @@ public abstract class AbstractQueue<E> implements Queue<E> {
 	private AtomicLong capacity = new AtomicLong(INFINITE_SIZE);
 	private AtomicBoolean orderlyRead = new AtomicBoolean(false);
 	private AtomicBoolean orderlyWrite = new AtomicBoolean(false);
-	private AtomicBoolean running = new AtomicBoolean(false);
 
 	final Statistic stats;
 	final String name;
@@ -26,9 +25,13 @@ public abstract class AbstractQueue<E> implements Queue<E> {
 	protected AbstractQueue(String name, long capacity) {
 		this.name = name;
 		this.capacity = new AtomicLong(capacity);
-		stats = statsSize(null) == Long.MIN_VALUE ? new Statistic(Logger.getLogger("Queue.Statistic." + this.getClass().getSimpleName()))
-				: null;
+		stats = statsSize(null) == Statistical.SIZE_NOT_DEFINED ? null
+				: new Statistic(Logger.getLogger("Queue.Statistic." + this.getClass().getSimpleName()));
 	}
+
+	abstract protected boolean enqueueRaw(E e);
+
+	abstract protected E dequeueRaw();
 
 	@Override
 	public final String name() {
@@ -38,21 +41,6 @@ public abstract class AbstractQueue<E> implements Queue<E> {
 	@Override
 	public long capacity() {
 		return capacity.get();
-	}
-
-	@Override
-	public void run() {
-		running.compareAndSet(false, true);
-	}
-
-	@Override
-	public void close() {
-		running.compareAndSet(true, false);
-	}
-
-	@Override
-	public final boolean running() {
-		return running.get();
 	}
 
 	@Override
@@ -75,20 +63,6 @@ public abstract class AbstractQueue<E> implements Queue<E> {
 		orderlyWrite.set(orderly);
 	}
 
-	protected final boolean statsIn(E e) {
-		if (null != stats && null != e) stats.in(statsSize(e));
-		return true;
-	}
-
-	protected final E statsOut(E e) {
-		if (null != stats && null != e) stats.out(statsSize(e));
-		return e;
-	}
-
-	protected long statsSize(E e) {
-		return Long.MIN_VALUE;
-	}
-
 	// Dont override
 
 	@Override
@@ -105,14 +79,14 @@ public abstract class AbstractQueue<E> implements Queue<E> {
 	public final boolean enqueue(E e) {
 		while (full())
 			if (!Concurrents.waitSleep(FULL_WAIT_MS)) logger.warn("Wait for full interrupted");
-		return (enqueueRaw(e) && statsIn(e));
+		return (enqueueRaw(e) && null != stats(Act.INPUT, e, () -> size()));
 
 	}
 
 	@Override
 	public final E dequeue() {
 		while (true) {
-			E e = statsOut(dequeueRaw());
+			E e = stats(Act.OUTPUT, dequeueRaw(), () -> size());
 			if (null != e) return e;
 			else if (!Concurrents.waitSleep(EMPTY_WAIT_MS)) return null;
 		}
@@ -126,7 +100,7 @@ public abstract class AbstractQueue<E> implements Queue<E> {
 			prev = batch.size();
 			E e = dequeueRaw();
 			if (null != e) {
-				batch.add(statsOut(e));
+				batch.add(stats(Act.OUTPUT, e, () -> size()));
 				if (empty()) gc();
 			}
 			if (batch.size() == 0) Concurrents.waitSleep(EMPTY_WAIT_MS);
@@ -135,7 +109,8 @@ public abstract class AbstractQueue<E> implements Queue<E> {
 		return batch;
 	}
 
-	abstract protected boolean enqueueRaw(E e);
-
-	abstract protected E dequeueRaw();
+	@Override
+	public final Statistic stats() {
+		return stats;
+	}
 }

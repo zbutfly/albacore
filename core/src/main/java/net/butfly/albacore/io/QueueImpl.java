@@ -16,10 +16,10 @@ class QueueImpl<E> extends AbstractQueue<E> implements Queue<E> {
 
 	@Override
 	protected boolean enqueueRaw(E e) {
+		if (null == e) return false;
 		try {
 			impl.put(e);
-			statsIn(e);
-			return true;
+			return null != stats(Act.INPUT, e, () -> size());
 		} catch (InterruptedException ex) {
 			logger.error("Enqueue failure", ex);
 			return false;
@@ -29,7 +29,7 @@ class QueueImpl<E> extends AbstractQueue<E> implements Queue<E> {
 	@Override
 	protected E dequeueRaw() {
 		try {
-			return statsOut(impl.take());
+			return stats(Act.OUTPUT, impl.take(), () -> size());
 		} catch (InterruptedException e) {
 			logger.error("Dequeue failure", e);
 			return null;

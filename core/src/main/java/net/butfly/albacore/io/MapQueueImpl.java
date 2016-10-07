@@ -59,7 +59,7 @@ public abstract class MapQueueImpl<K, E, Q extends AbstractQueue<E>> extends Abs
 				Q q = queues.get(k);
 				E e = q.dequeueRaw();
 				if (null != e) {
-					batch.add(statsOut(e));
+					batch.add(stats(Act.OUTPUT, e, () -> size()));
 					if (q.empty()) q.gc();
 				}
 			}
@@ -101,7 +101,7 @@ public abstract class MapQueueImpl<K, E, Q extends AbstractQueue<E>> extends Abs
 		for (E ee : l)
 			if (ee != null) {
 				Q q = queues.get(key.apply(ee));
-				if (!q.full() && q.enqueueRaw(ee) && statsIn(ee)) c[0]++;
+				if (!q.full() && q.enqueueRaw(ee) && null != stats(Act.INPUT, ee, () -> size())) c[0]++;
 				else remain.add(ee);
 			}
 		return remain;

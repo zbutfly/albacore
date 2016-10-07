@@ -33,7 +33,7 @@ import java.util.List;
  * @author butfly
  *
  */
-public interface Queue<E> extends Closeable, Serializable, Runnable {
+public interface Queue<E> extends Closeable, Serializable {
 
 	/* from Queue */
 
@@ -91,12 +91,7 @@ public interface Queue<E> extends Closeable, Serializable, Runnable {
 	/* from interfaces */
 
 	@Override
-	void close();
-
-	@Override
-	void run();
-
-	boolean running();
+	default void close() {}
 
 	default void gc() {}
 }
