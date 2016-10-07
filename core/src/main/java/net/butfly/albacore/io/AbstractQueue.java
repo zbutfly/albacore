@@ -12,9 +12,6 @@ import scala.Tuple2;
 
 public abstract class AbstractQueue<IN, OUT, DATA> implements Queue<IN, OUT, DATA>, Statistical {
 	private static final long serialVersionUID = 7082069605335516902L;
-	static final long INFINITE_SIZE = -1;
-	static final long FULL_WAIT_MS = 500;
-	static final long EMPTY_WAIT_MS = 500;
 
 	private final AtomicLong capacity;
 	private final AtomicBoolean orderlyRead = new AtomicBoolean(false);
@@ -81,8 +78,7 @@ public abstract class AbstractQueue<IN, OUT, DATA> implements Queue<IN, OUT, DAT
 	public boolean enqueue(IN e) {
 		while (full())
 			if (!Concurrents.waitSleep(FULL_WAIT_MS)) logger.warn("Wait for full interrupted");
-		DATA ee = conv._1.apply(e);
-		return (enqueueRaw(ee));
+		return (enqueueRaw(conv._1.apply(e)));
 	}
 
 	@Override

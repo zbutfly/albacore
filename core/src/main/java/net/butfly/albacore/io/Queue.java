@@ -4,7 +4,9 @@ import java.io.Closeable;
 import java.io.Serializable;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 
+import net.butfly.albacore.utils.async.Concurrents;
 import net.butfly.albacore.utils.logger.Logger;
 
 /**
@@ -37,6 +39,9 @@ import net.butfly.albacore.utils.logger.Logger;
  */
 public interface Queue<IN, OUT, DATA> extends Closeable, Serializable {
 	static final Logger logger = Logger.getLogger(AbstractQueue.class);
+	static final long INFINITE_SIZE = -1;
+	static final long FULL_WAIT_MS = 500;
+	static final long EMPTY_WAIT_MS = 500;
 
 	/* from Queue */
 
@@ -63,6 +68,8 @@ public interface Queue<IN, OUT, DATA> extends Closeable, Serializable {
 
 	default long enqueue(Iterator<IN> iter) {
 		long c = 0;
+		while (full())
+			Concurrents.waitSleep(FULL_WAIT_MS);
 		while (iter.hasNext()) {
 			IN e = iter.next();
 			if (null != e && enqueue(e)) c++;
@@ -98,4 +105,16 @@ public interface Queue<IN, OUT, DATA> extends Closeable, Serializable {
 	default void close() {}
 
 	default void gc() {}
+
+	default void pump(Queue<OUT, ?, ?> dest, long batchSize, int parallelism) {
+		ExecutorService ex = Concurrents.executor(parallelism, this.name(), dest.name());
+		for (int i = 0; i < parallelism; i++)
+			ex.submit(new Thread(new Runnable() {
+				@Override
+				public void run() {
+					while (!empty())
+						dest.enqueue(dequeue(batchSize));
+				}
+			}), this.name() + "-" + dest.name() + "-" + i);
+	}
 }
