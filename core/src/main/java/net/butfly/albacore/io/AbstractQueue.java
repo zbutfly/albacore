@@ -10,27 +10,27 @@ import net.butfly.albacore.utils.Reflections;
 import net.butfly.albacore.utils.async.Concurrents;
 import scala.Tuple2;
 
-public abstract class AbstractQueue<IN, OUT, DATA> implements Queue<IN, OUT, DATA>, Statistical {
+public abstract class AbstractQueue<I, O, D> implements Queue<I, O, D>, Statistical {
 	private static final long serialVersionUID = 7082069605335516902L;
 
 	private final AtomicLong capacity;
 	private final AtomicBoolean orderlyRead = new AtomicBoolean(false);
 	private final AtomicBoolean orderlyWrite = new AtomicBoolean(false);
 
-	protected final Tuple2<Converter<IN, DATA>, Converter<DATA, OUT>> conv;
+	protected final Tuple2<Converter<I, D>, Converter<D, O>> conv;
 
 	final String name;
 
-	protected AbstractQueue(String name, long capacity, Converter<IN, DATA> in, Converter<DATA, OUT> out) {
+	protected AbstractQueue(String name, long capacity, Converter<I, D> in, Converter<D, O> out) {
 		Reflections.noneNull("", in, out);
 		this.name = name;
 		this.capacity = new AtomicLong(capacity);
 		conv = new Tuple2<>(in, out);
 	}
 
-	abstract protected boolean enqueueRaw(DATA e);
+	abstract protected boolean enqueueRaw(D e);
 
-	abstract protected DATA dequeueRaw();
+	abstract protected D dequeueRaw();
 
 	@Override
 	public final String name() {
@@ -75,28 +75,28 @@ public abstract class AbstractQueue<IN, OUT, DATA> implements Queue<IN, OUT, DAT
 	}
 
 	@Override
-	public boolean enqueue(IN e) {
+	public boolean enqueue(I e) {
 		while (full())
 			if (!Concurrents.waitSleep(FULL_WAIT_MS)) logger.warn("Wait for full interrupted");
 		return (enqueueRaw(conv._1.apply(e)));
 	}
 
 	@Override
-	public final OUT dequeue() {
+	public final O dequeue() {
 		while (true) {
-			DATA e = dequeueRaw();
+			D e = dequeueRaw();
 			if (null != e) return conv._2.apply(e);
 			else if (!Concurrents.waitSleep(EMPTY_WAIT_MS)) return null;
 		}
 	}
 
 	@Override
-	public List<OUT> dequeue(long batchSize) {
-		List<OUT> batch = new ArrayList<>();
+	public List<O> dequeue(long batchSize) {
+		List<O> batch = new ArrayList<>();
 		long prev;
 		do {
 			prev = batch.size();
-			DATA e = dequeueRaw();
+			D e = dequeueRaw();
 			if (null != e) {
 				batch.add(conv._2.apply(e));
 				if (empty()) gc();

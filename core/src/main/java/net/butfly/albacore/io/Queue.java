@@ -37,7 +37,7 @@ import net.butfly.albacore.utils.logger.Logger;
  * @author butfly
  *
  */
-public interface Queue<IN, OUT, DATA> extends Closeable, Serializable {
+public interface Queue<I, O, D> extends Closeable, Serializable {
 	static final Logger logger = Logger.getLogger(AbstractQueue.class);
 	static final long INFINITE_SIZE = -1;
 	static final long FULL_WAIT_MS = 500;
@@ -45,9 +45,9 @@ public interface Queue<IN, OUT, DATA> extends Closeable, Serializable {
 
 	/* from Queue */
 
-	boolean enqueue(IN e);
+	boolean enqueue(I e);
 
-	OUT dequeue();
+	O dequeue();
 
 	/* for rich features */
 
@@ -62,34 +62,33 @@ public interface Queue<IN, OUT, DATA> extends Closeable, Serializable {
 	};
 
 	default boolean full() {
-		long s = size();
-		return s > 0 && s >= capacity();
+		return size() >= capacity();
 	};
 
-	default long enqueue(Iterator<IN> iter) {
+	default long enqueue(Iterator<I> iter) {
 		long c = 0;
 		while (full())
 			Concurrents.waitSleep(FULL_WAIT_MS);
 		while (iter.hasNext()) {
-			IN e = iter.next();
+			I e = iter.next();
 			if (null != e && enqueue(e)) c++;
 		}
 		return c;
 	}
 
-	default long enqueue(Iterable<IN> it) {
+	default long enqueue(Iterable<I> it) {
 		return enqueue(it.iterator());
 	}
 
 	@SuppressWarnings("unchecked")
-	default long enqueue(IN... e) {
+	default long enqueue(I... e) {
 		long c = 0;
 		for (int i = 0; i < e.length; i++)
 			if (e[i] != null && enqueue(e[i])) c++;
 		return c;
 	}
 
-	List<OUT> dequeue(long batchSize);
+	List<O> dequeue(long batchSize);
 
 	boolean isReadOrderly();
 
@@ -106,7 +105,7 @@ public interface Queue<IN, OUT, DATA> extends Closeable, Serializable {
 
 	default void gc() {}
 
-	default void pump(Queue<OUT, ?, ?> dest, long batchSize, int parallelism) {
+	default void pump(Queue<O, ?, ?> dest, long batchSize, int parallelism) {
 		ExecutorService ex = Concurrents.executor(parallelism, this.name(), dest.name());
 		for (int i = 0; i < parallelism; i++)
 			ex.submit(new Thread(new Runnable() {
