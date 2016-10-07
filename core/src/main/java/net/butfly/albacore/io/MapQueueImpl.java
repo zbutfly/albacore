@@ -2,32 +2,34 @@ package net.butfly.albacore.io;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.utils.async.Concurrents;
+import scala.Tuple2;
 
-public class MapQueueImpl<K, IN, OUT, Q extends AbstractQueue<IN, OUT>> extends AbstractQueue<IN, OUT> implements MapQueue<K, IN, OUT> {
+public class MapQueueImpl<K, IN, OUT, DATA, Q extends AbstractQueue<IN, OUT, DATA>> extends AbstractQueue<IN, OUT, DATA> implements
+		MapQueue<K, IN, OUT, DATA> {
 	private static final long serialVersionUID = 3551659378491886759L;
 	private final Map<K, Q> queues;
-	final Converter<IN, K> keying;
+	protected final Converter<IN, K> keying;
+	protected final Tuple2<Converter<DATA, IN>, Converter<OUT, DATA>> unconv;
 
-	public MapQueueImpl(String name, long capacity, Converter<IN, K> keying, Map<K, Q> queues) {
-		super(name, capacity);
-		this.queues = queues;
+	public MapQueueImpl(String name, long capacity, Converter<IN, K> keying, //
+			Converter<IN, DATA> convin, Converter<DATA, OUT> convout, //
+			Converter<DATA, IN> unconvin, Converter<OUT, DATA> unconvout) {
+		super(name, capacity, convin, convout);
+		this.queues = new HashMap<>();
 		this.keying = keying;
+		this.unconv = new Tuple2<>(unconvin, unconvout);
 	}
 
-	@SafeVarargs
-	public MapQueueImpl(String name, long capacity, Converter<IN, K> keying, Converter<K, Q> queuing, K... keys) {
-		super(name, capacity);
-		queues = new ConcurrentHashMap<>();
-		for (K k : keys)
-			queues.put(k, queuing.apply(k));
-		this.keying = keying;
+	public final MapQueueImpl<K, IN, OUT, DATA, Q> initialize(Map<K, Q> queues) {
+		this.queues.putAll(queues);
+		return this;
 	}
 
 	@Override
@@ -38,9 +40,8 @@ public class MapQueueImpl<K, IN, OUT, Q extends AbstractQueue<IN, OUT>> extends 
 	}
 
 	@Override
-	protected final OUT dequeueRaw() {
-		List<OUT> l = dequeue(1, (K[]) null);
-		return l.isEmpty() ? null : l.get(0);
+	protected final DATA dequeueRaw() {
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -63,9 +64,9 @@ public class MapQueueImpl<K, IN, OUT, Q extends AbstractQueue<IN, OUT>> extends 
 			prev = batch.size();
 			for (K k : ks) {
 				Q q = queues.get(k);
-				OUT e = q.dequeueRaw();
+				DATA e = q.dequeueRaw();
 				if (null != e) {
-					batch.add(stats(Act.OUTPUT, e, () -> size()));
+					batch.add(conv._2.apply(e));
 					if (q.empty()) q.gc();
 				}
 			}
@@ -75,13 +76,20 @@ public class MapQueueImpl<K, IN, OUT, Q extends AbstractQueue<IN, OUT>> extends 
 	}
 
 	@Override
-	protected boolean enqueueRaw(IN e) {
-		return enqueue(keying.apply(e), e);
+	protected boolean enqueueRaw(DATA e) {
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public final boolean enqueue(K key, IN e) {
 		return queues.get(key).enqueue(e);
+	}
+
+	@Override
+	public final boolean enqueue(IN e) {
+		while (full())
+			if (!Concurrents.waitSleep(FULL_WAIT_MS)) logger.warn("Wait for full interrupted");
+		return enqueue(keying.apply(e), e);
 	}
 
 	@SafeVarargs
@@ -93,43 +101,39 @@ public class MapQueueImpl<K, IN, OUT, Q extends AbstractQueue<IN, OUT>> extends 
 	@SafeVarargs
 	@Override
 	public final long enqueue(Converter<IN, K> key, IN... e) {
+		return enqueueList(new ArrayList<>(Arrays.asList(e)), key);
+	}
+
+	@Override
+	public final long enqueue(Converter<IN, K> key, Iterator<IN> iter) {
+		List<IN> remain = new ArrayList<>();
+		while (iter.hasNext())
+			remain.add(iter.next());
+		return enqueueList(remain, key);
+	}
+
+	private long enqueueList(List<IN> remain, Converter<IN, K> key) {
 		while (full())
 			Concurrents.waitSleep(FULL_WAIT_MS);
-		List<IN> remain = new ArrayList<>(Arrays.asList(e));
 		long c = 0;
 		while (!remain.isEmpty())
-			remain = enqueue(key, remain, c);
+			remain = enqueueRemain(key, remain, c);
 		return c;
 	}
 
-	private final List<IN> enqueue(Converter<IN, K> key, List<IN> l, long... c) {
+	private final List<IN> enqueueRemain(Converter<IN, K> key, List<IN> l, long... c) {
 		List<IN> remain = new ArrayList<>();
 		for (IN ee : l)
 			if (ee != null) {
-				Q q = queues.get(key.apply(ee));
-				if (!q.full() && q.enqueueRaw(ee) && null != stats(Act.INPUT, ee, () -> size())) c[0]++;
+				Q q = queues.get(keying.apply(ee));
+				if (!q.full() && q.enqueueRaw(conv._1.apply(ee))) c[0]++;
 				else remain.add(ee);
 			}
 		return remain;
 	}
 
 	@Override
-	public final long enqueue(Converter<IN, K> key, Iterable<IN> it) {
-		return enqueue(key, it.iterator());
-	}
-
-	@Override
-	public final long enqueue(Converter<IN, K> key, Iterator<IN> iter) {
-		long c = 0;
-		while (iter.hasNext()) {
-			IN e = iter.next();
-			if (null != e && enqueue(key.apply(e), e)) c++;
-		}
-		return c;
-	}
-
-	@Override
-	public final long size() {
+	public long size() {
 		long s = 0;
 		for (Q q : queues.values())
 			s += q.size();

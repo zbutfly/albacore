@@ -28,6 +28,7 @@ public interface Statistical extends Serializable {
 		}, Stats.Statistic.class, this, clazz);
 	}
 
+	// XXX make e lambda
 	default <E> E stats(Act act, E e, Supplier<Long> current) {
 		if (null == e) return null;
 		@SuppressWarnings("unchecked")

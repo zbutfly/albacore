@@ -5,30 +5,35 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import net.butfly.albacore.lambda.Converter;
+import net.butfly.albacore.utils.Reflections;
 import net.butfly.albacore.utils.async.Concurrents;
-import net.butfly.albacore.utils.logger.Logger;
+import scala.Tuple2;
 
-public abstract class AbstractQueue<IN, OUT> implements Queue<IN, OUT>, Statistical {
+public abstract class AbstractQueue<IN, OUT, DATA> implements Queue<IN, OUT, DATA>, Statistical {
 	private static final long serialVersionUID = 7082069605335516902L;
-	private static final Logger logger = Logger.getLogger(AbstractQueue.class);
 	static final long INFINITE_SIZE = -1;
 	static final long FULL_WAIT_MS = 500;
 	static final long EMPTY_WAIT_MS = 500;
 
-	private AtomicLong capacity = new AtomicLong(INFINITE_SIZE);
-	private AtomicBoolean orderlyRead = new AtomicBoolean(false);
-	private AtomicBoolean orderlyWrite = new AtomicBoolean(false);
+	private final AtomicLong capacity;
+	private final AtomicBoolean orderlyRead = new AtomicBoolean(false);
+	private final AtomicBoolean orderlyWrite = new AtomicBoolean(false);
+
+	protected final Tuple2<Converter<IN, DATA>, Converter<DATA, OUT>> conv;
 
 	final String name;
 
-	protected AbstractQueue(String name, long capacity) {
+	protected AbstractQueue(String name, long capacity, Converter<IN, DATA> in, Converter<DATA, OUT> out) {
+		Reflections.noneNull("", in, out);
 		this.name = name;
 		this.capacity = new AtomicLong(capacity);
+		conv = new Tuple2<>(in, out);
 	}
 
-	abstract protected boolean enqueueRaw(IN e);
+	abstract protected boolean enqueueRaw(DATA e);
 
-	abstract protected OUT dequeueRaw();
+	abstract protected DATA dequeueRaw();
 
 	@Override
 	public final String name() {
@@ -73,18 +78,18 @@ public abstract class AbstractQueue<IN, OUT> implements Queue<IN, OUT>, Statisti
 	}
 
 	@Override
-	public final boolean enqueue(IN e) {
+	public boolean enqueue(IN e) {
 		while (full())
 			if (!Concurrents.waitSleep(FULL_WAIT_MS)) logger.warn("Wait for full interrupted");
-		return (enqueueRaw(e) && null != stats(Act.INPUT, e, () -> size()));
-
+		DATA ee = conv._1.apply(e);
+		return (enqueueRaw(ee));
 	}
 
 	@Override
 	public final OUT dequeue() {
 		while (true) {
-			OUT e = stats(Act.OUTPUT, dequeueRaw(), () -> size());
-			if (null != e) return e;
+			DATA e = dequeueRaw();
+			if (null != e) return conv._2.apply(e);
 			else if (!Concurrents.waitSleep(EMPTY_WAIT_MS)) return null;
 		}
 	}
@@ -95,9 +100,9 @@ public abstract class AbstractQueue<IN, OUT> implements Queue<IN, OUT>, Statisti
 		long prev;
 		do {
 			prev = batch.size();
-			OUT e = dequeueRaw();
+			DATA e = dequeueRaw();
 			if (null != e) {
-				batch.add(stats(Act.OUTPUT, e, () -> size()));
+				batch.add(conv._2.apply(e));
 				if (empty()) gc();
 			}
 			if (batch.size() == 0) Concurrents.waitSleep(EMPTY_WAIT_MS);

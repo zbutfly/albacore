@@ -5,6 +5,8 @@ import java.io.Serializable;
 import java.util.Iterator;
 import java.util.List;
 
+import net.butfly.albacore.utils.logger.Logger;
+
 /**
  * Rich feature queue for big data processing, supporting:
  * <ul>
@@ -33,7 +35,8 @@ import java.util.List;
  * @author butfly
  *
  */
-public interface Queue<IN, OUT> extends Closeable, Serializable {
+public interface Queue<IN, OUT, DATA> extends Closeable, Serializable {
+	static final Logger logger = Logger.getLogger(AbstractQueue.class);
 
 	/* from Queue */
 
@@ -54,7 +57,8 @@ public interface Queue<IN, OUT> extends Closeable, Serializable {
 	};
 
 	default boolean full() {
-		return size() >= capacity();
+		long s = size();
+		return s > 0 && s >= capacity();
 	};
 
 	default long enqueue(Iterator<IN> iter) {
