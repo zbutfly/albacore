@@ -10,17 +10,27 @@ import java.util.concurrent.ConcurrentHashMap;
 import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.utils.async.Concurrents;
 
-public abstract class MapQueueImpl<K, E, Q extends AbstractQueue<E>> extends AbstractQueue<E> implements MapQueue<K, E> {
+public class MapQueueImpl<K, E, Q extends AbstractQueue<E>> extends AbstractQueue<E> implements MapQueue<K, E> {
 	private static final long serialVersionUID = 3551659378491886759L;
 	private final Map<K, Q> queues;
+	private final Q first;
 	final Converter<E, K> keying;
 
+	public MapQueueImpl(String name, long capacity, Converter<E, K> keying, Map<K, Q> queues) {
+		super(name, capacity);
+		queues = new ConcurrentHashMap<>();
+		this.queues = queues;
+		first = queues.values().iterator().next();
+		this.keying = keying;
+	}
+
 	@SafeVarargs
-	protected MapQueueImpl(String name, Converter<E, K> keying, Converter<K, Q> queuing, long capacity, K... keys) {
+	public MapQueueImpl(String name, long capacity, Converter<E, K> keying, Converter<K, Q> queuing, K... keys) {
 		super(name, capacity);
 		queues = new ConcurrentHashMap<>();
 		for (K k : keys)
 			queues.put(k, queuing.apply(k));
+		first = queues.values().iterator().next();
 		this.keying = keying;
 	}
 
@@ -133,5 +143,10 @@ public abstract class MapQueueImpl<K, E, Q extends AbstractQueue<E>> extends Abs
 	@Override
 	public final long size(K key) {
 		return queues.get(key).size();
+	}
+
+	@Override
+	public Converter<E, Long> statsing() {
+		return first.statsing();
 	}
 }

@@ -6,27 +6,27 @@ import java.util.Date;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
+import net.butfly.albacore.lambda.Converter;
+import net.butfly.albacore.utils.Instances;
 import net.butfly.albacore.utils.logger.Logger;
 
 public interface Statistical<E> extends Serializable {
-	static final long SIZE_NOT_DEFINED = Long.MIN_VALUE;
 	static final long SIZE_NULL = -1;
 
 	enum Act {
 		INPUT, OUTPUT
 	}
 
-	default long statsSize(E e) {
-		return SIZE_NOT_DEFINED;
+	default Converter<E, Long> statsing() {
+		return null;
 	};
 
 	default E stats(Act act, E e, Supplier<Long> current) {
 		if (null == e) return null;
-		if (null == stats()) stats().stats(Act.INPUT, statsSize(e), current);
+		if (statsing() == null) Instances.fetch(() -> new Statistic(Logger.getLogger("Queue.Statistic." + this.getClass().getSimpleName())),
+				Statistic.class, this).stats(Act.INPUT, statsing().apply(e), current);
 		return e;
 	}
-
-	Statistic stats();
 
 	class Statistic implements Serializable {
 		private static final long serialVersionUID = 8773599197517842009L;

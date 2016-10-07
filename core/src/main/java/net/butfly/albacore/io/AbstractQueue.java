@@ -19,14 +19,11 @@ public abstract class AbstractQueue<E> implements Queue<E>, Statistical<E> {
 	private AtomicBoolean orderlyRead = new AtomicBoolean(false);
 	private AtomicBoolean orderlyWrite = new AtomicBoolean(false);
 
-	final Statistic stats;
 	final String name;
 
 	protected AbstractQueue(String name, long capacity) {
 		this.name = name;
 		this.capacity = new AtomicLong(capacity);
-		stats = statsSize(null) == Statistical.SIZE_NOT_DEFINED ? null
-				: new Statistic(Logger.getLogger("Queue.Statistic." + this.getClass().getSimpleName()));
 	}
 
 	abstract protected boolean enqueueRaw(E e);
@@ -107,10 +104,5 @@ public abstract class AbstractQueue<E> implements Queue<E>, Statistical<E> {
 		} while (batch.size() < batchSize && (prev != batch.size() || batch.size() == 0));
 		if (empty()) gc();
 		return batch;
-	}
-
-	@Override
-	public final Statistic stats() {
-		return stats;
 	}
 }
