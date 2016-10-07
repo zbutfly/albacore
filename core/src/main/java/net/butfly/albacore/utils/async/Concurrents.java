@@ -7,6 +7,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.base.Joiner;
+
 import net.butfly.albacore.lambda.Callable;
 import net.butfly.albacore.utils.Instances;
 import net.butfly.albacore.utils.Systems;
@@ -15,7 +17,7 @@ import net.butfly.albacore.utils.logger.Logger;
 
 public final class Concurrents extends Utils {
 	private static final Logger logger = Logger.getLogger(Concurrents.class);
-	static ExecutorService CORE_EXECUTOR = executor(null);
+	static ExecutorService CORE_EXECUTOR = executor();
 
 	public static void waitFull(ExecutorService executor, Logger logger) {
 		ThreadPoolExecutor pool = (ThreadPoolExecutor) executor;
@@ -81,18 +83,9 @@ public final class Concurrents extends Utils {
 	 *            System Property "albacore.concurrence", default 0.
 	 * @return
 	 */
-	public static ExecutorService executor(String key) {
+	public static ExecutorService executor(String... key) {
 		final int c = Integer.parseInt(System.getProperty("albacore.concurrence", "0"));
-		logger.info(() -> {
-			StringBuilder sb = new StringBuilder("Albacore task concurrence configuration ").append(c < -1 ? "negitive" : "").append(" ("
-					+ c + "), use ");
-			if (c < -1) sb.append("fixed size (").append(-c).append(") thread pool.");
-			else if (c == -1) sb.append("inlimited cached thread pool.");
-			else if (c == 0) sb.append("fork join (work stealing) thread pool with AUTO parallelism.");
-			else sb.append("fork join (work stealing) thread pool with ").append(-c).append(" parallelism.");
-			return sb;
-		});
-		return executor(key, c);
+		return executor(c, key);
 	}
 
 	/**
@@ -102,12 +95,13 @@ public final class Concurrents extends Utils {
 	 *            Property "albacore.concurrence", default 0.
 	 * @return
 	 */
-	public static ExecutorService executor(String key, int concurrence) {
+	public static ExecutorService executor(int concurrence, String... key) {
+		String[] keys = null == key || key.length == 0 ? new String[] { "" } : key;
 		return Instances.fetch(() -> {
-			ExecutorService e = executor(concurrence);
-			logger.info("ExecutorService [" + e.getClass() + "] with key: [" + key + "] will be created.");
+			final ExecutorService e = executor(concurrence);
+			logger.info("ExecutorService [" + e.getClass() + "] with key: [" + Joiner.on('.').join(keys) + "] created.");
 			return e;
-		}, ExecutorService.class, key);
+		}, ExecutorService.class, (Object[]) keys);
 	}
 
 	/**
@@ -118,7 +112,7 @@ public final class Concurrents extends Utils {
 	 *            0: {@link ForkJoinPool} with SYSTEM parallelism <br>
 	 *            N: {@link ForkJoinPool} with parallelism N
 	 */
-	public static ExecutorService executor(int concurrence) {
+	private static ExecutorService executor(int concurrence) {
 		if (concurrence < -1) {
 			logger.info("Albacore task concurrence configuration (" + concurrence + "), use fixed size thread pool.");
 			if (concurrence < 5) logger.warn("Albacore task concurrence configuration too small (" + concurrence + "), debugging? ");
