@@ -84,27 +84,16 @@ public final class Concurrents extends Utils {
 	 * @return
 	 */
 	public static ExecutorService executor(String... key) {
-		final int c = Integer.parseInt(System.getProperty("albacore.concurrence", "0"));
-		return executor(c, key);
+		return executor(Integer.parseInt(System.getProperty("albacore.concurrence", "0")), key);
 	}
 
 	/**
 	 * @param key
-	 *            Create or fetch {@link ExecutorService} with key based on
-	 *            {@link Concurrents#executor(int)} with concurrence by System
-	 *            Property "albacore.concurrence", default 0.
-	 * @return
-	 */
-	public static ExecutorService executor(int concurrence, String... key) {
-		String[] keys = null == key || key.length == 0 ? new String[] { "" } : key;
-		return Instances.fetch(() -> {
-			final ExecutorService e = executor(concurrence);
-			logger.info("ExecutorService [" + e.getClass() + "] with key: [" + Joiner.on('.').join(keys) + "] created.");
-			return e;
-		}, ExecutorService.class, (Object[]) keys);
-	}
-
-	/**
+	 *            Create or fetch {@link ExecutorService} with key.<br>
+	 *            Concurrence by System Property "albacore.concurrence", default
+	 *            0.<br>
+	 *            Forkjoin first by System Property
+	 *            "albacore.concurrent.forkjoin", default true.
 	 * @param concurrence
 	 *            <br>
 	 *            -N: {@link Executors#newFixedThreadPool} with size N <br>
@@ -112,30 +101,60 @@ public final class Concurrents extends Utils {
 	 *            0: {@link ForkJoinPool} with SYSTEM parallelism <br>
 	 *            N: {@link ForkJoinPool} with parallelism N
 	 */
-	private static ExecutorService executor(int concurrence) {
+	public static ExecutorService executor(int concurrence, String... key) {
+		boolean forkjoin = Boolean.parseBoolean(System.getProperty("albacore.concurrent.forkjoin", "true"));
+		logger.info("ForkJoin first? " + forkjoin + "!, change it by -Dalbacore.concurrent.forkjoin=false");
+		String[] keys = null == key || key.length == 0 ? new String[] { "" } : key;
+		return Instances.fetch(() -> {
+			final ExecutorService e = forkjoin ? forkjoin(concurrence) : classic(concurrence);
+			logger.info("ExecutorService [" + e.getClass() + "] with key: [" + Joiner.on('.').join(keys) + "] created.");
+			return e;
+		}, ExecutorService.class, (Object[]) keys);
+	}
+
+	private static ExecutorService forkjoin(int concurrence) {
 		if (concurrence < -1) {
-			logger.info("Albacore task concurrence configuration (" + concurrence + "), use fixed size thread pool.");
-			if (concurrence < 5) logger.warn("Albacore task concurrence configuration too small (" + concurrence + "), debugging? ");
+			logger.info("Albacore creating FixedThreadPool (parallelism:" + -concurrence + ").");
+			if (concurrence >= -5) logger.warn("Albacore task concurrence configuration too small (" + -concurrence + "), debugging? ");
 			return Executors.newFixedThreadPool(-concurrence);
 		} else if (concurrence == -1) {
-			logger.info("Albacore task concurrence configuration (" + concurrence + "), use inlimited cached thread pool.");
+			logger.info("Albacore creating infinite CachedThreadPool on concurrence (" + concurrence + ").");
 			return Executors.newCachedThreadPool();
 		} else if (concurrence == 0) {
-			logger.info("Albacore task concurrence configuration (" + concurrence
-					+ "), use fork join (work stealing) thread pool with AUTO parallelism.");
+			logger.info("Albacore creating ForkJoin(WorkStealing) ThreadPool (parallelism: default(JVM)).");
 			if (Systems.isDebug()) {
 				logger.warn("Debug mode, use fix pool to enable breakpoints.");
 				return Executors.newCachedThreadPool();
-			}
-			return Executors.newWorkStealingPool();
+			} else return Executors.newWorkStealingPool();
 		} else {
-			logger.info("Albacore task concurrence configuration negative (" + concurrence
-					+ "), use fork join (work stealing) thread pool with " + -concurrence + " parallelism.");
+			logger.info("Albacore creating ForkJoin(WorkStealing)ThreadPool (parallelism:" + concurrence + ").");
 			if (Systems.isDebug()) {
 				logger.warn("Debug mode, use fix pool to enable breakpoints.");
 				return Executors.newFixedThreadPool(concurrence);
-			}
-			return Executors.newWorkStealingPool(concurrence);
+			} else return Executors.newWorkStealingPool(concurrence);
+		}
+	}
+
+	private static ExecutorService classic(int concurrence) {
+		if (concurrence < -1) {
+			logger.info("Albacore creating ForkJoin(WorkStealing)ThreadPool (parallelism:" + -concurrence + ").");
+			if (Systems.isDebug()) {
+				logger.warn("Debug mode, use fix pool to enable breakpoints.");
+				return Executors.newFixedThreadPool(-concurrence);
+			} else return Executors.newWorkStealingPool(-concurrence);
+		} else if (concurrence == -1) {
+			logger.info("Albacore creating ForkJoin(WorkStealing) ThreadPool (parallelism: default(JVM)).");
+			if (Systems.isDebug()) {
+				logger.warn("Debug mode, use fix pool to enable breakpoints.");
+				return Executors.newCachedThreadPool();
+			} else return Executors.newWorkStealingPool();
+		} else if (concurrence == 0) {
+			logger.info("Albacore creating infinite CachedThreadPool on concurrence (" + concurrence + ").");
+			return Executors.newCachedThreadPool();
+		} else {
+			logger.info("Albacore creating FixedThreadPool (parallelism:" + concurrence + ").");
+			if (concurrence < 5) logger.warn("Albacore task concurrence configuration too small (" + concurrence + "), debugging? ");
+			return Executors.newFixedThreadPool(concurrence);
 		}
 	}
 }
