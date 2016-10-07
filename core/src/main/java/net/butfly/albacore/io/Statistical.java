@@ -23,7 +23,7 @@ public interface Statistical<E> extends Serializable {
 
 	default E stats(Act act, E e, Supplier<Long> current) {
 		if (null == e) return null;
-		if (statsing() == null) Instances.fetch(() -> new Statistic(Logger.getLogger("Queue.Statistic." + this.getClass().getSimpleName())),
+		if (statsing() != null) Instances.fetch(() -> new Statistic(Logger.getLogger("Queue.Statistic." + this.getClass().getSimpleName())),
 				Statistic.class, this).stats(Act.INPUT, statsing().apply(e), current);
 		return e;
 	}

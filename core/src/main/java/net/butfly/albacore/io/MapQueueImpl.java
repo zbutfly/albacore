@@ -18,7 +18,6 @@ public class MapQueueImpl<K, E, Q extends AbstractQueue<E>> extends AbstractQueu
 
 	public MapQueueImpl(String name, long capacity, Converter<E, K> keying, Map<K, Q> queues) {
 		super(name, capacity);
-		queues = new ConcurrentHashMap<>();
 		this.queues = queues;
 		first = queues.values().iterator().next();
 		this.keying = keying;
