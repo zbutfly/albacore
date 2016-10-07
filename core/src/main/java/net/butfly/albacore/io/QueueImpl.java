@@ -2,20 +2,23 @@ package net.butfly.albacore.io;
 
 import java.util.concurrent.LinkedBlockingQueue;
 
+import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.utils.logger.Logger;
 
-class QueueImpl<E> extends AbstractQueue<E> implements Queue<E> {
+class QueueImpl<IN, OUT> extends AbstractQueue<IN, OUT> implements Queue<IN, OUT> {
 	private static final long serialVersionUID = 9187055541366585674L;
 	private static final Logger logger = Logger.getLogger(QueueImpl.class);
-	private final LinkedBlockingQueue<E> impl;
+	private final LinkedBlockingQueue<IN> impl;
+	private final Converter<IN, OUT> conv;
 
-	public QueueImpl(String name, long capacity) {
+	public QueueImpl(String name, long capacity, Converter<IN, OUT> conv) {
 		super(name, capacity);
 		impl = new LinkedBlockingQueue<>((int) capacity);
+		this.conv = conv;
 	}
 
 	@Override
-	protected boolean enqueueRaw(E e) {
+	protected boolean enqueueRaw(IN e) {
 		if (null == e) return false;
 		try {
 			impl.put(e);
@@ -27,9 +30,9 @@ class QueueImpl<E> extends AbstractQueue<E> implements Queue<E> {
 	}
 
 	@Override
-	protected E dequeueRaw() {
+	protected OUT dequeueRaw() {
 		try {
-			return stats(Act.OUTPUT, impl.take(), () -> size());
+			return stats(Act.OUTPUT, conv.apply(impl.take()), () -> size());
 		} catch (InterruptedException e) {
 			logger.error("Dequeue failure", e);
 			return null;

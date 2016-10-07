@@ -458,7 +458,7 @@ public class Reflector {
 	 */
 
 	public static Reflector forClass(final Class<?> clazz) {
-		return Instances.fetch(Reflector.class, clazz);
+		return Instances.construct(Reflector.class, clazz);
 	}
 
 	public static void setClassCacheEnabled(boolean classCacheEnabled) {

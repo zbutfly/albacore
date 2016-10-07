@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import net.butfly.albacore.utils.async.Concurrents;
 import net.butfly.albacore.utils.logger.Logger;
 
-public abstract class AbstractQueue<E> implements Queue<E>, Statistical<E> {
+public abstract class AbstractQueue<IN, OUT> implements Queue<IN, OUT>, Statistical {
 	private static final long serialVersionUID = 7082069605335516902L;
 	private static final Logger logger = Logger.getLogger(AbstractQueue.class);
 	static final long INFINITE_SIZE = -1;
@@ -26,9 +26,9 @@ public abstract class AbstractQueue<E> implements Queue<E>, Statistical<E> {
 		this.capacity = new AtomicLong(capacity);
 	}
 
-	abstract protected boolean enqueueRaw(E e);
+	abstract protected boolean enqueueRaw(IN e);
 
-	abstract protected E dequeueRaw();
+	abstract protected OUT dequeueRaw();
 
 	@Override
 	public final String name() {
@@ -73,7 +73,7 @@ public abstract class AbstractQueue<E> implements Queue<E>, Statistical<E> {
 	}
 
 	@Override
-	public final boolean enqueue(E e) {
+	public final boolean enqueue(IN e) {
 		while (full())
 			if (!Concurrents.waitSleep(FULL_WAIT_MS)) logger.warn("Wait for full interrupted");
 		return (enqueueRaw(e) && null != stats(Act.INPUT, e, () -> size()));
@@ -81,21 +81,21 @@ public abstract class AbstractQueue<E> implements Queue<E>, Statistical<E> {
 	}
 
 	@Override
-	public final E dequeue() {
+	public final OUT dequeue() {
 		while (true) {
-			E e = stats(Act.OUTPUT, dequeueRaw(), () -> size());
+			OUT e = stats(Act.OUTPUT, dequeueRaw(), () -> size());
 			if (null != e) return e;
 			else if (!Concurrents.waitSleep(EMPTY_WAIT_MS)) return null;
 		}
 	}
 
 	@Override
-	public List<E> dequeue(long batchSize) {
-		List<E> batch = new ArrayList<>();
+	public List<OUT> dequeue(long batchSize) {
+		List<OUT> batch = new ArrayList<>();
 		long prev;
 		do {
 			prev = batch.size();
-			E e = dequeueRaw();
+			OUT e = dequeueRaw();
 			if (null != e) {
 				batch.add(stats(Act.OUTPUT, e, () -> size()));
 				if (empty()) gc();

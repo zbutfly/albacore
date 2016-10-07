@@ -20,12 +20,12 @@ public class Keys extends Utils {
 		}, Map.class);
 		Class<? extends IdGenerator> genClass = m.get(keyClass);
 		if (null == genClass) throw new SystemException("", "Could not found any key generator class.");
-		IdGenerator<K> g = Instances.fetch(genClass);
+		IdGenerator<K> g = Instances.construct(genClass);
 		return g.generate();
 	}
 
 	@Deprecated
 	public static String objectId() {
-		return Instances.fetch(ObjectIdGenerator.class).generate();
+		return Instances.construct(ObjectIdGenerator.class).generate();
 	}
 }

@@ -33,13 +33,13 @@ import java.util.List;
  * @author butfly
  *
  */
-public interface Queue<E> extends Closeable, Serializable {
+public interface Queue<IN, OUT> extends Closeable, Serializable {
 
 	/* from Queue */
 
-	boolean enqueue(E e);
+	boolean enqueue(IN e);
 
-	E dequeue();
+	OUT dequeue();
 
 	/* for rich features */
 
@@ -57,28 +57,28 @@ public interface Queue<E> extends Closeable, Serializable {
 		return size() >= capacity();
 	};
 
-	default long enqueue(Iterator<E> iter) {
+	default long enqueue(Iterator<IN> iter) {
 		long c = 0;
 		while (iter.hasNext()) {
-			E e = iter.next();
+			IN e = iter.next();
 			if (null != e && enqueue(e)) c++;
 		}
 		return c;
 	}
 
-	default long enqueue(Iterable<E> it) {
+	default long enqueue(Iterable<IN> it) {
 		return enqueue(it.iterator());
 	}
 
 	@SuppressWarnings("unchecked")
-	default long enqueue(E... e) {
+	default long enqueue(IN... e) {
 		long c = 0;
 		for (int i = 0; i < e.length; i++)
 			if (e[i] != null && enqueue(e[i])) c++;
 		return c;
 	}
 
-	List<E> dequeue(long batchSize);
+	List<OUT> dequeue(long batchSize);
 
 	boolean isReadOrderly();
 

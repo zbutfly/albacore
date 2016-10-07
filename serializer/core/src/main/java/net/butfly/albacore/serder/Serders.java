@@ -49,7 +49,7 @@ public final class Serders extends Utils {
 		Map<String, Class<? extends ContentSerder>> map = new HashMap<String, Class<? extends ContentSerder>>();
 		for (Class<? extends ContentSerder> serClass : Reflections.getSubClasses(ContentSerder.class)) {
 			if (Modifier.isAbstract(serClass.getModifiers())) continue;
-			ContentSerder<?, ?> def = Instances.fetch(serClass, DEFAULT_CONTENT_TYPE.getMimeType());
+			ContentSerder<?, ?> def = Instances.construct(serClass, DEFAULT_CONTENT_TYPE.getMimeType());
 			for (String mime : def.mimeTypes())
 				map.put(mime, serClass);
 		}
@@ -58,7 +58,7 @@ public final class Serders extends Utils {
 	}
 
 	public static Serder<?, ?> serializer(final Class<? extends Serder<?, ?>> serializerClass, final Charset charset) {
-		return Instances.fetch(serializerClass, charset);
+		return Instances.construct(serializerClass, charset);
 	}
 
 	@Deprecated

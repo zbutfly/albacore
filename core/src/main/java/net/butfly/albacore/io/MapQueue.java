@@ -5,20 +5,20 @@ import java.util.List;
 
 import net.butfly.albacore.lambda.Converter;
 
-public interface MapQueue<K, E> extends Queue<E> {
+public interface MapQueue<K, IN, OUT> extends Queue<IN, OUT> {
 	boolean empty(K key);
 
-	E dequeue(K key);
+	OUT dequeue(K key);
 
-	List<E> dequeue(long batchSize, @SuppressWarnings("unchecked") K... key);
+	List<OUT> dequeue(long batchSize, @SuppressWarnings("unchecked") K... key);
 
-	boolean enqueue(K key, E e);
+	boolean enqueue(K key, IN e);
 
-	long enqueue(Converter<E, K> key, @SuppressWarnings("unchecked") E... e);
+	long enqueue(Converter<IN, K> key, @SuppressWarnings("unchecked") IN... e);
 
-	long enqueue(Converter<E, K> key, Iterable<E> it);
+	long enqueue(Converter<IN, K> key, Iterable<IN> it);
 
-	long enqueue(Converter<E, K> key, Iterator<E> iter);
+	long enqueue(Converter<IN, K> key, Iterator<IN> iter);
 
 	long size(K key);
 }
