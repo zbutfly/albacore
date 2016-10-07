@@ -13,13 +13,11 @@ import net.butfly.albacore.utils.async.Concurrents;
 public class MapQueueImpl<K, E, Q extends AbstractQueue<E>> extends AbstractQueue<E> implements MapQueue<K, E> {
 	private static final long serialVersionUID = 3551659378491886759L;
 	private final Map<K, Q> queues;
-	private final Q first;
 	final Converter<E, K> keying;
 
 	public MapQueueImpl(String name, long capacity, Converter<E, K> keying, Map<K, Q> queues) {
 		super(name, capacity);
 		this.queues = queues;
-		first = queues.values().iterator().next();
 		this.keying = keying;
 	}
 
@@ -29,7 +27,6 @@ public class MapQueueImpl<K, E, Q extends AbstractQueue<E>> extends AbstractQueu
 		queues = new ConcurrentHashMap<>();
 		for (K k : keys)
 			queues.put(k, queuing.apply(k));
-		first = queues.values().iterator().next();
 		this.keying = keying;
 	}
 
@@ -142,10 +139,5 @@ public class MapQueueImpl<K, E, Q extends AbstractQueue<E>> extends AbstractQueu
 	@Override
 	public final long size(K key) {
 		return queues.get(key).size();
-	}
-
-	@Override
-	public Converter<E, Long> statsing() {
-		return first.statsing();
 	}
 }
