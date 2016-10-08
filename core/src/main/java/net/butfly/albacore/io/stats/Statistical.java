@@ -32,7 +32,9 @@ public interface Statistical<E> extends Serializable {
 	}
 
 	default Statistic<E> stats(Act act) {
-		return null;
+		return Instances.fetch(new TypeToken<Statistic<E>>() {
+			private static final long serialVersionUID = 5959776054841470308L;
+		}, this, act);
 	}
 
 	default E statsRecord(Act act, E e, Supplier<Long> current) {

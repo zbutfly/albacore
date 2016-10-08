@@ -31,6 +31,11 @@ public class Instances extends Utils {
 	}
 
 	@SuppressWarnings("unchecked")
+	public static <T> T fetch(TypeToken<T> cl, Object... key) {
+		return fetch((Class<T>) cl.getRawType(), key);
+	}
+
+	@SuppressWarnings("unchecked")
 	public static <T> T fetch(Class<T> cl, Object... key) {
 		try {
 			if (key == null || key.length == 0) return (T) INSTANCE_POOL.get(cl);
