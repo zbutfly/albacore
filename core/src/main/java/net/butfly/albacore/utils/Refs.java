@@ -6,6 +6,8 @@ import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
+import com.google.common.primitives.Primitives;
+
 import net.butfly.albacore.support.Values;
 
 final class Refs {
@@ -74,8 +76,8 @@ final class Refs {
 			if (method.getName().equals(methodName) && isAssignable(parameterTypes, method.getParameterTypes(), true)) {
 				// get accessible version of method
 				final Method accessibleMethod = getAccessibleMethod(method);
-				if (accessibleMethod != null && (bestMatch == null || compareParameterTypes(accessibleMethod.getParameterTypes(),
-						bestMatch.getParameterTypes(), parameterTypes) < 0)) {
+				if (accessibleMethod != null && (bestMatch == null || compareParameterTypes(accessibleMethod.getParameterTypes(), bestMatch
+						.getParameterTypes(), parameterTypes) < 0)) {
 					bestMatch = accessibleMethod;
 				}
 			}
@@ -197,10 +199,11 @@ final class Refs {
 	 * @return {@code true} if assignment possible
 	 */
 	private static boolean isAssignable(final Class<?> cls, final Class<?> toClass) {
-		return isAssignable(cls, toClass,
-				true/*
-					 * SystemUtils. isJavaVersionAtLeast( JavaVersion.JAVA_1_5)
-					 */);
+		return isAssignable(cls, toClass, true/*
+												 * SystemUtils.
+												 * isJavaVersionAtLeast(
+												 * JavaVersion.JAVA_1_5)
+												 */);
 	}
 
 	/**
@@ -251,7 +254,7 @@ final class Refs {
 		// autoboxing:
 		if (autoboxing) {
 			if (cls.isPrimitive() && !toClass.isPrimitive()) {
-				cls = Values.primitiveToWrapper(cls);
+				cls = Primitives.wrap(cls);
 				if (cls == null) return false;
 			}
 			if (toClass.isPrimitive() && !cls.isPrimitive()) {
@@ -372,8 +375,7 @@ final class Refs {
 	 */
 	private static boolean isSameLength(final Object[] array1, final Object[] array2) {
 		if ((array1 == null && array2 != null && array2.length > 0) || (array2 == null && array1 != null && array1.length > 0)
-				|| (array1 != null && array2 != null && array1.length != array2.length))
-			return false;
+				|| (array1 != null && array2 != null && array1.length != array2.length)) return false;
 		return true;
 	}
 

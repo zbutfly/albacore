@@ -1,9 +1,14 @@
 package net.butfly.albacore.support;
 
+import java.lang.reflect.Array;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+
+import com.google.common.primitives.Primitives;
 
 import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.utils.Reflections;
@@ -64,31 +69,6 @@ public final class Values extends Utils {
 		if (Number.class.isAssignableFrom(type)) return Reflections.construct(type, str);
 		return (T) FROM_STRING_METHOD.get(vt).apply(str);
 	};
-
-	/**
-	 * <p>
-	 * Collections the specified primitive Class object to its corresponding
-	 * wrapper Class object.
-	 * </p>
-	 *
-	 * <p>
-	 * NOTE: From v2.2, this method handles {@code Void.TYPE}, returning
-	 * {@code Void.TYPE}.
-	 * </p>
-	 *
-	 * @param cls
-	 *            the class to convert, may be null
-	 * @return the wrapper class for {@code cls} or {@code cls} if {@code cls}
-	 *         is not a primitive. {@code null} if null input.
-	 * @since 2.1
-	 */
-	public static Class<?> primitiveToWrapper(final Class<?> cls) {
-		Class<?> convertedClass = cls;
-		if (cls != null && cls.isPrimitive()) {
-			convertedClass = primitiveWrapperMap().get(cls);
-		}
-		return convertedClass;
-	}
 
 	/**
 	 * <p>
@@ -157,22 +137,39 @@ public final class Values extends Utils {
 	private static final Class<?>[] NUMBER_TYPES = new Class[] { //
 			Number.class, int.class, byte.class, short.class, long.class, double.class, float.class };
 
-	/**
-	 * Maps primitive {@code Class}es to their corresponding wrapper
-	 * {@code Class}.
-	 */
-	private static final Map<Class<?>, Class<?>> primitiveWrapperMap() {
-		HashMap<Class<?>, Class<?>> primitiveWrapperMap = new HashMap<Class<?>, Class<?>>();
+	public static int sizing(Object v) {
+		if (null == v) return 0;
+		if (v instanceof Iterable<?>) return sizing(((Iterable<?>) v).iterator());
+		if (v instanceof Iterator<?>) {
+			int s = 0;
+			while (((Iterator<?>) v).hasNext())
+				s += sizing(((Iterator<?>) v).next());
+			return s;
+		}
+		Class<?> cl = v.getClass();
+		if (Map.class.isAssignableFrom(cl)) return sizing(((Map<?, ?>) v).values());
+		if (byte[].class.isAssignableFrom(cl)) return ((byte[]) v).length;
+		int cc = sizingPrimitive(cl.getComponentType());
+		if (cc >= 0) return cc;
+		if (cl.isArray()) {
+			cc = sizingPrimitive(cl.getComponentType());
+			if (cc >= 0) return cc * Array.getLength(v);
+			int l = 0;
+			for (int i = 0; i < Array.getLength(v); i++)
+				l += sizing(Array.get(v, i));
+			return l;
+		}
+		if (CharSequence.class.isAssignableFrom(cl)) return ((CharSequence) v).toString().getBytes().length;
+		return 0;
+	}
 
-		primitiveWrapperMap.put(Boolean.TYPE, Boolean.class);
-		primitiveWrapperMap.put(Byte.TYPE, Byte.class);
-		primitiveWrapperMap.put(Character.TYPE, Character.class);
-		primitiveWrapperMap.put(Short.TYPE, Short.class);
-		primitiveWrapperMap.put(Integer.TYPE, Integer.class);
-		primitiveWrapperMap.put(Long.TYPE, Long.class);
-		primitiveWrapperMap.put(Double.TYPE, Double.class);
-		primitiveWrapperMap.put(Float.TYPE, Float.class);
-		primitiveWrapperMap.put(Void.TYPE, Void.class);
-		return primitiveWrapperMap;
+	private static int sizingPrimitive(Class<?> cl) {
+		if (cl.isPrimitive()) cl = Primitives.wrap(cl);
+		try {
+			Field f = cl.getField("BYTES");
+			if (Modifier.isStatic(f.getModifiers()) && Modifier.isPublic(f.getModifiers()) && Modifier.isFinal(f.getModifiers())
+					&& int.class.equals(f.getType())) return (int) f.get(null);
+		} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {}
+		return -1;
 	}
 }

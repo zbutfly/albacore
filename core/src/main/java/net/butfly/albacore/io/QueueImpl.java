@@ -130,4 +130,11 @@ public abstract class QueueImpl<I, O, D> implements Queue<I, O>, Statistical<D> 
 		orderlyWrite.set(orderly);
 	}
 
+	protected D stats(Act act, D e) {
+		return Statistical.super.stats(act, e, () -> size());
+	}
+
+	protected D stats(Act act) {
+		return Statistical.super.stats(act, () -> size());
+	}
 }

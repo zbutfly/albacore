@@ -22,7 +22,7 @@ public abstract class JavaQueueImpl<I, O> extends QueueImpl<I, O, I> implements 
 		if (null == e) return false;
 		try {
 			impl.put(e);
-			return null != statsRecord(Act.INPUT, e, () -> size());
+			return null != stats(Act.INPUT, e);
 		} catch (InterruptedException ex) {
 			logger.error("Enqueue failure", ex);
 			return false;
@@ -32,7 +32,7 @@ public abstract class JavaQueueImpl<I, O> extends QueueImpl<I, O, I> implements 
 	@Override
 	protected O dequeueRaw() {
 		try {
-			return conv(statsRecord(Act.OUTPUT, impl.take(), () -> size()));
+			return conv(stats(Act.OUTPUT, impl.take()));
 		} catch (InterruptedException e) {
 			logger.error("Dequeue failure", e);
 			return null;
