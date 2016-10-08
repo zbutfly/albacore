@@ -457,6 +457,7 @@ public class Reflector {
 	 * @return The method cache for the class
 	 */
 
+	@Deprecated
 	public static Reflector forClass(final Class<?> clazz) {
 		return Instances.construct(Reflector.class, clazz);
 	}

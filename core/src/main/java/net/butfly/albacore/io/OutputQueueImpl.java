@@ -2,7 +2,7 @@ package net.butfly.albacore.io;
 
 import java.util.List;
 
-public abstract class OutputQueueImpl<I, D> extends QueueImpl<I, Void, D> implements Queue<I, Void> {
+public abstract class OutputQueueImpl<I, D> extends QueueImpl<I, Void, D> implements OutputQueue<I> {
 	private static final long serialVersionUID = -1;
 
 	protected OutputQueueImpl(String name, long capacity) {

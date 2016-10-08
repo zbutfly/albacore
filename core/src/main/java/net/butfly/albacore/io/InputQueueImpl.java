@@ -2,7 +2,7 @@ package net.butfly.albacore.io;
 
 import java.util.Iterator;
 
-public abstract class InputQueueImpl<O, D> extends QueueImpl<Void, O, D> implements Queue<Void, O> {
+public abstract class InputQueueImpl<O, D> extends QueueImpl<Void, O, D> implements InputQueue<O> {
 	private static final long serialVersionUID = -1;
 
 	protected InputQueueImpl(String name, long capacity) {
@@ -11,7 +11,7 @@ public abstract class InputQueueImpl<O, D> extends QueueImpl<Void, O, D> impleme
 
 	@Override
 	@Deprecated
-	protected boolean enqueueRaw(Void d) {
+	protected final boolean enqueueRaw(Void d) {
 		return false;
 	}
 

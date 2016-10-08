@@ -3,6 +3,8 @@ package net.butfly.albacore.utils;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.google.common.reflect.TypeToken;
+
 import net.butfly.albacore.lambda.Supplier;
 
 /**
@@ -21,6 +23,11 @@ public class Instances extends Utils {
 
 	public static <T> T fetch(Supplier<T> supplier, Class<T> cl, Object... key) {
 		return null == supplier ? fetch(cl, key) : fetchFrom(supplier, INSTANCE_POOL, cl, key, 0);
+	}
+
+	@SuppressWarnings("unchecked")
+	public static <T> T fetch(Supplier<T> supplier, TypeToken<T> cl, Object... key) {
+		return fetch(supplier, (Class<T>) cl.getRawType(), key);
 	}
 
 	@SuppressWarnings("unchecked")

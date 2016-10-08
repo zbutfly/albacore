@@ -2,6 +2,7 @@ package net.butfly.albacore.io;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
 import net.butfly.albacore.lambda.Converter;
@@ -24,7 +25,7 @@ public interface MapQueue<K, I, O> extends Queue<I, O> {
 
 	long size(K key);
 
-	default void pump(MapQueueImpl<K, O, ?, ?, ?> dest, long batchSize, int parallelism) {
+	default void pump(MapQueueImpl<K, O, ?, ?> dest, long batchSize, int parallelism) {
 		ExecutorService ex = Concurrents.executor(parallelism, this.name(), dest.name());
 		for (int i = 0; i < parallelism; i++)
 			ex.submit(new Thread(new Runnable() {
@@ -34,4 +35,6 @@ public interface MapQueue<K, I, O> extends Queue<I, O> {
 				}
 			}), this.name() + "-" + dest.name() + "-" + i);
 	}
+
+	MapQueue<K, I, O> initialize(Map<K, ? extends Queue<I, O>> queues);
 }

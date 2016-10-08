@@ -6,7 +6,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
-import net.butfly.albacore.io.stats.Statistical;
 import net.butfly.albacore.utils.async.Concurrents;
 import net.butfly.albacore.utils.logger.Logger;
 
@@ -38,7 +37,7 @@ import net.butfly.albacore.utils.logger.Logger;
  * @author butfly
  *
  */
-public interface Queue<I, O> extends Closeable, Serializable, Statistical {
+public interface Queue<I, O> extends Closeable, Serializable {
 	static final Logger logger = Logger.getLogger(QueueImpl.class);
 	static final long INFINITE_SIZE = -1;
 	static final long FULL_WAIT_MS = 500;
@@ -98,7 +97,7 @@ public interface Queue<I, O> extends Closeable, Serializable, Statistical {
 			}), this.name() + "-" + dest.name() + "-" + i);
 	}
 
-	default <K> void pumpMap(MapQueueImpl<K, O, ?, ?, ?> dest, long batchSize, int parallelism) {
+	default <K> void pumpMap(MapQueueImpl<K, O, ?, ?> dest, long batchSize, int parallelism) {
 		ExecutorService ex = Concurrents.executor(parallelism, this.name(), dest.name());
 		for (int i = 0; i < parallelism; i++)
 			ex.submit(new Thread(new Runnable() {

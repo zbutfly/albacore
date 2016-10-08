@@ -18,11 +18,11 @@ public abstract class JavaQueueImpl<I, O> extends QueueImpl<I, O, I> implements 
 	abstract protected O conv(I e);
 
 	@Override
-	protected boolean enqueueRaw(I e) {
+	protected final boolean enqueueRaw(I e) {
 		if (null == e) return false;
 		try {
 			impl.put(e);
-			return null != stats(Act.INPUT, e, () -> size());
+			return null != statsRecord(Act.INPUT, e, () -> size());
 		} catch (InterruptedException ex) {
 			logger.error("Enqueue failure", ex);
 			return false;
@@ -32,7 +32,7 @@ public abstract class JavaQueueImpl<I, O> extends QueueImpl<I, O, I> implements 
 	@Override
 	protected O dequeueRaw() {
 		try {
-			return stats(Act.OUTPUT, conv(impl.take()), () -> size());
+			return conv(statsRecord(Act.OUTPUT, impl.take(), () -> size()));
 		} catch (InterruptedException e) {
 			logger.error("Dequeue failure", e);
 			return null;
@@ -40,7 +40,7 @@ public abstract class JavaQueueImpl<I, O> extends QueueImpl<I, O, I> implements 
 	}
 
 	@Override
-	public boolean enqueue(I e) {
+	public final boolean enqueue(I e) {
 		while (full())
 			if (!Concurrents.waitSleep(FULL_WAIT_MS)) logger.warn("Wait for full interrupted");
 		return (enqueueRaw(e));

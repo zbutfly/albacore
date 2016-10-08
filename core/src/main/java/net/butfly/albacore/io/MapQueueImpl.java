@@ -10,9 +10,9 @@ import java.util.Map;
 import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.utils.async.Concurrents;
 
-public abstract class MapQueueImpl<K, I, O, D, Q extends QueueImpl<I, O, D>> extends QueueImpl<I, O, D> implements Queue<I, O> {
+public abstract class MapQueueImpl<K, I, O, D> extends QueueImpl<I, O, D> implements MapQueue<K, I, O> {
 	private static final long serialVersionUID = -1;
-	private final Map<K, Q> queues;
+	private final Map<K, Queue<I, O>> queues;
 
 	public MapQueueImpl(String name, long capacity) {
 		super(name, capacity);
@@ -21,13 +21,14 @@ public abstract class MapQueueImpl<K, I, O, D, Q extends QueueImpl<I, O, D>> ext
 
 	abstract protected K keying(I e);
 
-	public final MapQueueImpl<K, I, O, D, Q> initialize(Map<K, Q> queues) {
+	@Override
+	public final MapQueue<K, I, O> initialize(Map<K, ? extends Queue<I, O>> queues) {
 		this.queues.putAll(queues);
 		return this;
 	}
 
 	public final boolean empty(K key) {
-		for (Q q : queues.values())
+		for (Queue<I, O> q : queues.values())
 			if (!q.empty()) return false;
 		return true;
 	}
@@ -49,7 +50,7 @@ public abstract class MapQueueImpl<K, I, O, D, Q extends QueueImpl<I, O, D>> ext
 		do {
 			prev = batch.size();
 			for (K k : ks) {
-				Q q = queues.get(k);
+				QueueImpl<I, O, ?> q = q(k);
 				O e = q.dequeueRaw();
 				if (null != e) {
 					batch.add(e);
@@ -119,7 +120,7 @@ public abstract class MapQueueImpl<K, I, O, D, Q extends QueueImpl<I, O, D>> ext
 		List<I> remain = new ArrayList<>();
 		for (I e : l)
 			if (e != null) {
-				Q q = queues.get(keying(e));
+				QueueImpl<I, O, ?> q = q(keying(e));
 				if (!q.full() && q.enqueueRaw(e)) c[0]++;
 				else remain.add(e);
 			}
@@ -129,7 +130,7 @@ public abstract class MapQueueImpl<K, I, O, D, Q extends QueueImpl<I, O, D>> ext
 	@Override
 	public long size() {
 		long s = 0;
-		for (Q q : queues.values())
+		for (Queue<I, O> q : queues.values())
 			s += q.size();
 		return s;
 	}
@@ -141,7 +142,12 @@ public abstract class MapQueueImpl<K, I, O, D, Q extends QueueImpl<I, O, D>> ext
 	@Override
 	public void close() {
 		super.close();
-		for (Q q : queues.values())
+		for (Queue<I, O> q : queues.values())
 			q.close();
+	}
+
+	@SuppressWarnings("unchecked")
+	private QueueImpl<I, O, ?> q(K key) {
+		return (QueueImpl<I, O, ?>) queues.get(key);
 	}
 }

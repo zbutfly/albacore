@@ -6,9 +6,10 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import net.butfly.albacore.io.stats.Statistical;
 import net.butfly.albacore.utils.async.Concurrents;
 
-public abstract class QueueImpl<I, O, D> implements Queue<I, O> {
+public abstract class QueueImpl<I, O, D> implements Queue<I, O>, Statistical<D> {
 	private static final long serialVersionUID = -1;
 
 	private final AtomicLong capacity;

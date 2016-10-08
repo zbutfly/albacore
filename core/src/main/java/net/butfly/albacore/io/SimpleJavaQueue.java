@@ -5,7 +5,7 @@ import java.util.List;
 
 import net.butfly.albacore.utils.async.Concurrents;
 
-public class SimpleJavaQueue<E> extends JavaQueueImpl<E, E> implements SimpleQueue<E> {
+public final class SimpleJavaQueue<V> extends JavaQueueImpl<V, V> implements SimpleQueue<V> {
 	private static final long serialVersionUID = -1;
 
 	public SimpleJavaQueue(String name, long capacity) {
@@ -14,26 +14,26 @@ public class SimpleJavaQueue<E> extends JavaQueueImpl<E, E> implements SimpleQue
 
 	@Override
 	@Deprecated
-	protected final E conv(E e) {
+	protected final V conv(V e) {
 		return e;
 	}
 
 	@Override
-	public E dequeue() {
+	public V dequeue() {
 		while (true) {
-			E e = dequeueRaw();
+			V e = dequeueRaw();
 			if (null != e) return e;
 			else if (!Concurrents.waitSleep(EMPTY_WAIT_MS)) return null;
 		}
 	}
 
 	@Override
-	public List<E> dequeue(long batchSize) {
-		List<E> batch = new ArrayList<>();
+	public List<V> dequeue(long batchSize) {
+		List<V> batch = new ArrayList<>();
 		long prev;
 		do {
 			prev = batch.size();
-			E e = dequeueRaw();
+			V e = dequeueRaw();
 			if (null != e) {
 				batch.add(e);
 				if (empty()) gc();
