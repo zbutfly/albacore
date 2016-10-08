@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
+import net.butfly.albacore.io.stats.Statistical;
 import net.butfly.albacore.utils.async.Concurrents;
 import net.butfly.albacore.utils.logger.Logger;
 
@@ -37,8 +38,8 @@ import net.butfly.albacore.utils.logger.Logger;
  * @author butfly
  *
  */
-public interface Queue<I, O, D> extends Closeable, Serializable {
-	static final Logger logger = Logger.getLogger(AbstractQueue.class);
+public interface Queue<I, O> extends Closeable, Serializable, Statistical {
+	static final Logger logger = Logger.getLogger(QueueImpl.class);
 	static final long INFINITE_SIZE = -1;
 	static final long FULL_WAIT_MS = 500;
 	static final long EMPTY_WAIT_MS = 500;
@@ -57,36 +58,16 @@ public interface Queue<I, O, D> extends Closeable, Serializable {
 
 	long capacity();
 
-	default boolean empty() {
-		return size() == 0;
-	};
+	boolean empty();
 
-	default boolean full() {
-		return size() >= capacity();
-	};
+	boolean full();
 
-	default long enqueue(Iterator<I> iter) {
-		long c = 0;
-		while (full())
-			Concurrents.waitSleep(FULL_WAIT_MS);
-		while (iter.hasNext()) {
-			I e = iter.next();
-			if (null != e && enqueue(e)) c++;
-		}
-		return c;
-	}
+	long enqueue(Iterator<I> iter);
 
-	default long enqueue(Iterable<I> it) {
-		return enqueue(it.iterator());
-	}
+	long enqueue(Iterable<I> it);
 
 	@SuppressWarnings("unchecked")
-	default long enqueue(I... e) {
-		long c = 0;
-		for (int i = 0; i < e.length; i++)
-			if (e[i] != null && enqueue(e[i])) c++;
-		return c;
-	}
+	long enqueue(I... e);
 
 	List<O> dequeue(long batchSize);
 
@@ -105,7 +86,7 @@ public interface Queue<I, O, D> extends Closeable, Serializable {
 
 	default void gc() {}
 
-	default void pump(Queue<O, ?, ?> dest, long batchSize, int parallelism) {
+	default void pump(Queue<O, ?> dest, long batchSize, int parallelism) {
 		ExecutorService ex = Concurrents.executor(parallelism, this.name(), dest.name());
 		for (int i = 0; i < parallelism; i++)
 			ex.submit(new Thread(new Runnable() {
@@ -113,6 +94,17 @@ public interface Queue<I, O, D> extends Closeable, Serializable {
 				public void run() {
 					while (!empty())
 						dest.enqueue(dequeue(batchSize));
+				}
+			}), this.name() + "-" + dest.name() + "-" + i);
+	}
+
+	default <K> void pumpMap(MapQueueImpl<K, O, ?, ?, ?> dest, long batchSize, int parallelism) {
+		ExecutorService ex = Concurrents.executor(parallelism, this.name(), dest.name());
+		for (int i = 0; i < parallelism; i++)
+			ex.submit(new Thread(new Runnable() {
+				@Override
+				public void run() {
+					dest.enqueue(dest::keying, dequeue(batchSize));
 				}
 			}), this.name() + "-" + dest.name() + "-" + i);
 	}

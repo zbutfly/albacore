@@ -1,4 +1,4 @@
-package net.butfly.albacore.io;
+package net.butfly.albacore.io.stats;
 
 import java.io.Serializable;
 import java.text.DecimalFormat;
@@ -20,26 +20,26 @@ public interface Statistical extends Serializable {
 
 	@SuppressWarnings("serial")
 	default <E> void stats(Class<E> clazz, Converter<E, Long> sizing) {
-		Instances.fetch(() -> new Stats.Statistic<E>(this, Logger.getLogger(LOG_PREFIX + this.getClass().getSimpleName())) {
+		Instances.fetch(() -> new Statistic.Stats<E>(this, Logger.getLogger(LOG_PREFIX + this.getClass().getSimpleName())) {
 			@Override
 			protected Converter<E, Long> statsing() {
 				return sizing;
 			}
-		}, Stats.Statistic.class, this, clazz);
+		}, Statistic.Stats.class, this, clazz);
 	}
 
 	// XXX make e lambda
 	default <E> E stats(Act act, E e, Supplier<Long> current) {
 		if (null == e) return null;
 		@SuppressWarnings("unchecked")
-		Stats.Statistic<E> s = Instances.fetch(Stats.Statistic.class, this, e.getClass());
+		Statistic.Stats<E> s = Instances.fetch(Statistic.Stats.class, this, e.getClass());
 		if (null == s) return e;
 		return s.stats(act, e, current);
 	}
 
-	class Stats {// for hide
-		private static abstract class Statistic<E> implements Serializable {
-			private static final long serialVersionUID = 8773599197517842009L;
+	class Statistic {// for hide
+		private static abstract class Stats<E> implements Serializable {
+			private static final long serialVersionUID = -1;
 			private static final long DEFAULT_STATS_STEP = 1000000;
 
 			private final Logger logger;
@@ -53,7 +53,7 @@ public interface Statistical extends Serializable {
 			private final AtomicLong packsInTotal;
 			private final AtomicLong bytesInTotal;
 
-			public Statistic(Statistical owner, Logger logger) {
+			public Stats(Statistical owner, Logger logger) {
 				this.logger = logger;
 				this.packsStep = new AtomicLong(DEFAULT_STATS_STEP);
 				packsInStep = new AtomicLong(0);
@@ -88,7 +88,7 @@ public interface Statistical extends Serializable {
 					Result step, total;
 					step = new Result(packsInStep.getAndSet(0), bytesInStep.getAndSet(0), now - lastRecord.getAndSet(now));
 					total = new Result(packsInTotal.get(), bytesInTotal.get(), new Date().getTime() - begin);
-					logger.trace("Queue " + act + " Statistic:\n"//
+					logger.trace("Queue " + act + " Stats:\n"//
 							+ "\tStep: " + step.packs + " records/" + formatBytes(step.bytes) + " in " + formatMillis(step.millis) + "\n"//
 							+ "\tTotal: " + total.packs + " records/" + formatBytes(total.bytes) + " in " + formatMillis(total.millis)
 							+ "\n"//
@@ -118,18 +118,17 @@ public interface Statistical extends Serializable {
 				return f.format(millis / 1000.0) + "ms";
 			}
 
-		}
+			private static class Result {
+				public final long packs;
+				public final long bytes;
+				public final long millis;
 
-		private static class Result {
-			public final long packs;
-			public final long bytes;
-			public final long millis;
-
-			public Result(long packs, long bytes, long millis) {
-				super();
-				this.packs = packs;
-				this.bytes = bytes;
-				this.millis = millis;
+				public Result(long packs, long bytes, long millis) {
+					super();
+					this.packs = packs;
+					this.bytes = bytes;
+					this.millis = millis;
+				}
 			}
 		}
 	}
