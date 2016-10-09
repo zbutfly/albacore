@@ -5,8 +5,13 @@ import java.util.List;
 public abstract class OutputQueueImpl<I, D> extends QueueImpl<I, Void, D> implements OutputQueue<I> {
 	private static final long serialVersionUID = -1;
 
-	protected OutputQueueImpl(String name, long capacity) {
-		super(name, capacity);
+	protected OutputQueueImpl(String name) {
+		super(name, Long.MAX_VALUE);
+	}
+
+	@Override
+	public long size() {
+		return 0;
 	}
 
 	@Override
