@@ -64,7 +64,7 @@ public final class Tasks extends Utils {
 	}
 
 	static <T> T execute(final Task<T> task, ExecutorService executor) throws Exception {
-		if (executor == null) executor = Concurrents.CORE_EXECUTOR;
+		if (executor == null) executor = Concurrents.executor();
 		if (task.options == null) task.options = new Options();
 		int repeated = 0, retried = 0;
 		T result = null;

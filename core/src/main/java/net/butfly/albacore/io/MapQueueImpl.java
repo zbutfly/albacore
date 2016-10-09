@@ -6,11 +6,12 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.utils.async.Concurrents;
 
-public abstract class MapQueueImpl<K, I, O, D> extends QueueImpl<I, O, D> implements MapQueue<K, I, O> {
+public abstract class MapQueueImpl<K, I, O, D> extends QueueImpl<I, O, D> implements QueueMap<K, I, O> {
 	private static final long serialVersionUID = -1;
 	private final Map<K, Queue<I, O>> queues;
 
@@ -21,10 +22,13 @@ public abstract class MapQueueImpl<K, I, O, D> extends QueueImpl<I, O, D> implem
 
 	abstract protected K keying(I e);
 
+	public Set<K> keys() {
+		return queues.keySet();
+	}
+
 	@Override
-	public final MapQueue<K, I, O> initialize(Map<K, ? extends Queue<I, O>> queues) {
+	public final void initialize(Map<K, ? extends Queue<I, O>> queues) {
 		this.queues.putAll(queues);
-		return this;
 	}
 
 	public final boolean empty(K key) {
