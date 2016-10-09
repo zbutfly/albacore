@@ -55,6 +55,11 @@ public abstract class QueueImpl<I, O, D> implements Queue<I, O>, Statistical<D> 
 	}
 
 	@Override
+	public long enqueue(Iterable<I> it) {
+		return enqueue(it.iterator());
+	}
+
+	@Override
 	public long enqueue(Iterator<I> iter) {
 		long c = 0;
 		while (full())
@@ -64,11 +69,6 @@ public abstract class QueueImpl<I, O, D> implements Queue<I, O>, Statistical<D> 
 			if (null != e && enqueueRaw(e)) c++;
 		}
 		return c;
-	}
-
-	@Override
-	public long enqueue(Iterable<I> it) {
-		return enqueue(it.iterator());
 	}
 
 	@SuppressWarnings("unchecked")
