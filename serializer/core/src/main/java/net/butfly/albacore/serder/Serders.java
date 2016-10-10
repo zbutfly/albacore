@@ -21,12 +21,12 @@ public final class Serders extends Utils {
 	public static final CaseFormat DEFAULT_SRC_FORMAT = CaseFormat.LOWER_CAMEL;
 	public static final CaseFormat DEFAULT_DST_FORMAT = CaseFormat.UPPER_UNDERSCORE;
 	public static final ContentType DEFAULT_CONTENT_TYPE = ContentType.WILDCARD.withCharset(Charsets.UTF_8);
-	public static final Class<? extends Serder<?, ?>> DEFAULT_SERIALIZER_CLASS = getSerderByDefault();
 
 	private static final String[] INTERN_SER = new String[] { //
 			"net.butfly.albacore.serder.HessianSerder", //
 			"net.butfly.albacore.serder.JSONSerializer", //
 			JavaSerder.class.getName() };
+	public static final Class<? extends Serder<?, ?>> DEFAULT_SERIALIZER_CLASS = getSerderByDefault();
 
 	@SuppressWarnings("unchecked")
 	private static Class<? extends Serder<?, ?>> getSerderByDefault() {
@@ -42,14 +42,15 @@ public final class Serders extends Utils {
 
 	@SuppressWarnings("unchecked")
 	public static Class<? extends ContentSerder<?, ?>> getSerderByMimeType(String mimeType) {
-		return (Class<? extends ContentSerder<?, ?>>) Instances.fetch(Serders::scanContentSerders, Map.class).get(mimeType);
+		return (Class<? extends ContentSerder<?, ?>>) Instances.fetch(Serders::scanContentSerders, Map.class, Serder.class, mimeType).get(
+				mimeType);
 	}
 
 	private static Map<String, Class<? extends ContentSerder>> scanContentSerders() {
 		Map<String, Class<? extends ContentSerder>> map = new HashMap<String, Class<? extends ContentSerder>>();
 		for (Class<? extends ContentSerder> serClass : Reflections.getSubClasses(ContentSerder.class)) {
 			if (Modifier.isAbstract(serClass.getModifiers())) continue;
-			ContentSerder<?, ?> def = Instances.construct(serClass, DEFAULT_CONTENT_TYPE.getMimeType());
+			ContentSerder<?, ?> def = Instances.construct(serClass);
 			for (String mime : def.mimeTypes())
 				map.put(mime, serClass);
 		}
@@ -58,7 +59,7 @@ public final class Serders extends Utils {
 	}
 
 	public static Serder<?, ?> serializer(final Class<? extends Serder<?, ?>> serializerClass, final Charset charset) {
-		return Instances.construct(serializerClass, charset);
+		return Instances.construct(serializerClass);
 	}
 
 	@Deprecated

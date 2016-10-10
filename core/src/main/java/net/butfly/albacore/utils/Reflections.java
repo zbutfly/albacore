@@ -135,11 +135,15 @@ public final class Reflections extends Utils {
 
 	@SuppressWarnings("unchecked")
 	public static <T> Set<Class<? extends T>> getSubClasses(Class<T> parentClass, String... packagePrefix) {
+		if (Modifier.isFinal(parentClass.getModifiers())) return new HashSet<>();
+		boolean full = packagePrefix == null || packagePrefix.length == 0;
 		return Instances.fetch(() -> {
 			final Set<Class<? extends T>> r = new HashSet<>();
-			new FastClasspathScanner(packagePrefix).matchSubclassesOf(parentClass, c -> r.add(c)).scan();
+			FastClasspathScanner scaner = full ? new FastClasspathScanner() : new FastClasspathScanner(packagePrefix);
+			if (Modifier.isInterface(parentClass.getModifiers())) scaner.matchClassesImplementing(parentClass, c -> r.add(c)).scan();
+			else scaner.matchSubclassesOf(parentClass, c -> r.add(c)).scan();
 			return r;
-		}, Set.class, parentClass, j.join(packagePrefix));
+		}, Set.class, parentClass, full ? "" : j.join(packagePrefix));
 	}
 
 	public static Class<?>[] getClassesAnnotatedWith(Class<? extends Annotation> annotation, String... packagePrefix) {
@@ -174,7 +178,6 @@ public final class Reflections extends Utils {
 			}
 			clazz = clazz.getSuperclass();
 		}
-
 		return fields.values().toArray(new Field[fields.size()]);
 	}
 
