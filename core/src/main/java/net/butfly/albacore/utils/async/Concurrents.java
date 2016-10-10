@@ -1,5 +1,8 @@
 package net.butfly.albacore.utils.async;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
@@ -7,10 +10,13 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 
 import net.butfly.albacore.lambda.Callable;
+import net.butfly.albacore.lambda.Supplier;
 import net.butfly.albacore.utils.Instances;
 import net.butfly.albacore.utils.Systems;
 import net.butfly.albacore.utils.Utils;
@@ -19,6 +25,20 @@ import net.butfly.albacore.utils.logger.Logger;
 public final class Concurrents extends Utils {
 	private static final Logger logger = Logger.getLogger(Concurrents.class);
 	private static ListeningExecutorService CORE_EXECUTOR = null;
+
+	public static List<Object> submitAndWait(ListeningExecutorService ex, Supplier<Runnable> tasking, int parallelism) {
+		List<ListenableFuture<?>> outs = new ArrayList<>();
+		for (int i = 0; i < parallelism; i++)
+			outs.add(ex.submit(tasking.get()));
+		try {
+			return Futures.allAsList(outs).get();
+		} catch (InterruptedException | ExecutionException e) {
+			throw new RuntimeException("Task failure", e);
+		} finally {
+			ex.shutdown();
+			Concurrents.waitShutdown(ex, logger);
+		}
+	}
 
 	public static void waitFull(ExecutorService executor, Logger logger) {
 		ThreadPoolExecutor pool = (ThreadPoolExecutor) executor;
@@ -168,9 +188,19 @@ public final class Concurrents extends Utils {
 		}
 	}
 
-	public static Runnable continuous(Runnable r, Runnable... then) {
+	public static Runnable forever(Runnable r, Runnable... then) {
 		return () -> {
 			while (true) {
+				r.run();
+				for (Runnable t : then)
+					t.run();
+			}
+		};
+	}
+
+	public static Runnable untile(Supplier<Boolean> stopping, Runnable r, Runnable... then) {
+		return () -> {
+			while (!stopping.get()) {
 				r.run();
 				for (Runnable t : then)
 					t.run();

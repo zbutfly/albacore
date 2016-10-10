@@ -58,7 +58,7 @@ public final class Pump<V> implements Closeable {
 		nb.append("[");
 		String name = nb.toString();
 		for (int i = 0; i < parallelism; i++)
-			threads.add(new Thread(Concurrents.continuous(r, intervals.toArray(new Runnable[intervals.size()])), name + i + "]"));
+			threads.add(new Thread(Concurrents.forever(r, intervals.toArray(new Runnable[intervals.size()])), name + i + "]"));
 	}
 
 	public void start() {
