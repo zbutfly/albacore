@@ -81,7 +81,7 @@ public interface Queue<I, O> extends AbstractQueue<I, O> {
 
 	default Pump<O> pump(Queue<O, ?> dest, long batchSize, int parallelism) {
 		Pump<O> p = new Pump<O>(parallelism, this, dest);
-		p.submit(() -> dest.enqueue(dequeue(batchSize)), parallelism);
+		p.submit(() -> dest.enqueue(dequeue(batchSize)) <= 0, parallelism);
 		return p;
 	}
 }

@@ -55,15 +55,14 @@ public final class Concurrents extends Utils {
 	}
 
 	public static boolean waitShutdown(ExecutorService executor, long seconds, Logger logger) {
-		boolean running = true;
-		while (running)
+		while (true)
 			try {
 				logger.trace("Waiting for executor terminate...");
-				running = executor.awaitTermination(seconds, TimeUnit.SECONDS);
+				if (executor.awaitTermination(seconds, TimeUnit.SECONDS)) return true;
 			} catch (InterruptedException e) {
 				logger.warn("Not all processing thread finished correctly, waiting interrupted.");
+				return false;
 			}
-		return true;
 	}
 
 	public static boolean waitShutdown(ExecutorService executor, Logger logger) {
@@ -188,23 +187,19 @@ public final class Concurrents extends Utils {
 		}
 	}
 
-	public static Runnable forever(Runnable r, Runnable... then) {
+	public static Runnable forever(Runnable... then) {
 		return () -> {
-			while (true) {
-				r.run();
+			while (true)
 				for (Runnable t : then)
 					t.run();
-			}
 		};
 	}
 
-	public static Runnable untile(Supplier<Boolean> stopping, Runnable r, Runnable... then) {
+	public static Runnable until(Supplier<Boolean> stopping, Runnable... then) {
 		return () -> {
-			while (!stopping.get()) {
-				r.run();
+			while (!stopping.get())
 				for (Runnable t : then)
 					t.run();
-			}
 		};
 	}
 }

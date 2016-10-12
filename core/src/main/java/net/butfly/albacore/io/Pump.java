@@ -14,6 +14,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
+import net.butfly.albacore.lambda.Supplier;
 import net.butfly.albacore.utils.Reflections;
 import net.butfly.albacore.utils.async.Concurrents;
 import net.butfly.albacore.utils.logger.Logger;
@@ -51,14 +52,14 @@ public final class Pump<V> implements Closeable {
 		this.intervals.add(interval);
 	}
 
-	void submit(Runnable r, int parallelism, String... nameSuffix) {
+	void submit(Supplier<Boolean> stopping, int parallelism, String... nameSuffix) {
 		StringBuilder nb = new StringBuilder(source.name()).append("->").append(destination.name());
 		for (String s : nameSuffix)
 			nb.append("-").append(s);
 		nb.append("[");
 		String name = nb.toString();
 		for (int i = 0; i < parallelism; i++)
-			threads.add(new Thread(Concurrents.forever(r, intervals.toArray(new Runnable[intervals.size()])), name + i + "]"));
+			threads.add(new Thread(Concurrents.until(stopping, intervals.toArray(new Runnable[intervals.size()])), name + i + "]"));
 	}
 
 	public void start() {
@@ -73,7 +74,7 @@ public final class Pump<V> implements Closeable {
 		futures = Futures.allAsList(fs);
 	}
 
-	void startAndWait() {
+	public void startAndWait() {
 		try {
 			start();
 			futures.get();
@@ -82,7 +83,7 @@ public final class Pump<V> implements Closeable {
 		}
 	}
 
-	void startAndWait(long timeout, TimeUnit unit) {
+	public void startAndWait(long timeout, TimeUnit unit) {
 		try {
 			start();
 			futures.get(timeout, unit);
@@ -98,7 +99,7 @@ public final class Pump<V> implements Closeable {
 			source.close();
 			destination.close();
 			futures.cancel(true);
-			ex.shutdown();
+			if (null != ex) ex.shutdown();
 			Concurrents.waitShutdown(ex, logger);
 		} catch (IOException e) {
 			logger.error("Close failure", e);
@@ -106,5 +107,4 @@ public final class Pump<V> implements Closeable {
 			ex = null;
 		}
 	}
-
 }

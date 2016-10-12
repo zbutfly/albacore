@@ -38,7 +38,7 @@ public interface QueueMap<K, I, O> extends AbstractQueue<I, O> {
 	default <K1> Pump<O> pump(QueueMap<K1, O, ?> dest, long batchSize, int parallelismPerKey, Converter<K, K1> keying) {
 		Pump<O> p = new Pump<O>(parallelismPerKey * keys().size(), this, dest);
 		for (K k : keys())
-			p.submit(() -> dest.enqueue(e -> keying.apply(k), dequeue(batchSize, k)), parallelismPerKey);
+			p.submit(() -> dest.enqueue(e -> keying.apply(k), dequeue(batchSize, k)) <= 0, parallelismPerKey);
 		return p;
 	}
 }

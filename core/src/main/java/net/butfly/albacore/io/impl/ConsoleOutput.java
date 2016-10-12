@@ -2,19 +2,22 @@ package net.butfly.albacore.io.impl;
 
 import net.butfly.albacore.io.OutputQueue;
 import net.butfly.albacore.io.OutputQueueImpl;
+import net.butfly.albacore.lambda.Converter;
 
-public class ConsoleOutput extends OutputQueueImpl<String, String> implements OutputQueue<String> {
+public class ConsoleOutput<E> extends OutputQueueImpl<E, String> implements OutputQueue<E> {
 	private static final long serialVersionUID = 7782039002400807964L;
-	public static final OutputQueue<String> INSTANCE = new ConsoleOutput("CONSOLE-OUTPUT-QUEUE");
+	private final Converter<E, String> stringify;
 
-	private ConsoleOutput(String name) {
-		super(name);
+	public ConsoleOutput(Converter<E, String> stringify) {
+		super("CONSOLE-OUTPUT-QUEUE");
+		this.stringify = stringify;
 	}
 
 	@Override
-	protected boolean enqueueRaw(String d) {
-		stats(Act.INPUT, d);
-		System.out.println(d);
+	protected boolean enqueueRaw(E e) {
+		String s = stringify.apply(e);
+		stats(Act.INPUT, s);
+		System.out.println(s);
 		return true;
 	}
 }
