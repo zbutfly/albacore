@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 
 import net.butfly.albacore.lambda.Converter;
 import scala.Tuple2;
@@ -48,5 +49,27 @@ public final class Collections extends Utils {
 			map.put(e._1, e._2);
 		});
 		return map;
+	}
+
+	public static <T> List<T> disorderize(Collection<T> origin) {
+		if (null == origin) return null;
+		ThreadLocalRandom r = ThreadLocalRandom.current();
+		List<T> o = new ArrayList<>(origin);
+		List<T> d = new ArrayList<>(origin.size());
+		while (o.size() > 0)
+			d.add(o.remove(r.nextInt() % o.size()));
+		return d;
+	}
+
+	public static <T> List<T> asList(Iterable<T> it) {
+		if (null == it) return null;
+		return it instanceof List ? (List<T>) it : asList(it.iterator());
+	}
+
+	public static <T> List<T> asList(Iterator<T> iter) {
+		List<T> l = new ArrayList<>();
+		while (iter.hasNext())
+			l.add(iter.next());
+		return l;
 	}
 }

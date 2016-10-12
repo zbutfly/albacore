@@ -38,7 +38,7 @@ public abstract class QueueImpl<I, O, D> implements Queue<I, O>, Statistical<D> 
 	}
 
 	@Override
-	public final boolean empty() {
+	public boolean empty() {
 		return size() == 0;
 	}
 
@@ -71,9 +71,8 @@ public abstract class QueueImpl<I, O, D> implements Queue<I, O>, Statistical<D> 
 		return c;
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
-	public long enqueue(I... e) {
+	public long enqueue(@SuppressWarnings("unchecked") I... e) {
 		long c = 0;
 		while (full())
 			Concurrents.waitSleep(FULL_WAIT_MS);
@@ -84,15 +83,24 @@ public abstract class QueueImpl<I, O, D> implements Queue<I, O>, Statistical<D> 
 
 	@Override
 	public O dequeue() {
+		return dequeueWait();
+	}
+
+	protected final O dequeueWait() {
 		while (true) {
 			O e = dequeueRaw();
-			if (null != e) return e;
-			else if (!Concurrents.waitSleep(EMPTY_WAIT_MS)) return null;
+			if (null == e) return e;
+			gc();
+			if (!Concurrents.waitSleep(EMPTY_WAIT_MS)) return null;
 		}
 	}
 
 	@Override
 	public List<O> dequeue(long batchSize) {
+		return dequeueWait(batchSize);
+	}
+
+	protected final List<O> dequeueWait(long batchSize) {
 		List<O> batch = new ArrayList<>();
 		long prev;
 		do {

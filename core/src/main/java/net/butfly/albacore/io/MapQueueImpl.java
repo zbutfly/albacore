@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 
 import net.butfly.albacore.lambda.Converter;
+import net.butfly.albacore.utils.Collections;
 import net.butfly.albacore.utils.async.Concurrents;
 
 public abstract class MapQueueImpl<K, I, O, D> extends QueueImpl<I, O, D> implements QueueMap<K, I, O> {
@@ -49,8 +50,9 @@ public abstract class MapQueueImpl<K, I, O, D> extends QueueImpl<I, O, D> implem
 	@SafeVarargs
 	public final List<O> dequeue(long batchSize, K... key) {
 		List<O> batch = new ArrayList<>();
-		Iterable<K> ks = key == null || key.length == 0 ? queues.keySet() : Arrays.asList(key);
+		List<K> ks = Collections.disorderize(key == null || key.length == 0 ? queues.keySet() : Arrays.asList(key));
 		int prev;
+		boolean continuing = false;
 		do {
 			prev = batch.size();
 			for (K k : ks) {
@@ -62,7 +64,9 @@ public abstract class MapQueueImpl<K, I, O, D> extends QueueImpl<I, O, D> implem
 				}
 			}
 			if (batch.size() == 0) Concurrents.waitSleep(EMPTY_WAIT_MS);
-		} while (batch.size() < batchSize && (prev != batch.size() || batch.size() == 0));
+			continuing = batch.size() < batchSize && (prev != batch.size() || batch.size() == 0);
+			if (continuing) ks = Collections.disorderize(ks);
+		} while (continuing);
 		return batch;
 	}
 

@@ -1,6 +1,8 @@
 package net.butfly.albacore.io;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 public abstract class InputQueueImpl<O, D> extends QueueImpl<Void, O, D> implements InputQueue<O> {
 	private static final long serialVersionUID = -1;
@@ -10,9 +12,28 @@ public abstract class InputQueueImpl<O, D> extends QueueImpl<Void, O, D> impleme
 	}
 
 	@Override
-	public long size() {
-		return Long.MAX_VALUE;
+	public O dequeue() {
+		while (true) {
+			O e = dequeueRaw();
+			if (null == e) gc();
+			return e;
+		}
 	}
+
+	@Override
+	public List<O> dequeue(long batchSize) {
+		List<O> batch = new ArrayList<>();
+		while (batch.size() < batchSize) {
+			O e = dequeueRaw();
+			if (null == e) break;
+			batch.add(e);
+			break;
+		}
+		gc();
+		return batch;
+	}
+
+	// Invalid methods.
 
 	@Override
 	@Deprecated
