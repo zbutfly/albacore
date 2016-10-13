@@ -1,7 +1,5 @@
 package net.butfly.albacore.utils;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -17,7 +15,6 @@ import net.butfly.albacore.lambda.Supplier;
  */
 public class Instances extends Utils {
 	private static final Map<Object, Object> INSTANCE_POOL = new ConcurrentHashMap<Object, Object>();
-	private static final String List = null;
 
 	@Deprecated
 	public static <T> T construct(Class<T> constructClass, Object... constructParams) {
