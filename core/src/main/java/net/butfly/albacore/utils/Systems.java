@@ -1,5 +1,10 @@
 package net.butfly.albacore.utils;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+import net.butfly.albacore.utils.logger.Logger;
+
 public final class Systems extends Utils {
 	public static Class<?> getMainClass() {
 		try {
@@ -11,5 +16,18 @@ public final class Systems extends Utils {
 
 	public static boolean isDebug() {
 		return Boolean.parseBoolean(System.getProperty("albacore.debug"));
+	}
+
+	public static String suffixDebug(String origin, Logger logger) {
+		if (Systems.isDebug()) {
+			String suffix = "_DEBUG" + new SimpleDateFormat("yyyyMMdd").format(new Date());
+			logger.warn("Debug mode, suffix [" + suffix + "] append to origin: [" + origin + "], now: [" + origin + suffix + "].");
+			return origin + suffix;
+		} else return origin;
+	}
+
+	public static void dryDebug(Runnable run, Logger logger, String info) {
+		if (Systems.isDebug()) logger.warn("Debug mode, Dry run " + info + "!");
+		else run.run();;
 	}
 }

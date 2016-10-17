@@ -1,13 +1,18 @@
 package net.butfly.albacore.io;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
+import net.butfly.albacore.lambda.Converter;
+
 public abstract class OutputQueueImpl<I, D> extends QueueImpl<I, Void, D> implements OutputQueue<I> {
 	private static final long serialVersionUID = -1;
+	protected final Converter<I, D> conv;
 
-	protected OutputQueueImpl(String name) {
+	protected OutputQueueImpl(String name, Converter<I, D> conv) {
 		super(name, Long.MAX_VALUE);
+		this.conv = conv;
 	}
 
 	@Override
@@ -17,7 +22,7 @@ public abstract class OutputQueueImpl<I, D> extends QueueImpl<I, Void, D> implem
 
 	@Override
 	public final boolean enqueue(I e) {
-		return (enqueueRaw(e));
+		return enqueueRaw(e);
 	}
 
 	@Override
@@ -30,12 +35,10 @@ public abstract class OutputQueueImpl<I, D> extends QueueImpl<I, Void, D> implem
 		return c;
 	}
 
+	@SafeVarargs
 	@Override
-	public long enqueue(@SuppressWarnings("unchecked") I... e) {
-		long c = 0;
-		for (int i = 0; i < e.length; i++)
-			if (e[i] != null && enqueueRaw(e[i])) c++;
-		return c;
+	public final long enqueue(I... e) {
+		return enqueue(Arrays.asList(e));
 	}
 
 	// invalid methods

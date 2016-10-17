@@ -38,7 +38,7 @@ public class LoggerOutput extends OutputQueueImpl<String, String> implements Out
 	}
 
 	private LoggerOutput(String loggerName, Level level) {
-		super("LOGGER-OUTPUT-QUEUE-" + level.name());
+		super("LOGGER-OUTPUT-QUEUE-" + level.name(), s -> s);
 		this.level = level;
 		this.logger = Instances.fetch(() -> Logger.getLogger(loggerName), Logger.class, loggerName);
 		loggings = new HashMap<>();

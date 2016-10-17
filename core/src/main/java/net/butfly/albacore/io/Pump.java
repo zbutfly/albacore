@@ -92,6 +92,14 @@ public final class Pump<V> implements Closeable {
 		}
 	}
 
+	public void waiting() {
+		try {
+			futures.get();
+		} catch (InterruptedException | ExecutionException e) {
+			logger.error("Pump waiting failure", e);
+		}
+	}
+
 	@Override
 	public void close() {
 		if (!running.getAndSet(false)) new RuntimeException("Pump close failure: not in pumping, not started or close already");
