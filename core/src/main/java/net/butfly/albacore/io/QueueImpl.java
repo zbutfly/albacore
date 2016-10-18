@@ -3,7 +3,6 @@ package net.butfly.albacore.io;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import net.butfly.albacore.io.stats.Statistical;
@@ -12,11 +11,8 @@ import net.butfly.albacore.utils.async.Concurrents;
 public abstract class QueueImpl<I, O, D> implements Queue<I, O>, Statistical<D> {
 	private static final long serialVersionUID = -1;
 
-	private final AtomicLong capacity;
-	private final AtomicBoolean orderlyRead = new AtomicBoolean(false);
-	private final AtomicBoolean orderlyWrite = new AtomicBoolean(false);
-
 	private final String name;
+	private final AtomicLong capacity;
 
 	protected QueueImpl(String name, long capacity) {
 		this.name = name;
@@ -114,28 +110,6 @@ public abstract class QueueImpl<I, O, D> implements Queue<I, O>, Statistical<D> 
 		} while (batch.size() < batchSize && (prev != batch.size() || batch.size() == 0));
 		if (empty()) gc();
 		return batch;
-	}
-
-	// TODO
-
-	@Override
-	public final boolean isReadOrderly() {
-		return orderlyRead.get();
-	}
-
-	@Override
-	public final boolean isWriteOrderly() {
-		return orderlyWrite.get();
-	}
-
-	@Override
-	public final void setReadOrderly(boolean orderly) {
-		orderlyRead.set(orderly);
-	}
-
-	@Override
-	public final void setWriteOrderly(boolean orderly) {
-		orderlyWrite.set(orderly);
 	}
 
 	protected D stats(Act act, D e) {

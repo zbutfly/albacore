@@ -8,7 +8,7 @@ public abstract class InputQueueImpl<O, D> extends QueueImpl<Void, O, D> impleme
 	private static final long serialVersionUID = -1;
 
 	protected InputQueueImpl(String name) {
-		super(name, 0);
+		super(name, Long.MAX_VALUE);
 	}
 
 	@Override

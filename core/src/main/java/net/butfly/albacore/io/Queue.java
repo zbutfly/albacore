@@ -3,6 +3,8 @@ package net.butfly.albacore.io;
 import java.util.Iterator;
 import java.util.List;
 
+import net.butfly.albacore.lambda.Converter;
+import net.butfly.albacore.utils.Collections;
 import net.butfly.albacore.utils.logger.Logger;
 
 /**
@@ -64,14 +66,6 @@ public interface Queue<I, O> extends AbstractQueue<I, O> {
 
 	List<O> dequeue(long batchSize);
 
-	boolean isReadOrderly();
-
-	boolean isWriteOrderly();
-
-	void setReadOrderly(boolean orderly);
-
-	void setWriteOrderly(boolean orderly);
-
 	/* from interfaces */
 
 	@Override
@@ -79,9 +73,63 @@ public interface Queue<I, O> extends AbstractQueue<I, O> {
 
 	default void gc() {}
 
-	default Pump<O> pump(Queue<O, ?> dest, long batchSize, int parallelism) {
-		Pump<O> p = new Pump<O>(parallelism, this, dest);
+	default DirectPump<O> pump(Queue<O, ?> dest, long batchSize, int parallelism) {
+		DirectPump<O> p = new DirectPump<O>(this, dest, parallelism);
 		p.submit(() -> dest.enqueue(dequeue(batchSize)) <= 0, parallelism);
 		return p;
+	}
+
+	default <O2> Queue<I, O2> then(Converter<O, O2> conv) {
+		@SuppressWarnings("resource")
+		final Queue<I, O> main = this;
+		return new QueueImpl<I, O2, O>(null, main.capacity()) {
+			private static final long serialVersionUID = -5894142335125843377L;
+
+			@Override
+			public long size() {
+				return main.size();
+			}
+
+			@Override
+			protected boolean enqueueRaw(I d) {
+				return false;
+			}
+
+			@Override
+			protected O2 dequeueRaw() {
+				return null;
+			}
+
+			@Override
+			public boolean enqueue(I e) {
+				return main.enqueue(e);
+			}
+
+			@Override
+			public long enqueue(Iterable<I> it) {
+				return main.enqueue(it);
+			}
+
+			@Override
+			public long enqueue(Iterator<I> iter) {
+				return main.enqueue(iter);
+			}
+
+			@SafeVarargs
+			@Override
+			public final long enqueue(I... e) {
+				return main.enqueue(e);
+			}
+
+			@Override
+			public O2 dequeue() {
+				return conv.apply(main.dequeue());
+			}
+
+			@Override
+			public List<O2> dequeue(long batchSize) {
+				return Collections.transform(main.dequeue(batchSize), conv);
+			}
+		};
 	}
 }

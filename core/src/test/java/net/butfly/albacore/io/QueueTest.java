@@ -6,8 +6,8 @@ import net.butfly.albacore.utils.async.Concurrents;
 
 public class QueueTest {
 	public static void main(String... args) {
-		Pump<String> p = RandomStringInput.INSTANCE.pump(new LoggerOutput(), 3, 2);
+		DirectPump<String> p = RandomStringInput.INSTANCE.pump(new LoggerOutput(), 3, 2);
 		p.interval(() -> Concurrents.waitSleep(3000));
-		p.startAndWait();
+		p.start().waiting();
 	}
 }

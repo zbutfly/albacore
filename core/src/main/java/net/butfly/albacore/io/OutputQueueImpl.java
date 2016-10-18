@@ -11,7 +11,7 @@ public abstract class OutputQueueImpl<I, D> extends QueueImpl<I, Void, D> implem
 	protected final Converter<I, D> conv;
 
 	protected OutputQueueImpl(String name, Converter<I, D> conv) {
-		super(name, Long.MAX_VALUE);
+		super(name, 0);
 		this.conv = conv;
 	}
 
