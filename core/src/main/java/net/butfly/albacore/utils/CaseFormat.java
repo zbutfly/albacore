@@ -40,7 +40,12 @@ public enum CaseFormat {
 		Objects.noneNull(str);
 		if (str.matches("^[a-z]*$")) return LOWER_CAMEL;
 		if (str.matches("^[a-z][A-Za-z]+")) return LOWER_CAMEL;
-		return (to == this || to == CaseFormat.ORIGINAL) ? str : convert(to, str);
+		if (str.matches("^[A-Z][A-Za-z]+")) return UPPER_CAMEL;
+		if (str.matches("^[a-z_]+")) return LOWER_UNDERSCORE;
+		if (str.matches("^[A-Z_]+")) return UPPER_UNDERSCORE;
+		if (str.matches("^[a-z\\.]+")) return LOWER_DOT;
+		if (str.matches("^[a-z\\-]+")) return LOWER_HYPHEN;
+		return LOWER_CAMEL;
 	}
 
 	CaseFormat(com.google.common.base.CaseFormat format) {
