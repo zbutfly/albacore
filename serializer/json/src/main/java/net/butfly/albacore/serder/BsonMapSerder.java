@@ -92,7 +92,7 @@ public class BsonMapSerder extends BinarySerderBase<Map<String, Object>> impleme
 		return der(new ByteArray(in), to);
 	}
 
-	private CaseFormat format = CaseFormat.NO_CHANGE;
+	private CaseFormat format = CaseFormat.ORIGINAL;
 
 	@Override
 	public BsonMapSerder mapping(CaseFormat to) {

@@ -82,7 +82,7 @@ public class BsonEntitySerder<E> extends BinarySerderBase<E> implements ArrableB
 		return der(new ByteArray(in), to);
 	}
 
-	private CaseFormat format = CaseFormat.NO_CHANGE;
+	private CaseFormat format = CaseFormat.ORIGINAL;
 
 	@Override
 	public BsonEntitySerder<E> mapping(CaseFormat to) {

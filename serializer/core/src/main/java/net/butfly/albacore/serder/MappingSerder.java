@@ -17,7 +17,7 @@ public interface MappingSerder<P, D> extends Serder<P, D> {
 	}
 
 	default CaseFormat mapping() {
-		return CaseFormat.NO_CHANGE;
+		return CaseFormat.ORIGINAL;
 	}
 
 	default MappingSerder<P, D> mapping(CaseFormat to) {

@@ -425,8 +425,10 @@ public class Objects extends Utils {
 		}
 	}
 
-	public static void notNull(Object target) {
+	public static void noneNull(Object... target) {
 		if (null == target) throw new NullPointerException();
+		if (target.length == 0) return;
+		for (Object o : target) if (null == o) throw new NullPointerException();
 	}
 
 	public static boolean isEmpty(Object target) {

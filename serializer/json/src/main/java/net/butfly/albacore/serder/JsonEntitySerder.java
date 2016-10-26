@@ -57,7 +57,7 @@ public class JsonEntitySerder<E> extends TextSerderBase<E> implements ArrableTex
 		}
 	}
 
-	private CaseFormat format = CaseFormat.NO_CHANGE;
+	private CaseFormat format = CaseFormat.ORIGINAL;
 
 	@Override
 	public JsonEntitySerder<E> mapping(CaseFormat to) {

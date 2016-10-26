@@ -69,7 +69,7 @@ public final class JNDIUtils extends Utils {
 		String type = resource.attributeValue("type");
 		if (Objects.isEmpty(fact)) {
 			Object ds = Reflections.construct(type);
-			Objects.notNull(ds);
+			Objects.noneNull(ds);
 			XMLUtils.setPropsByAttr(ds, resource, "name", "type");
 			return ds;
 		} else {

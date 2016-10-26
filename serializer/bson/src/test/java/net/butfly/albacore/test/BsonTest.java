@@ -2,12 +2,12 @@ package net.butfly.albacore.test;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Date;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.bson.BSONObject;
 
 import com.google.common.reflect.TypeToken;
-import com.mongodb.BasicDBObject;
 
 import net.butfly.albacore.serder.BsonObjectSerder;
 import net.butfly.albacore.serder.BsonSerder;
@@ -20,7 +20,8 @@ public class BsonTest {
 
 		Bean o = new Bean();
 		BSONObject s = ser.ser(o);
-		System.out.println("Origin: " + ((BasicDBObject) s).toJson());
+		s.put("now", new Date());
+		System.out.println("Origin: " + s.get("title") + s.get("now"));
 		System.out.println("BSON: " + o.titles() + " => " + ser.der(s, TypeToken.of(Bean.class)).titles());
 
 		// System.out.println("BSON args: " + o.titles() + " => " + ((Bean)
@@ -39,6 +40,7 @@ public class BsonTest {
 		public Enums type;
 		public String title;
 		public Bean bean;
+		public Date now;
 
 		public Bean() {
 			this(true);
@@ -51,6 +53,7 @@ public class BsonTest {
 			this.title = RandomStringUtils.randomAlphanumeric(16);
 			this.type = Enums.values()[(int) (Math.random() * 3)];
 			bean = embed ? new Bean(false) : null;
+			now = new Date();
 		}
 
 		public String titles() {

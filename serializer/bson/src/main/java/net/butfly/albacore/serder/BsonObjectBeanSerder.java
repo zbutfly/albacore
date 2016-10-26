@@ -58,7 +58,7 @@ public class BsonObjectBeanSerder implements Serder<Object, BSONObject>, BeanSer
 		}
 	}
 
-	private CaseFormat format = CaseFormat.NO_CHANGE;
+	private CaseFormat format = CaseFormat.ORIGINAL;
 
 	@Override
 	public BsonObjectBeanSerder mapping(CaseFormat to) {

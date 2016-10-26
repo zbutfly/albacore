@@ -49,7 +49,7 @@ public final class Texts extends Utils {
 	}
 
 	public static long bytes2long(byte[] bytes) {
-		Objects.notNull(bytes);
+		Objects.noneNull(bytes);
 		if (bytes.length < 8) bytes = Arrays.copyOf(bytes, 8);
 		long l = 0L;
 		for (int i = 0; i < 8; i++)

@@ -16,8 +16,8 @@ import net.butfly.albacore.utils.CaseFormat;
 public class JacksonTest {
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static void main(String... arg) throws IOException {
-		final JsonSerder jsonSerder = new JsonSerder().mapping(CaseFormat.NO_CHANGE);
-		final BsonSerder bsonSerder = new BsonSerder().mapping(CaseFormat.NO_CHANGE);
+		final JsonSerder jsonSerder = new JsonSerder().mapping(CaseFormat.ORIGINAL);
+		final BsonSerder bsonSerder = new BsonSerder().mapping(CaseFormat.ORIGINAL);
 
 		Bean obj = new Bean();
 		String json = jsonSerder.ser(obj);

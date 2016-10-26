@@ -1,12 +1,10 @@
 package net.butfly.albacore.utils;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import com.google.common.annotations.GwtCompatible;
 
 @GwtCompatible
 public enum CaseFormat {
-	NO_CHANGE(null),
+	ORIGINAL(null),
 	/**
 	 * Dotted variable naming convention, e.g., "lower.hyphen".
 	 */
@@ -38,14 +36,20 @@ public enum CaseFormat {
 
 	private com.google.common.base.CaseFormat format;
 
+	public final CaseFormat parse(String str) {
+		Objects.noneNull(str);
+		if (str.matches("^[a-z]*$")) return LOWER_CAMEL;
+		if (str.matches("^[a-z][A-Za-z]+")) return LOWER_CAMEL;
+		return (to == this || to == CaseFormat.ORIGINAL) ? str : convert(to, str);
+	}
+
 	CaseFormat(com.google.common.base.CaseFormat format) {
 		this.format = format;
 	}
 
 	public final String to(CaseFormat to, String str) {
-		checkNotNull(to);
-		checkNotNull(str);
-		return (to == this || to == CaseFormat.NO_CHANGE) ? str : convert(to, str);
+		Objects.noneNull(to, str);
+		return (to == this || to == CaseFormat.ORIGINAL) ? str : convert(to, str);
 	}
 
 	String convert(CaseFormat to, String str) {
