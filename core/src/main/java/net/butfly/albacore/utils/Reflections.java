@@ -156,13 +156,12 @@ public final class Reflections extends Utils {
 
 	public static Field getDeclaredField(Class<?> clazz, String name) {
 		noneNull("", clazz, name);
-		while (null != clazz) {
+		while (null != clazz)
 			try {
 				return clazz.getDeclaredField(name);
 			} catch (NoSuchFieldException ex) {
 				clazz = clazz.getSuperclass();
 			}
-		}
 		return null;
 	}
 

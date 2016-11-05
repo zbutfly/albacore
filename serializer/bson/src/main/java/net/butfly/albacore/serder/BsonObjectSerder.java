@@ -9,27 +9,18 @@ import org.bson.LazyBSONCallback;
 import org.bson.LazyBSONObject;
 import org.bson.io.BasicOutputBuffer;
 import org.bson.io.OutputBuffer;
-import net.butfly.albacore.utils.logger.Logger;
 
-import com.google.common.reflect.TypeToken;
+import com.mongodb.LazyDBObject;
 
 import net.butfly.albacore.serder.bson.DBEncoder;
-import net.butfly.albacore.serder.support.ByteArray;
+import net.butfly.albacore.utils.Reflections;
 
-public class BsonObjectSerder implements Serder<ByteArray, BSONObject> {
+public final class BsonObjectSerder implements Serder<BSONObject, byte[]> {
 	private static final long serialVersionUID = 6664350391207228363L;
-	private static final Logger logger = Logger.getLogger(BsonObjectSerder.class);
+	public static final BsonObjectSerder DEFAULT = new BsonObjectSerder();
 
 	@Override
-	public <T extends ByteArray> BasicBSONObject ser(T from) {
-		BasicBSONObject r = new BasicBSONObject();
-		r.putAll(new LazyBSONObject(from.get(), new LazyBSONCallback()));
-		return r;
-	}
-
-	@SuppressWarnings("unchecked")
-	@Override
-	public <T extends ByteArray> T der(BSONObject from, TypeToken<T> to) {
+	public byte[] ser(BSONObject from) {
 		if (null == from) return null;
 		OutputBuffer buf = new BasicOutputBuffer();
 		try {
@@ -37,7 +28,6 @@ public class BsonObjectSerder implements Serder<ByteArray, BSONObject> {
 			try {
 				new DBEncoder().writeObject(buf, from);
 			} catch (Exception ex) {
-				logger.error("BSON unmarshall failure from " + to.toString(), ex);
 				return null;
 			}
 			try {
@@ -45,9 +35,50 @@ public class BsonObjectSerder implements Serder<ByteArray, BSONObject> {
 			} catch (IOException e) {
 				return null;
 			}
-			return (T) new ByteArray(bao.toByteArray());
+			return bao.toByteArray();
 		} finally {
 			buf.close();
+		}
+	}
+
+	@Override
+	public <T extends BSONObject> T der(byte[] from, Class<T> to) {
+		if (!BasicBSONObject.class.isAssignableFrom(to)) throw new UnsupportedOperationException();
+		T r = Reflections.construct(to);
+		r.putAll(new LazyBSONObject(from, new LazyBSONCallback()));
+		return r;
+	}
+
+	public static class MongoSerder implements BeanSerder<Object, BSONObject> {
+		private static final long serialVersionUID = 8050515547072577482L;
+		public static final MongoSerder DEFAULT = new MongoSerder();
+
+		@Override
+		public BSONObject ser(Object from) {
+			BSONObject origin = new LazyDBObject(BsonSerder.DEFAULT_OBJ.ser(from), new LazyBSONCallback());
+			BSONObject mapped = new BasicBSONObject();
+			for (String key : origin.keySet())
+				mapped.put(mappingFieldName(key), origin.get(key));
+			return mapped;
+		}
+
+		@Override
+		public <T> T der(BSONObject from, Class<T> to) {
+			BSONObject mapped = new BasicBSONObject();
+			for (String prop : from.keySet()) {
+				String fieldName = unmappingFieldName(to, prop);
+				mapped.put(fieldName, processEmbedded(from.get(prop), Reflections.getDeclaredField(to, fieldName).getType()));
+			}
+			try (OutputBuffer buf = new BasicOutputBuffer();) {
+				new DBEncoder().writeObject(buf, mapped);
+				return BsonSerder.DEFAULT_OBJ.der(buf.toByteArray(), to);
+			}
+		}
+
+		private Object processEmbedded(Object fieldValue, Class<?> fieldClass) {
+			if (null == fieldValue) return null;
+			if (fieldValue instanceof BSONObject) return der((BSONObject) fieldValue, fieldClass);
+			return fieldValue;
 		}
 	}
 }

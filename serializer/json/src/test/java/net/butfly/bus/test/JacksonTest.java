@@ -6,59 +6,53 @@ import java.util.Map;
 
 import org.apache.commons.lang3.RandomStringUtils;
 
-import com.google.common.reflect.TypeToken;
-
 import net.butfly.albacore.serder.BsonSerder;
 import net.butfly.albacore.serder.JsonSerder;
-import net.butfly.albacore.serder.support.ByteArray;
-import net.butfly.albacore.utils.CaseFormat;
 
 public class JacksonTest {
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static void main(String... arg) throws IOException {
-		final JsonSerder jsonSerder = new JsonSerder().mapping(CaseFormat.ORIGINAL);
-		final BsonSerder bsonSerder = new BsonSerder().mapping(CaseFormat.ORIGINAL);
+		final JsonSerder jsonSerder = JsonSerder.JSON_OBJECT;
 
 		Bean obj = new Bean();
 		String json = jsonSerder.ser(obj);
 		System.out.println("Bean => JSON: " + json);
-		System.out.println("Bean => JSON title: " + obj.titles() + " => " + jsonSerder.der(json, TypeToken.of(Bean.class)).titles());
+		Bean b = (Bean) jsonSerder.der(json, Bean.class);
+		System.out.println("Bean => JSON title: " + obj.titles() + " => " + b.titles());
 		System.out.println();
 
-		ByteArray bson = bsonSerder.ser(obj);
-		System.out.println("Bean => BSON length: " + bson.get().length);
-		System.out.println("BSON => Bean title: " + obj.titles() + " => " + bsonSerder.der(bson, TypeToken.of(Bean.class)).titles());
+		byte[] bson = BsonSerder.DEFAULT_OBJ.ser(obj);
+		System.out.println("Bean => BSON length: " + bson.length);
+		System.out.println("BSON => Bean title: " + obj.titles() + " => " + BsonSerder.DEFAULT_OBJ.der(bson, Bean.class).titles());
 		System.out.println();
 
 		Object[] args = new Object[] { obj, 1, true };
 		System.out.println("Orig args [title: " + obj.titles() + " => " + ((Bean) args[0]).titles() + "], " + args[1] + ", " + args[2]);
 		args = jsonSerder.der(jsonSerder.ser(args), Bean.class, int.class, boolean.class);
 		System.out.println("JSON args [title: " + obj.titles() + " => " + ((Bean) args[0]).titles() + "], " + args[1] + ", " + args[2]);
-		args = bsonSerder.der(bsonSerder.ser(new Object[] { obj, 1, true }), Bean.class, int.class, boolean.class);
+		args = BsonSerder.DEFAULT_OBJ.der(BsonSerder.DEFAULT_OBJ.ser(new Object[] { obj, 1, true }), Bean.class, int.class, boolean.class);
 		System.out.println("BSON args [title: " + obj.titles() + " => " + ((Bean) args[0]).titles() + "], " + args[1] + ", " + args[2]);
 		System.out.println();
 
-		Map<String, ?> map = map();
+		Map<String, Object> map = map();
 		System.out.println("Origin Map: " + map + ", title: " + ((Bean) map.get("object")).titles());
 		json = jsonSerder.ser(map);
 		System.out.println("Map => JSON: " + json);
-		map = jsonSerder.der(json, new TypeToken<Map<String, ?>>() {
-			private static final long serialVersionUID = -4110131747435668077L;
-		});
+		map = JsonSerder.JSON_MAPPER.der(json);
 		System.out.println("JSON => Map: " + map.toString());
 		System.out.println("JSON => Map sub title: " + ((Map) ((Map) map.get("object")).get("bean")).get("title"));
 		System.out.println();
 
 		map = map();
 		System.out.println("Origin Map: " + map + ", title: " + ((Bean) map.get("object")).titles());
-		bson = bsonSerder.ser(map);
-		System.out.println("Map => BSON length: " + bson.get().length);
-		map = bsonSerder.der(bson, TypeToken.of(Map.class));
+		bson = BsonSerder.DEFAULT_MAP.ser(map);
+		System.out.println("Map => BSON length: " + bson.length);
+		map = BsonSerder.DEFAULT_MAP.der(bson);
 		System.out.println("BSON => Map sub title: " + ((Map) ((Map) map.get("object")).get("bean")).get("title"));
 		System.out.println();
 	}
 
-	private static Map<String, ?> map() {
+	private static Map<String, Object> map() {
 		Map<String, Object> map = new HashMap<>();
 		map.put("name", RandomStringUtils.randomAlphabetic(8));
 		map.put("count", (int) (Math.random() * 10));

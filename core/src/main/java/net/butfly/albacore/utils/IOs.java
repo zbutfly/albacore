@@ -1,5 +1,6 @@
 package net.butfly.albacore.utils;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -65,5 +66,18 @@ public final class IOs extends Utils {
 		for (Properties p : props)
 			if (null != p && p.containsKey(key)) return p.getProperty(key);
 		return defaultValue;
+	}
+
+	public static byte[] readAll(final InputStream is) {
+		Reflections.noneNull("null byte array not allow", is);
+		try (ByteArrayOutputStream os = new ByteArrayOutputStream();) {
+			byte[] buffer = new byte[1024];
+			int n;
+			while (-1 != (n = is.read(buffer)))
+				os.write(buffer, 0, n);
+			return os.toByteArray();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 }

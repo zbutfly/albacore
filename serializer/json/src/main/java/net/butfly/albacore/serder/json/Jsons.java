@@ -92,18 +92,17 @@ public final class Jsons extends Utils {
 			if (!node.has(Integer.toString(len))) return len;
 	}
 
-	private static final JsonSerder jsd = new JsonSerder();
-
 	@SafeVarargs
 	public static String simpleJSON(String key, Object value, Tuple2<String, Object>... kvs) {
 		Map<String, Object> map = new HashMap<>();
 		map.put(key, value);
 		for (Tuple2<String, ?> e : kvs)
 			map.put(e._1, e._2);
-		return jsd.ser(map);
+		return JsonSerder.JSON_MAPPER.ser(map).toString();
 	}
 
+	@SuppressWarnings("unchecked")
 	public static String simpleJSON(Map<String, ?> map) {
-		return jsd.ser(map);
+		return JsonSerder.JSON_MAPPER.ser((Map<String, Object>) map).toString();
 	}
 }

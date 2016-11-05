@@ -4,12 +4,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import com.google.common.reflect.TypeToken;
+import net.butfly.albacore.utils.IOs;
 
-import net.butfly.albacore.serder.support.ByteArray;
+public interface BinarySerder<PRESENT> extends Serder<PRESENT, byte[]> {
+	default void ser(PRESENT from, OutputStream to) throws IOException {
+		to.write(ser(from));
+	}
 
-public interface BinarySerder<PRESENT> extends ContentSerder<PRESENT, ByteArray> {
-	<T extends PRESENT> void ser(T from, OutputStream to) throws IOException;
-
-	<T extends PRESENT> T der(InputStream from, TypeToken<T> to) throws IOException;
+	default <T extends PRESENT> T der(InputStream from, Class<T> to) throws IOException {
+		return der(IOs.readAll(from), to);
+	}
 }

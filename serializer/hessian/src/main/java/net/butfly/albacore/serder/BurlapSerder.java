@@ -6,47 +6,37 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import org.apache.http.entity.ContentType;
-
 import com.caucho.burlap.io.BurlapInput;
 import com.caucho.burlap.io.BurlapOutput;
 import com.caucho.hessian.io.AbstractSerializerFactory;
 import com.caucho.hessian.io.SerializerFactory;
-import com.google.common.reflect.TypeToken;
 
 import net.butfly.albacore.exception.SystemException;
-import net.butfly.albacore.serder.support.ByteArray;
-import net.butfly.albacore.serder.support.ContentTypes;
 import net.butfly.albacore.serder.support.SerderFactorySupport;
 import net.butfly.albacore.utils.Reflections;
 
-public class BurlapSerder extends BinarySerderBase<Object> implements ArrableBinarySerder<Object>, SerderFactorySupport,
-		ClassInfoSerder<Object, ByteArray> {
+public final class BurlapSerder implements BinarySerder<Object>, SerderFactorySupport, ClassInfoSerder<Object, byte[]> {
 	private static final long serialVersionUID = 691937271877170782L;
 
-	public BurlapSerder() {
-		super(ContentTypes.APPLICATION_BURLAP);
-	}
-
-	public BurlapSerder(ContentType... contentType) {
-		super(ContentTypes.APPLICATION_BURLAP, contentType);
-	}
-
 	@Override
-	public <T> ByteArray ser(T from) {
-
+	public byte[] ser(Object from) {
 		try (ByteArrayOutputStream out = new ByteArrayOutputStream();) {
 			ser(from, out);
-			return new ByteArray(out);
+			return out.toByteArray();
 		} catch (IOException ex) {
 			return null;
 		}
 	}
 
 	@Override
-	public <T> T der(ByteArray from, TypeToken<T> to) {
-		try (ByteArrayInputStream in = from.input();) {
-			return der(in, to);
+	public <T> T der(byte[] from) {
+		return der(from, (Class<T>) null);
+	}
+
+	@Override
+	public <T> T der(byte[] from, Class<T> to) {
+		try (ByteArrayInputStream in = new ByteArrayInputStream(from);) {
+			return der(in, null);
 		} catch (IOException ex) {
 			return null;
 		}
@@ -66,7 +56,7 @@ public class BurlapSerder extends BinarySerderBase<Object> implements ArrableBin
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T> T der(InputStream in, TypeToken<T> to) throws IOException {
+	public <T> T der(InputStream in, Class<T> clazz) throws IOException {
 		BurlapInput hi = new BurlapInput(in);
 		if (null != factory) hi.setSerializerFactory(factory);
 		try {
@@ -78,8 +68,8 @@ public class BurlapSerder extends BinarySerderBase<Object> implements ArrableBin
 
 	@Override
 	@SafeVarargs
-	public final Object[] der(ByteArray from, Class<?>... tos) {
-		try (ByteArrayInputStream in = from.input();) {
+	public final Object[] der(byte[] from, Class<?>... tos) {
+		try (ByteArrayInputStream in = new ByteArrayInputStream(from);) {
 			return (Object[]) der(in, null);
 		} catch (IOException e) {
 			return null;

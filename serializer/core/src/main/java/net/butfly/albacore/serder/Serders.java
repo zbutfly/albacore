@@ -2,8 +2,6 @@ package net.butfly.albacore.serder;
 
 import java.lang.reflect.Modifier;
 import java.nio.charset.Charset;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.apache.http.entity.ContentType;
 
@@ -40,23 +38,22 @@ public final class Serders extends Utils {
 		return JavaSerder.class;
 	}
 
-	@SuppressWarnings("unchecked")
-	public static Class<? extends ContentSerder<?, ?>> getSerderByMimeType(String mimeType) {
-		return (Class<? extends ContentSerder<?, ?>>) Instances.fetch(Serders::scanContentSerders, Map.class, Serder.class, mimeType).get(
-				mimeType);
-	}
-
-	private static Map<String, Class<? extends ContentSerder>> scanContentSerders() {
-		Map<String, Class<? extends ContentSerder>> map = new HashMap<String, Class<? extends ContentSerder>>();
-		for (Class<? extends ContentSerder> serClass : Reflections.getSubClasses(ContentSerder.class)) {
-			if (Modifier.isAbstract(serClass.getModifiers())) continue;
-			ContentSerder<?, ?> def = Instances.fetch(serClass);
-			for (String mime : def.mimeTypes())
-				map.put(mime, serClass);
-		}
-		return map;
-
-	}
+//	@SuppressWarnings("unchecked")
+//	public static Class<? extends ContentSerder<?, ?>> getSerderByMimeType(String mimeType) {
+//		return (Class<? extends ContentSerder<?, ?>>) Instances.fetch(Serders::scanContentSerders, Map.class, Serder.class, mimeType).get(
+//				mimeType);
+//	}
+//
+//	private static Map<String, Class<? extends ContentSerder>> scanContentSerders() {
+//		Map<String, Class<? extends ContentSerder>> map = new HashMap<String, Class<? extends ContentSerder>>();
+//		for (Class<? extends ContentSerder> serClass : Reflections.getSubClasses(ContentSerder.class)) {
+//			if (Modifier.isAbstract(serClass.getModifiers())) continue;
+//			ContentSerder<?, ?> def = Instances.fetch(serClass);
+//			for (String mime : def.mimeTypes())
+//				map.put(mime, serClass);
+//		}
+//		return map;
+//	}
 
 	public static Serder<?, ?> serializer(final Class<? extends Serder<?, ?>> serializerClass, final Charset charset) {
 		return Instances.fetch(serializerClass);

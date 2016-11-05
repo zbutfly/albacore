@@ -4,7 +4,6 @@ import com.google.common.annotations.GwtCompatible;
 
 @GwtCompatible
 public enum CaseFormat {
-	ORIGINAL(null),
 	/**
 	 * Dotted variable naming convention, e.g., "lower.hyphen".
 	 */
@@ -36,7 +35,7 @@ public enum CaseFormat {
 
 	private com.google.common.base.CaseFormat format;
 
-	public final CaseFormat parse(String str) {
+	public static CaseFormat parse(String str) {
 		Objects.noneNull(str);
 		if (str.matches("^[a-z]*$")) return LOWER_CAMEL;
 		if (str.matches("^[a-z][A-Za-z]+")) return LOWER_CAMEL;
@@ -54,7 +53,7 @@ public enum CaseFormat {
 
 	public final String to(CaseFormat to, String str) {
 		Objects.noneNull(to, str);
-		return (to == this || to == CaseFormat.ORIGINAL) ? str : convert(to, str);
+		return (to == this) ? str : convert(to, str);
 	}
 
 	String convert(CaseFormat to, String str) {

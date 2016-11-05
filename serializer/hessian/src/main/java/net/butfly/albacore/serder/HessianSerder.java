@@ -4,33 +4,20 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-import org.apache.http.entity.ContentType;
-
 import com.caucho.hessian.io.AbstractSerializerFactory;
 import com.caucho.hessian.io.Hessian2StreamingInput;
 import com.caucho.hessian.io.Hessian2StreamingOutput;
 import com.caucho.hessian.io.SerializerFactory;
-import com.google.common.reflect.TypeToken;
 
 import net.butfly.albacore.exception.SystemException;
-import net.butfly.albacore.serder.support.ContentTypes;
 import net.butfly.albacore.serder.support.SerderFactorySupport;
 import net.butfly.albacore.utils.Reflections;
 
-public class HessianSerder extends TextSerderBase<Object> implements ArrableTextSerder<Object>, SerderFactorySupport,
-		ClassInfoSerder<Object, CharSequence> {
+public final class HessianSerder implements TextSerder<Object>, SerderFactorySupport, ClassInfoSerder<Object, CharSequence> {
 	private static final long serialVersionUID = -593535528324149595L;
 
-	public HessianSerder() {
-		super(ContentTypes.APPLICATION_HESSIAN);
-	}
-
-	public HessianSerder(ContentType... contentType) {
-		super(ContentTypes.APPLICATION_HESSIAN, contentType);
-	}
-
 	@Override
-	public <T> String ser(T src) {
+	public String ser(Object src) {
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		Hessian2StreamingOutput ho = new Hessian2StreamingOutput(out);
 		if (null != factory) ho.getHessian2Output().setSerializerFactory(factory);
@@ -43,7 +30,7 @@ public class HessianSerder extends TextSerderBase<Object> implements ArrableText
 		}
 
 		try {
-			return new String(out.toByteArray(), contentType().getCharset());
+			return new String(out.toByteArray(), charset());
 		} finally {
 			try {
 				ho.close();
@@ -56,8 +43,8 @@ public class HessianSerder extends TextSerderBase<Object> implements ArrableText
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T> T der(CharSequence dst, TypeToken<T> to) {
-		ByteArrayInputStream in = new ByteArrayInputStream(dst.toString().getBytes(contentType().getCharset()));
+	public <T> T der(CharSequence dst) {
+		ByteArrayInputStream in = new ByteArrayInputStream(dst.toString().getBytes(charset()));
 		Hessian2StreamingInput hi = new Hessian2StreamingInput(in);
 		if (null != factory) hi.setSerializerFactory(factory);
 		try {
@@ -77,7 +64,7 @@ public class HessianSerder extends TextSerderBase<Object> implements ArrableText
 	@Override
 	@SafeVarargs
 	public final Object[] der(CharSequence from, Class<?>... to) {
-		ByteArrayInputStream in = new ByteArrayInputStream(from.toString().getBytes(contentType().getCharset()));
+		ByteArrayInputStream in = new ByteArrayInputStream(from.toString().getBytes(charset()));
 		Hessian2StreamingInput hi = new Hessian2StreamingInput(in);
 		if (null != factory) hi.setSerializerFactory(factory);
 		try {

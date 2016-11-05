@@ -7,22 +7,16 @@ import java.util.Date;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.bson.BSONObject;
 
-import com.google.common.reflect.TypeToken;
-
-import net.butfly.albacore.serder.BsonObjectSerder;
-import net.butfly.albacore.serder.BsonSerder;
-import net.butfly.albacore.serder.Serder;
-import net.butfly.albacore.serder.support.ByteArray;
+import net.butfly.albacore.serder.BsonObjectSerder.MongoSerder;
 
 public class BsonTest {
 	public static void main(String... arg) throws IOException {
-		Serder<Object, BSONObject> ser = new BsonSerder().then(new BsonObjectSerder(), TypeToken.of(ByteArray.class));
 
 		Bean o = new Bean();
-		BSONObject s = ser.ser(o);
+		BSONObject s = MongoSerder.DEFAULT.ser(o);
 		s.put("now", new Date());
 		System.out.println("Origin: " + s.get("title") + s.get("now"));
-		System.out.println("BSON: " + o.titles() + " => " + ser.der(s, TypeToken.of(Bean.class)).titles());
+		System.out.println("BSON: " + o.titles() + " => " + MongoSerder.DEFAULT.der(s, Bean.class).titles());
 
 		// System.out.println("BSON args: " + o.titles() + " => " + ((Bean)
 		// ser.der(ser.ser(new Object[] { o, 1, true }), Bean.class,

@@ -11,37 +11,35 @@ import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.Text;
-import net.butfly.albacore.utils.logger.Logger;
 
 import com.google.common.base.Defaults;
 import com.google.common.base.Joiner;
-import com.google.common.reflect.TypeToken;
 
 import net.butfly.albacore.serder.modifier.HbaseColumnFamily;
 import net.butfly.albacore.utils.Generics;
 import net.butfly.albacore.utils.Reflections;
+import net.butfly.albacore.utils.logger.Logger;
 
-public class HbaseResultSerder extends BeanSerderBase<Object, Result> implements BeanSerder<Object, Result> {
+public final class HbaseResultSerder implements BeanSerder<Object, Result> {
 	private static final long serialVersionUID = 1152380944308233135L;
 	private static final Logger logger = Logger.getLogger(HbaseResultSerder.class);
+	public static final HbaseResultSerder DEFAULT = new HbaseResultSerder();
 
 	public HbaseResultSerder() {
 		super();
 	}
 
 	@Override
-	public <T> Result ser(T src) {
+	public Result ser(Object src) {
 		throw new UnsupportedOperationException("Hbase marshall / write not supported.");
 	}
 
 	@Override
-	public <T> T der(Result from, TypeToken<T> to) {
+	public <T> T der(Result from, Class<T> to) {
 		if (null == from) return null;
-		@SuppressWarnings("unchecked")
-		Class<T> type = (Class<T>) to.getRawType();
-		T t = Reflections.construct(type);
-		for (Field f : Reflections.getDeclaredFields(type)) {
-			String[] qulifier = mapping(f).split(":");
+		T t = Reflections.construct(to);
+		for (Field f : Reflections.getDeclaredFields(to)) {
+			String[] qulifier = mappingField(f).split(":");
 			try {
 				Cell cell = from.getColumnLatestCell(Text.encode(qulifier[0]).array(), Text.encode(qulifier[1]).array());
 				if (cell != null) Reflections.set(t, f, fromBytes(f.getType(), CellUtil.cloneValue(cell)));
@@ -61,9 +59,9 @@ public class HbaseResultSerder extends BeanSerderBase<Object, Result> implements
 		return rows.toArray(new String[rows.size()]);
 	}
 
-	public final String mapping(Field f) {
+	public final String mappingField(Field f) {
 		Reflections.noneNull("", f);
-		String col = mapping(f);
+		String col = mappingField(f);
 		Class<?> to = f.getDeclaringClass();
 		// XXX: field in parent class could not found annotation on sub-class.
 		String family = f.isAnnotationPresent(HbaseColumnFamily.class) ? f.getAnnotation(HbaseColumnFamily.class).value()
@@ -115,7 +113,7 @@ public class HbaseResultSerder extends BeanSerderBase<Object, Result> implements
 	}
 
 	@SuppressWarnings("unchecked")
-	private static <R> byte[][] toByteArray(Class<R> type, R[] value) {
+	protected static <R> byte[][] toByteArray(Class<R> type, R[] value) {
 		if (null == value) return null;
 		byte[][] r = new byte[value.length][];
 		for (int i = 0; i < value.length; i++)
