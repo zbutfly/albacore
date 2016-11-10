@@ -71,7 +71,7 @@ public class DirectPump<V> implements Pump {
 			if (null != handler && t.getThreadGroup().equals(t.getUncaughtExceptionHandler())) t.setUncaughtExceptionHandler(handler);
 			fs.add(ex.submit(t));
 		}
-		future = Futures.allAsList(fs);
+		future = Futures.successfulAsList(fs);
 		return this;
 	}
 

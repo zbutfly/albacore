@@ -31,7 +31,7 @@ public final class Concurrents extends Utils {
 		for (int i = 0; i < parallelism; i++)
 			outs.add(ex.submit(tasking.get()));
 		try {
-			return Futures.allAsList(outs).get();
+			return Futures.successfulAsList(outs).get();
 		} catch (InterruptedException | ExecutionException e) {
 			throw new RuntimeException("Task failure", e);
 		} finally {
