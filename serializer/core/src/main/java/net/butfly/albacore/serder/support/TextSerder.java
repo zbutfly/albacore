@@ -1,11 +1,13 @@
-package net.butfly.albacore.serder;
+package net.butfly.albacore.serder.support;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
 
 import com.google.common.io.CharStreams;
 
-public interface TextSerder<PRESENT> extends Serder<PRESENT, CharSequence> {
+import net.butfly.albacore.serder.Serder;
+
+public interface TextSerder<PRESENT> extends Serder<PRESENT, CharSequence>, ContentTypeSerder {
 	default <T extends PRESENT> void ser(Appendable writer, T src) throws IOException {
 		writer.append(ser(src));
 	}
@@ -14,7 +16,7 @@ public interface TextSerder<PRESENT> extends Serder<PRESENT, CharSequence> {
 		return der(CharStreams.toString(reader), to);
 	}
 
-	default <T extends PRESENT> byte[] toBytes(T src, Class<T> to) {
+	default <T extends PRESENT> byte[] toBytes(T src) {
 		CharSequence s = ser(src);
 		return null == s ? null : s.toString().getBytes(charset());
 	}

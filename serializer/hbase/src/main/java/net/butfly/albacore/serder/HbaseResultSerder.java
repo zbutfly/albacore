@@ -16,6 +16,7 @@ import com.google.common.base.Defaults;
 import com.google.common.base.Joiner;
 
 import net.butfly.albacore.serder.modifier.HbaseColumnFamily;
+import net.butfly.albacore.serder.support.BeanSerder;
 import net.butfly.albacore.utils.Generics;
 import net.butfly.albacore.utils.Reflections;
 import net.butfly.albacore.utils.logger.Logger;

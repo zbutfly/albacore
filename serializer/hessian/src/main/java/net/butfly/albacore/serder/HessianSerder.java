@@ -10,11 +10,20 @@ import com.caucho.hessian.io.Hessian2StreamingOutput;
 import com.caucho.hessian.io.SerializerFactory;
 
 import net.butfly.albacore.exception.SystemException;
+import net.butfly.albacore.serder.support.ClassInfoSerder;
+import net.butfly.albacore.serder.support.ContentTypeSerderBase;
+import net.butfly.albacore.serder.support.ContentTypes;
 import net.butfly.albacore.serder.support.SerderFactorySupport;
+import net.butfly.albacore.serder.support.TextSerder;
 import net.butfly.albacore.utils.Reflections;
 
-public final class HessianSerder implements TextSerder<Object>, SerderFactorySupport, ClassInfoSerder<Object, CharSequence> {
+public final class HessianSerder extends ContentTypeSerderBase implements TextSerder<Object>, SerderFactorySupport,
+		ClassInfoSerder<Object, CharSequence> {
 	private static final long serialVersionUID = -593535528324149595L;
+
+	public HessianSerder() {
+		this.contentType = ContentTypes.APPLICATION_HESSIAN;
+	}
 
 	@Override
 	public String ser(Object src) {

@@ -2,6 +2,9 @@ package net.butfly.albacore.serder;
 
 import java.util.Base64;
 
+import net.butfly.albacore.serder.support.ClassInfoSerder;
+import net.butfly.albacore.serder.support.TextSerder;
+
 final public class Base64Serder implements TextSerder<byte[]>, ClassInfoSerder<byte[], CharSequence> {
 	private static final long serialVersionUID = 1L;
 

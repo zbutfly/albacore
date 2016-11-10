@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.http.entity.ContentType;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -11,11 +13,19 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
 
 import net.butfly.albacore.exception.SystemException;
 import net.butfly.albacore.serder.json.Jsons;
+import net.butfly.albacore.serder.support.BeanSerder;
+import net.butfly.albacore.serder.support.ClassInfoSerder;
+import net.butfly.albacore.serder.support.ContentTypeSerderBase;
+import net.butfly.albacore.serder.support.TextSerder;
 
-public class JsonSerder<E> implements TextSerder<E>, BeanSerder<E, CharSequence> {
+public class JsonSerder<E> extends ContentTypeSerderBase implements TextSerder<E>, BeanSerder<E, CharSequence> {
 	private static final long serialVersionUID = -4394900785541475884L;
 	public static final JsonSerder<Object> JSON_OBJECT = new JsonSerder<Object>();
 	public static final JsonMapSerder JSON_MAPPER = new JsonMapSerder();
+
+	public JsonSerder() {
+		this.contentType = ContentType.APPLICATION_JSON;
+	}
 
 	@Override
 	public String ser(E from) {

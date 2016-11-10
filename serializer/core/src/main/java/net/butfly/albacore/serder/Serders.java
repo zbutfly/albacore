@@ -2,11 +2,16 @@ package net.butfly.albacore.serder;
 
 import java.lang.reflect.Modifier;
 import java.nio.charset.Charset;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.http.entity.ContentType;
 
 import com.google.common.base.Charsets;
 
+import net.butfly.albacore.serder.support.ClassInfoSerder;
+import net.butfly.albacore.serder.support.ContentTypeSerder;
+import net.butfly.albacore.serder.support.ContentTypes;
 import net.butfly.albacore.utils.CaseFormat;
 import net.butfly.albacore.utils.Instances;
 import net.butfly.albacore.utils.Reflections;
@@ -38,28 +43,26 @@ public final class Serders extends Utils {
 		return JavaSerder.class;
 	}
 
-//	@SuppressWarnings("unchecked")
-//	public static Class<? extends ContentSerder<?, ?>> getSerderByMimeType(String mimeType) {
-//		return (Class<? extends ContentSerder<?, ?>>) Instances.fetch(Serders::scanContentSerders, Map.class, Serder.class, mimeType).get(
-//				mimeType);
-//	}
-//
-//	private static Map<String, Class<? extends ContentSerder>> scanContentSerders() {
-//		Map<String, Class<? extends ContentSerder>> map = new HashMap<String, Class<? extends ContentSerder>>();
-//		for (Class<? extends ContentSerder> serClass : Reflections.getSubClasses(ContentSerder.class)) {
-//			if (Modifier.isAbstract(serClass.getModifiers())) continue;
-//			ContentSerder<?, ?> def = Instances.fetch(serClass);
-//			for (String mime : def.mimeTypes())
-//				map.put(mime, serClass);
-//		}
-//		return map;
-//	}
+	private static final Map<String, ContentTypeSerder> SERDERS = new ConcurrentHashMap<>();
+
+	public static ContentTypeSerder construct(ContentType contentType) {
+		return SERDERS.computeIfAbsent(contentType.getMimeType() + "," + contentType.getCharset().toString(), ct -> {
+			for (Class<? extends ContentTypeSerder> c : Reflections.getSubClasses(ContentTypeSerder.class)) {
+				if (Modifier.isAbstract(c.getModifiers()) || Modifier.isStatic(c.getModifiers())) continue;
+				ContentTypeSerder s = Reflections.construct(c);
+				if (ContentTypes.mimeMatch(s.contentType().getMimeType(), contentType.getMimeType())) {
+					s.charset(contentType.getCharset());
+					return s;
+				}
+			}
+			throw new RuntimeException("Serder not found for content type: " + contentType.toString());
+		});
+	}
 
 	public static Serder<?, ?> serializer(final Class<? extends Serder<?, ?>> serializerClass, final Charset charset) {
 		return Instances.fetch(serializerClass);
 	}
 
-	@Deprecated
 	public static boolean isClassInfoSupported(Class<? extends Serder> ser) {
 		return ClassInfoSerder.class.isAssignableFrom(ser);
 	}

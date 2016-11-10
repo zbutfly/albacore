@@ -1,5 +1,7 @@
 package net.butfly.albacore.serder;
 
+import net.butfly.albacore.serder.support.ClassInfoSerder;
+
 public class IntactSerder<V> implements ClassInfoSerder<V, V> {
 	private static final long serialVersionUID = -5841357721404185556L;
 

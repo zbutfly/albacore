@@ -11,11 +11,20 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 
 import net.butfly.albacore.serder.json.Jsons;
+import net.butfly.albacore.serder.support.BeanSerder;
+import net.butfly.albacore.serder.support.BinarySerder;
+import net.butfly.albacore.serder.support.ClassInfoSerder;
+import net.butfly.albacore.serder.support.ContentTypeSerderBase;
+import net.butfly.albacore.serder.support.ContentTypes;
 
-public class BsonSerder<E> implements BinarySerder<E>, BeanSerder<E, byte[]> {
+public class BsonSerder<E> extends ContentTypeSerderBase implements BinarySerder<E>, BeanSerder<E, byte[]> {
 	private static final long serialVersionUID = 6664350391207228363L;
 	public static final BsonSerder<Object> DEFAULT_OBJ = new BsonSerder0();
 	public static final BsonMapSerder DEFAULT_MAP = new BsonMapSerder();
+
+	public BsonSerder() {
+		this.contentType = ContentTypes.APPLICATION_BSON;
+	}
 
 	@Override
 	public byte[] ser(E from) {

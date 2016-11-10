@@ -101,16 +101,20 @@ public final class Reflections extends Utils {
 
 	@SuppressWarnings("unchecked")
 	public static <T> T get(Object obj, Field field) {
-		if (!field.isAccessible()) field.setAccessible(true);
+		boolean flag = field.isAccessible();
+		if (!flag) field.setAccessible(true);
 		try {
 			return (T) field.get(obj);
 		} catch (IllegalArgumentException | IllegalAccessException e) {
 			throw new RuntimeException(e);
+		} finally {
+			field.setAccessible(flag);
 		}
 	}
 
 	public static <T> T get(Object obj, String field) {
-		return get(obj, Reflections.getDeclaredField(obj.getClass(), field));
+		return Class.class.isAssignableFrom(obj.getClass()) ? get(null, getDeclaredField((Class<?>) obj, field))
+				: get(obj, getDeclaredField(obj.getClass(), field));
 	}
 
 	public static void copy(Object src, Object dst) {

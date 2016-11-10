@@ -7,10 +7,10 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.OutputStream;
 
-import net.butfly.albacore.serder.support.ClassInfo;
+import net.butfly.albacore.serder.support.BinarySerder;
+import net.butfly.albacore.serder.support.ClassInfoSerder;
 import net.butfly.albacore.utils.Reflections;
 
-@ClassInfo
 public class JavaSerder implements BinarySerder<Object>, ClassInfoSerder<Object, byte[]> {
 	private static final long serialVersionUID = 2446148201514088203L;
 

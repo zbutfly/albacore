@@ -13,8 +13,9 @@ import net.butfly.albacore.lambda.Supplier;
  * @author butfly
  * @see net.butfly.albacore.utils.collection.LayerMap<V>
  */
+@SuppressWarnings({ "unchecked", "rawtypes" })
 public class Instances extends Utils {
-	private static final Map<Object, Object> INSTANCE_POOL = new ConcurrentHashMap<Object, Object>();
+	private static final Map INSTANCE_POOL = new ConcurrentHashMap();
 
 	@Deprecated
 	public static <T> T construct(Class<T> constructClass, Object... constructParams) {
@@ -22,20 +23,17 @@ public class Instances extends Utils {
 	}
 
 	public static <T> T fetch(Supplier<T> supplier, Class<T> cl, Object... key) {
-		return null == supplier ? fetch(cl, key) : fetchFrom(supplier, INSTANCE_POOL, cl, key, 0);
+		return null == supplier ? fetch(cl, key) : (T) fetchFrom(supplier, INSTANCE_POOL, cl, key, 0);
 	}
 
-	@SuppressWarnings("unchecked")
 	public static <T> T fetch(Supplier<T> supplier, TypeToken<T> cl, Object... key) {
 		return fetch(supplier, (Class<T>) cl.getRawType(), key);
 	}
 
-	@SuppressWarnings("unchecked")
 	public static <T> T fetch(TypeToken<T> cl, Object... key) {
 		return fetch((Class<T>) cl.getRawType(), key);
 	}
 
-	@SuppressWarnings("unchecked")
 	public static <T> T fetch(Class<T> cl, Object... key) {
 		try {
 			if (key == null || key.length == 0) return (T) INSTANCE_POOL.get(cl);
@@ -51,15 +49,11 @@ public class Instances extends Utils {
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	private static <T> T fetchFrom(Supplier<T> supplier, Map<Object, Object> pool, Object currKey, Object[] otherKeys, int pos) {
 		boolean bottom = otherKeys.length <= pos;
 		currKey = null == currKey ? "" : currKey;
-		Object obj = pool.get(currKey);
-		if (null == obj) {
-			obj = bottom ? obj = supplier.get() : new ConcurrentHashMap<Object, Object>();
-			pool.put(currKey, obj);
-		}
-		return (T) (bottom ? obj : fetchFrom(supplier, (Map<Object, Object>) obj, otherKeys[pos], otherKeys, pos + 1));
+		if (bottom) return (T) pool.computeIfAbsent(currKey, k -> supplier.get());
+		else return fetchFrom(supplier, (Map<Object, Object>) pool.computeIfAbsent(currKey, k -> new ConcurrentHashMap<Object, Object>()),
+				otherKeys[pos], otherKeys, pos + 1);
 	}
 }

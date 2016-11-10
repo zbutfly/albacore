@@ -1,7 +1,8 @@
-package net.butfly.albacore.serder;
+package net.butfly.albacore.serder.support;
 
 import java.lang.reflect.Field;
 
+import net.butfly.albacore.serder.Serder;
 import net.butfly.albacore.serder.modifier.Property;
 import net.butfly.albacore.utils.CaseFormat;
 import net.butfly.albacore.utils.Objects;

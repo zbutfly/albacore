@@ -13,11 +13,19 @@ import org.bson.io.OutputBuffer;
 import com.mongodb.LazyDBObject;
 
 import net.butfly.albacore.serder.bson.DBEncoder;
+import net.butfly.albacore.serder.support.BeanSerder;
+import net.butfly.albacore.serder.support.ContentTypeSerder;
+import net.butfly.albacore.serder.support.ContentTypeSerderBase;
+import net.butfly.albacore.serder.support.ContentTypes;
 import net.butfly.albacore.utils.Reflections;
 
-public final class BsonObjectSerder implements Serder<BSONObject, byte[]> {
+public final class BsonObjectSerder extends ContentTypeSerderBase implements Serder<BSONObject, byte[]>, ContentTypeSerder {
 	private static final long serialVersionUID = 6664350391207228363L;
 	public static final BsonObjectSerder DEFAULT = new BsonObjectSerder();
+
+	public BsonObjectSerder() {
+		this.contentType = ContentTypes.APPLICATION_BSON;
+	}
 
 	@Override
 	public byte[] ser(BSONObject from) {
