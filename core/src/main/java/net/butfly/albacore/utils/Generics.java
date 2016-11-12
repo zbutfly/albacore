@@ -14,7 +14,7 @@ import java.util.Map;
 import com.google.common.reflect.TypeToken;
 
 @SuppressWarnings("unchecked")
-public final class Generics extends Utils {
+public final class Generics extends OldGeneric {
 	public static Class<?> resolveReturnType(final Type implType, Method method) {
 		return TypeToken.of(implType).resolveType(method.getGenericReturnType()).getRawType();
 	}
@@ -45,6 +45,7 @@ public final class Generics extends Utils {
 	public static <E> Class<E> resolveGenericParameter(final Type implType, final Class<?> declareClass, final String genericParamName) {
 		return (Class<E>) resolveGenericParameters(implType, declareClass).get(genericParamName);
 	}
+
 
 	public static <E> E[] toArray(Collection<E> list) {
 		if (null == list) throw new IllegalArgumentException("Could not determine class of element for null list argument.");

@@ -3,8 +3,8 @@ package net.butfly.albacore.utils.async;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 
-import net.butfly.albacore.lambda.Callable;
 import net.butfly.albacore.lambda.Consumer;
+import net.butfly.albacore.lambda.Supplier;
 
 public class Task<T> {
 	protected Callable<T> call;
@@ -68,5 +68,20 @@ public class Task<T> {
 
 	public static Executor getDefaultExecutor() {
 		return Concurrents.executor();
+	}
+
+	@Deprecated
+	public interface Callback<R> extends Consumer<R> {
+		default void callback(final R result) {
+			this.accept(result);
+		}
+	}
+
+	@Deprecated
+	public interface Callable<R> extends java.util.concurrent.Callable<R>, Supplier<R> {
+		@Override
+		default public R call() throws Exception {
+			return this.get();
+		}
 	}
 }
