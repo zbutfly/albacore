@@ -5,7 +5,7 @@ import java.util.UUID;
 import net.butfly.albacore.io.InputQueue;
 import net.butfly.albacore.io.InputQueueImpl;
 
-public class RandomStringInput extends InputQueueImpl<String, String> implements InputQueue<String> {
+public class RandomStringInput extends InputQueueImpl<String> implements InputQueue<String> {
 	private static final long serialVersionUID = 7782039002400807964L;
 	public static final InputQueue<String> INSTANCE = new RandomStringInput();
 

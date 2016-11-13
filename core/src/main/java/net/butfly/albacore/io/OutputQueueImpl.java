@@ -4,15 +4,11 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-import net.butfly.albacore.lambda.Converter;
-
-public abstract class OutputQueueImpl<I, D> extends QueueImpl<I, Void, D> implements OutputQueue<I> {
+public abstract class OutputQueueImpl<I> extends QueueImpl<I, Void, I> implements OutputQueue<I> {
 	private static final long serialVersionUID = -1;
-	protected final Converter<I, D> conv;
 
-	protected OutputQueueImpl(String name, Converter<I, D> conv) {
+	protected OutputQueueImpl(String name) {
 		super(name, 0);
-		this.conv = conv;
 	}
 
 	@Override

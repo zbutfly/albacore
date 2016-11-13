@@ -11,6 +11,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import com.google.common.base.Joiner;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -127,7 +128,7 @@ public final class Concurrents extends Utils {
 		logger.info("ForkJoin first? " + forkjoin + "!, change it by -Dalbacore.concurrent.forkjoin=false");
 		return Instances.fetch(() -> {
 			ListeningExecutorService e = executor(concurrence);
-			logger.info("ExecutorService [" + e.getClass() + "] with name: [" + name + "] created.");
+			logger.info("ExecutorService [" + e.getClass() + "] with name: [" + Joiner.on(",").join(name) + "] created.");
 			return e;
 		}, ListeningExecutorService.class, (Object[]) name);
 	}

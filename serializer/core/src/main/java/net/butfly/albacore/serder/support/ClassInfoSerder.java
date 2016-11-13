@@ -1,18 +1,13 @@
 package net.butfly.albacore.serder.support;
 
-import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.serder.Serder;
 
 public interface ClassInfoSerder<P, D> extends Serder<P, D> {
-	<T extends P> T der(D from);
+	<TT extends P> TT der(D from);
 
 	@Override
-	default <T extends P> T der(D from, Class<T> to) {
+	default <TT extends P> TT der(D from, Class<TT> to) {
 		return der(from);
-	}
-
-	default <T extends P> Converter<D, T> unconverter() {
-		return this::der;
 	}
 
 	default <RESULT> ClassInfoSerder<P, RESULT> then(ClassInfoSerder<D, RESULT> next, Class<D> dataClass) {

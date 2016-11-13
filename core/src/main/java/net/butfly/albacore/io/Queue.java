@@ -4,6 +4,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import net.butfly.albacore.lambda.Converter;
+import net.butfly.albacore.lambda.Supplier;
 import net.butfly.albacore.utils.Collections;
 import net.butfly.albacore.utils.logger.Logger;
 
@@ -73,10 +74,21 @@ public interface Queue<I, O> extends AbstractQueue<I, O> {
 
 	default void gc() {}
 
-	default DirectPump<O> pump(Queue<O, ?> dest, long batchSize, int parallelism) {
-		DirectPump<O> p = new DirectPump<O>(this, dest, parallelism);
-		p.submit(() -> dest.enqueue(dequeue(batchSize)) <= 0, parallelism);
-		return p;
+	default Pump pump(Queue<O, ?> dest, long batchSize, int parallelism, Runnable... interval) {
+		return pump(dest, batchSize, parallelism, () -> this.empty(), interval);
+	}
+
+	default Pump pump(Queue<O, ?> dest, long batchSize, int parallelism, Supplier<Boolean> stopping, Runnable... interval) {
+		return new PumpBase<O>(this, dest, parallelism, () -> {
+			dest.enqueue(this.dequeue(batchSize));
+			for (Runnable r : interval)
+				r.run();
+		}) {
+			@Override
+			public boolean stopping() {
+				return super.stopping() && stopping.get();
+			}
+		};
 	}
 
 	default <O2> Queue<I, O2> then(Converter<O, O2> conv) {

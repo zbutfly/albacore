@@ -29,18 +29,19 @@ public interface QueueMap<K, I, O> extends AbstractQueue<I, O> {
 	long enqueue(Converter<I, K> key, @SuppressWarnings("unchecked") I... e);
 
 	long enqueue(Converter<I, K> key, Iterator<I> iter);
-
-	default DirectPump<O> pump(QueueMap<K, O, ?> dest, long batchSize, int parallelismPerKey) {
-		return pump(dest, batchSize, parallelismPerKey, k -> k);
-	}
-
-	@SuppressWarnings("unchecked")
-	default <K1> DirectPump<O> pump(QueueMap<K1, O, ?> dest, long batchSize, int parallelismPerKey, Converter<K, K1> keying) {
-		DirectPump<O> p = new DirectPump<O>(this, dest, parallelismPerKey * keys().size());
-		for (K k : keys())
-			p.submit(() -> dest.enqueue(e -> keying.apply(k), dequeue(batchSize, k)) <= 0, parallelismPerKey);
-		return p;
-	}
+//
+//	default PumpBase<O> pump(QueueMap<K, O, ?> dest, long batchSize, int parallelismPerKey, Runnable... interval) {
+//		return pump(dest, batchSize, parallelismPerKey, k -> k, () -> this.empty(), interval);
+//	}
+//
+//	@SuppressWarnings("unchecked")
+//	default <K1> PumpBase<O> pump(QueueMap<K1, O, ?> dest, long batchSize, int parallelismPerKey, Converter<K, K1> keying,
+//			Converter<K, Boolean> stopping, Runnable... interval) {
+//		PumpBase<O> p = new PumpBase<O>(this, dest, parallelismPerKey * keys().size());
+//		for (K k : keys())
+//			p.submit(() -> dest.enqueue(e -> keying.apply(k), dequeue(batchSize, k)) <= 0, parallelismPerKey);
+//		return p;
+//	}
 
 	default void setReadOrderly(boolean orderly) {
 		throw new UnsupportedOperationException();

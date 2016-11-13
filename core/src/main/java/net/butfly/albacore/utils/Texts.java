@@ -77,4 +77,13 @@ public final class Texts extends Utils {
 		map.put(format, f);
 		return f;
 	}
+
+	public static Map<String, String> parseQueryParams(String query) {
+		Map<String, String> params = new HashMap<>();
+		if (query != null) for (String param : query.split("&")) {
+			String[] kv = param.split("=", 2);
+			params.put(kv[0], kv.length > 1 ? kv[1] : null);
+		}
+		return params;
+	}
 }

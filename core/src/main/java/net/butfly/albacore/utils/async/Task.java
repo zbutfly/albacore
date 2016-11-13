@@ -38,14 +38,11 @@ public class Task<T> {
 	}
 
 	public Callable<T> call() {
-		return call instanceof Callable ? (Callable) call : new Callable<T>() {
-			@Override
-			public T get() {
-				try {
-					return call.call();
-				} catch (Exception e) {
-					throw new RuntimeException(e);
-				}
+		return call instanceof Callable ? (Callable<T>) call : () -> {
+			try {
+				return call.call();
+			} catch (Exception e) {
+				throw new RuntimeException(e);
 			}
 		};
 	}

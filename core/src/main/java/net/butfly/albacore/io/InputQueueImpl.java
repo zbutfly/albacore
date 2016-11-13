@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public abstract class InputQueueImpl<O, D> extends QueueImpl<Void, O, D> implements InputQueue<O> {
+public abstract class InputQueueImpl<O> extends QueueImpl<Void, O, O> implements InputQueue<O> {
 	private static final long serialVersionUID = -1;
 
 	protected InputQueueImpl(String name) {
@@ -27,7 +27,6 @@ public abstract class InputQueueImpl<O, D> extends QueueImpl<Void, O, D> impleme
 			O e = dequeueRaw();
 			if (null == e) break;
 			batch.add(e);
-			break;
 		}
 		gc();
 		return batch;

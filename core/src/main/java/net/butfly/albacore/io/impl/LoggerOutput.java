@@ -11,14 +11,14 @@ import net.butfly.albacore.lambda.Consumer;
 import net.butfly.albacore.utils.Instances;
 import net.butfly.albacore.utils.logger.Logger;
 
-public class LoggerOutput extends OutputQueueImpl<String, String> implements OutputQueue<String> {
+public class LoggerOutput extends OutputQueueImpl<String> implements OutputQueue<String> {
 	private static final long serialVersionUID = 7782039002400807964L;
 	private final Map<Level, Consumer<String>> loggings;
 	private final Logger logger;
 	private final Level level;
 
 	public LoggerOutput() {
-		this(Thread.currentThread().getStackTrace()[2].getClassName(), Level.INFO);
+		this(Level.INFO);
 	}
 
 	public LoggerOutput(Class<?> clazz) {
@@ -31,14 +31,10 @@ public class LoggerOutput extends OutputQueueImpl<String, String> implements Out
 
 	public LoggerOutput(Class<?> clazz, Level level) {
 		this(clazz.getName(), level);
-		StackTraceElement s = Thread.currentThread().getStackTrace()[2];
-		s.getClassName();
-		s.getMethodName();
-		s.getLineNumber();
 	}
 
 	private LoggerOutput(String loggerName, Level level) {
-		super("LOGGER-OUTPUT-QUEUE-" + level.name(), s -> s);
+		super("LOGGER-OUTPUT-QUEUE-" + level.name());
 		this.level = level;
 		this.logger = Instances.fetch(() -> Logger.getLogger(loggerName), Logger.class, loggerName);
 		loggings = new HashMap<>();

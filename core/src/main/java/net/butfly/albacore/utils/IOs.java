@@ -49,6 +49,7 @@ public final class IOs extends Utils {
 		return bytes;
 	}
 
+	@Deprecated
 	public static Properties loadAsProps(String classpathPropsFile) {
 		Properties props = new Properties();
 		InputStream ips = Thread.currentThread().getContextClassLoader().getResourceAsStream(classpathPropsFile);
@@ -58,14 +59,6 @@ public final class IOs extends Utils {
 			logger.error("Properties file " + classpathPropsFile + " loading failure", e);
 		}
 		return props;
-	}
-
-	public static String config(String key, String defaultValue, Properties... props) {
-		String value = System.getenv(key);
-		if (null != value) return value;
-		for (Properties p : props)
-			if (null != p && p.containsKey(key)) return p.getProperty(key);
-		return defaultValue;
 	}
 
 	public static byte[] readAll(final InputStream is) {

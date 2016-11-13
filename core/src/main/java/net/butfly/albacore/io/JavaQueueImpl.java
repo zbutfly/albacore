@@ -5,10 +5,10 @@ import java.util.concurrent.LinkedBlockingQueue;
 import net.butfly.albacore.utils.async.Concurrents;
 import net.butfly.albacore.utils.logger.Logger;
 
-public abstract class JavaQueueImpl<I, O> extends QueueImpl<I, O, I> implements Queue<I, O> {
+public abstract class JavaQueueImpl<I, O> extends QueueImpl<I, O, O> implements Queue<I, O> {
 	private static final long serialVersionUID = -1;
 	private static final Logger logger = Logger.getLogger(JavaQueueImpl.class);
-	private final LinkedBlockingQueue<I> impl;
+	private final LinkedBlockingQueue<O> impl;
 
 	public JavaQueueImpl(String name, long capacity) {
 		super(name, capacity);
@@ -20,9 +20,10 @@ public abstract class JavaQueueImpl<I, O> extends QueueImpl<I, O, I> implements 
 	@Override
 	protected final boolean enqueueRaw(I e) {
 		if (null == e) return false;
+		O o = conv(e);
 		try {
-			impl.put(e);
-			return null != stats(Act.INPUT, e);
+			impl.put(o);
+			return null != stats(Act.INPUT, o);
 		} catch (InterruptedException ex) {
 			logger.error("Enqueue failure", ex);
 			return false;
@@ -32,7 +33,7 @@ public abstract class JavaQueueImpl<I, O> extends QueueImpl<I, O, I> implements 
 	@Override
 	protected O dequeueRaw() {
 		try {
-			return conv(stats(Act.OUTPUT, impl.take()));
+			return stats(Act.OUTPUT, impl.take());
 		} catch (InterruptedException e) {
 			logger.error("Dequeue failure", e);
 			return null;
