@@ -9,6 +9,7 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -201,5 +202,60 @@ public final class Concurrents extends Utils {
 				for (Runnable t : then)
 					t.run();
 		};
+	}
+
+	public static <T> List<T> successfulList(List<? extends java.util.concurrent.Callable<T>> tasks, int parallelism) {
+		ListeningExecutorService ex = Concurrents.executor(parallelism);
+		List<ListenableFuture<T>> fl = new ArrayList<>();
+		for (java.util.concurrent.Callable<T> t : tasks)
+			fl.add(ex.submit(t));
+		try {
+			return Futures.successfulAsList(fl).get();
+		} catch (InterruptedException e) {
+			logger.error("Concurrent interrupted", e);
+			return new ArrayList<>();
+		} catch (ExecutionException e) {
+			logger.error("Concurrent failure (maybe partly)", e.getCause());
+			throw new RuntimeException(e.getCause());
+		}
+	}
+
+	public static <T> List<T> successfulList(List<? extends java.util.concurrent.Callable<T>> tasks, long timeout, TimeUnit u) {
+		ListeningExecutorService ex = Concurrents.executor();
+		List<ListenableFuture<T>> fl = new ArrayList<>();
+		for (java.util.concurrent.Callable<T> t : tasks)
+			fl.add(ex.submit(t));
+		try {
+			return Futures.successfulAsList(fl).get(timeout, u);
+		} catch (InterruptedException e) {
+			logger.error("Concurrent interrupted", e);
+			return new ArrayList<>();
+		} catch (ExecutionException e) {
+			logger.error("Concurrent failure (maybe partly)", e.getCause());
+			throw new RuntimeException(e.getCause());
+		} catch (TimeoutException e) {
+			logger.error("Concurrent timeout (maybe partly)");
+			throw new RuntimeException(e.getCause());
+		}
+	}
+
+	public static <T> List<T> successfulList(List<? extends java.util.concurrent.Callable<T>> tasks, int parallelism, long timeout,
+			TimeUnit u) {
+		ListeningExecutorService ex = Concurrents.executor(parallelism);
+		List<ListenableFuture<T>> fl = new ArrayList<>();
+		for (java.util.concurrent.Callable<T> t : tasks)
+			fl.add(ex.submit(t));
+		try {
+			return Futures.successfulAsList(fl).get(timeout, u);
+		} catch (InterruptedException e) {
+			logger.error("Concurrent interrupted", e);
+			return new ArrayList<>();
+		} catch (ExecutionException e) {
+			logger.error("Concurrent failure (maybe partly)", e.getCause());
+			throw new RuntimeException(e.getCause());
+		} catch (TimeoutException e) {
+			logger.error("Concurrent timeout (maybe partly)");
+			throw new RuntimeException(e.getCause());
+		}
 	}
 }

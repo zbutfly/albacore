@@ -7,7 +7,7 @@ import net.butfly.albacore.lambda.Consumer;
 import net.butfly.albacore.lambda.Supplier;
 
 public class Task<T> {
-	protected Callable<T> call;
+	protected java.util.concurrent.Callable<T> call;
 	protected Consumer<T> back;
 	protected Options options;
 	protected ExceptionHandler<T> handler = null;
@@ -19,26 +19,35 @@ public class Task<T> {
 
 	protected Task() {}
 
-	public Task(Callable<T> task) {
+	public Task(java.util.concurrent.Callable<T> task) {
 		this(task, null, null);
 	}
 
-	public Task(Callable<T> task, Consumer<T> callback) {
+	public Task(java.util.concurrent.Callable<T> task, Consumer<T> callback) {
 		this(task, callback, null);
 	}
 
-	public Task(Callable<T> task, Options options) {
+	public Task(java.util.concurrent.Callable<T> task, Options options) {
 		this(task, null, options);
 	}
 
-	public Task(Callable<T> task, Consumer<T> callback, Options options) {
+	public Task(java.util.concurrent.Callable<T> task, Consumer<T> callback, Options options) {
 		this.call = task;
 		this.back = callback;
 		this.options = options;
 	}
 
 	public Callable<T> call() {
-		return call;
+		return call instanceof Callable ? (Callable) call : new Callable<T>() {
+			@Override
+			public T get() {
+				try {
+					return call.call();
+				} catch (Exception e) {
+					throw new RuntimeException(e);
+				}
+			}
+		};
 	}
 
 	public Consumer<T> back() {

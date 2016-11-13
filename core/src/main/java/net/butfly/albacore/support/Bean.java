@@ -12,12 +12,6 @@ public abstract class Bean<T extends Beans<T>> implements Beans<T> {
 	}
 
 	@Override
-	public int compareTo(T object) {
-		if (null == object) throw new NullPointerException();
-		return Objects.compare(this, object);
-	}
-
-	@Override
 	public boolean equals(Object object) {
 		return Objects.equals(this, object);
 	}
