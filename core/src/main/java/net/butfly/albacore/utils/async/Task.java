@@ -78,7 +78,8 @@ public class Task<T> {
 
 	@Deprecated
 	public interface Callback<R> extends Consumer<R> {
-		default void callback(final R result) {
+		void callback(final R result) ;
+		default void accept(final R result) {
 			this.accept(result);
 		}
 	}
@@ -86,8 +87,12 @@ public class Task<T> {
 	@Deprecated
 	public interface Callable<R> extends java.util.concurrent.Callable<R>, Supplier<R> {
 		@Override
-		default public R call() throws Exception {
-			return this.get();
+		default public R get() {
+			try {
+				return this.call();
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
 		}
 	}
 }
