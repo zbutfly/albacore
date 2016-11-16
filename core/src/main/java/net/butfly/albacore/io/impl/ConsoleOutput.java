@@ -12,7 +12,6 @@ public class ConsoleOutput extends OutputQueueImpl<String> implements OutputQueu
 
 	@Override
 	protected boolean enqueueRaw(String s) {
-		stats(Act.INPUT, s);
 		System.out.println(s);
 		return true;
 	}

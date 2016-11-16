@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public abstract class InputQueueImpl<O> extends QueueImpl<Void, O, O> implements InputQueue<O> {
+public abstract class InputQueueImpl<O> extends QueueImpl<Void, O> implements InputQueue<O> {
 	private static final long serialVersionUID = -1;
 
 	protected InputQueueImpl(String name) {

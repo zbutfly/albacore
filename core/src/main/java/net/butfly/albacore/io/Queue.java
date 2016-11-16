@@ -3,6 +3,8 @@ package net.butfly.albacore.io;
 import java.util.Iterator;
 import java.util.List;
 
+import net.butfly.albacore.io.pump.Pump;
+import net.butfly.albacore.io.pump.PumpBase;
 import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.lambda.Supplier;
 import net.butfly.albacore.utils.Collections;
@@ -62,8 +64,7 @@ public interface Queue<I, O> extends AbstractQueue<I, O> {
 
 	long enqueue(Iterable<I> it);
 
-	@SuppressWarnings("unchecked")
-	long enqueue(I... e);
+	long enqueue(@SuppressWarnings("unchecked") I... e);
 
 	List<O> dequeue(long batchSize);
 
@@ -74,32 +75,28 @@ public interface Queue<I, O> extends AbstractQueue<I, O> {
 
 	default void gc() {}
 
-	default Pump pump(Queue<O, ?> dest, long batchSize, int parallelism, Runnable... interval) {
-		return pump(dest, batchSize, parallelism, () -> this.empty(), interval);
+	default Pump<O> pump(Queue<O, ?> dest, int parallelism) {
+		return pump(dest, parallelism, () -> this.empty());
 	}
 
-	default Pump pump(Queue<O, ?> dest, long batchSize, int parallelism, Supplier<Boolean> stopping, Runnable... interval) {
-		return new PumpBase<O>(this, dest, parallelism, () -> {
-			dest.enqueue(this.dequeue(batchSize));
-			for (Runnable r : interval)
-				r.run();
-		}) {
+	default Pump<O> pump(Queue<O, ?> dest, int parallelism, Supplier<Boolean> stopping) {
+		return new PumpBase<O>(this, dest, parallelism) {
+			private static final long serialVersionUID = 1664281939439030486L;
+
 			@Override
-			public boolean stopping() {
-				return super.stopping() && stopping.get();
+			public boolean stopped() {
+				return super.stopped() && stopping.get();
 			}
 		};
 	}
 
 	default <O2> Queue<I, O2> then(Converter<O, O2> conv) {
-		@SuppressWarnings("resource")
-		final Queue<I, O> main = this;
-		return new QueueImpl<I, O2, O>(null, main.capacity()) {
+		return new QueueImpl<I, O2>(null, Queue.this.capacity()) {
 			private static final long serialVersionUID = -5894142335125843377L;
 
 			@Override
 			public long size() {
-				return main.size();
+				return Queue.this.size();
 			}
 
 			@Override
@@ -114,33 +111,33 @@ public interface Queue<I, O> extends AbstractQueue<I, O> {
 
 			@Override
 			public boolean enqueue(I e) {
-				return main.enqueue(e);
+				return Queue.this.enqueue(e);
 			}
 
 			@Override
 			public long enqueue(Iterable<I> it) {
-				return main.enqueue(it);
+				return Queue.this.enqueue(it);
 			}
 
 			@Override
 			public long enqueue(Iterator<I> iter) {
-				return main.enqueue(iter);
+				return Queue.this.enqueue(iter);
 			}
 
 			@SafeVarargs
 			@Override
 			public final long enqueue(I... e) {
-				return main.enqueue(e);
+				return Queue.this.enqueue(e);
 			}
 
 			@Override
 			public O2 dequeue() {
-				return conv.apply(main.dequeue());
+				return conv.apply(Queue.this.dequeue());
 			}
 
 			@Override
 			public List<O2> dequeue(long batchSize) {
-				return Collections.transform(main.dequeue(batchSize), conv);
+				return Collections.transform(Queue.this.dequeue(batchSize), conv);
 			}
 		};
 	}

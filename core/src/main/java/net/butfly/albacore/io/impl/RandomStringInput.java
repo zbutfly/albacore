@@ -15,8 +15,6 @@ public class RandomStringInput extends InputQueueImpl<String> implements InputQu
 
 	@Override
 	protected String dequeueRaw() {
-		String s = UUID.randomUUID().toString();
-		stats(Act.OUTPUT, s);
-		return s;
+		return UUID.randomUUID().toString();
 	}
 }

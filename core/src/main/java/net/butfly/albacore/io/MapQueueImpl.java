@@ -12,7 +12,7 @@ import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.utils.Collections;
 import net.butfly.albacore.utils.async.Concurrents;
 
-public abstract class MapQueueImpl<K, I, O, D> extends QueueImpl<I, O, D> implements QueueMap<K, I, O> {
+public abstract class MapQueueImpl<K, I, O> extends QueueImpl<I, O> implements QueueMap<K, I, O> {
 	private static final long serialVersionUID = -1;
 	private final Map<K, Queue<I, O>> queues;
 
@@ -56,7 +56,7 @@ public abstract class MapQueueImpl<K, I, O, D> extends QueueImpl<I, O, D> implem
 		do {
 			prev = batch.size();
 			for (K k : ks) {
-				QueueImpl<I, O, ?> q = q(k);
+				QueueImpl<I, O> q = q(k);
 				O e = q.dequeueRaw();
 				if (null != e) {
 					batch.add(e);
@@ -128,7 +128,7 @@ public abstract class MapQueueImpl<K, I, O, D> extends QueueImpl<I, O, D> implem
 		List<I> remain = new ArrayList<>();
 		for (I e : l)
 			if (e != null) {
-				QueueImpl<I, O, ?> q = q(keying(e));
+				QueueImpl<I, O> q = q(keying(e));
 				if (!q.full() && q.enqueueRaw(e)) c[0]++;
 				else remain.add(e);
 			}
@@ -154,8 +154,7 @@ public abstract class MapQueueImpl<K, I, O, D> extends QueueImpl<I, O, D> implem
 			q.close();
 	}
 
-	@SuppressWarnings("unchecked")
-	private QueueImpl<I, O, ?> q(K key) {
-		return (QueueImpl<I, O, ?>) queues.get(key);
+	private QueueImpl<I, O> q(K key) {
+		return (QueueImpl<I, O>) queues.get(key);
 	}
 }

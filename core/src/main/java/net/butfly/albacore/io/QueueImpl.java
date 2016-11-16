@@ -5,10 +5,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-import net.butfly.albacore.io.stats.Statistical;
 import net.butfly.albacore.utils.async.Concurrents;
 
-public abstract class QueueImpl<I, O, D> implements Queue<I, O>, Statistical<D> {
+public abstract class QueueImpl<I, O> implements Queue<I, O> {
 	private static final long serialVersionUID = -1;
 
 	private final String name;
@@ -79,10 +78,6 @@ public abstract class QueueImpl<I, O, D> implements Queue<I, O>, Statistical<D> 
 
 	@Override
 	public O dequeue() {
-		return dequeueWait();
-	}
-
-	protected final O dequeueWait() {
 		while (true) {
 			O e = dequeueRaw();
 			if (null == e) return e;
@@ -110,13 +105,5 @@ public abstract class QueueImpl<I, O, D> implements Queue<I, O>, Statistical<D> 
 		} while (batch.size() < batchSize && (prev != batch.size() || batch.size() == 0));
 		if (empty()) gc();
 		return batch;
-	}
-
-	protected D stats(Act act, D e) {
-		return Statistical.super.stats(act, e, () -> size());
-	}
-
-	protected D stats(Act act) {
-		return Statistical.super.stats(act, () -> size());
 	}
 }

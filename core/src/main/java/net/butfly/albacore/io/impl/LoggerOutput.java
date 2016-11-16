@@ -49,7 +49,6 @@ public class LoggerOutput extends OutputQueueImpl<String> implements OutputQueue
 
 	@Override
 	protected boolean enqueueRaw(String message) {
-		stats(Act.INPUT, message);
 		loggings.get(level).accept(message);
 		return true;
 	}

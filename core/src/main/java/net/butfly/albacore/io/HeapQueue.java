@@ -2,28 +2,28 @@ package net.butfly.albacore.io;
 
 import java.util.concurrent.LinkedBlockingQueue;
 
+import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.utils.async.Concurrents;
 import net.butfly.albacore.utils.logger.Logger;
 
-public abstract class JavaQueueImpl<I, O> extends QueueImpl<I, O, O> implements Queue<I, O> {
+public class HeapQueue<I, O> extends QueueImpl<I, O> implements Queue<I, O> {
 	private static final long serialVersionUID = -1;
-	private static final Logger logger = Logger.getLogger(JavaQueueImpl.class);
+	private static final Logger logger = Logger.getLogger(HeapQueue.class);
 	private final LinkedBlockingQueue<O> impl;
+	private Converter<I, O> conv;
 
-	public JavaQueueImpl(String name, long capacity) {
+	public HeapQueue(String name, long capacity, Converter<I, O> conv) {
 		super(name, capacity);
 		impl = new LinkedBlockingQueue<>((int) capacity);
+		this.conv = conv;
 	}
-
-	abstract protected O conv(I e);
 
 	@Override
 	protected final boolean enqueueRaw(I e) {
 		if (null == e) return false;
-		O o = conv(e);
 		try {
-			impl.put(o);
-			return null != stats(Act.INPUT, o);
+			impl.put(conv.apply(e));
+			return true;
 		} catch (InterruptedException ex) {
 			logger.error("Enqueue failure", ex);
 			return false;
@@ -33,7 +33,7 @@ public abstract class JavaQueueImpl<I, O> extends QueueImpl<I, O, O> implements 
 	@Override
 	protected O dequeueRaw() {
 		try {
-			return stats(Act.OUTPUT, impl.take());
+			return impl.take();
 		} catch (InterruptedException e) {
 			logger.error("Dequeue failure", e);
 			return null;

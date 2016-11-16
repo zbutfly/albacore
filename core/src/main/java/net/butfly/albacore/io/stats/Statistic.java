@@ -6,12 +6,12 @@ import java.util.Date;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.StampedLock;
 
-import net.butfly.albacore.io.stats.Statistical.Act;
-import net.butfly.albacore.support.Values;
+import net.butfly.albacore.lambda.Converter;
+import net.butfly.albacore.lambda.Supplier;
 import net.butfly.albacore.utils.Reflections;
 import net.butfly.albacore.utils.logger.Logger;
 
-class Statistic<V> implements Serializable {
+class Statistic<T extends Statistical<T, V>, V> implements Serializable {
 	private static final long serialVersionUID = -1;
 	final StampedLock lock;
 
@@ -25,8 +25,10 @@ class Statistic<V> implements Serializable {
 	final AtomicLong bytesInStep;
 	final AtomicLong packsInTotal;
 	final AtomicLong bytesInTotal;
+	final Supplier<Long> current;
+	final Converter<V, Long> sizing;
 
-	Statistic(Statistical<V> owner, Logger logger, long step) {
+	Statistic(T owner, Logger logger, long step, Converter<V, Long> sizing, Supplier<Long> current) {
 		Reflections.noneNull("", owner, logger);
 		lock = new StampedLock();
 		this.logger = logger;
@@ -37,20 +39,36 @@ class Statistic<V> implements Serializable {
 		bytesInTotal = new AtomicLong(0);
 		begin = new Date().getTime();
 		statsed = new AtomicLong(begin);
+		this.sizing = sizing;
+		this.current = current;
 	}
 
-	protected int sizing(V v) {
-		logger.warn("Calculate size of data, time costly!!");
-		return Values.sizing(v);
-	}
-
-	boolean stats(Act act, V v) {
-		if (null == v) return packsInStep.get() > packsStep.get();
-		long bytes = sizing(v);
+	boolean stats(long bytes) {
 		packsInTotal.incrementAndGet();
 		bytesInTotal.addAndGet(bytes < 0 ? 0 : bytes);
 		bytesInStep.addAndGet(bytes < 0 ? 0 : bytes);
 		return packsInStep.incrementAndGet() > packsStep.get();
+	}
+
+	void stats(V v) {
+		if (stats(sizing.apply(v)) && logger.isTraceEnabled()) trace();
+	}
+
+	void stats(Iterable<V> vv) {
+		for (V v : vv)
+			stats(v);
+	}
+
+	void trace() {
+		long now = new Date().getTime();
+		Statistic.Result step, total;
+		step = new Statistic.Result(packsInStep.getAndSet(0), bytesInStep.getAndSet(0), now - statsed.getAndSet(now));
+		total = new Statistic.Result(packsInTotal.get(), bytesInTotal.get(), new Date().getTime() - begin);
+		logger.trace("Statistic:\n"//
+				+ "\tStep: " + step.packs + " records/" + formatBytes(step.bytes) + " in " + formatMillis(step.millis) + "\n"//
+				+ "\tTotal: " + total.packs + " records/" + formatBytes(total.bytes) + " in " + formatMillis(total.millis) + "\n"//
+				+ "\tcurrent: " + current.get() + "\n"//
+		);
 	}
 
 	private static DecimalFormat f = new DecimalFormat("#.##");
@@ -86,4 +104,5 @@ class Statistic<V> implements Serializable {
 			this.millis = millis;
 		}
 	}
+
 }
