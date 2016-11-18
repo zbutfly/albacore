@@ -32,7 +32,7 @@ class Statistic<T extends Statistical<T, V>, V> implements Serializable {
 		Reflections.noneNull("", owner, logger);
 		lock = new StampedLock();
 		this.logger = logger;
-		this.packsStep = new AtomicLong(step);
+		this.packsStep = new AtomicLong(step - 1);
 		packsInStep = new AtomicLong(0);
 		bytesInStep = new AtomicLong(0);
 		packsInTotal = new AtomicLong(0);
@@ -43,15 +43,15 @@ class Statistic<T extends Statistical<T, V>, V> implements Serializable {
 		this.current = current;
 	}
 
-	boolean stats(long bytes) {
+	void stats(long bytes) {
 		packsInTotal.incrementAndGet();
 		bytesInTotal.addAndGet(bytes < 0 ? 0 : bytes);
 		bytesInStep.addAndGet(bytes < 0 ? 0 : bytes);
-		return packsInStep.incrementAndGet() > packsStep.get();
+		if (packsInStep.incrementAndGet() > packsStep.get() && logger.isTraceEnabled()) trace();
 	}
 
 	void stats(V v) {
-		if (stats(sizing.apply(v)) && logger.isTraceEnabled()) trace();
+		stats(sizing.apply(v));
 	}
 
 	void stats(Iterable<V> vv) {

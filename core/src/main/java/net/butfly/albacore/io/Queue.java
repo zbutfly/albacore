@@ -6,7 +6,6 @@ import java.util.List;
 import net.butfly.albacore.io.pump.Pump;
 import net.butfly.albacore.io.pump.PumpBase;
 import net.butfly.albacore.lambda.Converter;
-import net.butfly.albacore.lambda.Supplier;
 import net.butfly.albacore.utils.Collections;
 import net.butfly.albacore.utils.logger.Logger;
 
@@ -74,10 +73,6 @@ public interface Queue<I, O> extends AbstractQueue<I, O> {
 	default void close() {}
 
 	default Pump<O> pump(Queue<O, ?> dest, int parallelism) {
-		return pump(dest, parallelism, () -> this.empty());
-	}
-
-	default Pump<O> pump(Queue<O, ?> dest, int parallelism, Supplier<Boolean> stopping) {
 		return new PumpBase<O>(this, dest, parallelism);
 	}
 

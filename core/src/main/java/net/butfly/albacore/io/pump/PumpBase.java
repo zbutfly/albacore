@@ -1,6 +1,5 @@
 package net.butfly.albacore.io.pump;
 
-import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -13,7 +12,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
 import net.butfly.albacore.io.Queue;
-import net.butfly.albacore.lambda.Supplier;
 import net.butfly.albacore.utils.Reflections;
 import net.butfly.albacore.utils.async.Concurrents;
 
@@ -23,10 +21,6 @@ public class PumpBase<V> implements Pump<V> {
 	private static final int STATUS_RUNNING = 1;
 	private static final int STATUS_STOPPED = 2;
 
-	final static UncaughtExceptionHandler DEFAULT_HANDLER = (t, e) -> {
-		logger.error("Pump failure in one line [" + t.getName() + "]", e);
-	};
-
 	protected final ListeningExecutorService ex;
 	protected final List<Thread> threads = new ArrayList<>();
 	protected List<ListenableFuture<?>> futures = new ArrayList<>();
@@ -35,31 +29,22 @@ public class PumpBase<V> implements Pump<V> {
 	private final AtomicInteger running;
 
 	public PumpBase(Queue<?, V> source, Queue<V, ?> destination, int parallelism) {
-		this(source, destination, parallelism, DEFAULT_HANDLER);
-	}
-
-	public PumpBase(Queue<?, V> source, Queue<V, ?> destination, int parallelism, UncaughtExceptionHandler handler) {
 		running = new AtomicInteger(STATUS_OTHER);
 		Reflections.noneNull("Pump source/destination should not be null", source, destination);
 		this.name = source.name() + "-to-" + destination.name();
 		logger.info("Pump [" + name + "] create: from [" + source.getClass().getSimpleName() + "] to [" + destination.getClass()
 				.getSimpleName() + "] with parallelism: " + parallelism);
 		Runnable r = Concurrents.until(//
-				new Supplier<Boolean>() {
-					@Override
-					public Boolean get() {
-						return running.get() != STATUS_RUNNING && (running.get() == STATUS_STOPPED || source.empty());
-					}
-				}, //
-				new Runnable() {
-					@Override
-					public void run() {
+				() -> running.get() != STATUS_RUNNING && (running.get() == STATUS_STOPPED || source.empty()), //
+				() -> {
+					try {
 						destination.enqueue(stats(source.dequeue(batchSize)));
+					} catch (Throwable th) {
+						logger.error("Pump processing failure", th);
 					}
 				});
 		for (int i = 0; i < parallelism; i++) {
 			Thread t = new Thread(r, name + "[" + i + "]");
-			if (null != handler && t.getThreadGroup().equals(t.getUncaughtExceptionHandler())) t.setUncaughtExceptionHandler(handler);
 			threads.add(t);
 		}
 		ex = Concurrents.executor(parallelism, source.name(), destination.name());
