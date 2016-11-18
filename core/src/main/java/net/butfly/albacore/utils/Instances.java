@@ -70,7 +70,7 @@ public class Instances extends Utils {
 			if (containsKey(key)) return get(key);
 			else {
 				Object value = mappingFunction.apply(key);
-				put(key, value);
+				if (null != value) put(key, value);
 				return value;
 			}
 		}

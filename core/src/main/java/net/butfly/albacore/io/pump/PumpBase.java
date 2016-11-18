@@ -6,21 +6,23 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
 import net.butfly.albacore.io.Queue;
+import net.butfly.albacore.lambda.Supplier;
 import net.butfly.albacore.utils.Reflections;
 import net.butfly.albacore.utils.async.Concurrents;
 
 public class PumpBase<V> implements Pump<V> {
 	private static final long serialVersionUID = 663917114528791086L;
-	protected final Queue<?, V> source;
-	protected final Queue<V, ?> destination;
-	protected AtomicBoolean running;
+	private static final int STATUS_OTHER = 0;
+	private static final int STATUS_RUNNING = 1;
+	private static final int STATUS_STOPPED = 2;
+
 	final static UncaughtExceptionHandler DEFAULT_HANDLER = (t, e) -> {
 		logger.error("Pump failure in one line [" + t.getName() + "]", e);
 	};
@@ -29,9 +31,38 @@ public class PumpBase<V> implements Pump<V> {
 	protected final List<Thread> threads = new ArrayList<>();
 	protected List<ListenableFuture<?>> futures = new ArrayList<>();
 	private long batchSize = 1000;
+	private String name;
+	private final AtomicInteger running;
 
-	public boolean stopped() {
-		return !running.get();
+	public PumpBase(Queue<?, V> source, Queue<V, ?> destination, int parallelism) {
+		this(source, destination, parallelism, DEFAULT_HANDLER);
+	}
+
+	public PumpBase(Queue<?, V> source, Queue<V, ?> destination, int parallelism, UncaughtExceptionHandler handler) {
+		running = new AtomicInteger(STATUS_OTHER);
+		Reflections.noneNull("Pump source/destination should not be null", source, destination);
+		this.name = source.name() + "-to-" + destination.name();
+		logger.info("Pump [" + name + "] create: from [" + source.getClass().getSimpleName() + "] to [" + destination.getClass()
+				.getSimpleName() + "] with parallelism: " + parallelism);
+		Runnable r = Concurrents.until(//
+				new Supplier<Boolean>() {
+					@Override
+					public Boolean get() {
+						return running.get() != STATUS_RUNNING && (running.get() == STATUS_STOPPED || source.empty());
+					}
+				}, //
+				new Runnable() {
+					@Override
+					public void run() {
+						destination.enqueue(stats(source.dequeue(batchSize)));
+					}
+				});
+		for (int i = 0; i < parallelism; i++) {
+			Thread t = new Thread(r, name + "[" + i + "]");
+			if (null != handler && t.getThreadGroup().equals(t.getUncaughtExceptionHandler())) t.setUncaughtExceptionHandler(handler);
+			threads.add(t);
+		}
+		ex = Concurrents.executor(parallelism, source.name(), destination.name());
 	}
 
 	@Override
@@ -40,60 +71,52 @@ public class PumpBase<V> implements Pump<V> {
 		return this;
 	}
 
-	public PumpBase(Queue<?, V> source, Queue<V, ?> destination, int parallelism) {
-		this(source, destination, parallelism, DEFAULT_HANDLER);
-	}
-
-	public PumpBase(Queue<?, V> source, Queue<V, ?> destination, int parallelism, UncaughtExceptionHandler handler) {
-		Reflections.noneNull("", source, destination);
-		this.source = source;
-		this.destination = destination;
-		running = new AtomicBoolean(false);
-		StringBuilder name = new StringBuilder(source.name()).append(">>>").append(destination.name()).append("[");
-		Runnable r = Concurrents.until(this::stopped, () -> {
-			destination.enqueue(stats(source.dequeue(batchSize)));
-		});
-		for (int i = 0; i < parallelism; i++) {
-			Thread t = new Thread(r, name.append(i).append("]").toString());
-			if (null != handler && t.getThreadGroup().equals(t.getUncaughtExceptionHandler())) t.setUncaughtExceptionHandler(handler);
-			threads.add(t);
-		}
-		ex = Concurrents.executor(parallelism, source.name(), destination.name());
-	}
-
-	@Override
-	public Pump<V> start() {
-		running.set(true);
+	Pump<V> start() {
+		running.set(STATUS_RUNNING);
+		logger.info("Pump [" + name + "] starting...");
 		for (Thread t : threads)
 			futures.add(ex.submit(t));
+		logger.info("Pump [" + name + "] started.");
 		return this;
 	}
 
-	@Override
-	public Pump<V> waiting() {
-		try {
-			Futures.successfulAsList(futures).get();
-		} catch (InterruptedException | ExecutionException e) {
-			logger.error("Pump waiting failure", e);
-		}
-		return this;
-	}
-
-	@Override
-	public Pump<V> waiting(long timeout, TimeUnit unit) {
+	void waitForFinish(long timeout, TimeUnit unit) {
+		running.set(STATUS_OTHER);
+		logger.info("Pump [" + name + "] stopping in [" + timeout + " " + unit.toString() + "]...");
 		try {
 			Futures.successfulAsList(futures).get(timeout, unit);
 		} catch (InterruptedException | ExecutionException | TimeoutException e) {
 			logger.error("Pump waiting failure", e);
 		}
-		return this;
+		logger.info("Pump [" + name + "] stopped.");
+		running.set(STATUS_STOPPED);
+		ex.shutdown();
+	}
+
+	void waitForFinish() {
+		running.set(STATUS_OTHER);
+		logger.info("Pump [" + name + "] stopping...");
+		try {
+			Futures.successfulAsList(futures).get();
+		} catch (InterruptedException | ExecutionException e) {
+			logger.error("Pump waiting failure", e);
+		}
+		logger.info("Pump [" + name + "] stopped.");
+		running.set(STATUS_STOPPED);
+		ex.shutdown();
+	}
+
+	void terminate() {
+		ListenableFuture<List<Object>> fs = Futures.allAsList(futures);
+		if (running.getAndSet(STATUS_STOPPED) == STATUS_RUNNING) logger.info("Pump [" + name + "] terminating...");
+		else logger.warn("Pump [" + name + "] is not running...");
+		fs.cancel(true);
+		logger.info("Pump [" + name + "] terminated.");
+		ex.shutdown();
 	}
 
 	@Override
-	public Pump<V> stop() {
-		Futures.successfulAsList(futures).cancel(true);
-		ex.shutdown();
-		Concurrents.waitShutdown(ex, logger);
-		return this;
+	public String toString() {
+		return "Pump-" + name;
 	}
 }

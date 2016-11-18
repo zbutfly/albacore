@@ -58,10 +58,7 @@ public abstract class MapQueueImpl<K, I, O> extends QueueImpl<I, O> implements Q
 			for (K k : ks) {
 				QueueImpl<I, O> q = q(k);
 				O e = q.dequeueRaw();
-				if (null != e) {
-					batch.add(e);
-					if (q.empty()) q.gc();
-				}
+				if (null != e) batch.add(e);
 			}
 			if (batch.size() == 0) Concurrents.waitSleep(EMPTY_WAIT_MS);
 			continuing = batch.size() < batchSize && (prev != batch.size() || batch.size() == 0);

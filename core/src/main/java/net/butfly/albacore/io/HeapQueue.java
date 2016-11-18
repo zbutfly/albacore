@@ -3,7 +3,6 @@ package net.butfly.albacore.io;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import net.butfly.albacore.lambda.Converter;
-import net.butfly.albacore.utils.async.Concurrents;
 import net.butfly.albacore.utils.logger.Logger;
 
 public class HeapQueue<I, O> extends QueueImpl<I, O> implements Queue<I, O> {
@@ -38,13 +37,6 @@ public class HeapQueue<I, O> extends QueueImpl<I, O> implements Queue<I, O> {
 			logger.error("Dequeue failure", e);
 			return null;
 		}
-	}
-
-	@Override
-	public final boolean enqueue(I e) {
-		while (full())
-			if (!Concurrents.waitSleep(FULL_WAIT_MS)) logger.warn("Wait for full interrupted");
-		return (enqueueRaw(e));
 	}
 
 	@Override

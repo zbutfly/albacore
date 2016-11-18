@@ -13,8 +13,13 @@ public interface Statistical<T extends Statistical<T, V>, V> extends Serializabl
 	static final Logger slogger = Logger.getLogger(LOG_PREFIX);
 
 	default T trace(long step, Converter<V, Long> sizing, Supplier<Long> current) {
-		slogger.info("Staticstic register as [" + LOG_PREFIX + "].[" + this.getClass().getSimpleName() + "]");
-		Logger l = Logger.getLogger(LOG_PREFIX + "." + this.getClass().getSimpleName());
+		return trace("", step, sizing, current);
+	}
+
+	default T trace(String prefix, long step, Converter<V, Long> sizing, Supplier<Long> current) {
+		String logname = LOG_PREFIX + "." + prefix;
+		slogger.info("Staticstic register as [" + logname + "]");
+		Logger l = Logger.getLogger(logname);
 		@SuppressWarnings("unchecked")
 		T t = (T) this;
 		Instances.fetch(() -> new Statistic<T, V>(t, l, step, sizing, current), Statistic.class, this);
@@ -27,7 +32,7 @@ public interface Statistical<T extends Statistical<T, V>, V> extends Serializabl
 		if (null != s) s.stats(v);
 	}
 
-	default Iterable<V> stats(Iterable<V> vv) {
+	default <VV extends Iterable<V>> VV stats(VV vv) {
 		@SuppressWarnings("unchecked")
 		Statistic<T, V> s = Instances.fetch(() -> null, Statistic.class, this);
 		if (null != s) s.stats(vv);

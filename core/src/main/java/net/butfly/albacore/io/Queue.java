@@ -73,21 +73,12 @@ public interface Queue<I, O> extends AbstractQueue<I, O> {
 	@Override
 	default void close() {}
 
-	default void gc() {}
-
 	default Pump<O> pump(Queue<O, ?> dest, int parallelism) {
 		return pump(dest, parallelism, () -> this.empty());
 	}
 
 	default Pump<O> pump(Queue<O, ?> dest, int parallelism, Supplier<Boolean> stopping) {
-		return new PumpBase<O>(this, dest, parallelism) {
-			private static final long serialVersionUID = 1664281939439030486L;
-
-			@Override
-			public boolean stopped() {
-				return super.stopped() && stopping.get();
-			}
-		};
+		return new PumpBase<O>(this, dest, parallelism);
 	}
 
 	default <O2> Queue<I, O2> then(Converter<O, O2> conv) {

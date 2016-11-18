@@ -81,29 +81,20 @@ public abstract class QueueImpl<I, O> implements Queue<I, O> {
 		while (true) {
 			O e = dequeueRaw();
 			if (null == e) return e;
-			gc();
 			if (!Concurrents.waitSleep(EMPTY_WAIT_MS)) return null;
 		}
 	}
 
 	@Override
 	public List<O> dequeue(long batchSize) {
-		return dequeueWait(batchSize);
-	}
-
-	protected final List<O> dequeueWait(long batchSize) {
 		List<O> batch = new ArrayList<>();
 		long prev;
 		do {
 			prev = batch.size();
 			O e = dequeueRaw();
-			if (null != e) {
-				batch.add(e);
-				if (empty()) gc();
-			}
+			if (null != e) batch.add(e);
 			if (batch.size() == 0) Concurrents.waitSleep(EMPTY_WAIT_MS);
 		} while (batch.size() < batchSize && (prev != batch.size() || batch.size() == 0));
-		if (empty()) gc();
 		return batch;
 	}
 }

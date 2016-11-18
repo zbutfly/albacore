@@ -15,7 +15,6 @@ public abstract class InputQueueImpl<O> extends QueueImpl<Void, O> implements In
 	public O dequeue() {
 		while (true) {
 			O e = dequeueRaw();
-			if (null == e) gc();
 			return e;
 		}
 	}
@@ -28,7 +27,6 @@ public abstract class InputQueueImpl<O> extends QueueImpl<Void, O> implements In
 			if (null == e) break;
 			batch.add(e);
 		}
-		gc();
 		return batch;
 	}
 

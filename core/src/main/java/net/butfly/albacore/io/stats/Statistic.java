@@ -64,11 +64,9 @@ class Statistic<T extends Statistical<T, V>, V> implements Serializable {
 		Statistic.Result step, total;
 		step = new Statistic.Result(packsInStep.getAndSet(0), bytesInStep.getAndSet(0), now - statsed.getAndSet(now));
 		total = new Statistic.Result(packsInTotal.get(), bytesInTotal.get(), new Date().getTime() - begin);
-		logger.trace("Statistic:\n"//
-				+ "\tStep: " + step.packs + " records/" + formatBytes(step.bytes) + " in " + formatMillis(step.millis) + "\n"//
-				+ "\tTotal: " + total.packs + " records/" + formatBytes(total.bytes) + " in " + formatMillis(total.millis) + "\n"//
-				+ "\tcurrent: " + current.get() + "\n"//
-		);
+		logger.trace("Statistic: [Step: " + step.packs + " Objs/" + formatBytes(step.bytes) + "/" + formatMillis(step.millis)
+				+ "], [Total: " + total.packs + " Objs/" + formatBytes(total.bytes) + "/" + formatMillis(total.millis) + "], [current: "
+				+ current.get() + "].");
 	}
 
 	private static DecimalFormat f = new DecimalFormat("#.##");
@@ -81,15 +79,15 @@ class Statistic<T extends Statistical<T, V>, V> implements Serializable {
 	String formatBytes(long bytes) {
 		String bb;
 		if (bytes > T * 0.8) bb = f.format(bytes / T) + "TB";
-		else if (bytes > G * 0.8) bb = f.format(bytes / G) + "GB";
-		else if (bytes > M * 0.8) bb = f.format(bytes / M) + "MB";
-		else if (bytes > K * 0.8) bb = f.format(bytes / K) + "KB";
-		else bb = f.format(bytes) + "Byte";
+		else if (bytes > G * 0.8) bb = f.format(bytes / G) + " GB";
+		else if (bytes > M * 0.8) bb = f.format(bytes / M) + " MB";
+		else if (bytes > K * 0.8) bb = f.format(bytes / K) + " KB";
+		else bb = f.format(bytes) + " Bytes";
 		return bb;
 	}
 
 	String formatMillis(long millis) {
-		return f.format(millis / 1000.0) + "ms";
+		return f.format(millis / 1000.0) + " Secs";
 	}
 
 	static class Result {
