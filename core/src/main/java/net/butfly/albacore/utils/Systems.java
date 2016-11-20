@@ -29,7 +29,7 @@ public final class Systems extends Utils {
 
 	public static void dryDebug(Runnable run, Logger logger, String info) {
 		if (Systems.isDebug()) logger.warn("Debug mode, Dry run " + info + "!");
-		else run.run();;
+		else run.run();
 	}
 
 	@SuppressWarnings("restriction")
