@@ -2,7 +2,7 @@ package net.butfly.albacore.io.queue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -11,46 +11,69 @@ import net.butfly.albacore.utils.Collections;
 import net.butfly.albacore.utils.async.Concurrents;
 
 public interface MapQ<K, I, O> extends Q<I, O> {
-	Set<K> keys();
+	default Q<I, O> q(K key) {
+		return null;
+	}
+
+	default Set<K> keys() {
+		return new HashSet<>();
+	}
 
 	default long size(K key) {
-		return containKey(key) ? 0 : q(key).size();
+		Q<I, O> q = q(key);
+		return null == q ? 0 : q.size();
 	}
 
 	default boolean empty(K key) {
-		return containKey(key) ? true : q(key).empty();
+		Q<I, O> q = q(key);
+		return null == q ? true : q.empty();
 	}
 
 	default void close() {
 		for (K k : keys())
-			if (containKey(k)) q(k).close();
-
+			q(k).close();
 	}
 
-	default List<O> dequeue(long batchSize, K key) {
-		return containKey(key) ? new ArrayList<>() : q(key).dequeue(batchSize);
+	/**
+	 * basic, none blocking reading.
+	 * 
+	 * @param key
+	 * @return
+	 */
+	default O dequeue0(K key) {
+		Q<I, O> q = q(key);
+		return null == q ? null : q(key).dequeue0();
 	}
 
-	default boolean containKey(K key) {
-		return false;
-	}
-
-	default Q<I, O> q(K key) {
-		return null;
+	default List<O> dequeue(long batchSize, @SuppressWarnings("unchecked") K... key) {
+		List<O> batch = new ArrayList<>();
+		long prev;
+		do {
+			prev = batch.size();
+			for (K k : key) {
+				O e = dequeue0(k);
+				if (null != e) {
+					batch.add(e);
+					if (batch.size() >= batchSize) return batch;
+				}
+			}
+			if (batch.size() == 0) Concurrents.waitSleep(EMPTY_WAIT_MS);
+		} while (batch.size() < batchSize && (prev != batch.size() || batch.size() == 0));
+		return batch;
 	}
 
 	/**
 	 * basic, none blocking writing.
 	 * 
-	 * @param d
+	 * @param key
 	 * @return
 	 */
-	long enqueue(K key, Iterator<I> e);
+	boolean enqueue0(K key, I item);
 
-	long enqueue(Converter<I, K> keying, Iterator<I> iter);
-
-	default long enqueue(Converter<I, K> keying, Iterable<I> it) {
-		return enqueue(keying, it.iterator());
+	default long enqueue(Converter<I, K> keying, List<I> items) {
+		while (full())
+			Concurrents.waitSleep(FULL_WAIT_MS);
+		return MapQImpl.enqueueAll(i -> q(keying.apply(i)), items);
 	}
 
 	default long enqueue(Converter<I, K> keying, @SuppressWarnings("unchecked") I... e) {
@@ -67,15 +90,6 @@ public interface MapQ<K, I, O> extends Q<I, O> {
 	}
 
 	@Override
-	default O dequeue() {
-		for (K k : Collections.disorderize(keys())) {
-			O o = q(k).dequeue();
-			if (null != o) return o;
-		}
-		return null;
-	}
-
-	@Override
 	default List<O> dequeue(long batchSize) {
 		List<O> batch = new ArrayList<>();
 		List<K> ks = Collections.disorderize(keys());
@@ -84,8 +98,8 @@ public interface MapQ<K, I, O> extends Q<I, O> {
 		do {
 			prev = batch.size();
 			for (K k : ks) {
-				List<O> e = dequeue(batchSize, k);
-				if (null != e && e.size() > 0) batch.addAll(e);
+				O e = ((MapQImpl<K, I, O>) this).dequeue0(k);
+				if (null != e) batch.add(e);
 			}
 			if (batch.size() == 0) Concurrents.waitSleep(EMPTY_WAIT_MS);
 			continuing = batch.size() < batchSize && (prev != batch.size() || batch.size() == 0);

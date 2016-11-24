@@ -1,19 +1,17 @@
 package net.butfly.albacore.io.queue;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import net.butfly.albacore.lambda.Converter;
-import net.butfly.albacore.utils.async.Concurrents;
+import net.butfly.albacore.utils.Collections;
 
 public abstract class MapQImpl<K, I, O> extends QImpl<I, O> implements MapQ<K, I, O> {
 	private static final long serialVersionUID = -1;
-	private final Map<K, Q<I, O>> queues;
+	private final Map<K, ? extends QImpl<I, O>> queues;
 	private final Converter<I, K> keying;
 
 	protected MapQImpl(String name, long capacity, Converter<I, K> keying) {
@@ -22,7 +20,7 @@ public abstract class MapQImpl<K, I, O> extends QImpl<I, O> implements MapQ<K, I
 		this.keying = keying;
 	}
 
-	protected MapQImpl(String name, long capacity, Converter<I, K> inkeying, Map<K, ? extends Q<I, O>> queues) {
+	protected MapQImpl(String name, long capacity, Converter<I, K> inkeying, Map<K, ? extends QImpl<I, O>> queues) {
 		super(name, capacity);
 		this.queues = new HashMap<>(queues);
 		this.keying = inkeying;
@@ -38,48 +36,38 @@ public abstract class MapQImpl<K, I, O> extends QImpl<I, O> implements MapQ<K, I
 		return queues.get(key);
 	}
 
-	@Override
-	public long enqueue(Converter<I, K> keying, Iterator<I> iter) {
-		while (full())
-			Concurrents.waitSleep(FULL_WAIT_MS);
-		return enqueueAll(i -> q(keying.apply(i)), iter);
-	}
-
-	private static <I, O> long enqueueAll(Converter<I, Q<I, O>> qing, Iterator<I> iter) {
+	static <I, O> long enqueueAll(Converter<I, Q<I, O>> qing, List<I> items) {
 		long count = 0;
-		Iterator<I> remain = iter;
-		while (!remain.hasNext())
+		List<I> remain = items;
+		while (!remain.isEmpty())
 			remain = enqueueRemain(qing, remain, count);
 		return count;
 	}
 
-	private static <I, O> Iterator<I> enqueueRemain(Converter<I, Q<I, O>> qing, Iterator<I> remain, long... count) {
+	static <I, O> List<I> enqueueRemain(Converter<I, Q<I, O>> qing, List<I> remain, long... count) {
 		List<I> r = new ArrayList<>();
-		while (remain.hasNext()) {
-			I e = remain.next();
+		for (I e : remain)
 			if (e != null) {
 				Q<I, O> q = qing.apply(e);
-				if (!q.full() && q.enqueue(e)) count[0]++;
+				if (!q.full() && q.enqueue0(e)) count[0]++;
 				else r.add(e);
 			}
-		}
-		return r.iterator();
+		return r;
 	}
 
 	/**********/
 	@Override
-	public boolean enqueue(I e) {
-		return enqueue(keying.apply(e), Arrays.asList(e).iterator()) == 1;
+	public O dequeue0() {
+		for (K k : Collections.disorderize(keys())) {
+			O o = q(k).dequeue0();
+			if (null != o) return o;
+		}
+		return null;
 	}
 
 	@Override
-	public long enqueue(Iterator<I> iter) {
-		return enqueue(keying, iter);
-	}
-
-	@Override
-	public O dequeue() {
-		return MapQ.super.dequeue();
+	public boolean enqueue0(I e) {
+		return enqueue0(keying.apply(e), e);
 	}
 
 	@Override

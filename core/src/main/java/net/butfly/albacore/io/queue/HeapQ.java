@@ -1,14 +1,14 @@
 package net.butfly.albacore.io.queue;
 
+import java.util.List;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import net.butfly.albacore.lambda.Converter;
-import net.butfly.albacore.utils.logger.Logger;
 
-public class HeapQ<I, O> extends QImpl<I, O> implements Q<I, O> {
+public class HeapQ<I, O> extends QImpl<I, O> {
 	private static final long serialVersionUID = -1;
-	private static final Logger logger = Logger.getLogger(HeapQ.class);
-	protected final LinkedBlockingQueue<O> impl;
+	protected final BlockingQueue<O> impl;
 	private Converter<I, O> conv;
 
 	public HeapQ(String name, long capacity, Converter<I, O> conv) {
@@ -18,25 +18,41 @@ public class HeapQ<I, O> extends QImpl<I, O> implements Q<I, O> {
 	}
 
 	@Override
-	public final boolean enqueue(I e) {
-		if (null == e) return false;
-		try {
-			impl.put(conv.apply(e));
-			return true;
-		} catch (InterruptedException ex) {
-			logger.error("Enqueue failure", ex);
-			return false;
-		}
+	public final boolean enqueue0(I e) {
+		return null == e && impl.offer(conv.apply(e));
 	}
 
 	@Override
-	public O dequeue() {
-		try {
-			return impl.take();
-		} catch (InterruptedException e) {
-			logger.error("Dequeue failure", e);
-			return null;
-		}
+	public O dequeue0() {
+		return impl.poll();
+	}
+
+	@Override
+	public boolean empty() {
+		return impl.isEmpty();
+	}
+
+	@Override
+	public List<O> dequeue(long batchSize) {
+		return super.dequeue(batchSize);
+	}
+
+	@Override
+	public long enqueue(List<I> items) {
+		long c = 0;
+		for (I e : items)
+			if (null != e) try {
+				impl.put(conv.apply(e));
+				c++;
+			} catch (InterruptedException ex) {
+				logger.warn("Q enqueue interrupted, item maybe lost", ex);
+			}
+		return c;
+	}
+
+	@Override
+	public boolean full() {
+		return impl.remainingCapacity() <= 0;
 	}
 
 	@Override

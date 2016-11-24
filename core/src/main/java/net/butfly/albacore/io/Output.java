@@ -1,17 +1,31 @@
 package net.butfly.albacore.io;
 
-import java.util.Arrays;
+import java.util.List;
 
-import net.butfly.albacore.io.queue.Q;
+import net.butfly.albacore.io.queue.QImpl;
 
-public interface Output<I> extends Q<I, Void> {
-	@Override
-	default long size() {
-		return 0;
+public abstract class Output<I> extends QImpl<I, Void> {
+	private static final long serialVersionUID = -1;
+
+	protected Output(String name) {
+		super(name, Long.MAX_VALUE);
 	}
 
 	@Override
-	default long enqueue(@SuppressWarnings("unchecked") I... e) {
-		return enqueue(Arrays.asList(e));
+	public long size() {
+		return 0;
+	}
+
+	/* disable dequeue on output */
+	@Override
+	@Deprecated
+	public final Void dequeue0() {
+		return null;
+	}
+
+	@Override
+	@Deprecated
+	public final List<Void> dequeue(long batchSize) {
+		return null;
 	}
 }

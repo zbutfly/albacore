@@ -5,12 +5,12 @@ import java.util.Map;
 
 import org.slf4j.event.Level;
 
-import net.butfly.albacore.io.OutputImpl;
+import net.butfly.albacore.io.Output;
 import net.butfly.albacore.lambda.Consumer;
 import net.butfly.albacore.utils.Instances;
 import net.butfly.albacore.utils.logger.Logger;
 
-public class LoggerOutput extends OutputImpl<String> {
+public class LoggerOutput extends Output<String> {
 	private static final long serialVersionUID = 7782039002400807964L;
 	private final Map<Level, Consumer<String>> loggings;
 	private final Logger logger;
@@ -47,7 +47,7 @@ public class LoggerOutput extends OutputImpl<String> {
 	}
 
 	@Override
-	public boolean enqueue(String message) {
+	public boolean enqueue0(String message) {
 		loggings.get(level).accept(message);
 		return true;
 	}

@@ -1,30 +1,30 @@
 package net.butfly.albacore.io;
 
-import java.util.Iterator;
 import java.util.List;
-
-import net.butfly.albacore.io.queue.Q;
+import net.butfly.albacore.io.queue.QImpl;
 import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.utils.Collections;
 
-public interface Input<O> extends Q<Void, O> {
+public abstract class Input<O> extends QImpl<Void, O> {
+	private static final long serialVersionUID = -1;
+
+	protected Input(String name) {
+		super(name, -1);
+	}
+
 	@Override
-	default long size() {
+	public long size() {
 		return Long.MAX_VALUE;
 	}
 
-	default <O2> Input<O2> then(Converter<O, O2> conv) {
-		return new InputImpl<O2>(Input.this.name()) {
+	@Override
+	public <O2> Input<O2> then(Converter<O, O2> conv) {
+		return new Input<O2>(Input.this.name()) {
 			private static final long serialVersionUID = -8694670290655232938L;
 
 			@Override
-			public boolean empty() {
-				return Input.this.empty();
-			}
-
-			@Override
-			public O2 dequeue() {
-				return conv.apply(Input.this.dequeue());
+			public O2 dequeue0() {
+				return conv.apply(((Input<O>) Input.this).dequeue0());
 			}
 
 			@Override
@@ -44,27 +44,22 @@ public interface Input<O> extends Q<Void, O> {
 		};
 	}
 
+	/* disable enqueue on input */
 	@Override
 	@Deprecated
-	default boolean enqueue(Void d) {
+	public final boolean enqueue0(Void d) {
 		return false;
 	}
 
 	@Override
 	@Deprecated
-	default long enqueue(Iterator<Void> iter) {
+	public final long enqueue(List<Void> iter) {
 		return 0;
 	}
 
 	@Override
 	@Deprecated
-	default long enqueue(Iterable<Void> it) {
-		return 0;
-	}
-
-	@Override
-	@Deprecated
-	default long enqueue(Void... e) {
+	public final long enqueue(Void... e) {
 		return 0;
 	}
 }

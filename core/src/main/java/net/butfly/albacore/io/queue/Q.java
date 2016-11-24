@@ -1,13 +1,12 @@
 package net.butfly.albacore.io.queue;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
-
-import net.butfly.albacore.io.pump.Pump;
 import net.butfly.albacore.io.pump.BasicPump;
 import net.butfly.albacore.io.pump.MapPump;
+import net.butfly.albacore.io.pump.Pump;
 import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.utils.Collections;
 import net.butfly.albacore.utils.async.Concurrents;
@@ -41,23 +40,13 @@ import net.butfly.albacore.utils.logger.Logger;
  * @author butfly
  *
  */
-public interface Q<I, O> extends AbstractQueue<I, O> {
-	static final Logger logger = Logger.getLogger(QImpl.class);
+public interface Q<I, O> extends AutoCloseable, Serializable {
+	static final Logger logger = Logger.getLogger(Q.class);
+	static final long INFINITE_SIZE = -1;
+	static final long FULL_WAIT_MS = 500;
+	static final long EMPTY_WAIT_MS = 500;
 
-	/**
-	 * basic, none blocking writing.
-	 * 
-	 * @param d
-	 * @return
-	 */
-	boolean enqueue(I d);
-
-	/**
-	 * basic, none blocking reading.
-	 * 
-	 * @return null on empty
-	 */
-	O dequeue();
+	String name();
 
 	long size();
 
@@ -71,41 +60,53 @@ public interface Q<I, O> extends AbstractQueue<I, O> {
 		return size() >= capacity();
 	}
 
-	default long enqueue(Iterator<I> iter) {
-		long c = 0;
-		while (full())
-			Concurrents.waitSleep(FULL_WAIT_MS);
-		while (iter.hasNext()) {
-			I e = iter.next();
-			if (null != e && enqueue(e)) c++;
-		}
-		return c;
-	}
+	@Override
+	default void close() {}
 
-	default long enqueue(Iterable<I> it) {
-		return enqueue(it.iterator());
-	}
-
-	default long enqueue(@SuppressWarnings("unchecked") I... e) {
-		return enqueue(Arrays.asList(e));
-	}
+	/**
+	 * basic, none blocking reading.
+	 * 
+	 * @return null on empty
+	 */
+	O dequeue0();
 
 	default List<O> dequeue(long batchSize) {
 		List<O> batch = new ArrayList<>();
 		long prev;
 		do {
 			prev = batch.size();
-			O e = dequeue();
+			O e = dequeue0();
 			if (null != e) batch.add(e);
 			if (batch.size() == 0) Concurrents.waitSleep(EMPTY_WAIT_MS);
 		} while (batch.size() < batchSize && (prev != batch.size() || batch.size() == 0));
 		return batch;
 	}
 
-	/* from interfaces */
+	/**
+	 * basic, none blocking writing.
+	 * 
+	 * @param d
+	 * @return
+	 */
+	boolean enqueue0(I d);
 
-	@Override
-	default void close() {}
+	default long enqueue(List<I> items) {
+		long c = 0;
+		while (full())
+			Concurrents.waitSleep(FULL_WAIT_MS);
+		for (I e : items)
+			if (null != e) {
+				if (enqueue0(e)) c++;
+				else logger.warn("Q enqueue failure though not full before, item maybe lost");
+			}
+		return c;
+	}
+
+	default long enqueue(@SuppressWarnings("unchecked") I... e) {
+		return enqueue(Arrays.asList(e));
+	}
+
+	/* from interfaces */
 
 	default Pump<O> pump(Q<O, ?> dest, int parallelism) {
 		return new BasicPump<O>(this, dest, parallelism);
@@ -120,39 +121,28 @@ public interface Q<I, O> extends AbstractQueue<I, O> {
 			private static final long serialVersionUID = -5894142335125843377L;
 
 			@Override
-			public long size() {
-				return Q.this.size();
+			public boolean enqueue0(I d) {
+				return Q.this.enqueue0(d);
 			}
 
 			@Override
-			public boolean enqueue(I e) {
-				return Q.this.enqueue(e);
-			}
-
-			@Override
-			public O2 dequeue() {
-				return conv.apply(Q.this.dequeue());
-			}
-
-			@Override
-			public long enqueue(Iterable<I> it) {
-				return Q.this.enqueue(it);
-			}
-
-			@Override
-			public long enqueue(Iterator<I> iter) {
-				return Q.this.enqueue(iter);
-			}
-
-			@SafeVarargs
-			@Override
-			public final long enqueue(I... e) {
-				return Q.this.enqueue(e);
+			public O2 dequeue0() {
+				return conv.apply(Q.this.dequeue0());
 			}
 
 			@Override
 			public List<O2> dequeue(long batchSize) {
 				return Collections.transform(Q.this.dequeue(batchSize), conv);
+			}
+
+			@Override
+			public long size() {
+				return Q.this.size();
+			}
+
+			@Override
+			public void close() {
+				Q.this.close();
 			}
 		};
 	}
