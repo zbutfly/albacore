@@ -9,17 +9,17 @@ public interface Pump<V> extends Statistical<Pump<V>, V> {
 
 	Pump<V> batch(long batchSize);
 
-	@SuppressWarnings("restriction")
+	@SuppressWarnings({ "restriction", "rawtypes" })
 	static void run(Pump<?>... pumps) {
 		// handle kill -15, CTRL-C, kill -9
 		Systems.handleSignal(sig -> {
 			logger.error("Signal [" + sig.getName() + "][" + sig.getNumber() + "] caught, stopping all pumps");
 			for (int i = 0; i < pumps.length; i++)
-				((PumpBase<?>) pumps[i]).terminate();
+				((PumpImpl) pumps[i]).terminate();
 		}, "TERM", "INT"/* , "KILL" */); // kill -9 catched by system/os
 		for (int i = pumps.length - 1; i >= 0; i--)
-			((PumpBase<?>) pumps[i]).start();
+			((PumpImpl) pumps[i]).start();
 		for (int i = 0; i < pumps.length; i++)
-			((PumpBase<?>) pumps[i]).waitForFinish();
+			((PumpImpl) pumps[i]).waitForFinish();
 	}
 }

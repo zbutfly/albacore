@@ -1,17 +1,16 @@
-package net.butfly.albacore.io.impl;
+package net.butfly.albacore.io.std;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import org.slf4j.event.Level;
 
-import net.butfly.albacore.io.OutputQueue;
-import net.butfly.albacore.io.OutputQueueImpl;
+import net.butfly.albacore.io.OutputImpl;
 import net.butfly.albacore.lambda.Consumer;
 import net.butfly.albacore.utils.Instances;
 import net.butfly.albacore.utils.logger.Logger;
 
-public class LoggerOutput extends OutputQueueImpl<String> implements OutputQueue<String> {
+public class LoggerOutput extends OutputImpl<String> {
 	private static final long serialVersionUID = 7782039002400807964L;
 	private final Map<Level, Consumer<String>> loggings;
 	private final Logger logger;
@@ -48,7 +47,7 @@ public class LoggerOutput extends OutputQueueImpl<String> implements OutputQueue
 	}
 
 	@Override
-	protected boolean enqueueRaw(String message) {
+	public boolean enqueue(String message) {
 		loggings.get(level).accept(message);
 		return true;
 	}
