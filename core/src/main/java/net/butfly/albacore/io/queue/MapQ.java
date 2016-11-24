@@ -8,6 +8,7 @@ import java.util.Set;
 
 import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.utils.Collections;
+import net.butfly.albacore.utils.Generics;
 import net.butfly.albacore.utils.async.Concurrents;
 
 public interface MapQ<K, I, O> extends Q<I, O> {
@@ -90,22 +91,14 @@ public interface MapQ<K, I, O> extends Q<I, O> {
 	}
 
 	@Override
+	default O dequeue0() {
+		Set<K> ks = keys();
+		return dequeue0(Collections.random(ks, ks.size()));
+	}
+
+	@Override
 	default List<O> dequeue(long batchSize) {
-		List<O> batch = new ArrayList<>();
-		List<K> ks = Collections.disorderize(keys());
-		int prev;
-		boolean continuing = false;
-		do {
-			prev = batch.size();
-			for (K k : ks) {
-				O e = ((MapQImpl<K, I, O>) this).dequeue0(k);
-				if (null != e) batch.add(e);
-			}
-			if (batch.size() == 0) Concurrents.waitSleep(EMPTY_WAIT_MS);
-			continuing = batch.size() < batchSize && (prev != batch.size() || batch.size() == 0);
-			if (continuing) ks = Collections.disorderize(ks);
-		} while (continuing);
-		return batch;
+		return dequeue(batchSize, Generics.toArray(Collections.disorderize(keys())));
 	}
 
 	/**************/
