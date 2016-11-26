@@ -1,6 +1,5 @@
 package net.butfly.albacore.utils;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map.Entry;
@@ -16,11 +15,9 @@ public class Configs extends Utils {
 	}
 
 	public static Properties read(String file) throws IOException {
-		try (InputStream cpis = Thread.currentThread().getContextClassLoader().getResourceAsStream(file);) {
-			if (cpis != null) return read(cpis);
-			try (InputStream absis = new FileInputStream(file);) {
-				return read(absis);
-			}
+		logger.info("Load configurations from: " + file);
+		try (InputStream in = IOs.loadJavaFile(file);) {
+			return read(in);
 		}
 	}
 
@@ -29,13 +26,19 @@ public class Configs extends Utils {
 		if (null != in) confs.load(in);
 		for (Entry<Object, Object> e : System.getProperties().entrySet())
 			if (!filter(e.getKey().toString())) confs.putIfAbsent((String) e.getKey(), (String) e.getValue());
-		for (Entry<String, String> e : System.getenv().entrySet())
-			if (!filter(e.getKey())) confs.putIfAbsent(e.getKey(), e.getValue());;
+		for (Entry<String, String> e : System.getenv().entrySet()) {
+			String key = CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_DOT, e.getKey());
+			if (!filter(key)) confs.putIfAbsent(key, e.getValue());
+		}
 		logger.trace("Configuration loaded: " + confs.toString());
 		return confs;
 	}
 
+	private static String[] IGNORE_PREFIXS = new String[] { "java", "sun", "os", "user", "file", "path" };
+
 	private static boolean filter(String key) {
-		return key.startsWith("java.") || key.startsWith("sun.") || (key.charAt(0) >= 'A' && key.charAt(0) <= 'Z');
+		for (String ig : IGNORE_PREFIXS)
+			if (ig.equals(key) || key.startsWith(ig)) return true;
+		return (key.charAt(0) >= 'A' && key.charAt(0) <= 'Z');
 	}
 }

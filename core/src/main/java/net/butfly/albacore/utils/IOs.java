@@ -1,6 +1,8 @@
 package net.butfly.albacore.utils;
 
 import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -47,6 +49,14 @@ public final class IOs extends Utils {
 			r = in.read(bytes, r, l);
 		}
 		return bytes;
+	}
+
+	public static InputStream loadJavaFile(String file) {
+		try {
+			return new FileInputStream(file);
+		} catch (FileNotFoundException e) {
+			return Thread.currentThread().getContextClassLoader().getResourceAsStream(file);
+		}
 	}
 
 	@Deprecated
