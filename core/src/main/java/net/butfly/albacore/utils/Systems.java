@@ -11,7 +11,12 @@ public final class Systems extends Utils {
 		try {
 			return Class.forName(System.getProperty("sun.java.command"));
 		} catch (ClassNotFoundException e) {
-			throw new RuntimeException(e);
+			StackTraceElement[] s = Thread.currentThread().getStackTrace();
+			try {
+				return Class.forName(s[s.length - 1].getClassName());
+			} catch (ClassNotFoundException ee) {
+				throw new RuntimeException(ee);
+			}
 		}
 	}
 
