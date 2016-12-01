@@ -64,24 +64,29 @@ class Statistic<T extends Statistical<T, V>, V> implements Serializable {
 		Statistic.Result step, total;
 		step = new Statistic.Result(packsInStep.getAndSet(0), bytesInStep.getAndSet(0), now - statsed.getAndSet(now));
 		total = new Statistic.Result(packsInTotal.get(), bytesInTotal.get(), new Date().getTime() - begin);
-		logger.trace("Statistic: [Step: " + step.packs + " Objs/" + formatBytes(step.bytes) + "/" + formatMillis(step.millis)
-				+ "], [Total: " + total.packs + " Objs/" + formatBytes(total.bytes) + "/" + formatMillis(total.millis) + "], [current: "
+		logger.trace("Statistic: [Step: " + step.packs + "objs/" + formatBytes(step.bytes) + "/" + formatMillis(step.millis)
+				+ "], [Total: " + total.packs + "objs/" + formatBytes(total.bytes) + "/" + formatMillis(total.millis) + "], [current: "
 				+ current.get() + "].");
 	}
 
 	private static DecimalFormat f = new DecimalFormat("#.##");
 
-	private static int K = 1024;
-	private static int M = K * K;
-	private static int G = M * K;
-	private static int T = G * K;
+	private static long K = 1024;
+	private static long M = K * K;
+	private static long G = M * K;
+	private static long T = G * K;
 
 	String formatBytes(long bytes) {
-		if (bytes > T) return f.format(bytes / T) + " TB " + formatBytes(bytes % T);
-		if (bytes > G) return f.format(bytes / G) + " GB " + formatBytes(bytes % G);
-		if (bytes > M) return f.format(bytes / M) + " MB " + formatBytes(bytes % M);
-		if (bytes > K) return f.format(bytes / K) + " KB " + formatBytes(bytes % K);
-		return f.format(bytes) + " Bytes";
+		double b = bytes;
+		if (b > T) return f.format(b / T) + "TB";
+		// +"+" + formatBytes(bytes % T);
+		if (b > G) return f.format(b / G) + "GB";
+		// +"+" + formatBytes(bytes % G);
+		if (b > M) return f.format(b / M) + "MB";
+		// +"+" + formatBytes(bytes % M);
+		if (b > K) return f.format(b / K) + "KB";
+		// +"+" + formatBytes(bytes % K);
+		return f.format(b) + "Bytes";
 	}
 
 	private static int SECOND = 1000;
@@ -89,10 +94,14 @@ class Statistic<T extends Statistical<T, V>, V> implements Serializable {
 	private static int HOUR = 60 * MINUTE;
 
 	String formatMillis(long millis) {
-		if (millis > HOUR) return f.format(millis / HOUR) + " h " + formatMillis(millis % HOUR);
-		if (millis > MINUTE) return f.format(millis / MINUTE) + " m " + formatMillis(millis % MINUTE);
-		if (millis > SECOND) return f.format(millis / SECOND) + " s " + formatMillis(millis % SECOND);
-		return f.format(millis) + " ms";
+		double ms = millis;
+		if (ms > HOUR) return f.format(ms / HOUR) + "h";
+		// + "+" + formatMillis(millis % HOUR);
+		if (ms > MINUTE) return f.format(ms / MINUTE) + "m";
+		// + "+" + formatMillis(millis % MINUTE);
+		if (ms > SECOND) return f.format(millis / SECOND) + "s";
+		// + "+" + formatMillis(millis % SECOND);
+		return f.format(ms) + "ms";
 	}
 
 	static class Result {

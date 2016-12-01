@@ -81,7 +81,7 @@ public abstract class PumpImpl<V> implements Pump<V> {
 		ex.shutdown();
 	}
 
-	void waitForFinish() {
+	void accomplish() {
 		running.set(STATUS_OTHER);
 		logger.info("Pump [" + name + "] stopping...");
 		try {

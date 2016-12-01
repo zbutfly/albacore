@@ -20,6 +20,6 @@ public interface Pump<V> extends Statistical<Pump<V>, V> {
 		for (int i = pumps.length - 1; i >= 0; i--)
 			((PumpImpl) pumps[i]).start();
 		for (int i = 0; i < pumps.length; i++)
-			((PumpImpl) pumps[i]).waitForFinish();
+			((PumpImpl) pumps[i]).accomplish();
 	}
 }
