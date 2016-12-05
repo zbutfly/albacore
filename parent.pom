@@ -8,7 +8,7 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.test.skip.exec>true</maven.test.skip.exec>
-		<version.spring>4.3.3.RELEASE</version.spring>
+		<version.spring>4.3.4.RELEASE</version.spring>
 		<version.scala.main>2.10</version.scala.main>
 		<version.scala.suffix>_${version.scala.main}</version.scala.suffix>
 		<version.scala>${version.scala.main}.6</version.scala>
@@ -57,13 +57,12 @@
 					</configuration>
 				</plugin>
 				<plugin>
-					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-dependency-plugin</artifactId>
 					<version>2.10</version>
 				</plugin>
 				<plugin>
 					<artifactId>maven-compiler-plugin</artifactId>
-					<version>3.5.1</version>
+					<version>3.6.0</version>
 					<configuration>
 						<source>1.8</source>
 						<target>1.8</target>
@@ -73,13 +72,13 @@
 						<dependency>
 							<groupId>org.codehaus.plexus</groupId>
 							<artifactId>plexus-compiler-javac</artifactId>
-							<version>2.5</version>
+							<version>2.8.1</version>
 						</dependency>
 					</dependencies>
 				</plugin>
 				<plugin>
 					<artifactId>maven-resources-plugin</artifactId>
-					<version>2.7</version>
+					<version>3.0.1</version>
 					<configuration>
 						<encoding>${project.build.sourceEncoding}</encoding>
 					</configuration>
@@ -102,9 +101,8 @@
 		</pluginManagement>
 		<plugins>
 			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-source-plugin</artifactId>
-				<version>3.0.0</version>
+				<version>3.0.1</version>
 				<executions>
 					<execution>
 						<id>attach-sources</id>
@@ -116,7 +114,6 @@
 				</executions>
 			</plugin>
 			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
 				<version>3.0.2</version>
 				<inherited>true</inherited>
@@ -144,7 +141,7 @@
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>versions-maven-plugin</artifactId>
-				<version>2.2</version>
+				<version>2.3</version>
 			</plugin>
 		</plugins>
 	</build>
@@ -158,18 +155,14 @@
 			<name>Sean Zhang</name>
 			<email>zbutfly@gmail.com</email>
 			<url>http://www.butfly.com</url>
-			<roles>
-				<role>master</role>
-			</roles>
+			<roles><role>master</role></roles>
 			<timezone>+8</timezone>
 			<properties>
 				<picUrl>http://tinyurl.com/zbutfly</picUrl>
 			</properties>
 		</developer>
 	</developers>
-	<prerequisites>
-		<maven>3.3</maven>
-	</prerequisites>
+	<prerequisites><maven>3.3</maven></prerequisites>
 	<dependencyManagement>
 		<dependencies>
 			<dependency>
