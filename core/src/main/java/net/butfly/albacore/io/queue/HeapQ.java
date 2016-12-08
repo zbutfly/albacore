@@ -44,9 +44,7 @@ public class HeapQ<I, O> extends QImpl<I, O> {
 			if (null != e) try {
 				impl.put(conv.apply(e));
 				c++;
-			} catch (InterruptedException ex) {
-				logger.warn("Q enqueue interrupted, item maybe lost", ex);
-			}
+			} catch (InterruptedException ex) {}
 		return c;
 	}
 

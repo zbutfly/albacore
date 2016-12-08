@@ -64,7 +64,7 @@ class Statistic<T extends Statistical<T, V>, V> implements Serializable {
 		Statistic.Result step, total;
 		step = new Statistic.Result(packsInStep.getAndSet(0), bytesInStep.getAndSet(0), now - statsed.getAndSet(now));
 		total = new Statistic.Result(packsInTotal.get(), bytesInTotal.get(), new Date().getTime() - begin);
-		logger.trace("Statistic: [Step: " + step.packs + "/objs," + formatBytes(step.bytes) + "," + formatMillis(step.millis)
+		logger.debug("Statistic: [Step: " + step.packs + "/objs," + formatBytes(step.bytes) + "," + formatMillis(step.millis)
 				+ "], [Total: " + total.packs + "/objs," + formatBytes(total.bytes) + "," + formatMillis(total.millis) + "], [current: "
 				+ current.get() + "].");
 	}
@@ -94,7 +94,7 @@ class Statistic<T extends Statistical<T, V>, V> implements Serializable {
 	private static int HOUR = 60 * MINUTE;
 
 	String formatMillis(long millis) {
-		double ms = millis;
+		double ms = millis * 1.0;
 		if (ms > HOUR) return f.format(ms / HOUR) + "/h";
 		// + "+" + formatMillis(millis % HOUR);
 		if (ms > MINUTE) return f.format(ms / MINUTE) + "/m";
