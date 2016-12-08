@@ -64,8 +64,8 @@ class Statistic<T extends Statistical<T, V>, V> implements Serializable {
 		Statistic.Result step, total;
 		step = new Statistic.Result(packsInStep.getAndSet(0), bytesInStep.getAndSet(0), now - statsed.getAndSet(now));
 		total = new Statistic.Result(packsInTotal.get(), bytesInTotal.get(), new Date().getTime() - begin);
-		logger.trace("Statistic: [Step: " + step.packs + "objs/" + formatBytes(step.bytes) + "/" + formatMillis(step.millis)
-				+ "], [Total: " + total.packs + "objs/" + formatBytes(total.bytes) + "/" + formatMillis(total.millis) + "], [current: "
+		logger.trace("Statistic: [Step: " + step.packs + "/objs," + formatBytes(step.bytes) + "," + formatMillis(step.millis)
+				+ "], [Total: " + total.packs + "/objs," + formatBytes(total.bytes) + "," + formatMillis(total.millis) + "], [current: "
 				+ current.get() + "].");
 	}
 
@@ -78,15 +78,15 @@ class Statistic<T extends Statistical<T, V>, V> implements Serializable {
 
 	String formatBytes(long bytes) {
 		double b = bytes;
-		if (b > T) return f.format(b / T) + "TB";
+		if (b > T) return f.format(b / T) + "/TB";
 		// +"+" + formatBytes(bytes % T);
-		if (b > G) return f.format(b / G) + "GB";
+		if (b > G) return f.format(b / G) + "/GB";
 		// +"+" + formatBytes(bytes % G);
-		if (b > M) return f.format(b / M) + "MB";
+		if (b > M) return f.format(b / M) + "/MB";
 		// +"+" + formatBytes(bytes % M);
-		if (b > K) return f.format(b / K) + "KB";
+		if (b > K) return f.format(b / K) + "/KB";
 		// +"+" + formatBytes(bytes % K);
-		return f.format(b) + "Bytes";
+		return f.format(b) + "/Bytes";
 	}
 
 	private static int SECOND = 1000;
@@ -95,13 +95,13 @@ class Statistic<T extends Statistical<T, V>, V> implements Serializable {
 
 	String formatMillis(long millis) {
 		double ms = millis;
-		if (ms > HOUR) return f.format(ms / HOUR) + "h";
+		if (ms > HOUR) return f.format(ms / HOUR) + "/h";
 		// + "+" + formatMillis(millis % HOUR);
-		if (ms > MINUTE) return f.format(ms / MINUTE) + "m";
+		if (ms > MINUTE) return f.format(ms / MINUTE) + "/m";
 		// + "+" + formatMillis(millis % MINUTE);
-		if (ms > SECOND) return f.format(millis / SECOND) + "s";
+		if (ms > SECOND) return f.format(millis / SECOND) + "/s";
 		// + "+" + formatMillis(millis % SECOND);
-		return f.format(ms) + "ms";
+		return f.format(ms) + "/ms";
 	}
 
 	static class Result {
