@@ -82,4 +82,12 @@ public final class Collections extends Utils {
 		return l;
 	}
 
+	public static <T> List<List<T>> chopped(List<T> origin, int chopSize) {
+		List<List<T>> parts = new ArrayList<>();
+		int originalSize = origin.size();
+		for (int i = 0; i < originalSize; i += chopSize)
+			parts.add(new ArrayList<>(origin.subList(i, Math.min(originalSize, i + chopSize))));
+		return parts;
+	}
+
 }
