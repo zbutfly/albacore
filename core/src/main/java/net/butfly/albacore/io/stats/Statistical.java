@@ -18,7 +18,7 @@ public interface Statistical<T extends Statistical<T, V>, V> extends Serializabl
 
 	default T trace(String prefix, long step, Converter<V, Long> sizing, Supplier<Long> current) {
 		String logname = LOG_PREFIX + "." + prefix;
-		slogger.info("Staticstic register as [" + logname + "]");
+		slogger.info("Staticstic register as [" + logname + "] on step [" + step + "]");
 		Logger l = Logger.getLogger(logname);
 		@SuppressWarnings("unchecked")
 		T t = (T) this;

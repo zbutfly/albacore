@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.text.DecimalFormat;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.StampedLock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.lambda.Supplier;
@@ -13,7 +13,7 @@ import net.butfly.albacore.utils.logger.Logger;
 
 class Statistic<T extends Statistical<T, V>, V> implements Serializable {
 	private static final long serialVersionUID = -1;
-	final StampedLock lock;
+	final ReentrantLock lock;
 
 	final Logger logger;
 	final AtomicLong packsStep;
@@ -30,7 +30,7 @@ class Statistic<T extends Statistical<T, V>, V> implements Serializable {
 
 	Statistic(T owner, Logger logger, long step, Converter<V, Long> sizing, Supplier<Long> current) {
 		Reflections.noneNull("", owner, logger);
-		lock = new StampedLock();
+		lock = new ReentrantLock();
 		this.logger = logger;
 		this.packsStep = new AtomicLong(step - 1);
 		packsInStep = new AtomicLong(0);
@@ -47,7 +47,12 @@ class Statistic<T extends Statistical<T, V>, V> implements Serializable {
 		packsInTotal.incrementAndGet();
 		bytesInTotal.addAndGet(bytes < 0 ? 0 : bytes);
 		bytesInStep.addAndGet(bytes < 0 ? 0 : bytes);
-		if (packsInStep.incrementAndGet() > packsStep.get() && logger.isTraceEnabled()) trace();
+		if (packsInStep.incrementAndGet() > packsStep.get() && logger.isTraceEnabled() && lock.tryLock()) try {
+			trace();
+		} finally {
+			lock.unlock();
+		}
+
 	}
 
 	void stats(V v) {

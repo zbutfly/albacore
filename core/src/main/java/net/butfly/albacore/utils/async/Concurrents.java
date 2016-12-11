@@ -129,9 +129,9 @@ public final class Concurrents extends Utils {
 		boolean forkjoin = Boolean.parseBoolean(System.getProperty("albacore.concurrent.forkjoin", "true"));
 		logger.info("ForkJoin first? " + forkjoin + "!, change it by -Dalbacore.concurrent.forkjoin=false");
 		return Instances.fetch(() -> {
-			String prefix = name == null || name.length == 0 ? "ALBACORE-THREAD" : Joiner.on('-').join(name);
+			String prefix = name == null || name.length == 0 ? "AlbacoreThread" : Joiner.on('-').join(name);
 			ListeningExecutorService e = executor(concurrence, new ThreadFactoryBuilder().setNameFormat(prefix + "-%d").build());
-			logger.info("ExecutorService [" + e.getClass() + "] with name: [" + Joiner.on(",").join(name) + "] created.");
+			logger.info("ExecutorService [" + e.getClass() + "] with name: [" + prefix + "] created.");
 			return e;
 		}, ListeningExecutorService.class, (Object[]) name);
 	}
@@ -141,7 +141,7 @@ public final class Concurrents extends Utils {
 		return CORE_EXECUTOR;
 	}
 
-	private static ListeningExecutorService executor(int c, ThreadFactory fac) {
+	public static ListeningExecutorService executor(int c, ThreadFactory fac) {
 		boolean forkjoin = Boolean.parseBoolean(System.getProperty("albacore.concurrent.forkjoin", "true"));
 		return MoreExecutors.listeningDecorator(forkjoin ? forkjoin(c, fac) : classic(c, fac));
 	}
