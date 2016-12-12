@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import net.butfly.albacore.io.pump.BasicPump;
+import net.butfly.albacore.io.pump.ConvPump;
 import net.butfly.albacore.io.pump.MapPump;
 import net.butfly.albacore.io.pump.Pump;
 import net.butfly.albacore.lambda.Converter;
@@ -110,6 +111,10 @@ public interface Q<I, O> extends AutoCloseable, Serializable {
 
 	default Pump<O> pump(Q<O, ?> dest, int parallelism) {
 		return new BasicPump<O>(this, dest, parallelism);
+	}
+
+	default <I2> Pump<I2> pump(Q<I2, ?> dest, int parallelism, Converter<List<O>, List<I2>> conv) {
+		return new ConvPump<I2>(this, dest, parallelism, conv);
 	}
 
 	default <K> Pump<O> pump(MapQ<K, O, ?> dest, Converter<O, K> keying, int parallelism) {
