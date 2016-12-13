@@ -1,12 +1,18 @@
 package net.butfly.albacore.utils;
 
+import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import net.butfly.albacore.lambda.Consumer;
 import net.butfly.albacore.utils.logger.Logger;
+import sun.misc.Signal;
 
+@SuppressWarnings("restriction")
 public final class Systems extends Utils {
+	final static Logger logger = Logger.getLogger(Systems.class);
+
 	public static Class<?> getMainClass() {
 		try {
 			return Class.forName(System.getProperty("sun.java.command"));
@@ -37,14 +43,40 @@ public final class Systems extends Utils {
 		else run.run();
 	}
 
-	@SuppressWarnings("restriction")
-	public static void handleSignal(Consumer<sun.misc.Signal> handler, String... signal) {
+	public static void handleSignal(Consumer<Signal> handler, String... signal) {
 		for (String s : signal)
-			sun.misc.Signal.handle(new sun.misc.Signal(s), new sun.misc.SignalHandler() {
+			Signal.handle(new sun.misc.Signal(s), new sun.misc.SignalHandler() {
 				@Override
 				public void handle(sun.misc.Signal sig) {
 					handler.accept(sig);
 				}
 			});
+	}
+
+	private static final AtomicBoolean GC_ENABLED = new AtomicBoolean(false);
+	private static final Thread GC_WATCHER = new Thread() {
+
+		@Override
+		public void run() {
+			long ms = Long.parseLong(System.getProperty("albacore.manual.gc.interval", "5000"));
+			this.setName("AlbacoreGCWatcher");
+			logger.info(MessageFormat.format("GC manually watcher started, interval [{0}ms].", ms));
+			while (GC_ENABLED.get())
+				try {
+					sleep(ms);
+					System.gc();
+				} catch (InterruptedException e) {
+					return;
+				}
+			logger.info("GC manually watcher stopped.");
+		}
+	};
+
+	public static void enableGC() {
+		if (!GC_ENABLED.getAndSet(true)) GC_WATCHER.start();
+	}
+
+	public static void disableGC() {
+		if (GC_ENABLED.getAndSet(false)) GC_WATCHER.interrupt();
 	}
 }

@@ -12,17 +12,17 @@ public interface Statistical<T extends Statistical<T, V>, V> extends Serializabl
 	static final String LOG_PREFIX = "Queue.Statistic";
 	static final Logger slogger = Logger.getLogger(LOG_PREFIX);
 
-	default T trace(long step, Converter<V, Long> sizing, Supplier<Long> current) {
-		return trace("", step, sizing, current);
+	default T trace(long step, Converter<V, Long> sizing, Supplier<String> suffixing) {
+		return trace("", step, sizing, suffixing);
 	}
 
-	default T trace(String prefix, long step, Converter<V, Long> sizing, Supplier<Long> current) {
+	default T trace(String prefix, long step, Converter<V, Long> sizing, Supplier<String> suffixing) {
 		String logname = LOG_PREFIX + "." + prefix;
 		slogger.info("Staticstic register as [" + logname + "] on step [" + step + "]");
 		Logger l = Logger.getLogger(logname);
 		@SuppressWarnings("unchecked")
 		T t = (T) this;
-		Instances.fetch(() -> new Statistic<T, V>(t, l, step, sizing, current), Statistic.class, this);
+		Instances.fetch(() -> new Statistic<T, V>(t, l, step, sizing, suffixing), Statistic.class, this);
 		return t;
 	}
 

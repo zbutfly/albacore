@@ -2,6 +2,7 @@ package net.butfly.albacore.io.stats;
 
 import java.io.Serializable;
 import java.text.DecimalFormat;
+import java.text.MessageFormat;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
@@ -25,10 +26,10 @@ class Statistic<T extends Statistical<T, V>, V> implements Serializable {
 	final AtomicLong bytesInStep;
 	final AtomicLong packsInTotal;
 	final AtomicLong bytesInTotal;
-	final Supplier<Long> current;
+	final Supplier<String> suffixing;
 	final Converter<V, Long> sizing;
 
-	Statistic(T owner, Logger logger, long step, Converter<V, Long> sizing, Supplier<Long> current) {
+	Statistic(T owner, Logger logger, long step, Converter<V, Long> sizing, Supplier<String> suffixing) {
 		Reflections.noneNull("", owner, logger);
 		lock = new ReentrantLock();
 		this.logger = logger;
@@ -40,7 +41,7 @@ class Statistic<T extends Statistical<T, V>, V> implements Serializable {
 		begin = new Date().getTime();
 		statsed = new AtomicLong(begin);
 		this.sizing = sizing;
-		this.current = current;
+		this.suffixing = suffixing;
 	}
 
 	void stats(long bytes) {
@@ -69,9 +70,9 @@ class Statistic<T extends Statistical<T, V>, V> implements Serializable {
 		Statistic.Result step, total;
 		step = new Statistic.Result(packsInStep.getAndSet(0), bytesInStep.getAndSet(0), now - statsed.getAndSet(now));
 		total = new Statistic.Result(packsInTotal.get(), bytesInTotal.get(), new Date().getTime() - begin);
-		logger.debug("Statistic: [Step: " + step.packs + "/objs," + formatBytes(step.bytes) + "," + formatMillis(step.millis)
-				+ "], [Total: " + total.packs + "/objs," + formatBytes(total.bytes) + "," + formatMillis(total.millis) + "], [current: "
-				+ current.get() + "].");
+		logger.debug(() -> MessageFormat.format("Statistic: [Step: {0}/objs,{1},{2}], [Total: {3}/objs,{4},{5}], [{6}].", step.packs,
+				formatBytes(step.bytes), formatMillis(step.millis), total.packs, formatBytes(total.bytes), formatMillis(total.millis),
+				suffixing.get()));
 	}
 
 	private static DecimalFormat f = new DecimalFormat("#.##");
