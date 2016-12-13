@@ -80,4 +80,8 @@ public final class Systems extends Utils {
 	public static void disableGC() {
 		if (GC_ENABLED.getAndSet(false)) GC_WATCHER.interrupt();
 	}
+
+	public static String getDefaultCachePath() {
+		return System.getProperty("albacore.cache.local.path", "./cache");
+	}
 }
