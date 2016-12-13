@@ -55,9 +55,9 @@ public final class Systems extends Utils {
 
 	private static final AtomicBoolean GC_ENABLED = new AtomicBoolean(false);
 	private static final Thread GC_WATCHER = new Thread() {
-
 		@Override
 		public void run() {
+			long gccount = 0;
 			long ms = Long.parseLong(System.getProperty("albacore.manual.gc.interval", "5000"));
 			this.setName("AlbacoreGCWatcher");
 			logger.info(MessageFormat.format("GC manually watcher started, interval [{0}ms].", ms));
@@ -65,6 +65,7 @@ public final class Systems extends Utils {
 				try {
 					sleep(ms);
 					System.gc();
+					if ((++gccount) % 100000 == 0) logger.trace("gc manually 100000/" + gccount + " times.");
 				} catch (InterruptedException e) {
 					return;
 				}

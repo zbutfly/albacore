@@ -1,6 +1,7 @@
 package net.butfly.albacore.utils;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -82,5 +83,15 @@ public final class IOs extends Utils {
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	public static String mkdirs(String path) throws IOException {
+		File dir = new File(path + "/");
+		if (!dir.exists() || !dir.isDirectory()) dir.mkdirs();
+		return dir.getCanonicalPath();
+	}
+
+	public static void main(String... args) throws IOException {
+		System.out.println(mkdirs("helloWorks"));
 	}
 }
