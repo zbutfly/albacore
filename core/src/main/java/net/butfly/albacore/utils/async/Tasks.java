@@ -51,7 +51,7 @@ public final class Tasks extends Utils {
 			try {
 				results.add(cs.take().get());
 			} catch (InterruptedException e) {
-				logger.error("Sliced task interrupted at " + i + "th slice.", e);
+				logger.warn("Sliced task interrupted at " + i + "th slice.", e);
 			} catch (ExecutionException e) {
 				errors.add(e.getCause());
 				logger.error("Sliced task failed at " + i + "th slice.", e.getCause());

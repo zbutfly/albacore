@@ -73,8 +73,12 @@ public abstract class PumpImpl<V> implements Pump<V> {
 		logger.info("Pump [" + name + "] stopping in [" + timeout + " " + unit.toString() + "]...");
 		try {
 			Futures.successfulAsList(futures).get(timeout, unit);
-		} catch (InterruptedException | ExecutionException | TimeoutException e) {
-			logger.error("Pump waiting failure", e);
+		} catch (TimeoutException e) {
+			logger.error("Pump waiting timeout");
+		} catch (InterruptedException e) {
+			logger.warn("Pump interrupted.");
+		} catch (ExecutionException e) {
+			logger.error("Pump waiting failure", e.getCause());
 		}
 		logger.info("Pump [" + name + "] stopped.");
 		running.set(STATUS_STOPPED);
@@ -86,8 +90,10 @@ public abstract class PumpImpl<V> implements Pump<V> {
 		logger.info("Pump [" + name + "] stopping...");
 		try {
 			Futures.successfulAsList(futures).get();
-		} catch (InterruptedException | ExecutionException e) {
-			logger.error("Pump waiting failure", e);
+		} catch (InterruptedException e) {
+			logger.warn("Pump interrupted.");
+		} catch (ExecutionException e) {
+			logger.error("Pump waiting failure", e.getCause());
 		}
 		logger.info("Pump [" + name + "] stopped.");
 		running.set(STATUS_STOPPED);

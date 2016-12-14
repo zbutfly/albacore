@@ -66,8 +66,9 @@ public final class Systems extends Utils {
 				try {
 					sleep(ms);
 					System.gc();
-					if ((++gccount) % 100000 == 0) logger.trace("gc manually 100000/" + gccount + " times.");
+					if ((++gccount) % 10 == 0) logger.trace("gc manually 10/" + gccount + " times.");
 				} catch (InterruptedException e) {
+					logger.warn(getName() + " interrupted.");
 					return;
 				}
 			logger.info("GC manually watcher stopped.");

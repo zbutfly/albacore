@@ -26,16 +26,16 @@ public interface Statistical<T extends Statistical<T, V>, V> extends Serializabl
 		return t;
 	}
 
-	default void stats(V v) {
+	default V stats(V v) {
 		@SuppressWarnings("unchecked")
 		Statistic<T, V> s = Instances.fetch(() -> null, Statistic.class, this);
 		if (null != s) s.stats(v);
+		return v;
 	}
 
-	default <VV extends Iterable<V>> VV stats(VV vv) {
+	default void stats(Iterable<V> vv) {
 		@SuppressWarnings("unchecked")
 		Statistic<T, V> s = Instances.fetch(() -> null, Statistic.class, this);
 		if (null != s) s.stats(vv);
-		return vv;
 	};
 }

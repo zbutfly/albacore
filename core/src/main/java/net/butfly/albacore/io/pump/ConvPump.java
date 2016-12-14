@@ -12,6 +12,10 @@ public class ConvPump<V> extends PumpImpl<V> {
 	public <O1> ConvPump(Q<?, O1> source, Q<V, ?> destination, int parallelism, Converter<List<O1>, List<V>> conv) {
 		super(source.name() + "-to-" + destination.name(), parallelism);
 		Reflections.noneNull("Pump source/destination should not be null", source, destination);
-		pumping(() -> source.empty(), () -> destination.enqueue(stats(conv.apply(source.dequeue(batchSize)))));
+		pumping(() -> source.empty(), () -> {
+			List<V> l = conv.apply(source.dequeue(batchSize));
+			stats(l);
+			destination.enqueue(l);
+		});
 	}
 }
