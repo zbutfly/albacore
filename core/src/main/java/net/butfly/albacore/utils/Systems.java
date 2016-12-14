@@ -57,8 +57,9 @@ public final class Systems extends Utils {
 	private static final Thread GC_WATCHER = new Thread() {
 		@Override
 		public void run() {
+			setPriority(MAX_PRIORITY);
 			long gccount = 0;
-			long ms = Long.parseLong(System.getProperty("albacore.manual.gc.interval", "5000"));
+			long ms = Long.parseLong(System.getProperty("albacore.manual.gc.interval", "1000"));
 			this.setName("AlbacoreGCWatcher");
 			logger.info(MessageFormat.format("GC manually watcher started, interval [{0}ms].", ms));
 			while (GC_ENABLED.get())
