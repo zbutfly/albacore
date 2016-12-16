@@ -38,7 +38,7 @@ public abstract class Output<I> extends QImpl<I, Void> {
 			}
 
 			@Override
-			protected void closing() {
+			public void closing() {
 				Output.this.close();
 			}
 		};

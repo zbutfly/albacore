@@ -64,9 +64,6 @@ public interface Q<I, O> extends Openable, Serializable {
 		return size() >= capacity();
 	}
 
-	@Override
-	default void close() {}
-
 	/**
 	 * basic, none blocking reading.
 	 * 
@@ -153,7 +150,7 @@ public interface Q<I, O> extends Openable, Serializable {
 			}
 
 			@Override
-			protected void closing() {
+			public void closing() {
 				Q.this.close();
 			}
 		};
@@ -184,7 +181,7 @@ public interface Q<I, O> extends Openable, Serializable {
 			}
 
 			@Override
-			protected void closing() {
+			public void closing() {
 				Q.this.close();
 			}
 		};

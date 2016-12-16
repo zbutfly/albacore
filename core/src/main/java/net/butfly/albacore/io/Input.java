@@ -38,7 +38,7 @@ public abstract class Input<O> extends QImpl<Void, O> {
 			}
 
 			@Override
-			protected void closing() {
+			public void closing() {
 				Input.this.close();
 			}
 		};

@@ -30,11 +30,6 @@ public interface MapQ<K, I, O> extends Q<I, O> {
 		return null == q ? true : q.empty();
 	}
 
-	default void close() {
-		for (K k : keys())
-			q(k).close();
-	}
-
 	/**
 	 * basic, none blocking reading.
 	 * 

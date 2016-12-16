@@ -3,6 +3,7 @@ package net.butfly.albacore.io;
 import java.util.List;
 
 import net.butfly.albacore.io.queue.MapQ;
+import net.butfly.albacore.io.queue.Q;
 import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.utils.Collections;
 
@@ -19,9 +20,19 @@ public abstract class MapInput<K, O> extends Input<O> implements MapQ<K, Void, O
 	}
 
 	@Override
+	public void closing() {
+		for (K k : keys()) {
+			Q<Void, O> q = q(k);
+			if (null != q) q.close();
+		}
+	}
+
+	@Override
 	public O dequeue0() {
 		for (K k : Collections.disorderize(keys())) {
-			O o = q(k).dequeue0();
+			Q<Void, O> q = q(k);
+			if (null == q) continue;
+			O o = q.dequeue0();
 			if (null != o) return o;
 		}
 		return null;

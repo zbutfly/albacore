@@ -2,6 +2,7 @@ package net.butfly.albacore.io;
 
 import java.util.List;
 import net.butfly.albacore.io.queue.MapQ;
+import net.butfly.albacore.io.queue.Q;
 import net.butfly.albacore.lambda.Converter;
 
 public abstract class MapOutput<K, I> extends Output<I> implements MapQ<K, I, Void> {
@@ -16,6 +17,14 @@ public abstract class MapOutput<K, I> extends Output<I> implements MapQ<K, I, Vo
 	@Override
 	public long size() {
 		return MapQ.super.size();
+	}
+
+	@Override
+	public void closing() {
+		for (K k : keys()) {
+			Q<I, Void> q = q(k);
+			if (null != q) q.close();
+		}
 	}
 
 	/* from Q */

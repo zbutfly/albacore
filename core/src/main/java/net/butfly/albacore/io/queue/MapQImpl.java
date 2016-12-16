@@ -36,6 +36,14 @@ public abstract class MapQImpl<K, I, O> extends QImpl<I, O> implements MapQ<K, I
 		return queues.get(key);
 	}
 
+	@Override
+	public void closing() {
+		for (K k : keys()) {
+			Q<I, O> q = q(k);
+			if (null != q) q.close();
+		}
+	}
+
 	static <I, O> long enqueueAll(Converter<I, Q<I, O>> qing, List<I> items) {
 		long count = 0;
 		List<I> remain = items;
@@ -49,7 +57,7 @@ public abstract class MapQImpl<K, I, O> extends QImpl<I, O> implements MapQ<K, I
 		for (I e : remain)
 			if (e != null) {
 				Q<I, O> q = qing.apply(e);
-				if (!q.full() && q.enqueue0(e)) count[0]++;
+				if (null != q && !q.full() && q.enqueue0(e)) count[0]++;
 				else r.add(e);
 			}
 		return r;
@@ -59,7 +67,9 @@ public abstract class MapQImpl<K, I, O> extends QImpl<I, O> implements MapQ<K, I
 	@Override
 	public O dequeue0() {
 		for (K k : Collections.disorderize(keys())) {
-			O o = q(k).dequeue0();
+			Q<I, O> q = q(k);
+			if (null == q) continue;
+			O o = q.dequeue0();
 			if (null != o) return o;
 		}
 		return null;
