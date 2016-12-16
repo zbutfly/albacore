@@ -24,7 +24,7 @@ public final class Texts extends Utils {
 	}
 
 	public static byte[] hex2byte(String hexStr) {
-		if (null == hexStr) { return null; }
+		if (null == hexStr) return null;
 		byte[] bts = new byte[hexStr.length() / 2];
 		int i = 0;
 		int j = 0;

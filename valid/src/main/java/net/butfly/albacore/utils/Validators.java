@@ -13,7 +13,7 @@ public final class Validators extends Utils {
 
 	public static void validate(Object dto) throws ValidateException {
 		Set<ConstraintViolation<Object>> cvs = factory.getValidator().validate(dto);
-		if (0 == cvs.size()) { return; }
+		if (0 == cvs.size()) return;
 		throw new ValidateException(cvs.toArray(new ConstraintViolation[cvs.size()]));
 	}
 }

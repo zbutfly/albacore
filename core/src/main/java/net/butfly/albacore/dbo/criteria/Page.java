@@ -55,7 +55,7 @@ public final class Page extends Bean<Page> {
 	}
 
 	private Page(int total, int capacity, int curr) {
-		if (capacity <= 0) { throw new RuntimeException("0 capacity page!"); }
+		if (capacity <= 0) throw new RuntimeException("0 capacity page!");
 		this.capacity = capacity;
 		this.total = total;
 		this.setCurr(curr);

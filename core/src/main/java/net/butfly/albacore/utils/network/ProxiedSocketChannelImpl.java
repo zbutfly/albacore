@@ -116,7 +116,7 @@ public class ProxiedSocketChannelImpl extends SocketChannel {
 		} else if (StandardSocketOptions.TCP_NODELAY.equals(option)) {
 			return (T) StandardSocketOptions.TCP_NODELAY.type().cast(this.socket.getTcpNoDelay());
 		} else if (StandardSocketOptions.SO_LINGER
-				.equals(option)) { return (T) StandardSocketOptions.SO_LINGER.type().cast(this.socket.getSoLinger()); }
+				.equals(option)) return (T) StandardSocketOptions.SO_LINGER.type().cast(this.socket.getSoLinger());
 		throw new IllegalArgumentException("Unsupported option specified.");
 	}
 
@@ -336,7 +336,7 @@ public class ProxiedSocketChannelImpl extends SocketChannel {
 
 	@Override
 	protected void implConfigureBlocking(final boolean block) throws IOException {
-		if (block) { return; }
+		if (block) return;
 		throw new UnsupportedOperationException("Non-blocking mode is not supported yet.");
 	}
 }

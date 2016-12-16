@@ -18,7 +18,7 @@ import java.util.Set;
 public class OldGeneric extends Utils {
 	public static Class<?> getSuperClassGenricType(Class<?> clazz, int index) {
 		Type genType = clazz.getGenericSuperclass();// 得到泛型父类
-		if (null == genType) { throw new RuntimeException("Counld not found the generic parameter in super classes!"); }
+		if (null == genType) throw new RuntimeException("Counld not found the generic parameter in super classes!");
 		if (genType instanceof ParameterizedType) {
 			Type[] params = ((ParameterizedType) genType).getActualTypeArguments();
 			if (index < params.length && index >= 0) {
@@ -49,7 +49,7 @@ public class OldGeneric extends Utils {
 
 	private static Type extractBoundForTypeVariable(TypeVariable<Class<?>> typeVariable) {
 		Type bounds[] = typeVariable.getBounds();
-		if (bounds.length == 0) { return java.lang.Object.class; }
+		if (bounds.length == 0) return java.lang.Object.class;
 		Type bound = bounds[0];
 		if (bound instanceof TypeVariable<?>) {
 			bound = extractBoundForTypeVariable((TypeVariable<Class<?>>) bound);

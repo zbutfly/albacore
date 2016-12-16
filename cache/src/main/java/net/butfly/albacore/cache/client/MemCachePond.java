@@ -55,7 +55,7 @@ public class MemCachePond {
 	 */
 	public MemCacheClient getClient() {
 		if (builders == null
-				|| builders.size() <= 0) { throw new SystemException("SYS_119", "must init cacheServer before use memcacheClinet"); }
+				|| builders.size() <= 0) throw new SystemException("SYS_119", "must init cacheServer before use memcacheClinet");
 		MemCacheClient client = null;
 		for (Builder builder : builders) {
 			if (builder.getServiceType() == CacheContant.MAIN_CACHE_SERVER) {
@@ -67,14 +67,14 @@ public class MemCachePond {
 
 	public MemCacheClient getClient(int serviceType) {
 		if (builders == null
-				|| builders.size() <= 0) { throw new SystemException("SYS_119", "must init cacheServer before use memcacheClinet"); }
+				|| builders.size() <= 0) throw new SystemException("SYS_119", "must init cacheServer before use memcacheClinet");
 		MemCacheClient client = null;
 		for (Builder builder : builders) {
 			if (builder.getServiceType().intValue() == serviceType) {
 				client = builder.getClient();
 			}
 		}
-		if (client == null) { throw new SystemException("SYS_119", " not exist available server whith serviceType:" + serviceType); }
+		if (client == null) throw new SystemException("SYS_119", " not exist available server whith serviceType:" + serviceType);
 		return client;
 	}
 
@@ -154,7 +154,7 @@ public class MemCachePond {
 
 	public void switchServer() {
 		if (builders == null
-				|| builders.size() <= 0) { throw new SystemException("SYS_119", "must init cacheServer before use memcacheClinet"); }
+				|| builders.size() <= 0) throw new SystemException("SYS_119", "must init cacheServer before use memcacheClinet");
 		Builder mainServer = null;
 		Builder standbyServer = null;
 		for (Builder builder : builders) {

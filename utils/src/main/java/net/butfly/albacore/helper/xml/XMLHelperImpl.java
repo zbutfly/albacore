@@ -26,7 +26,7 @@ public class XMLHelperImpl extends HelperBase implements XMLHelper {
 
 	@Override
 	public Document getDocument(Reader pReader) {
-		if (pReader == null) { return null; }
+		if (pReader == null) return null;
 		SAXReader reader = new SAXReader();
 		Document document;
 		try {
@@ -40,7 +40,7 @@ public class XMLHelperImpl extends HelperBase implements XMLHelper {
 
 	@Override
 	public Document getDocument(InputStream is) {
-		if (is == null) { return null; }
+		if (is == null) return null;
 		SAXReader reader = new SAXReader();
 		Document document;
 		try {
@@ -74,13 +74,13 @@ public class XMLHelperImpl extends HelperBase implements XMLHelper {
 
 	@Override
 	public Element getRootElement(Document document) {
-		if (document == null) { return null; }
+		if (document == null) return null;
 		return document.getRootElement();
 	}
 
 	@Override
 	public List<Element> getSubElements(Element element) {
-		if (element == null) { return null; }
+		if (element == null) return null;
 		List<Element> result = new ArrayList<Element>();
 		for (Iterator<Element> iterator = element.elementIterator(); iterator.hasNext();) {
 			result.add((Element) iterator.next());
@@ -90,15 +90,15 @@ public class XMLHelperImpl extends HelperBase implements XMLHelper {
 
 	@Override
 	public List<Element> getSubElements(Element element, String name) {
-		if (element == null) { return null; }
+		if (element == null) return null;
 		List<Element> result = element.selectNodes("//" + name);
-		if (result == null) { return Collections.emptyList(); }
+		if (result == null) return Collections.emptyList();
 		return result;
 	}
 
 	@Override
 	public Element getSubElement(Element element, String name) {
-		if (element == null) { return null; }
+		if (element == null) return null;
 		Element elm = (Element) element.selectSingleNode("//" + name);
 		return elm;
 	}
@@ -106,14 +106,14 @@ public class XMLHelperImpl extends HelperBase implements XMLHelper {
 	@Override
 	public String getSubElementValue(Element element, String name) {
 		Element elm = getSubElement(element, name);
-		if (elm == null) { return null; }
+		if (elm == null) return null;
 		return elm.getTextTrim();
 
 	}
 
 	@Override
 	public List<?> getSubElementAsAttr(Element element, String name, String attrName, String attrValue) {
-		if (element == null) { return null; }
+		if (element == null) return null;
 		StringBuffer buffer = new StringBuffer("//");
 		buffer.append(name);
 		buffer.append("[@");
@@ -128,30 +128,30 @@ public class XMLHelperImpl extends HelperBase implements XMLHelper {
 
 	@Override
 	public List<?> getAttributes(Element element) {
-		if (element == null) { return null; }
+		if (element == null) return null;
 		List<?> result = element.attributes();
-		if (result == null) { return Collections.EMPTY_LIST; }
+		if (result == null) return Collections.EMPTY_LIST;
 		return result;
 	}
 
 	@Override
 	public Attribute getAttribute(Element element, String name) {
-		if (element == null) { return null; }
+		if (element == null) return null;
 		Attribute attr = (Attribute) element.selectSingleNode("./@" + name);
 		return attr;
 	}
 
 	@Override
 	public String getAttributeValue(Element element, String name) {
-		if (element == null) { return null; }
+		if (element == null) return null;
 		Attribute attr = getAttribute(element, name);
-		if (attr == null) { return null; }
+		if (attr == null) return null;
 		return attr.getValue();
 	}
 
 	@Override
 	public String getText(Element element) {
-		if (element == null) { return null; }
+		if (element == null) return null;
 		return element.getTextTrim();
 	}
 

@@ -12,7 +12,7 @@ public class StrategyFactory {
 
 	public static ICacheStrategy getStrategy(String strategyId) {
 		ICacheStrategy strategy = strategyCache.get(strategyId);
-		if (null == strategy) { throw new SystemException("SYS_121", "the strategy[" + strategyId + "] not defined in cache.xml"); }
+		if (null == strategy) throw new SystemException("SYS_121", "the strategy[" + strategyId + "] not defined in cache.xml");
 		return strategy;
 	}
 }

@@ -29,8 +29,8 @@ public class CacheInit {
 		CacheConfig[] cacheConfigs;
 		try {
 			cacheConfigs = cacheConfigService.loadConfig();
-			if (!CacheConfigCheck.check(
-					cacheConfigs)) { throw new SystemException("SYS_119", "the cache config is error  ,can't init with this config! "); }
+			if (!CacheConfigCheck.check(cacheConfigs)) { throw new SystemException("SYS_119",
+					"the cache config is error  ,can't init with this config! "); }
 			MemCachePond.getInstance().init(cacheConfigs);
 			Thread heartBeat = new CacheTask("cacheInit");
 			heartBeat.start();
@@ -74,7 +74,7 @@ class CacheTask extends Thread {
 	public void run() {
 		while (true) {
 			try {
-				while (CacheInit.cacheTaskWait) {}
+				while (CacheInit.cacheTaskWait);
 				CacheConfig[] listCacheConfig = CacheConfigBase.getCacheConfigService().loadConfig();
 				CacheConfig usedCacheServer = null; // 数据库中主用缓存服务器配置
 				CacheConfig standbyCacheServer = null; // 数据库中备用用缓存服务器配置
