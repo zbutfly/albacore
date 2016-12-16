@@ -3,8 +3,8 @@ package net.butfly.albacore.utils;
 import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.concurrent.atomic.AtomicBoolean;
 
+import net.butfly.albacore.io.OpenableThread;
 import net.butfly.albacore.lambda.Consumer;
 import net.butfly.albacore.utils.logger.Logger;
 import sun.misc.Signal;
@@ -53,18 +53,16 @@ public final class Systems extends Utils {
 			});
 	}
 
-	private static final AtomicBoolean GC_ENABLED = new AtomicBoolean(false);
-	private static final Thread GC_WATCHER = new Thread() {
+	private static final OpenableThread GC_WATCHER = new OpenableThread() {
 		@Override
 		public void run() {
 			setPriority(MAX_PRIORITY);
 			long gccount = 0;
-			long ms = Long.parseLong(System.getProperty("albacore.manual.gc.interval", "1000"));
 			this.setName("AlbacoreGCWatcher");
-			logger.info(MessageFormat.format("GC manually watcher started, interval [{0}ms].", ms));
-			while (GC_ENABLED.get())
+			logger.info(MessageFormat.format("GC manually watcher started, interval [{0}ms].", GC_INTERVAL));
+			while (opened())
 				try {
-					sleep(ms);
+					sleep(GC_INTERVAL);
 					System.gc();
 					if ((++gccount) % 10 == 0) logger.trace("gc manually 10/" + gccount + " times.");
 				} catch (InterruptedException e) {
@@ -75,12 +73,14 @@ public final class Systems extends Utils {
 		}
 	};
 
-	public static void enableGC() {
-		if (!GC_ENABLED.getAndSet(true)) GC_WATCHER.start();
+	private static long GC_INTERVAL = Long.parseLong(System.getProperty("albacore.manual.gc.interval", "1000"));
+
+	public static void startGC() {
+		GC_WATCHER.start();
 	}
 
-	public static void disableGC() {
-		if (GC_ENABLED.getAndSet(false)) GC_WATCHER.interrupt();
+	public static void stopGC() {
+		GC_WATCHER.close();
 	}
 
 	public static String getDefaultCachePath() {

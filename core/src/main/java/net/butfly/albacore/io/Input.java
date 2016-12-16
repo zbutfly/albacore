@@ -19,7 +19,7 @@ public abstract class Input<O> extends QImpl<Void, O> {
 
 	@Override
 	public <O2> Input<O2> then(Converter<O, O2> conv) {
-		return new Input<O2>(Input.this.name()) {
+		return new Input<O2>(Input.this.name() + "-then-" + conv.toString()) {
 			private static final long serialVersionUID = -8694670290655232938L;
 
 			@Override
@@ -38,7 +38,7 @@ public abstract class Input<O> extends QImpl<Void, O> {
 			}
 
 			@Override
-			public void close() {
+			protected void closing() {
 				Input.this.close();
 			}
 		};

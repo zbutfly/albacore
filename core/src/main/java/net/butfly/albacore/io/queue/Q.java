@@ -5,10 +5,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import net.butfly.albacore.io.Openable;
 import net.butfly.albacore.io.pump.BasicPump;
 import net.butfly.albacore.io.pump.ConvPump;
 import net.butfly.albacore.io.pump.MapPump;
 import net.butfly.albacore.io.pump.Pump;
+import net.butfly.albacore.io.pump.UnconvPump;
 import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.utils.Collections;
 import net.butfly.albacore.utils.async.Concurrents;
@@ -42,7 +44,7 @@ import net.butfly.albacore.utils.logger.Logger;
  * @author butfly
  *
  */
-public interface Q<I, O> extends AutoCloseable, Serializable {
+public interface Q<I, O> extends Openable, Serializable {
 	static final Logger logger = Logger.getLogger(Q.class);
 	static final long INFINITE_SIZE = -1;
 	static final long FULL_WAIT_MS = 500;
@@ -111,11 +113,15 @@ public interface Q<I, O> extends AutoCloseable, Serializable {
 	/* from interfaces */
 
 	default Pump<O> pump(Q<O, ?> dest, int parallelism) {
-		return new BasicPump<O>(this, dest, parallelism);
+		return new BasicPump<>(this, dest, parallelism);
 	}
 
-	default <I2> Pump<I2> pump(Q<I2, ?> dest, int parallelism, Converter<List<O>, List<I2>> conv) {
-		return new ConvPump<I2>(this, dest, parallelism, conv);
+	default <I2> Pump<I2> pumpPrior(Q<I2, ?> dest, int parallelism, Converter<List<O>, List<I2>> conv) {
+		return new ConvPump<>(this, dest, parallelism, conv);
+	}
+
+	default <I2> Pump<O> pumpThen(Q<I2, ?> dest, int parallelism, Converter<List<O>, List<I2>> conv) {
+		return new UnconvPump<>(this, dest, parallelism, conv);
 	}
 
 	default <K> Pump<O> pump(MapQ<K, O, ?> dest, Converter<O, K> keying, int parallelism) {
@@ -123,7 +129,7 @@ public interface Q<I, O> extends AutoCloseable, Serializable {
 	}
 
 	default <O2> Q<I, O2> then(Converter<O, O2> conv) {
-		return new QImpl<I, O2>(null, Q.this.capacity()) {
+		return new QImpl<I, O2>(Q.this.name() + "-then-" + conv.toString(), Q.this.capacity()) {
 			private static final long serialVersionUID = -5894142335125843377L;
 
 			@Override
@@ -147,7 +153,38 @@ public interface Q<I, O> extends AutoCloseable, Serializable {
 			}
 
 			@Override
-			public void close() {
+			protected void closing() {
+				Q.this.close();
+			}
+		};
+	}
+
+	default <I0> Q<I0, O> prior(Converter<I0, I> conv) {
+		return new QImpl<I0, O>(Q.this.name() + "-prior-" + conv.toString(), Q.this.capacity()) {
+			private static final long serialVersionUID = -2063675795097988806L;
+
+			@Override
+			public boolean enqueue0(I0 d) {
+				return Q.this.enqueue0(conv.apply(d));
+			}
+
+			@Override
+			public O dequeue0() {
+				return Q.this.dequeue0();
+			}
+
+			@Override
+			public List<O> dequeue(long batchSize) {
+				return Q.this.dequeue(batchSize);
+			}
+
+			@Override
+			public long size() {
+				return Q.this.size();
+			}
+
+			@Override
+			protected void closing() {
 				Q.this.close();
 			}
 		};
