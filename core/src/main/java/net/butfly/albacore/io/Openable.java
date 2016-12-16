@@ -4,7 +4,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.log4j.Logger;
+import net.butfly.albacore.utils.logger.Logger;
 
 public interface Openable extends AutoCloseable {
 	final static Map<Openable, AtomicReference<Status>> STATUS = new ConcurrentHashMap<>();
