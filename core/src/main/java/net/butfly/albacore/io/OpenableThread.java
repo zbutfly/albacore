@@ -3,7 +3,7 @@ package net.butfly.albacore.io;
 import net.butfly.albacore.utils.async.Concurrents;
 import net.butfly.albacore.utils.logger.Logger;
 
-public abstract class OpenableThread extends Thread implements Openable {
+public class OpenableThread extends Thread implements Openable {
 	private static final Logger logger = Logger.getLogger(OpenableThread.class);
 
 	public OpenableThread() {

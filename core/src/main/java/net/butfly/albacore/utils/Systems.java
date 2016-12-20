@@ -9,7 +9,7 @@ import net.butfly.albacore.lambda.Consumer;
 import net.butfly.albacore.utils.logger.Logger;
 import sun.misc.Signal;
 
-@SuppressWarnings("restriction")
+@SuppressWarnings({ "restriction" })
 public final class Systems extends Utils {
 	final static Logger logger = Logger.getLogger(Systems.class);
 
@@ -45,42 +45,35 @@ public final class Systems extends Utils {
 
 	public static void handleSignal(Consumer<Signal> handler, String... signal) {
 		for (String s : signal)
-			Signal.handle(new sun.misc.Signal(s), new sun.misc.SignalHandler() {
+			Signal.handle(new Signal(s), handler::accept);
+	}
+
+	static {
+		long ms = Long.parseLong(System.getProperty("albacore.gc.interval.ms", "1000"));
+		if (ms > 0) {
+			if (ms < 500) {
+				logger.warn("Manually gc interval less 500 ms and too small. reset to 500 ms");
+				ms = 500;
+			} else logger.info("Manually gc interval " + ms + " ms.");
+			final long cms = ms;
+			OpenableThread w = new OpenableThread() {
 				@Override
-				public void handle(sun.misc.Signal sig) {
-					handler.accept(sig);
+				public void run() {
+					setPriority(MAX_PRIORITY);
+					setName("Albacore-GC-Watcher");
+					while (opened())
+						try {
+							sleep(cms);
+							System.gc();
+						} catch (InterruptedException e) {
+							logger.warn(getName() + " interrupted.");
+							return;
+						}
 				}
-			});
-	}
-
-	private static final OpenableThread GC_WATCHER = new OpenableThread() {
-		@Override
-		public void run() {
-			setPriority(MAX_PRIORITY);
-			long gccount = 0;
-			this.setName("AlbacoreGCWatcher");
-			logger.info(MessageFormat.format("GC manually watcher started, interval [{0}ms].", GC_INTERVAL));
-			while (opened())
-				try {
-					sleep(GC_INTERVAL);
-					System.gc();
-					if ((++gccount) % 10 == 0) logger.trace("gc manually 10/" + gccount + " times.");
-				} catch (InterruptedException e) {
-					logger.warn(getName() + " interrupted.");
-					return;
-				}
-			logger.info("GC manually watcher stopped.");
+			};
+			Runtime.getRuntime().addShutdownHook(new Thread(w::close, "Albacore-GC-Cleaner"));
+			w.start();
 		}
-	};
-
-	private static long GC_INTERVAL = Long.parseLong(System.getProperty("albacore.manual.gc.interval", "1000"));
-
-	public static void startGC() {
-		GC_WATCHER.start();
-	}
-
-	public static void stopGC() {
-		GC_WATCHER.close();
 	}
 
 	public static String getDefaultCachePath() {
