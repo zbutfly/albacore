@@ -13,9 +13,12 @@ public class ConvPump<V> extends PumpImpl<V> {
 		super(source.name() + "-to-" + destination.name(), parallelism);
 		Reflections.noneNull("Pump source/destination should not be null", source, destination);
 		pumping(() -> source.empty(), () -> {
-			List<V> l = conv.apply(source.dequeue(batchSize));
-			stats(l);
-			destination.enqueue(l);
+			List<O1> ll = source.dequeue(batchSize);
+			if (ll.size() > 0) {
+				List<V> l = conv.apply(ll);
+				stats(l);
+				destination.enqueue(l);
+			}
 		});
 	}
 }

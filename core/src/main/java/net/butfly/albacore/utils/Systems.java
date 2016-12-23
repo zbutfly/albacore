@@ -1,7 +1,12 @@
 package net.butfly.albacore.utils;
 
+import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import net.butfly.albacore.io.OpenableThread;
 import net.butfly.albacore.lambda.Consumer;
@@ -42,9 +47,20 @@ public final class Systems extends Utils {
 		else run.run();
 	}
 
+	private static final Map<String, List<Consumer<Signal>>> SIGNAL_HANDLERS = new ConcurrentHashMap<>();
+
 	public static void handleSignal(Consumer<Signal> handler, String... signal) {
-		for (String s : signal)
-			Signal.handle(new Signal(s), handler::accept);
+		for (String sig : signal)
+			SIGNAL_HANDLERS.computeIfAbsent(sig, s -> {
+				Signal.handle(new Signal(s), ss -> {
+					List<Consumer<Signal>> handlers = SIGNAL_HANDLERS.get(ss.getName());
+					logger.error(MessageFormat.format("Signal [{0}][{1}] caught, [{2}] handlers registered and will be invoking.", //
+							ss.getName(), ss.getNumber(), handlers.size()));
+					if (null != handlers) for (Consumer<Signal> h : handlers)
+						h.accept(ss);
+				});
+				return new ArrayList<>();
+			}).add(handler);
 	}
 
 	static {
@@ -69,8 +85,14 @@ public final class Systems extends Utils {
 							return;
 						}
 				}
+
+				@Override
+				public void close() {
+					super.close();
+					logger.info("AlbacoreGC watcher closed.");
+				}
 			};
-			Runtime.getRuntime().addShutdownHook(new Thread(w::close, "Albacore-GC-Cleaner"));
+			Systems.handleSignal(sig -> w.close(), "TERM", "INT");
 			w.start();
 		}
 	}

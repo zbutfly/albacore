@@ -16,8 +16,10 @@ public class MapPump<K, V> extends PumpImpl<V> {
 		Reflections.noneNull("Pump source/destination should not be null", source, destination);
 		pumping(() -> source.empty(), () -> {
 			List<V> l = source.dequeue(batchSize);
-			stats(l);
-			destination.enqueue(keying, l);
+			if (l.size() > 0) {
+				stats(l);
+				destination.enqueue(keying, l);
+			}
 		});
 	}
 }

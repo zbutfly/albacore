@@ -40,6 +40,7 @@ public interface Openable extends AutoCloseable {
 		}
 		if (status().get() != Status.CLOSED) //
 			throw new RuntimeException("Closing failure since status [" + status().get() + "] not OPENED.");
+		else STATUS.remove(this);
 	}
 
 	default AtomicReference<Status> status() {
