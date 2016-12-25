@@ -4,5 +4,6 @@ import java.io.Serializable;
 import java.util.function.BiConsumer;
 
 public interface ConsumerPair<K, V> extends Serializable, BiConsumer<K, V> {
+	@Override
 	void accept(K v1, V v2);
 }

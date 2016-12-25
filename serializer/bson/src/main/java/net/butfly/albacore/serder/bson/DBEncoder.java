@@ -22,6 +22,7 @@ import com.mongodb.DBRef;
 import com.mongodb.DefaultDBEncoder;
 
 public final class DBEncoder extends DefaultDBEncoder {
+	@Override
 	@SuppressWarnings("rawtypes")
 	protected void _putObjectField(final String name, final Object initialValue) {
 		if ("_transientFields".equals(name)) { return; }
@@ -59,9 +60,7 @@ public final class DBEncoder extends DefaultDBEncoder {
 			putObject(name, temp);
 		} else if (value instanceof MinKey) putMinKey(name);
 		else if (value instanceof MaxKey) putMaxKey(name);
-		else if (putSpecial(name, value)) ; // no-op
-		else {
-			throw new IllegalArgumentException("Can't serialize " + value.getClass());
-		}
+		else if (putSpecial(name, value)) return; // no-op
+		else throw new IllegalArgumentException("Can't serialize " + value.getClass());
 	}
 }

@@ -6,6 +6,7 @@ import scala.Tuple2;
 
 @FunctionalInterface
 public interface PairConverter<T, K, V> extends Serializable, Converter<T, Tuple2<K, V>> {
+	@Override
 	public Tuple2<K, V> apply(T t);
 
 	static <K, V> PairConverter<Tuple2<K, V>, K, V> identity() {

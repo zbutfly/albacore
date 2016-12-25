@@ -26,61 +26,74 @@ import net.butfly.albacore.utils.imports.meta.property.PropertyTokenizer;
  * @author Clinton Begin
  */
 public class CollectionWrapper implements ObjectWrapper {
-	private Collection<Object> object;
+	private final Collection<Object> object;
 
-	public CollectionWrapper(MetaObject metaObject, Collection<Object> object) {
+	public CollectionWrapper(final MetaObject metaObject, final Collection<Object> object) {
 		this.object = object;
 	}
 
-	public Object get(PropertyTokenizer prop) {
+	@Override
+	public Object get(final PropertyTokenizer prop) {
 		throw new UnsupportedOperationException();
 	}
 
-	public void set(PropertyTokenizer prop, Object value) {
+	@Override
+	public void set(final PropertyTokenizer prop, final Object value) {
 		throw new UnsupportedOperationException();
 	}
 
-	public String findProperty(String name, boolean useCamelCaseMapping) {
+	@Override
+	public String findProperty(final String name, final boolean useCamelCaseMapping) {
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
 	public String[] getGetterNames() {
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
 	public String[] getSetterNames() {
 		throw new UnsupportedOperationException();
 	}
 
-	public Class<?> getSetterType(String name) {
+	@Override
+	public Class<?> getSetterType(final String name) {
 		throw new UnsupportedOperationException();
 	}
 
-	public Class<?> getGetterType(String name) {
+	@Override
+	public Class<?> getGetterType(final String name) {
 		throw new UnsupportedOperationException();
 	}
 
-	public boolean hasSetter(String name) {
+	@Override
+	public boolean hasSetter(final String name) {
 		throw new UnsupportedOperationException();
 	}
 
-	public boolean hasGetter(String name) {
+	@Override
+	public boolean hasGetter(final String name) {
 		throw new UnsupportedOperationException();
 	}
 
-	public MetaObject instantiatePropertyValue(String name, PropertyTokenizer prop, ObjectFactory objectFactory) {
+	@Override
+	public MetaObject instantiatePropertyValue(final String name, final PropertyTokenizer prop, final ObjectFactory objectFactory) {
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
 	public boolean isCollection() {
 		return true;
 	}
 
-	public void add(Object element) {
+	@Override
+	public void add(final Object element) {
 		object.add(element);
 	}
 
-	public <E> void addAll(List<E> element) {
+	@Override
+	public <E> void addAll(final List<E> element) {
 		object.addAll(element);
 	}
 }

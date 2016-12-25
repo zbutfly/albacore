@@ -58,6 +58,7 @@ public final class Texts extends Utils {
 	}
 
 	private static final ThreadLocal<Map<String, DateFormat>> DATE_CACHE = new ThreadLocal<Map<String, DateFormat>>() {
+		@Override
 		protected Map<String, DateFormat> initialValue() {
 			return new HashMap<String, DateFormat>();
 		}

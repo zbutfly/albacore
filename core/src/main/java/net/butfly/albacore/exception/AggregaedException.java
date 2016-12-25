@@ -15,6 +15,7 @@ public class AggregaedException extends SystemException {
 		return causes;
 	}
 
+	@Override
 	public void printStackTrace(PrintStream s) {
 		super.printStackTrace();
 		s.println(this.getMessage());

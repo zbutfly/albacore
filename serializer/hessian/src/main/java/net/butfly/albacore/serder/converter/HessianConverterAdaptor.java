@@ -25,10 +25,12 @@ public class HessianConverterAdaptor extends ConverterAdaptor<AbstractSerializer
 			}
 		};
 		final Deserializer deserializer = new AbstractDeserializer() {
+			@Override
 			public Class<?> getType() {
 				return converter.getOriginalClass();
 			}
 
+			@Override
 			@SuppressWarnings("unchecked")
 			public Object readObject(AbstractHessianInput in) throws IOException {
 				DST replaced = (DST) in.readObject();

@@ -6,6 +6,7 @@ import java.util.function.Function;
 
 @FunctionalInterface
 public interface Converter<T, R> extends Serializable, Function<T, R> {
+	@Override
 	R apply(T v);
 
 	default <V> Converter<V, R> compose(Converter<? super V, ? extends T> before) {

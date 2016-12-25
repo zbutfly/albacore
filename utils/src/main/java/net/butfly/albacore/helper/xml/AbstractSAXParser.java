@@ -41,17 +41,20 @@ public abstract class AbstractSAXParser extends DefaultHandler {
 		FACTORY.newSAXParser().parse(new InputSource(filename), this);
 	}
 
+	@Override
 	public final void startElement(String uri, String localName, String qName, Attributes attrs) {
 		this.value = new StringBuilder();
 		this.start(qName);
 	}
 
+	@Override
 	public final void endElement(String uri, String localName, String qName) throws SAXException {
 		this.callback.fetch(this.end(qName, this.value.toString()));
 		// TODO: need optimizing...
 		this.value = new StringBuilder();
 	}
 
+	@Override
 	public final void characters(char ch[], int start, int length) throws SAXException {
 		this.value.append(new String(ch, start, length));
 	}

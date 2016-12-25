@@ -25,6 +25,7 @@ public class MemCacheClientImpl implements MemCacheClient {
 		return memcachedClientExt;
 	}
 
+	@Override
 	public void append(String s, Object obj) {
 		try {
 			memcachedClientExt.append(s, obj);
@@ -40,6 +41,7 @@ public class MemCacheClientImpl implements MemCacheClient {
 		}
 	}
 
+	@Override
 	public void delete(String s) {
 		try {
 			memcachedClientExt.delete(s);
@@ -55,6 +57,7 @@ public class MemCacheClientImpl implements MemCacheClient {
 		}
 	}
 
+	@Override
 	public boolean deleteWhithResult(String s) {
 		try {
 			return memcachedClientExt.delete(s);
@@ -63,6 +66,7 @@ public class MemCacheClientImpl implements MemCacheClient {
 		}
 	}
 
+	@Override
 	public Object get(String s) throws TimeoutException {
 		Object value = null;
 		try {
@@ -80,6 +84,7 @@ public class MemCacheClientImpl implements MemCacheClient {
 		return value;
 	}
 
+	@Override
 	public void prepend(String s, Object obj) {
 		try {
 			memcachedClientExt.prepend(s, obj);
@@ -95,6 +100,7 @@ public class MemCacheClientImpl implements MemCacheClient {
 		}
 	}
 
+	@Override
 	public void replace(String s, int i, Object obj) {
 		try {
 			memcachedClientExt.replace(s, i, obj);
@@ -110,6 +116,7 @@ public class MemCacheClientImpl implements MemCacheClient {
 		}
 	}
 
+	@Override
 	public void set(String s, int i, Object obj) {
 		try {
 			memcachedClientExt.set(s, i, obj, 10000);
@@ -125,13 +132,16 @@ public class MemCacheClientImpl implements MemCacheClient {
 		}
 	}
 
+	@Override
 	public void casMax(String s, int i, Object obj) {
 		try {
 			memcachedClientExt.cas(s, i, new CASOperation<Object>() {
+				@Override
 				public int getMaxTries() {
 					return 10;
 				}
 
+				@Override
 				public Object getNewValue(long currentCAS, Object currentValue) {
 					return currentValue;
 				}
@@ -148,6 +158,7 @@ public class MemCacheClientImpl implements MemCacheClient {
 		}
 	}
 
+	@Override
 	public boolean cas(String s, int i, Object obj, long cas) {
 		try {
 			return memcachedClientExt.cas(s, i, obj, cas);
@@ -163,6 +174,7 @@ public class MemCacheClientImpl implements MemCacheClient {
 		}
 	}
 
+	@Override
 	public long getCas(String s) {
 		try {
 			return memcachedClientExt.gets(s).getCas();
@@ -178,6 +190,7 @@ public class MemCacheClientImpl implements MemCacheClient {
 		}
 	}
 
+	@Override
 	public Map<InetSocketAddress, Map<String, String>> getStats() {
 		try {
 			return memcachedClientExt.getStats();

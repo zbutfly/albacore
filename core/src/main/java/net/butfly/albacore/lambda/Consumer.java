@@ -8,6 +8,7 @@ public interface Consumer<T> extends Serializable, java.util.function.Consumer<T
 	@Override
 	void accept(T t);
 
+	@Override
 	default Consumer<T> andThen(java.util.function.Consumer<? super T> after) {
 		Objects.requireNonNull(after);
 		return (T t) -> {

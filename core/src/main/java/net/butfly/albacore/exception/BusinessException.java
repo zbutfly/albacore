@@ -32,6 +32,7 @@ public class BusinessException extends Exception {
 		this.code = code;
 	}
 
+	@Override
 	public void printStackTrace(PrintStream s) {
 		Exceptions.printStackTrace(this, this.code, s);
 	}

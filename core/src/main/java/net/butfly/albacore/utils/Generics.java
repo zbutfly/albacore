@@ -37,7 +37,7 @@ public final class Generics extends OldGeneric {
 			TypeVariable<?>[] vv = declareClass.getTypeParameters();
 			for (TypeVariable<?> v : vv) {
 				types.put(v.getName(), (Class<?>) TypeToken.of(implType).resolveType(v).getRawType());
-			} ;
+			} 
 			return types;
 		}, Map.class, implType, declareClass);
 	}

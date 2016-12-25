@@ -79,6 +79,7 @@ public class Task<T> {
 	@Deprecated
 	public interface Callback<R> extends Consumer<R> {
 		void callback(final R result) ;
+		@Override
 		default void accept(final R result) {
 			this.accept(result);
 		}

@@ -4,5 +4,6 @@ import java.io.Serializable;
 
 @FunctionalInterface
 public interface Runnable extends java.lang.Runnable, Serializable {
+	@Override
 	void run();
 }

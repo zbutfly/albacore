@@ -102,6 +102,7 @@ public final class Options implements Serializable {
 		return this;
 	}
 
+	@Override
 	public boolean equals(Object obj) {
 		if (null == obj || !Options.class.isAssignableFrom(obj.getClass())) return false;
 		Options ops = (Options) obj;

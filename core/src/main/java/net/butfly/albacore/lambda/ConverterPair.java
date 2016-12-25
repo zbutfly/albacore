@@ -6,6 +6,7 @@ import java.util.function.BiFunction;
 
 @FunctionalInterface
 public interface ConverterPair<K, V, R> extends Serializable, BiFunction<K, V, R> {
+	@Override
 	public R apply(K v1, V v2);
 
 	/**

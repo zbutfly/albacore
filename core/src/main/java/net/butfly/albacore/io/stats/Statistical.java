@@ -37,5 +37,5 @@ public interface Statistical<T extends Statistical<T, V>, V> extends Serializabl
 		@SuppressWarnings("unchecked")
 		Statistic<T, V> s = Instances.fetch(() -> null, Statistic.class, this);
 		if (null != s) s.stats(vv);
-	};
+	}
 }

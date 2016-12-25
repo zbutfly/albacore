@@ -60,6 +60,7 @@ public final class HbaseResultSerder implements BeanSerder<Object, Result> {
 		return rows.toArray(new String[rows.size()]);
 	}
 
+	@Override
 	public final String mappingField(Field f) {
 		Reflections.noneNull("", f);
 		String col = mappingField(f);

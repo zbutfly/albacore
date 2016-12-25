@@ -51,6 +51,7 @@ public interface BeanSerder<P, D> extends Serder<P, D> {
 		};
 	}
 
+	@Override
 	default BeanSerder<P, D> mapping(CaseFormat from, CaseFormat to) {
 		Objects.noneNull(from, to);
 		return new BeanSerder<P, D>() {

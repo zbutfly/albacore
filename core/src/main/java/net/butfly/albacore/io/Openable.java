@@ -25,11 +25,12 @@ public interface Openable extends AutoCloseable {
 			if (!status().compareAndSet(Status.OPENING, Status.OPENED)) //
 				throw new RuntimeException("Opened failure since status [" + status().get() + "] not OPENING.");
 			logger.debug(name() + " opened.");
-		} ;
+		} 
 		if (status().get() != Status.OPENED) //
 			throw new RuntimeException("Start failure since status [" + status().get() + "] not OPENED.");
 	}
 
+	@Override
 	default void close() {
 		if (status().compareAndSet(Status.OPENED, Status.CLOSING)) {
 			logger.debug(name() + " closing...");

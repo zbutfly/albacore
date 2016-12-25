@@ -50,6 +50,7 @@ public interface Q<I, O> extends Openable, Serializable {
 	static final long FULL_WAIT_MS = 500;
 	static final long EMPTY_WAIT_MS = 500;
 
+	@Override
 	String name();
 
 	long size();

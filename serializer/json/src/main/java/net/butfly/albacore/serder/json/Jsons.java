@@ -29,7 +29,6 @@ public final class Jsons extends Utils {
 			.enable(BsonParser.Feature.HONOR_DOCUMENT_LENGTH);
 	public static ObjectMapper mapper = defaultJsonMapper();
 	public static ObjectMapper bsoner = defaultBsonMapper();//
-	;
 
 	public static <T> T parse(JsonNode node, Class<T> to) {
 		try {

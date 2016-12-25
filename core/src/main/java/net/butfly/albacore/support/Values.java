@@ -59,7 +59,7 @@ public final class Values extends Utils {
 		if (null == value) return NULL_STR;
 		if (Date.class.isAssignableFrom(value.getClass())) return String.valueOf(((Date) value).getTime());
 		return String.valueOf(value);
-	};
+	}
 
 	@SuppressWarnings("unchecked")
 	public static <T> T fromString(String str, Class<T> type) {
@@ -68,7 +68,7 @@ public final class Values extends Utils {
 		if (null == vt) throw new RuntimeException("Not simple type: " + type);
 		if (Number.class.isAssignableFrom(type)) return Reflections.construct(type, str);
 		return (T) FROM_STRING_METHOD.get(vt).apply(str);
-	};
+	}
 
 	/**
 	 * <p>
