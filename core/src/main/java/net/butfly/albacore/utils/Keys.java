@@ -2,17 +2,20 @@ package net.butfly.albacore.utils;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import net.butfly.albacore.exception.SystemException;
 import net.butfly.albacore.utils.key.IdGenerator;
 import net.butfly.albacore.utils.key.ObjectIdGenerator;
 
 public class Keys extends Utils {
+	private static final Set<Class<? extends IdGenerator>> IDGS = Reflections.getSubClasses(IdGenerator.class);
+
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <K> K key(final Class<K> keyClass) {
 		Map<Class<?>, Class<? extends IdGenerator>> m = Instances.fetch(() -> {
 			Map<Class<?>, Class<? extends IdGenerator>> map = new HashMap<Class<?>, Class<? extends IdGenerator>>();
-			for (Class<? extends IdGenerator> subClass : Reflections.getSubClasses(IdGenerator.class)) {
+			for (Class<? extends IdGenerator> subClass : IDGS) {
 				Class<?> pcl = Generics.resolveGenericParameter(subClass, IdGenerator.class, "K");
 				map.put(pcl, subClass);
 			}
