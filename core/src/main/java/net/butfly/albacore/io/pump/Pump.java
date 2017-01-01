@@ -25,5 +25,4 @@ public interface Pump<V> extends Statistical<Pump<V>, V>, Openable {
 		for (int i = 0; i < pumps.length; i++)
 			((PumpImpl) pumps[i]).accomplish();
 	}
-
 }

@@ -114,4 +114,11 @@ public abstract class PumpImpl<V> implements Pump<V> {
 	public String toString() {
 		return "Pump-" + name;
 	}
+
+	@Override
+	public void closing() {
+		
+		Pump.super.closing();
+	}
+	
 }
