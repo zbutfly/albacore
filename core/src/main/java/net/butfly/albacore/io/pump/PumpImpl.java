@@ -3,9 +3,6 @@ package net.butfly.albacore.io.pump;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.base.Supplier;
 import com.google.common.util.concurrent.Futures;
@@ -14,7 +11,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 
 import net.butfly.albacore.utils.async.Concurrents;
 
-public abstract class PumpImpl<V> implements Pump<V> {
+abstract class PumpImpl implements Pump {
 	private static final long serialVersionUID = 5115726180980986678L;
 	protected static final int STATUS_OTHER = 0;
 	protected static final int STATUS_RUNNING = 1;
@@ -22,15 +19,15 @@ public abstract class PumpImpl<V> implements Pump<V> {
 
 	protected final String name;
 	private final int parallelism;
-	protected final AtomicInteger running;
+	// protected final AtomicInteger running;
 	protected final List<Thread> threads = new ArrayList<>();
 	protected final ListeningExecutorService ex;
-	protected final List<ListenableFuture<?>> futures = new ArrayList<>();
 
 	protected long batchSize = 1000;
+	private ListenableFuture<List<Object>> results;
 
 	protected PumpImpl(String name, int parallelism) {
-		running = new AtomicInteger(STATUS_OTHER);
+		// running = new AtomicInteger(STATUS_OTHER);
 		this.name = name;
 		this.parallelism = parallelism;
 		ex = Concurrents.executor(parallelism, name);
@@ -39,7 +36,7 @@ public abstract class PumpImpl<V> implements Pump<V> {
 
 	protected void pumping(Supplier<Boolean> sourceEmpty, Runnable pumping) {
 		Runnable r = Concurrents.until(//
-				() -> running.get() != STATUS_RUNNING && (running.get() == STATUS_STOPPED || sourceEmpty.get()), //
+				() -> !opened() && (closed() || sourceEmpty.get()), //
 				() -> {
 					try {
 						pumping.run();
@@ -54,71 +51,44 @@ public abstract class PumpImpl<V> implements Pump<V> {
 	}
 
 	@Override
-	public final Pump<V> batch(long batchSize) {
+	public final Pump batch(long batchSize) {
 		this.batchSize = batchSize;
 		return this;
 	}
 
-	Pump<V> start() {
-		running.set(STATUS_RUNNING);
+	@Override
+	public void opening() {
+		open();
 		logger.info("Pump [" + name + "] starting...");
+		List<ListenableFuture<?>> futures = new ArrayList<>();
 		for (Thread t : threads)
 			futures.add(ex.submit(t));
+		results = Futures.allAsList(futures);
 		logger.info("Pump [" + name + "] started.");
-		return this;
 	}
 
-	void waitForFinish(long timeout, TimeUnit unit) {
-		running.set(STATUS_OTHER);
-		logger.info("Pump [" + name + "] stopping in [" + timeout + " " + unit.toString() + "]...");
+	@Override
+	public void closing() {
+		Pump.super.closing();
 		try {
-			Futures.successfulAsList(futures).get(timeout, unit);
-		} catch (TimeoutException e) {
-			logger.error("Pump waiting timeout");
+			results.get();
 		} catch (InterruptedException e) {
 			logger.warn("Pump interrupted.");
 		} catch (ExecutionException e) {
 			logger.error("Pump waiting failure", e.getCause());
 		}
-		logger.info("Pump [" + name + "] stopped.");
-		running.set(STATUS_STOPPED);
-		ex.shutdown();
-	}
-
-	void accomplish() {
-		running.set(STATUS_OTHER);
-		logger.info("Pump [" + name + "] stopping...");
-		try {
-			Futures.successfulAsList(futures).get();
-		} catch (InterruptedException e) {
-			logger.warn("Pump interrupted.");
-		} catch (ExecutionException e) {
-			logger.error("Pump waiting failure", e.getCause());
-		}
-		logger.info("Pump [" + name + "] stopped.");
-		running.set(STATUS_STOPPED);
 		ex.shutdown();
 	}
 
 	void terminate() {
-		ListenableFuture<List<Object>> fs = Futures.allAsList(futures);
-		int status = running.getAndSet(STATUS_STOPPED);
-		if (status == STATUS_RUNNING) logger.info("Pump [" + name + "] terminating...");
-		else logger.warn("Pump [" + name + "] is not running...");
-		fs.cancel(true);
-		if (status == STATUS_RUNNING) logger.info("Pump [" + name + "] terminated.");
-		ex.shutdownNow();
+		Pump.super.close(() -> {
+			results.cancel(true);
+			ex.shutdownNow();
+		});
 	}
 
 	@Override
 	public String toString() {
 		return "Pump-" + name;
 	}
-
-	@Override
-	public void closing() {
-		
-		Pump.super.closing();
-	}
-	
 }

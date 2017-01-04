@@ -8,9 +8,9 @@ import java.util.List;
 import net.butfly.albacore.io.Openable;
 import net.butfly.albacore.io.pump.BasicPump;
 import net.butfly.albacore.io.pump.ConvPump;
+import net.butfly.albacore.io.pump.FanoutPump;
 import net.butfly.albacore.io.pump.MapPump;
 import net.butfly.albacore.io.pump.Pump;
-import net.butfly.albacore.io.pump.UnconvPump;
 import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.utils.Collections;
 import net.butfly.albacore.utils.async.Concurrents;
@@ -104,26 +104,32 @@ public interface Q<I, O> extends Openable, Serializable {
 		return c;
 	}
 
-	default long enqueue(@SuppressWarnings("unchecked") I... e) {
+	@SuppressWarnings("unchecked")
+	default long enqueue(I... e) {
 		return enqueue(Arrays.asList(e));
 	}
 
 	/* from interfaces */
 
-	default Pump<O> pump(Q<O, ?> dest, int parallelism) {
-		return new BasicPump<>(this, dest, parallelism);
+	default Pump pump(Q<O, ?> dest, int parallelism) {
+		return new BasicPump(this, dest, parallelism);
 	}
 
-	default <I2> Pump<I2> pumpPrior(Q<I2, ?> dest, int parallelism, Converter<List<O>, List<I2>> conv) {
-		return new ConvPump<>(this, dest, parallelism, conv);
+	@SuppressWarnings("unchecked")
+	default Pump pump(int parallelism, Q<O, ?>... dests) {
+		return new FanoutPump(this, parallelism, Arrays.asList(dests));
 	}
 
-	default <I2> Pump<O> pumpThen(Q<I2, ?> dest, int parallelism, Converter<List<O>, List<I2>> conv) {
-		return new UnconvPump<>(this, dest, parallelism, conv);
+	default <I2> Pump pump(Q<I2, ?> dest, int parallelism, Converter<List<O>, List<I2>> conv) {
+		return new ConvPump(this, dest, parallelism, conv, true);
 	}
 
-	default <K> Pump<O> pump(MapQ<K, O, ?> dest, Converter<O, K> keying, int parallelism) {
-		return new MapPump<K, O>(this, dest, keying, parallelism);
+	default <I2> Pump pumpThen(Q<I2, ?> dest, int parallelism, Converter<List<O>, List<I2>> conv) {
+		return new ConvPump(this, dest, parallelism, conv, false);
+	}
+
+	default <K> Pump pump(MapQ<K, O, ?> dest, Converter<O, K> keying, int parallelism) {
+		return new MapPump(this, dest, keying, parallelism);
 	}
 
 	default <O2> Q<I, O2> then(Converter<O, O2> conv) {

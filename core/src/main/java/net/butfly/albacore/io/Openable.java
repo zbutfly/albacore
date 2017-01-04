@@ -19,15 +19,16 @@ public interface Openable extends AutoCloseable {
 	default void closing() {}
 
 	default void open() {
-		if (status().compareAndSet(Status.CLOSED, Status.OPENING)) {
+		AtomicReference<Status> s = STATUS.computeIfAbsent(this, o -> new AtomicReference<Status>(Status.CLOSED));
+		if (s.compareAndSet(Status.CLOSED, Status.OPENING)) {
 			logger.debug(name() + " opening...");
 			opening();
-			if (!status().compareAndSet(Status.OPENING, Status.OPENED)) //
-				throw new RuntimeException("Opened failure since status [" + status().get() + "] not OPENING.");
+			if (!s.compareAndSet(Status.OPENING, Status.OPENED)) //
+				throw new RuntimeException("Opened failure since status [" + s.get() + "] not OPENING.");
 			logger.debug(name() + " opened.");
-		} 
-		if (status().get() != Status.OPENED) //
-			throw new RuntimeException("Start failure since status [" + status().get() + "] not OPENED.");
+		}
+		if (s.get() != Status.OPENED) //
+			throw new RuntimeException("Start failure since status [" + s.get() + "] not OPENED.");
 	}
 
 	@Override
@@ -44,8 +45,21 @@ public interface Openable extends AutoCloseable {
 		else STATUS.remove(this);
 	}
 
+	default void close(Runnable closing) {
+		if (status().compareAndSet(Status.OPENED, Status.CLOSING)) {
+			logger.debug(name() + " closing...");
+			closing.run();
+			if (!status().compareAndSet(Status.CLOSING, Status.CLOSED))//
+				throw new RuntimeException("Closed failure since status [" + status().get() + "] not CLOSING.");
+			logger.debug(name() + " closed.");
+		}
+		if (status().get() != Status.CLOSED) //
+			throw new RuntimeException("Closing failure since status [" + status().get() + "] not OPENED.");
+		else STATUS.remove(this);
+	}
+
 	default AtomicReference<Status> status() {
-		return STATUS.computeIfAbsent(this, o -> new AtomicReference<Status>(Status.CLOSED));
+		return STATUS.getOrDefault(this, new AtomicReference<>(Status.CLOSED));
 	}
 
 	default String name() {
@@ -54,5 +68,9 @@ public interface Openable extends AutoCloseable {
 
 	default boolean opened() {
 		return status().get() == Status.OPENED;
+	}
+
+	default boolean closed() {
+		return status().get() == Status.CLOSED;
 	}
 }

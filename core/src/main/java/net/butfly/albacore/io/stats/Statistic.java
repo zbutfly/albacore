@@ -12,7 +12,7 @@ import net.butfly.albacore.lambda.Supplier;
 import net.butfly.albacore.utils.Reflections;
 import net.butfly.albacore.utils.logger.Logger;
 
-class Statistic<T extends Statistical<T, V>, V> implements Serializable {
+class Statistic implements Serializable {
 	private static final long serialVersionUID = -1;
 	final ReentrantLock lock;
 
@@ -27,9 +27,10 @@ class Statistic<T extends Statistical<T, V>, V> implements Serializable {
 	final AtomicLong packsInTotal;
 	final AtomicLong bytesInTotal;
 	final Supplier<String> suffixing;
-	final Converter<V, Long> sizing;
+	final Converter<Object, Long> sizing;
 
-	Statistic(T owner, Logger logger, long step, Converter<V, Long> sizing, Supplier<String> suffixing) {
+	<T extends Statistical<T>> Statistic(Statistical<T> owner, Logger logger, long step, Converter<Object, Long> sizing,
+			Supplier<String> suffixing) {
 		Reflections.noneNull("", owner, logger);
 		lock = new ReentrantLock();
 		this.logger = logger;
@@ -56,12 +57,12 @@ class Statistic<T extends Statistical<T, V>, V> implements Serializable {
 
 	}
 
-	void stats(V v) {
+	void stats(Object v) {
 		stats(sizing.apply(v));
 	}
 
-	void stats(Iterable<V> vv) {
-		for (V v : vv)
+	void stats(Iterable<?> vv) {
+		for (Object v : vv)
 			stats(v);
 	}
 
