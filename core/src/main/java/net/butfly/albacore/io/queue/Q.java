@@ -135,7 +135,7 @@ public interface Q<I, O> extends Openable, Serializable {
 	}
 
 	default <O2> Q<I, O2> then(Converter<O, O2> conv) {
-		return new QImpl<I, O2>(Q.this.name() + "-then-" + conv.toString(), Q.this.capacity()) {
+		return new QImpl<I, O2>(Q.this.name() + "-ThenConv", Q.this.capacity()) {
 			private static final long serialVersionUID = -5894142335125843377L;
 
 			@Override
@@ -166,7 +166,7 @@ public interface Q<I, O> extends Openable, Serializable {
 	}
 
 	default <I0> Q<I0, O> prior(Converter<I0, I> conv) {
-		return new QImpl<I0, O>(Q.this.name() + "-prior-" + conv.toString(), Q.this.capacity()) {
+		return new QImpl<I0, O>(Q.this.name() + "-ConvThen", Q.this.capacity()) {
 			private static final long serialVersionUID = -2063675795097988806L;
 
 			@Override
