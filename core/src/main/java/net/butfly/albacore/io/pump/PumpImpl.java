@@ -25,13 +25,24 @@ abstract class PumpImpl implements Pump {
 
 	protected long batchSize = 1000;
 	private ListenableFuture<List<Object>> results;
+	private final List<AutoCloseable> dependencies;
 
 	protected PumpImpl(String name, int parallelism) {
 		// running = new AtomicInteger(STATUS_OTHER);
 		this.name = name;
 		this.parallelism = parallelism;
 		ex = Concurrents.executor(parallelism, name);
+		dependencies = new ArrayList<>();
 		logger.info("Pump [" + name + "] created with parallelism: " + parallelism);
+	}
+
+	protected final void depdenencies(List<? extends AutoCloseable> depdenencies) {
+		this.dependencies.addAll(depdenencies);
+	}
+
+	protected final void depdenencies(AutoCloseable... depdenencies) {
+		for (AutoCloseable dep : dependencies)
+			this.dependencies.add(dep);
 	}
 
 	protected void pumping(Supplier<Boolean> sourceEmpty, Runnable pumping) {
@@ -77,6 +88,10 @@ abstract class PumpImpl implements Pump {
 		} catch (ExecutionException e) {
 			logger.error("Pump waiting failure", e.getCause());
 		}
+		for (AutoCloseable dep : dependencies)
+			try {
+				dep.close();
+			} catch (Exception e) {}
 		ex.shutdown();
 	}
 

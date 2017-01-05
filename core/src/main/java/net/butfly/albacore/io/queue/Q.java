@@ -44,6 +44,7 @@ import net.butfly.albacore.utils.logger.Logger;
  * @author butfly
  *
  */
+@SuppressWarnings("deprecation")
 public interface Q<I, O> extends Openable, Serializable {
 	static final Logger logger = Logger.getLogger(Q.class);
 	static final long INFINITE_SIZE = -1;
@@ -128,6 +129,7 @@ public interface Q<I, O> extends Openable, Serializable {
 		return new ConvPump(this, dest, parallelism, conv, false);
 	}
 
+	@Deprecated
 	default <K> Pump pump(MapQ<K, O, ?> dest, Converter<O, K> keying, int parallelism) {
 		return new MapPump(this, dest, keying, parallelism);
 	}
