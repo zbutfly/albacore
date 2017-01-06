@@ -2,13 +2,10 @@ package net.butfly.albacore.io.pump;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 import com.google.common.base.Supplier;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
 
+import net.butfly.albacore.io.OpenableThread;
 import net.butfly.albacore.utils.async.Concurrents;
 
 abstract class PumpImpl implements Pump {
@@ -20,18 +17,26 @@ abstract class PumpImpl implements Pump {
 	protected final String name;
 	private final int parallelism;
 	// protected final AtomicInteger running;
-	protected final List<Thread> threads = new ArrayList<>();
-	protected final ListeningExecutorService ex;
+	protected final List<OpenableThread> threads = new ArrayList<>();
 
 	protected long batchSize = 1000;
-	private ListenableFuture<List<Object>> results;
+	private final List<AutoCloseable> dependencies;
 
 	protected PumpImpl(String name, int parallelism) {
 		// running = new AtomicInteger(STATUS_OTHER);
 		this.name = name;
 		this.parallelism = parallelism;
-		ex = Concurrents.executor(parallelism, name);
+		dependencies = new ArrayList<>();
 		logger.info("Pump [" + name + "] created with parallelism: " + parallelism);
+	}
+
+	protected final void depdenencies(List<? extends AutoCloseable> depdenencies) {
+		this.dependencies.addAll(depdenencies);
+	}
+
+	protected final void depdenencies(AutoCloseable... depdenencies) {
+		for (AutoCloseable dep : dependencies)
+			this.dependencies.add(dep);
 	}
 
 	protected void pumping(Supplier<Boolean> sourceEmpty, Runnable pumping) {
@@ -44,10 +49,8 @@ abstract class PumpImpl implements Pump {
 						logger.error("Pump processing failure", th);
 					}
 				});
-		for (int i = 0; i < parallelism; i++) {
-			Thread t = new Thread(r, name + "[" + i + "]");
-			threads.add(t);
-		}
+		for (int i = 0; i < parallelism; i++)
+			threads.add(new OpenableThread(r, name + "[" + i + "]"));
 	}
 
 	@Override
@@ -58,37 +61,36 @@ abstract class PumpImpl implements Pump {
 
 	@Override
 	public void opening() {
-		open();
-		logger.info("Pump [" + name + "] starting...");
-		List<ListenableFuture<?>> futures = new ArrayList<>();
-		for (Thread t : threads)
-			futures.add(ex.submit(t));
-		results = Futures.allAsList(futures);
-		logger.info("Pump [" + name + "] started.");
+		Pump.super.opening();
+		for (OpenableThread t : threads)
+			t.start();
 	}
 
 	@Override
 	public void closing() {
 		Pump.super.closing();
-		try {
-			results.get();
-		} catch (InterruptedException e) {
-			logger.warn("Pump interrupted.");
-		} catch (ExecutionException e) {
-			logger.error("Pump waiting failure", e.getCause());
-		}
-		ex.shutdown();
+		for (OpenableThread t : threads)
+			t.close();
+		for (AutoCloseable dep : dependencies)
+			try {
+				dep.close();
+			} catch (Exception e) {}
 	}
 
-	void terminate() {
-		Pump.super.close(() -> {
-			results.cancel(true);
-			ex.shutdownNow();
-		});
+	@Override
+	public void terminate() {
+		for (OpenableThread t : threads)
+			t.interrupt();
+		close();
 	}
 
 	@Override
 	public String toString() {
 		return "Pump-" + name;
+	}
+
+	@Override
+	public String name() {
+		return name;
 	}
 }

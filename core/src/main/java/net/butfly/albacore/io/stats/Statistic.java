@@ -58,7 +58,8 @@ class Statistic implements Serializable {
 	}
 
 	void stats(Object v) {
-		stats(sizing.apply(v));
+		Long l = sizing.apply(v);
+		stats(null == l ? 0 : l.longValue());
 	}
 
 	void stats(Iterable<?> vv) {

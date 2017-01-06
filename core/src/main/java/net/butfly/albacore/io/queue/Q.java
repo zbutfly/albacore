@@ -44,6 +44,7 @@ import net.butfly.albacore.utils.logger.Logger;
  * @author butfly
  *
  */
+@SuppressWarnings("deprecation")
 public interface Q<I, O> extends Openable, Serializable {
 	static final Logger logger = Logger.getLogger(Q.class);
 	static final long INFINITE_SIZE = -1;
@@ -128,12 +129,13 @@ public interface Q<I, O> extends Openable, Serializable {
 		return new ConvPump(this, dest, parallelism, conv, false);
 	}
 
+	@Deprecated
 	default <K> Pump pump(MapQ<K, O, ?> dest, Converter<O, K> keying, int parallelism) {
 		return new MapPump(this, dest, keying, parallelism);
 	}
 
 	default <O2> Q<I, O2> then(Converter<O, O2> conv) {
-		return new QImpl<I, O2>(Q.this.name() + "-then-" + conv.toString(), Q.this.capacity()) {
+		return new QImpl<I, O2>(Q.this.name() + "-ThenConv", Q.this.capacity()) {
 			private static final long serialVersionUID = -5894142335125843377L;
 
 			@Override
@@ -164,7 +166,7 @@ public interface Q<I, O> extends Openable, Serializable {
 	}
 
 	default <I0> Q<I0, O> prior(Converter<I0, I> conv) {
-		return new QImpl<I0, O>(Q.this.name() + "-prior-" + conv.toString(), Q.this.capacity()) {
+		return new QImpl<I0, O>(Q.this.name() + "-ConvThen", Q.this.capacity()) {
 			private static final long serialVersionUID = -2063675795097988806L;
 
 			@Override

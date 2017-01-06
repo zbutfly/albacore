@@ -8,6 +8,7 @@ import net.butfly.albacore.io.queue.MapQ;
 import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.utils.Reflections;
 
+@Deprecated
 public class MapPump extends PumpImpl {
 	private static final long serialVersionUID = 1781793229310906740L;
 

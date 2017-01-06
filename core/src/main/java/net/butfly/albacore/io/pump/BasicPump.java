@@ -11,6 +11,7 @@ public class BasicPump extends PumpImpl {
 	public <V> BasicPump(Q<?, V> source, Q<V, ?> destination, int parallelism) {
 		super(source.name() + "-to-" + destination.name(), parallelism);
 		Reflections.noneNull("Pump source/destination should not be null", source, destination);
+		depdenencies(source, destination);
 		pumping(() -> source.empty(), () -> {
 			List<V> l = source.dequeue(batchSize);
 			if (l.size() > 0) {

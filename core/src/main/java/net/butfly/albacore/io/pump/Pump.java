@@ -13,6 +13,8 @@ public interface Pump extends Statistical<Pump>, Openable {
 
 	Pump batch(long batchSize);
 
+	void terminate();
+
 	static void run(Pump... pumps) {
 		// handle kill -15, CTRL-C, kill -9
 		if (!SIGNAL_HANDLED.getAndSet(true)) Systems.handleSignal(sig -> {
@@ -24,4 +26,5 @@ public interface Pump extends Statistical<Pump>, Openable {
 		for (int i = 0; i < pumps.length; i++)
 			((PumpImpl) pumps[i]).close();
 	}
+
 }

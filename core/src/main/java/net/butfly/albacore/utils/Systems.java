@@ -97,7 +97,7 @@ public final class Systems extends Utils {
 		}
 	}
 
-	public static String getDefaultCachePath() {
-		return System.getProperty("albacore.cache.local.path", "./cache/" + getMainClass().getSimpleName());
+	public static String getDefaultCachePathBase() {
+		return System.getProperty("albacore.cache.local.path", "./cache/");
 	}
 }
