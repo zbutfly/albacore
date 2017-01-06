@@ -77,7 +77,8 @@ abstract class PumpImpl implements Pump {
 			} catch (Exception e) {}
 	}
 
-	void terminate() {
+	@Override
+	public void terminate() {
 		for (OpenableThread t : threads)
 			t.interrupt();
 		close();
