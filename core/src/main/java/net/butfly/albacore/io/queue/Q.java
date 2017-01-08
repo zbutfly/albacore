@@ -12,7 +12,6 @@ import net.butfly.albacore.io.pump.FanoutPump;
 import net.butfly.albacore.io.pump.MapPump;
 import net.butfly.albacore.io.pump.Pump;
 import net.butfly.albacore.lambda.Converter;
-import net.butfly.albacore.utils.Collections;
 import net.butfly.albacore.utils.async.Concurrents;
 import net.butfly.albacore.utils.logger.Logger;
 
@@ -134,7 +133,7 @@ public interface Q<I, O> extends Openable, Serializable {
 		return new MapPump(this, dest, keying, parallelism);
 	}
 
-	default <O2> Q<I, O2> then(Converter<O, O2> conv) {
+	default <O2> Q<I, O2> then(Converter<List<O>, List<O2>> conv) {
 		return new QImpl<I, O2>(Q.this.name() + "-ThenConv", Q.this.capacity()) {
 			private static final long serialVersionUID = -5894142335125843377L;
 
@@ -145,12 +144,17 @@ public interface Q<I, O> extends Openable, Serializable {
 
 			@Override
 			public O2 dequeue0() {
-				return conv.apply(Q.this.dequeue0());
+				O v = Q.this.dequeue0();
+				if (null == v) return null;
+				List<O2> l = conv.apply(Arrays.asList(v));
+				if (null == l || l.isEmpty()) return null;
+				return l.get(0);
 			}
 
 			@Override
 			public List<O2> dequeue(long batchSize) {
-				return Collections.transform(Q.this.dequeue(batchSize), conv);
+				List<O> l = Q.this.dequeue(batchSize);
+				return conv.apply(l);
 			}
 
 			@Override
@@ -159,19 +163,24 @@ public interface Q<I, O> extends Openable, Serializable {
 			}
 
 			@Override
-			public void closing() {
-				Q.this.close();
-			}
+			public void closing() {}
 		};
 	}
 
-	default <I0> Q<I0, O> prior(Converter<I0, I> conv) {
+	default <I0> Q<I0, O> prior(Converter<List<I0>, List<I>> conv) {
 		return new QImpl<I0, O>(Q.this.name() + "-ConvThen", Q.this.capacity()) {
 			private static final long serialVersionUID = -2063675795097988806L;
 
 			@Override
-			public boolean enqueue0(I0 d) {
-				return Q.this.enqueue0(conv.apply(d));
+			public boolean enqueue0(I0 item) {
+				List<I> items = conv.apply(Arrays.asList(item));
+				if (null == items || items.isEmpty()) return false;
+				return Q.this.enqueue0(items.get(0));
+			}
+
+			@Override
+			public long enqueue(List<I0> items) {
+				return Q.this.enqueue(conv.apply(items));
 			}
 
 			@Override
@@ -190,9 +199,7 @@ public interface Q<I, O> extends Openable, Serializable {
 			}
 
 			@Override
-			public void closing() {
-				Q.this.close();
-			}
+			public void closing() {}
 		};
 	}
 }

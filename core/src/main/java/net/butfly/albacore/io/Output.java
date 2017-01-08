@@ -1,10 +1,10 @@
 package net.butfly.albacore.io;
 
+import java.util.Arrays;
 import java.util.List;
 
 import net.butfly.albacore.io.queue.QImpl;
 import net.butfly.albacore.lambda.Converter;
-import net.butfly.albacore.utils.Collections;
 
 public abstract class Output<I> extends QImpl<I, Void> {
 	private static final long serialVersionUID = -1;
@@ -19,18 +19,20 @@ public abstract class Output<I> extends QImpl<I, Void> {
 	}
 
 	@Override
-	public <I0> Output<I0> prior(Converter<I0, I> conv) {
+	public <I0> Output<I0> prior(Converter<List<I0>, List<I>> conv) {
 		return new Output<I0>(Output.this.name() + "-Prior") {
 			private static final long serialVersionUID = -3972222736579861184L;
 
 			@Override
 			public boolean enqueue0(I0 item) {
-				return Output.this.enqueue0(conv.apply(item));
+				List<I> dd = conv.apply(Arrays.asList(item));
+				if (null == dd || dd.isEmpty()) return false;
+				return Output.this.enqueue0(dd.get(0));
 			}
 
 			@Override
 			public long enqueue(List<I0> items) {
-				return Output.this.enqueue(Collections.transform(items, conv));
+				return Output.this.enqueue(conv.apply(items));
 			}
 
 			@Override
@@ -39,9 +41,7 @@ public abstract class Output<I> extends QImpl<I, Void> {
 			}
 
 			@Override
-			public void closing() {
-				Output.this.close();
-			}
+			public void closing() {}
 		};
 	}
 
