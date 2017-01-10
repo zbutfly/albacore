@@ -58,7 +58,7 @@ class Statistic implements Serializable {
 	}
 
 	void stats(Object v) {
-		Long l = sizing.apply(v);
+		Long l = null == sizing ? 0 : sizing.apply(v);
 		stats(null == l ? 0 : l.longValue());
 	}
 
@@ -72,9 +72,12 @@ class Statistic implements Serializable {
 		Statistic.Result step, total;
 		step = new Statistic.Result(packsInStep.getAndSet(0), bytesInStep.getAndSet(0), now - statsed.getAndSet(now));
 		total = new Statistic.Result(packsInTotal.get(), bytesInTotal.get(), new Date().getTime() - begin);
-		logger.debug(() -> MessageFormat.format("Statistic: [Step: {0}/objs,{1},{2}], [Total: {3}/objs,{4},{5}], [{6}].", step.packs,
-				formatBytes(step.bytes), formatMillis(step.millis), total.packs, formatBytes(total.bytes), formatMillis(total.millis),
-				suffixing.get()));
+		logger.debug(() -> {
+			String ss = null == suffixing ? "" : suffixing.get();
+			if (null == ss) ss = "";
+			return MessageFormat.format("Statistic: [Step: {0}/objs,{1},{2}], [Total: {3}/objs,{4},{5}], [{6}].", step.packs, formatBytes(
+					step.bytes), formatMillis(step.millis), total.packs, formatBytes(total.bytes), formatMillis(total.millis), ss);
+		});
 	}
 
 	private static DecimalFormat f = new DecimalFormat("#.##");

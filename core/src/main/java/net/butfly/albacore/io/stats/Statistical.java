@@ -12,6 +12,10 @@ public interface Statistical<T extends Statistical<T>> extends Serializable {
 	static final String LOG_PREFIX = "Queue.Statistic";
 	static final Logger slogger = Logger.getLogger(LOG_PREFIX);
 
+	default T trace(long step) {
+		return trace("", step, o -> 0L, () -> null);
+	}
+
 	default T trace(long step, Converter<Object, Long> sizing, Supplier<String> suffixing) {
 		return trace("", step, sizing, suffixing);
 	}
