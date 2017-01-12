@@ -32,4 +32,9 @@ public class Pair<T1, T2> implements Serializable {
 	public void value2(T2 v2) {
 		this.v2 = v2;
 	}
+
+	@Override
+	public String toString() {
+		return "[" + v1 + "," + v2 + "]";
+	}
 }
