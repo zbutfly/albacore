@@ -120,6 +120,10 @@ public interface Q<I, O> extends Openable, Serializable {
 		return new FanoutPump(this, parallelism, Arrays.asList(dests));
 	}
 
+	default Pump pump(int parallelism, List<? extends Q<O, ?>> dests) {
+		return new FanoutPump(this, parallelism, dests);
+	}
+
 	default <I2> Pump pump(Q<I2, ?> dest, int parallelism, Converter<List<O>, List<I2>> conv) {
 		return new ConvPump(this, dest, parallelism, conv, true);
 	}

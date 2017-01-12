@@ -21,6 +21,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Collection;
 
+import net.butfly.albacore.utils.Instances;
 import net.butfly.albacore.utils.imports.meta.invoker.GetFieldInvoker;
 import net.butfly.albacore.utils.imports.meta.invoker.Invoker;
 import net.butfly.albacore.utils.imports.meta.invoker.MethodInvoker;
@@ -34,7 +35,7 @@ public class MetaClass {
 	private Reflector reflector;
 
 	private MetaClass(Class<?> type) {
-		this.reflector = Reflector.forClass(type);
+		this.reflector = Instances.construct(Reflector.class, type);
 	}
 
 	public static MetaClass forClass(Class<?> type) {

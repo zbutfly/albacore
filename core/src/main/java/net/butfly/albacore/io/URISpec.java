@@ -131,4 +131,8 @@ public final class URISpec {
 		if (fragment != null) sb.append('#').append(fragment);
 		return sb.toString();
 	}
+
+	public URI toURI() throws URISyntaxException {
+		return new URI(toString());
+	}
 }
