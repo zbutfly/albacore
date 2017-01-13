@@ -7,11 +7,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 
 import net.butfly.albacore.lambda.Converter;
 import scala.Tuple2;
 
 public final class Collections extends Utils {
+	public static <T, R> Converter<List<T>, List<R>> convAs(Converter<T, R> single) {
+		return ts -> ts.stream().map(single::apply).collect(Collectors.toList());
+	}
 
 	public static <T, R> List<R> transform(Collection<T> original, Converter<T, R> trans) {
 		if (original == null) return null;

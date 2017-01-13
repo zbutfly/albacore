@@ -7,11 +7,10 @@ import java.util.List;
 
 import net.butfly.albacore.io.Openable;
 import net.butfly.albacore.io.pump.BasicPump;
-import net.butfly.albacore.io.pump.ConvPump;
 import net.butfly.albacore.io.pump.FanoutPump;
-import net.butfly.albacore.io.pump.MapPump;
 import net.butfly.albacore.io.pump.Pump;
 import net.butfly.albacore.lambda.Converter;
+import net.butfly.albacore.utils.Collections;
 import net.butfly.albacore.utils.async.Concurrents;
 import net.butfly.albacore.utils.logger.Logger;
 
@@ -43,7 +42,6 @@ import net.butfly.albacore.utils.logger.Logger;
  * @author butfly
  *
  */
-@SuppressWarnings("deprecation")
 public interface Q<I, O> extends Openable, Serializable {
 	static final Logger logger = Logger.getLogger(Q.class);
 	static final long INFINITE_SIZE = -1;
@@ -111,7 +109,7 @@ public interface Q<I, O> extends Openable, Serializable {
 
 	/* from interfaces */
 
-	default Pump pump(Q<O, ?> dest, int parallelism) {
+	default Pump pump(int parallelism, Q<O, ?> dest) {
 		return new BasicPump(this, dest, parallelism);
 	}
 
@@ -124,21 +122,12 @@ public interface Q<I, O> extends Openable, Serializable {
 		return new FanoutPump(this, parallelism, dests);
 	}
 
-	default <I2> Pump pump(Q<I2, ?> dest, int parallelism, Converter<List<O>, List<I2>> conv) {
-		return new ConvPump(this, dest, parallelism, conv, true);
+	default <O2> Q<I, O2> then(Converter<O, O2> conv) {
+		return thens(Collections.convAs(conv));
 	}
 
-	default <I2> Pump pumpThen(Q<I2, ?> dest, int parallelism, Converter<List<O>, List<I2>> conv) {
-		return new ConvPump(this, dest, parallelism, conv, false);
-	}
-
-	@Deprecated
-	default <K> Pump pump(MapQ<K, O, ?> dest, Converter<O, K> keying, int parallelism) {
-		return new MapPump(this, dest, keying, parallelism);
-	}
-
-	default <O2> Q<I, O2> then(Converter<List<O>, List<O2>> conv) {
-		return new QImpl<I, O2>(Q.this.name() + "-ThenConv", Q.this.capacity()) {
+	default <O2> Q<I, O2> thens(Converter<List<O>, List<O2>> conv) {
+		return new QImpl<I, O2>(Q.this.name() + "-Then", Q.this.capacity()) {
 			private static final long serialVersionUID = -5894142335125843377L;
 
 			@Override
@@ -171,8 +160,12 @@ public interface Q<I, O> extends Openable, Serializable {
 		};
 	}
 
-	default <I0> Q<I0, O> prior(Converter<List<I0>, List<I>> conv) {
-		return new QImpl<I0, O>(Q.this.name() + "-ConvThen", Q.this.capacity()) {
+	default <I0> Q<I0, O> prior0(Converter<I0, I> conv) {
+		return priors(Collections.convAs(conv));
+	}
+
+	default <I0> Q<I0, O> priors(Converter<List<I0>, List<I>> conv) {
+		return new QImpl<I0, O>(Q.this.name() + "-Prior", Q.this.capacity()) {
 			private static final long serialVersionUID = -2063675795097988806L;
 
 			@Override
@@ -206,4 +199,5 @@ public interface Q<I, O> extends Openable, Serializable {
 			public void closing() {}
 		};
 	}
+
 }

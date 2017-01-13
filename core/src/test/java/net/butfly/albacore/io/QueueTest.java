@@ -8,6 +8,8 @@ import net.butfly.albacore.io.std.RandomStringInput;
 
 public class QueueTest {
 	public static void main(String... args) {
-		Pump.run(RandomStringInput.INSTANCE.pump(new LoggerOutput(Level.WARN), 3));
+		try (Pump p = RandomStringInput.INSTANCE.pump(3, new LoggerOutput(Level.WARN))) {
+			p.open();
+		}
 	}
 }

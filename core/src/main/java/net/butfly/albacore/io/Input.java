@@ -5,6 +5,7 @@ import java.util.List;
 
 import net.butfly.albacore.io.queue.QImpl;
 import net.butfly.albacore.lambda.Converter;
+import net.butfly.albacore.utils.Collections;
 
 public abstract class Input<O> extends QImpl<Void, O> {
 	private static final long serialVersionUID = -1;
@@ -19,7 +20,12 @@ public abstract class Input<O> extends QImpl<Void, O> {
 	}
 
 	@Override
-	public <O2> Input<O2> then(Converter<List<O>, List<O2>> conv) {
+	public <O2> Input<O2> then(Converter<O, O2> conv) {
+		return thens(Collections.convAs(conv));
+	}
+
+	@Override
+	public <O2> Input<O2> thens(Converter<List<O>, List<O2>> conv) {
 		return new Input<O2>(Input.this.name() + "-Then") {
 			private static final long serialVersionUID = -8694670290655232938L;
 
