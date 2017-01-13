@@ -13,7 +13,7 @@ import com.google.common.base.Joiner;
 import net.butfly.albacore.utils.Pair;
 
 public final class URISpec {
-	private final List<String> schemas;
+	private final List<String> schemes;
 	private final String username;
 	private final String password;
 	private final List<Pair<String, Integer>> hosts;
@@ -27,8 +27,8 @@ public final class URISpec {
 
 	public URISpec(String str, int defaultPort) {
 		super();
-		schemas = new ArrayList<>();
-		URI uri = parseURI(str, schemas);
+		schemes = new ArrayList<>();
+		URI uri = parseURI(str, schemes);
 		hosts = new ArrayList<>();
 		if (uri.getHost() != null) {
 			String[] u = uri.getUserInfo().split(":", 2);
@@ -65,20 +65,20 @@ public final class URISpec {
 		}
 	}
 
-	private static URI parseURI(String spec, List<String> schemas) {
+	private static URI parseURI(String spec, List<String> schemes) {
 		URI uri;
 		try {
 			uri = new URI(spec);
 		} catch (URISyntaxException e) {
 			throw new RuntimeException(e);
 		}
-		schemas.add(uri.getScheme());
+		schemes.add(uri.getScheme());
 		if (uri.getAuthority() != null) return uri;
-		return parseURI(uri.getSchemeSpecificPart(), schemas);
+		return parseURI(uri.getSchemeSpecificPart(), schemes);
 	}
 
-	public String getSchema() {
-		return schemas.isEmpty() ? null : new StringBuilder().append(Joiner.on(':').join(schemas)).toString();
+	public String getScheme() {
+		return schemes.isEmpty() ? null : new StringBuilder().append(Joiner.on(':').join(schemes)).toString();
 	}
 
 	public String getUsername() {
@@ -91,6 +91,10 @@ public final class URISpec {
 
 	public Iterator<Pair<String, Integer>> getHosts() {
 		return hosts.iterator();
+	}
+
+	public String getHost() {
+		return Joiner.on(',').join(hosts.stream().map(p -> p.value1() + (p.value2() <= 0 ? "" : (":" + p.value2()))).iterator());
 	}
 
 	public String getPath() {
@@ -118,21 +122,25 @@ public final class URISpec {
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
-		if (!schemas.isEmpty()) sb.append(getSchema()).append(':');
+		if (!schemes.isEmpty()) sb.append(getScheme()).append(':');
 		sb.append("//");
 		if (null != username) {
 			sb.append(username);
 			if (null != password) sb.append(':').append(password);
 			sb.append('@');
 		}
-		sb.append(Joiner.on(',').join(hosts.stream().map(p -> p.value1() + (p.value2() <= 0 ? "" : (":" + p.value2()))).iterator()));
+		sb.append(getHost());
 		if (!paths.isEmpty()) sb.append(getPath());
 		if (!query.isEmpty()) sb.append(getQuery());
 		if (fragment != null) sb.append('#').append(fragment);
 		return sb.toString();
 	}
 
-	public URI toURI() throws URISyntaxException {
-		return new URI(toString());
+	public URI toURI() {
+		try {
+			return new URI(toString());
+		} catch (URISyntaxException e) {
+			return null;
+		}
 	}
 }
