@@ -5,6 +5,7 @@ import java.io.Serializable;
 import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.lambda.Supplier;
 import net.butfly.albacore.utils.Instances;
+import net.butfly.albacore.utils.Systems;
 import net.butfly.albacore.utils.logger.Logger;
 
 public interface Statistical<T extends Statistical<T>> extends Serializable {
@@ -13,20 +14,27 @@ public interface Statistical<T extends Statistical<T>> extends Serializable {
 	static final Logger slogger = Logger.getLogger(LOG_PREFIX);
 
 	default T trace(long step) {
-		return trace("", step, o -> 0L, () -> null);
+		return trace(step, () -> null);
 	}
 
-	default T trace(long step, Converter<Object, Long> sizing, Supplier<String> suffixing) {
-		return trace("", step, sizing, suffixing);
+	default T trace(long step, Converter<Object, Long> sizing) {
+		return trace(step, sizing, () -> null);
 	}
 
-	default T trace(String prefix, long step, Converter<Object, Long> sizing, Supplier<String> suffixing) {
-		String logname = LOG_PREFIX + "." + prefix;
+	default T trace(long step, Supplier<String> detailing) {
+		return trace(step, Systems::sizeOf, detailing);
+	}
+
+	default T trace(long step, Converter<Object, Long> sizing, Supplier<String> detailing) {
+		return trace(null, step, sizing, detailing);
+	}
+
+	default T trace(String prefix, long step, Converter<Object, Long> sizing, Supplier<String> detailing) {
+		String logname = null == prefix ? LOG_PREFIX : LOG_PREFIX + "." + prefix;
 		slogger.info("Staticstic register as [" + logname + "] on step [" + step + "]");
-		Logger l = Logger.getLogger(logname);
 		@SuppressWarnings("unchecked")
 		T t = (T) this;
-		Instances.fetch(() -> new Statistic(t, l, step, sizing, suffixing), Statistic.class, this);
+		Instances.fetch(() -> new Statistic(t, logname, step, sizing, detailing), Statistic.class, this);
 		return t;
 	}
 

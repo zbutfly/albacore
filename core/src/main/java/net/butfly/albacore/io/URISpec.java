@@ -4,11 +4,11 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
 
 import net.butfly.albacore.utils.Pair;
 
@@ -89,12 +89,16 @@ public final class URISpec {
 		return password;
 	}
 
-	public Iterator<Pair<String, Integer>> getHosts() {
-		return hosts.iterator();
+	public List<Pair<String, Integer>> getHosts() {
+		return ImmutableList.copyOf(hosts);
 	}
 
 	public String getHost() {
 		return Joiner.on(',').join(hosts.stream().map(p -> p.value1() + (p.value2() <= 0 ? "" : (":" + p.value2()))).iterator());
+	}
+
+	public String[] getPathSegs() {
+		return paths.toArray(new String[paths.size()]);
 	}
 
 	public String getPath() {
@@ -105,6 +109,10 @@ public final class URISpec {
 		return query.isEmpty() ? null
 				: new StringBuilder().append('?').append(Joiner.on('&').join(query.entrySet().stream().map(e -> e.getKey().toString() + "="
 						+ e.getValue().toString()).iterator())).toString();
+	}
+
+	public Properties getParameters() {
+		return query;
 	}
 
 	public String getParameter(String name) {

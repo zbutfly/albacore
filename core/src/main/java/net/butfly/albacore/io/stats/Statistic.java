@@ -26,14 +26,14 @@ class Statistic implements Serializable {
 	final AtomicLong bytesInStep;
 	final AtomicLong packsInTotal;
 	final AtomicLong bytesInTotal;
-	final Supplier<String> suffixing;
+	final Supplier<String> detailing;
 	final Converter<Object, Long> sizing;
 
-	<T extends Statistical<T>> Statistic(Statistical<T> owner, Logger logger, long step, Converter<Object, Long> sizing,
-			Supplier<String> suffixing) {
-		Reflections.noneNull("", owner, logger);
+	<T extends Statistical<T>> Statistic(Statistical<T> owner, String logname, long step, Converter<Object, Long> sizing,
+			Supplier<String> detailing) {
+		Reflections.noneNull("", owner, logname);
 		lock = new ReentrantLock();
-		this.logger = logger;
+		this.logger = Logger.getLogger(logname);
 		this.packsStep = new AtomicLong(step - 1);
 		packsInStep = new AtomicLong(0);
 		bytesInStep = new AtomicLong(0);
@@ -42,7 +42,7 @@ class Statistic implements Serializable {
 		begin = new Date().getTime();
 		statsed = new AtomicLong(begin);
 		this.sizing = sizing;
-		this.suffixing = suffixing;
+		this.detailing = detailing;
 	}
 
 	void stats(long bytes) {
@@ -73,7 +73,7 @@ class Statistic implements Serializable {
 		step = new Statistic.Result(packsInStep.getAndSet(0), bytesInStep.getAndSet(0), now - statsed.getAndSet(now));
 		total = new Statistic.Result(packsInTotal.get(), bytesInTotal.get(), new Date().getTime() - begin);
 		logger.debug(() -> {
-			String ss = null == suffixing ? "" : suffixing.get();
+			String ss = null == detailing ? "" : detailing.get();
 			if (null == ss) ss = "";
 			return MessageFormat.format("Statistic: [Step: {0}/objs,{1},{2}], [Total: {3}/objs,{4},{5}], [{6}].", step.packs, formatBytes(
 					step.bytes), formatMillis(step.millis), total.packs, formatBytes(total.bytes), formatMillis(total.millis), ss);

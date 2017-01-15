@@ -100,4 +100,8 @@ public final class Systems extends Utils {
 	public static String getDefaultCachePathBase() {
 		return System.getProperty("albacore.cache.local.path", "./cache/");
 	}
+
+	public static long sizeOf(Object obj) {
+		return jdk.nashorn.internal.ir.debug.ObjectSizeCalculator.getObjectSize(obj);
+	}
 }
