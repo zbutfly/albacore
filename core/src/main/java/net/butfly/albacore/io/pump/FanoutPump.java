@@ -15,8 +15,8 @@ public class FanoutPump extends PumpImpl {
 		super(source.name() + "-to-" + Joiner.on('-').join(Collections.transform(destinations, d -> d.name())), parallelism);
 		Reflections.noneNull("Pump source/destination should not be null", source);
 		Reflections.noneNull("Pump source/destination should not be null", destinations);
-		depdenencies(source);
-		depdenencies(destinations);
+		sources(source);
+		dests(destinations);
 		pumping(() -> source.empty(), () -> {
 			List<V> l = source.dequeue(batchSize);
 			if (l.size() > 0) {

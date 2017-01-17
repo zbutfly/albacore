@@ -9,6 +9,7 @@ import net.butfly.albacore.utils.key.IdGenerator;
 import net.butfly.albacore.utils.key.ObjectIdGenerator;
 
 public class Keys extends Utils {
+	@SuppressWarnings("rawtypes")
 	private static final Set<Class<? extends IdGenerator>> IDGS = Reflections.getSubClasses(IdGenerator.class);
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })

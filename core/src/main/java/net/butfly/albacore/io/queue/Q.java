@@ -102,8 +102,7 @@ public interface Q<I, O> extends Openable, Serializable {
 		return c;
 	}
 
-	@SuppressWarnings("unchecked")
-	default long enqueue(I... e) {
+	default long enqueue(@SuppressWarnings("unchecked") I... e) {
 		return enqueue(Arrays.asList(e));
 	}
 

@@ -32,11 +32,12 @@ public class OpenableThread extends Thread implements Openable {
 		Openable.super.open();
 		setUncaughtExceptionHandler((t, e) -> logger.error(getName() + " failure", e));
 		super.start();
-		logger.info(name() + " started.");
+		logger.info("started.");
 	}
 
 	@Override
 	public void closing() {
+		logger.info("waiting for closing.");
 		while (this.isAlive() && !this.isInterrupted())
 			Concurrents.waitSleep(100);
 	}
