@@ -74,8 +74,8 @@ class Statistic implements Serializable {
 		total = new Statistic.Result(packsInTotal.get(), bytesInTotal.get(), new Date().getTime() - begin);
 		logger.debug(() -> {
 			String ss = null == detailing ? "" : detailing.get();
-			if (null == ss) ss = "";
-			return MessageFormat.format("Statistic: [Step: {0}/objs,{1},{2}], [Total: {3}/objs,{4},{5}], [{6}].", step.packs, formatBytes(
+			ss = null == ss ? "" : ", [" + ss + "]";
+			return MessageFormat.format("Statistic: [Step: {0}/objs,{1},{2}], [Total: {3}/objs,{4},{5}]{6}.", step.packs, formatBytes(
 					step.bytes), formatMillis(step.millis), total.packs, formatBytes(total.bytes), formatMillis(total.millis), ss);
 		});
 	}

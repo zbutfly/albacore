@@ -50,7 +50,7 @@ abstract class PumpImpl implements Pump {
 					}
 				});
 		for (int i = 0; i < parallelism; i++)
-			threads.add(new OpenableThread(r, name + "[" + i + "]"));
+			threads.add(new OpenableThread(r, name + "-" + i));
 	}
 
 	@Override
