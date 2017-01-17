@@ -10,12 +10,10 @@ public interface Pump extends Statistical<Pump>, Openable {
 
 	Pump batch(long batchSize);
 
-	void terminate();
-
 	@Override
 	default void opening() {
 		// handle kill -15, CTRL-C, kill -9
-		Systems.handleSignal(sig -> terminate(), "TERM", "INT");
+		Systems.handleSignal(sig -> close(), "TERM", "INT");
 		/* , "KILL" */
 		// kill -9 catched by system/os
 	}

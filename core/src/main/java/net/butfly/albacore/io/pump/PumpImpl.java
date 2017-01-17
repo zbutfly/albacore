@@ -60,7 +60,7 @@ abstract class PumpImpl implements Pump {
 					}
 				});
 		for (int i = 0; i < parallelism; i++)
-			threads.add(new OpenableThread(r, name + "-" + i));
+			threads.add(new OpenableThread(r, name + "#" + (i + 1)));
 	}
 
 	@Override
@@ -74,12 +74,25 @@ abstract class PumpImpl implements Pump {
 		Pump.super.opening();
 		for (OpenableThread t : threads)
 			t.start();
-		while (true)
+	}
+
+	@Override
+	public void open() {
+		Pump.super.open();
+		boolean working = false;
+		while (true) {
 			for (OpenableThread t : threads)
-				if (t.isAlive() && !t.isInterrupted()) {
-					Concurrents.waitSleep(500);
-					continue;
-				}
+				working = working || t.isAlive();
+			if (!working) return;
+			else Concurrents.waitSleep(500);
+		}
+	}
+
+	@Override
+	public void closing() {
+		Pump.super.closing();
+		for (OpenableThread t : threads)
+			t.close();
 	}
 
 	@Override
@@ -91,6 +104,9 @@ abstract class PumpImpl implements Pump {
 				logger.error(dep.getClass().getName() + " close failed");
 			}
 		Pump.super.close();
+		for (OpenableThread t : threads)
+			while (t.isAlive())
+				Concurrents.waitSleep();
 		for (AutoCloseable dep : destinations)
 			try {
 				dep.close();
@@ -100,20 +116,8 @@ abstract class PumpImpl implements Pump {
 	}
 
 	@Override
-	public void closing() {
-		for (OpenableThread t : threads)
-			t.close();
-	}
-
-	@Override
-	public void terminate() {
-		for (OpenableThread t : threads)
-			t.interrupt();
-	}
-
-	@Override
 	public String toString() {
-		return "Pump-" + name;
+		return "Pump:" + name;
 	}
 
 	@Override

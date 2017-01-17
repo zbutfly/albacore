@@ -26,7 +26,7 @@ public abstract class Input<O> extends QImpl<Void, O> {
 
 	@Override
 	public <O2> Input<O2> thens(Converter<List<O>, List<O2>> conv) {
-		return new Input<O2>(Input.this.name() + "-Conv") {
+		return new Input<O2>(Input.this.name() + "Conv") {
 			private static final long serialVersionUID = -8694670290655232938L;
 
 			@Override

@@ -73,6 +73,10 @@ public final class Concurrents extends Utils {
 		return waitShutdown(executor, 10, logger);
 	}
 
+	public static boolean waitSleep() {
+		return waitSleep(500);
+	}
+
 	public static boolean waitSleep(long millis) {
 		return waitSleep(millis, null, null);
 	}

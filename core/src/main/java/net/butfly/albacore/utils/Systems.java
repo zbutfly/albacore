@@ -75,7 +75,7 @@ public final class Systems extends Utils {
 				@Override
 				public void run() {
 					setPriority(MAX_PRIORITY);
-					setName("Albacore-GC-Watcher");
+					setName("AlbacoreGCer");
 					while (opened())
 						try {
 							sleep(cms);
@@ -84,12 +84,6 @@ public final class Systems extends Utils {
 							logger.warn(getName() + " interrupted.");
 							return;
 						}
-				}
-
-				@Override
-				public void close() {
-					super.close();
-					logger.info("AlbacoreGC watcher closed.");
 				}
 			};
 			Systems.handleSignal(sig -> w.close(), "TERM", "INT");

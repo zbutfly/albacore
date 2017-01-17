@@ -26,7 +26,7 @@ public abstract class Output<I> extends QImpl<I, Void> {
 
 	@Override
 	public <I0> Output<I0> priors(Converter<List<I0>, List<I>> conv) {
-		return new Output<I0>("Conv-" + Output.this.name()) {
+		return new Output<I0>("Conv" + Output.this.name()) {
 			private static final long serialVersionUID = -3972222736579861184L;
 
 			@Override

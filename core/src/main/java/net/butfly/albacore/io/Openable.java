@@ -14,14 +14,17 @@ public interface Openable extends AutoCloseable {
 		CLOSED, OPENING, OPENED, CLOSING
 	}
 
-	default void opening() {}
+	default void opening() {
+		logger.debug(name() + " opening...");
+	}
 
-	default void closing() {}
+	default void closing() {
+		logger.debug(name() + " closing...");
+	}
 
 	default void open() {
 		AtomicReference<Status> s = STATUS.computeIfAbsent(this, o -> new AtomicReference<Status>(Status.CLOSED));
 		if (s.compareAndSet(Status.CLOSED, Status.OPENING)) {
-			logger.debug(name() + " opening...");
 			opening();
 			if (!s.compareAndSet(Status.OPENING, Status.OPENED)) //
 				throw new RuntimeException("Opened failure since status [" + s.get() + "] not OPENING.");
@@ -34,7 +37,6 @@ public interface Openable extends AutoCloseable {
 	@Override
 	default void close() {
 		if (status().compareAndSet(Status.OPENED, Status.CLOSING)) {
-			logger.debug(name() + " closing...");
 			closing();
 			if (!status().compareAndSet(Status.CLOSING, Status.CLOSED))//
 				throw new RuntimeException("Closed failure since status [" + status().get() + "] not CLOSING.");

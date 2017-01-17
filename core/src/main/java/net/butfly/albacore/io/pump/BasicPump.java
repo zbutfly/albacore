@@ -9,15 +9,17 @@ public class BasicPump extends PumpImpl {
 	private static final long serialVersionUID = 663917114528791086L;
 
 	public <V> BasicPump(Q<?, V> source, Q<V, ?> destination, int parallelism) {
-		super(source.name() + "-to-" + destination.name(), parallelism);
+		super(source.name() + ">" + destination.name(), parallelism);
 		Reflections.noneNull("Pump source/destination should not be null", source, destination);
 		sources(source);
 		dests(destination);
 		pumping(() -> source.empty(), () -> {
-			List<V> l = source.dequeue(batchSize);
-			if (l.size() > 0) {
-				stats(l);
-				destination.enqueue(l);
+			if (source.opened()) {
+				List<V> l = source.dequeue(batchSize);
+				if (l.size() > 0) {
+					stats(l);
+					destination.enqueue(l);
+				}
 			}
 		});
 	}

@@ -1,6 +1,5 @@
 package net.butfly.albacore.io;
 
-import net.butfly.albacore.utils.async.Concurrents;
 import net.butfly.albacore.utils.logger.Logger;
 
 public class OpenableThread extends Thread implements Openable {
@@ -32,14 +31,12 @@ public class OpenableThread extends Thread implements Openable {
 		Openable.super.open();
 		setUncaughtExceptionHandler((t, e) -> logger.error(getName() + " failure", e));
 		super.start();
-		logger.info("started.");
+		logger.info(name() + " started.");
 	}
 
 	@Override
-	public void closing() {
-		logger.info("waiting for closing.");
-		while (this.isAlive() && !this.isInterrupted())
-			Concurrents.waitSleep(100);
+	public void close() {
+		Openable.super.close();
 	}
 
 	@Override

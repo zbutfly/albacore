@@ -13,13 +13,15 @@ public class MapPump extends PumpImpl {
 	private static final long serialVersionUID = 1781793229310906740L;
 
 	public <K, V> MapPump(Q<?, V> source, MapQ<K, V, ?> destination, Converter<V, K> keying, int parallelism) {
-		super(source.name() + "-to-" + destination.name(), parallelism);
+		super(source.name() + ">" + destination.name(), parallelism);
 		Reflections.noneNull("Pump source/destination should not be null", source, destination);
 		pumping(() -> source.empty(), () -> {
-			List<V> l = source.dequeue(batchSize);
-			if (l.size() > 0) {
-				stats(l);
-				destination.enqueue(keying, l);
+			if (source.opened()) {
+				List<V> l = source.dequeue(batchSize);
+				if (l.size() > 0) {
+					stats(l);
+					destination.enqueue(keying, l);
+				}
 			}
 		});
 	}
