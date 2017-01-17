@@ -79,8 +79,8 @@ abstract class PumpImpl implements Pump {
 	@Override
 	public void open() {
 		Pump.super.open();
-		boolean working = false;
 		while (true) {
+			boolean working = false;
 			for (OpenableThread t : threads)
 				working = working || t.isAlive();
 			if (!working) return;
