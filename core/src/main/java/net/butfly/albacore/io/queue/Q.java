@@ -126,7 +126,7 @@ public interface Q<I, O> extends Openable, Serializable {
 	}
 
 	default <O2> Q<I, O2> thens(Converter<List<O>, List<O2>> conv) {
-		return new QImpl<I, O2>(Q.this.name() + "Conv", Q.this.capacity()) {
+		return new QImpl<I, O2>(Q.this.name() + "Then", Q.this.capacity()) {
 			private static final long serialVersionUID = -5894142335125843377L;
 
 			@Override
@@ -156,6 +156,11 @@ public interface Q<I, O> extends Openable, Serializable {
 
 			@Override
 			public void closing() {}
+
+			@Override
+			public String toString() {
+				return Q.this.getClass().getName() + "Then:" + name();
+			}
 		};
 	}
 
@@ -164,7 +169,7 @@ public interface Q<I, O> extends Openable, Serializable {
 	}
 
 	default <I0> Q<I0, O> priors(Converter<List<I0>, List<I>> conv) {
-		return new QImpl<I0, O>("Conv" + Q.this.name(), Q.this.capacity()) {
+		return new QImpl<I0, O>(Q.this.name() + "Prior", Q.this.capacity()) {
 			private static final long serialVersionUID = -2063675795097988806L;
 
 			@Override
@@ -196,7 +201,11 @@ public interface Q<I, O> extends Openable, Serializable {
 
 			@Override
 			public void closing() {}
+
+			@Override
+			public String toString() {
+				return Q.this.getClass().getName() + "Prior:" + name();
+			}
 		};
 	}
-
 }
