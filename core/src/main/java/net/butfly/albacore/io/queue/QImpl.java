@@ -23,4 +23,9 @@ public abstract class QImpl<I, O> implements Q<I, O> {
 	public final long capacity() {
 		return capacity.get();
 	}
+
+	@Override
+	public String toString() {
+		return getClass().getName() + ":" + name();
+	}
 }
