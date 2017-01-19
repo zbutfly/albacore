@@ -1,5 +1,9 @@
 package net.butfly.albacore.io;
 
+import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
+import net.butfly.albacore.utils.Pair;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -7,19 +11,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
-import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableList;
-
-import net.butfly.albacore.utils.Pair;
-
-public final class URISpec {
-	private final List<String> schemes;
-	private final String username;
-	private final String password;
-	private final List<Pair<String, Integer>> hosts;
-	private final List<String> paths;
-	private final Properties query;
-	private final String fragment;
+public  class URISpec {
+	protected final List<String> schemes;
+    protected final String username;
+    protected final String password;
+    protected final List<Pair<String, Integer>> hosts;
+    protected final List<String> paths;
+    protected final Properties query;
+    protected final String fragment;
 
 	public URISpec(String str) {
 		this(str, -1);
