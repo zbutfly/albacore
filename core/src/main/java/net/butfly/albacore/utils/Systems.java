@@ -73,12 +73,13 @@ public final class Systems extends Utils {
 				cms = 500;
 			} else logger.info("Manually gc interval " + cms + " ms.");
 			this.cms = cms;
+			setPriority(MAX_PRIORITY);
+			setName("AlbacoreGCer");
+			setDaemon(true);
 		}
 
 		@Override
 		protected void exec() {
-			setPriority(MAX_PRIORITY);
-			setName("AlbacoreGCer");
 			while (opened())
 				try {
 					sleep(cms);
