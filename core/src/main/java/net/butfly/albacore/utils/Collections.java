@@ -19,9 +19,12 @@ public final class Collections extends Utils {
 
 	public static <T, R> List<R> transform(Collection<T> original, Converter<T, R> trans) {
 		if (original == null) return null;
-		List<R> r = new ArrayList<>(original.size());
-		original.forEach(o -> r.add(trans.apply(o)));
-		return r;
+		return original.parallelStream().map(trans).collect(Collectors.toList());
+	}
+
+	public static <T> List<T> cleanNull(Collection<T> original) {
+		if (original == null) return null;
+		return original.parallelStream().filter(t -> t != null).collect(Collectors.toList());
 	}
 
 	@SafeVarargs
