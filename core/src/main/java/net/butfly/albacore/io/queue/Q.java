@@ -12,7 +12,6 @@ import net.butfly.albacore.io.pump.Pump;
 import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.utils.Collections;
 import net.butfly.albacore.utils.async.Concurrents;
-import net.butfly.albacore.utils.logger.Logger;
 
 /**
  * Rich feature queue for big data processing, supporting:
@@ -43,7 +42,6 @@ import net.butfly.albacore.utils.logger.Logger;
  *
  */
 public interface Q<I, O> extends Openable, Serializable {
-	static final Logger logger = Logger.getLogger(Q.class);
 	static final long INFINITE_SIZE = -1;
 	static final long FULL_WAIT_MS = 500;
 	static final long EMPTY_WAIT_MS = 500;
@@ -97,7 +95,7 @@ public interface Q<I, O> extends Openable, Serializable {
 		for (I e : items)
 			if (null != e) {
 				if (enqueue0(e)) c++;
-				else logger.warn("Q enqueue failure though not full before, item maybe lost");
+				else logger().warn("Q enqueue failure though not full before, item maybe lost");
 			}
 		return c;
 	}
@@ -155,6 +153,16 @@ public interface Q<I, O> extends Openable, Serializable {
 			}
 
 			@Override
+			public boolean empty() {
+				return Q.this.empty();
+			}
+
+			@Override
+			public boolean full() {
+				return Q.this.full();
+			}
+
+			@Override
 			public void closing() {}
 
 			@Override
@@ -197,6 +205,16 @@ public interface Q<I, O> extends Openable, Serializable {
 			@Override
 			public long size() {
 				return Q.this.size();
+			}
+
+			@Override
+			public boolean empty() {
+				return Q.this.empty();
+			}
+
+			@Override
+			public boolean full() {
+				return Q.this.full();
 			}
 
 			@Override

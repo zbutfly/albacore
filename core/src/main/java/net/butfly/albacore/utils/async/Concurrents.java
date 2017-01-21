@@ -25,6 +25,7 @@ import net.butfly.albacore.utils.Instances;
 import net.butfly.albacore.utils.Systems;
 import net.butfly.albacore.utils.Utils;
 import net.butfly.albacore.utils.logger.Logger;
+import net.butfly.albacore.lambda.Runnable;
 
 public final class Concurrents extends Utils {
 	private static final Logger logger = Logger.getLogger(Concurrents.class);
@@ -194,22 +195,6 @@ public final class Concurrents extends Utils {
 			if (c < 5) logger.warn("Albacore task concurrence configuration too small (" + c + "), debugging? ");
 			return Executors.newFixedThreadPool(c, fac);
 		}
-	}
-
-	public static Runnable forever(Runnable... then) {
-		return () -> {
-			while (true)
-				for (Runnable t : then)
-					t.run();
-		};
-	}
-
-	public static Runnable until(Supplier<Boolean> stopping, Runnable... then) {
-		return () -> {
-			while (!stopping.get())
-				for (Runnable t : then)
-					t.run();
-		};
 	}
 
 	public static <T> List<T> successfulList(List<? extends java.util.concurrent.Callable<T>> tasks, int parallelism) {

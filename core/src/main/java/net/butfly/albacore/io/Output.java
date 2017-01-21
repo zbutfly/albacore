@@ -47,6 +47,11 @@ public abstract class Output<I> extends QImpl<I, Void> {
 			}
 
 			@Override
+			public boolean full() {
+				return Output.this.full();
+			}
+
+			@Override
 			public void closing() {}
 
 			@Override

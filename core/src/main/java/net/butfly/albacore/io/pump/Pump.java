@@ -3,11 +3,8 @@ package net.butfly.albacore.io.pump;
 import net.butfly.albacore.io.Openable;
 import net.butfly.albacore.io.stats.Statistical;
 import net.butfly.albacore.utils.Systems;
-import net.butfly.albacore.utils.logger.Logger;
 
 public interface Pump extends Statistical<Pump>, Openable {
-	final static Logger logger = Logger.getLogger(Pump.class);
-
 	Pump batch(long batchSize);
 
 	@Override

@@ -63,31 +63,47 @@ public final class Systems extends Utils {
 			}).add(handler);
 	}
 
-	static {
-		long ms = Long.parseLong(System.getProperty("albacore.gc.interval.ms", "1000"));
-		if (ms > 0) {
-			if (ms < 500) {
+	private static class GCMonitor extends OpenableThread {
+		private final long cms;
+
+		public GCMonitor(long cms) {
+			super();
+			if (cms < 500) {
 				logger.warn("Manually gc interval less 500 ms and too small. reset to 500 ms");
-				ms = 500;
-			} else logger.info("Manually gc interval " + ms + " ms.");
-			final long cms = ms;
-			OpenableThread w = new OpenableThread() {
-				@Override
-				public void run() {
-					setPriority(MAX_PRIORITY);
-					setName("AlbacoreGCer");
-					while (opened())
-						try {
-							sleep(cms);
-							System.gc();
-						} catch (InterruptedException e) {
-							logger.warn(getName() + " interrupted.");
-							return;
-						}
+				cms = 500;
+			} else logger.info("Manually gc interval " + cms + " ms.");
+			this.cms = cms;
+		}
+
+		@Override
+		protected void exec() {
+			setPriority(MAX_PRIORITY);
+			setName("AlbacoreGCer");
+			while (opened())
+				try {
+					sleep(cms);
+					System.gc();
+				} catch (InterruptedException e) {
+					logger.warn(getName() + " interrupted.");
+					return;
 				}
-			};
-			Systems.handleSignal(sig -> w.close(), "TERM", "INT");
+		}
+	}
+
+	private static GCMonitor w = null;
+
+	public static void enableGC() {
+		if (w == null) {
+			long ms = Long.parseLong(System.getProperty("albacore.gc.interval.ms", "1000"));
+			if (ms > 0) w = new GCMonitor(ms);
 			w.start();
+			Systems.handleSignal(sig -> w.close(), "TERM", "INT");
+		}
+	}
+
+	public static void disableGC() {
+		if (w != null) {
+			w.close();
 		}
 	}
 

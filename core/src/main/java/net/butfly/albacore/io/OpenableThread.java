@@ -1,9 +1,12 @@
 package net.butfly.albacore.io;
 
-import net.butfly.albacore.utils.logger.Logger;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import net.butfly.albacore.lambda.Runnable;
+import net.butfly.albacore.utils.async.Concurrents;
 
 public class OpenableThread extends Thread implements Openable {
-	private static final Logger logger = Logger.getLogger(OpenableThread.class);
+	private final AtomicBoolean started = new AtomicBoolean(false);
 
 	public OpenableThread() {
 		super();
@@ -22,21 +25,27 @@ public class OpenableThread extends Thread implements Openable {
 	}
 
 	@Override
+	public final void run() {
+		started.set(true);
+		exec();
+	}
+
+	protected void exec() {
+		super.run();
+	}
+
+	@Override
 	public final String name() {
 		return getName();
 	}
 
 	@Override
 	public void open() {
+		setUncaughtExceptionHandler((t, e) -> logger().error(getName() + " failure", e));
 		Openable.super.open();
-		setUncaughtExceptionHandler((t, e) -> logger.error(getName() + " failure", e));
 		super.start();
-		logger.info(name() + " started.");
-	}
-
-	@Override
-	public void close() {
-		Openable.super.close();
+		while (!started.get())
+			Concurrents.waitSleep(100);
 	}
 
 	@Override

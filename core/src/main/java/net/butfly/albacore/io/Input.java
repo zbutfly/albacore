@@ -50,6 +50,11 @@ public abstract class Input<O> extends QImpl<Void, O> {
 			}
 
 			@Override
+			public boolean empty() {
+				return Input.this.empty();
+			}
+
+			@Override
 			public void closing() {}
 
 			@Override

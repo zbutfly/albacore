@@ -7,6 +7,7 @@ import java.util.List;
 import com.google.common.base.Supplier;
 
 import net.butfly.albacore.io.OpenableThread;
+import net.butfly.albacore.lambda.Runnable;
 import net.butfly.albacore.utils.async.Concurrents;
 
 abstract class PumpImpl implements Pump {
@@ -25,12 +26,13 @@ abstract class PumpImpl implements Pump {
 	private final List<AutoCloseable> destinations;
 
 	protected PumpImpl(String name, int parallelism) {
+		super();
 		// running = new AtomicInteger(STATUS_OTHER);
 		this.name = name;
 		this.parallelism = parallelism;
 		sources = new ArrayList<>();
 		destinations = new ArrayList<>();
-		logger.info("Pump [" + name + "] created with parallelism: " + parallelism);
+		logger().info("Pump [" + name + "] created with parallelism: " + parallelism);
 	}
 
 	protected final void sources(List<? extends AutoCloseable> sources) {
@@ -50,15 +52,16 @@ abstract class PumpImpl implements Pump {
 	}
 
 	protected final void pumping(Supplier<Boolean> sourceEmpty, Runnable pumping) {
-		Runnable r = Concurrents.until(//
-				() -> !opened() && (closed() || sourceEmpty.get()), //
-				() -> {
-					try {
-						pumping.run();
-					} catch (Throwable th) {
-						logger.error("Pump processing failure", th);
-					}
-				});
+		Runnable r = () -> {
+			try {
+				pumping.run();
+			} catch (Throwable th) {
+				logger().error("Pump processing failure", th);
+			}
+		};
+		r = r.until(() -> {
+			return !opened() || sourceEmpty.get();
+		});
 		for (int i = 0; i < parallelism; i++)
 			threads.add(new OpenableThread(r, name + "#" + (i + 1)));
 	}
@@ -70,15 +73,10 @@ abstract class PumpImpl implements Pump {
 	}
 
 	@Override
-	public final void opening() {
-		Pump.super.opening();
-		for (OpenableThread t : threads)
-			t.start();
-	}
-
-	@Override
 	public void open() {
 		Pump.super.open();
+		for (OpenableThread t : threads)
+			t.open();
 		while (true) {
 			boolean working = false;
 			for (OpenableThread t : threads)
@@ -91,17 +89,17 @@ abstract class PumpImpl implements Pump {
 	@Override
 	public void closing() {
 		Pump.super.closing();
-		for (OpenableThread t : threads)
-			t.close();
 	}
 
 	@Override
 	public void close() {
+		for (OpenableThread t : threads)
+			t.close();
 		for (AutoCloseable dep : sources)
 			try {
 				dep.close();
 			} catch (Exception e) {
-				logger.error(dep.getClass().getName() + " close failed");
+				logger().error(dep.getClass().getName() + " close failed");
 			}
 		Pump.super.close();
 		for (OpenableThread t : threads)
@@ -111,7 +109,7 @@ abstract class PumpImpl implements Pump {
 			try {
 				dep.close();
 			} catch (Exception e) {
-				logger.error(dep.getClass().getName() + " close failed");
+				logger().error(dep.getClass().getName() + " close failed");
 			}
 	}
 
