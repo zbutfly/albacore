@@ -52,4 +52,11 @@ public class OpenableThread extends Thread implements Openable {
 	public void start() {
 		open();
 	}
+
+	@Override
+	public void close() {
+		Openable.super.close();
+		while (isAlive() && !isInterrupted())
+			Concurrents.waitSleep(100);
+	}
 }

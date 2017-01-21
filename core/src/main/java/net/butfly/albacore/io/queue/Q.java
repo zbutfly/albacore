@@ -166,6 +166,11 @@ public interface Q<I, O> extends Openable, Serializable {
 			public String toString() {
 				return Q.this.getClass().getName() + "Then:" + name();
 			}
+
+			@Override
+			public void close() {
+				Q.this.close();
+			}
 		};
 	}
 
@@ -217,6 +222,11 @@ public interface Q<I, O> extends Openable, Serializable {
 			@Override
 			public String toString() {
 				return Q.this.getClass().getName() + "Prior:" + name();
+			}
+
+			@Override
+			public void close() {
+				Q.this.close();
 			}
 		};
 	}

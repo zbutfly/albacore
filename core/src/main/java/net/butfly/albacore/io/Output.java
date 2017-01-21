@@ -55,6 +55,12 @@ public abstract class Output<I> extends QImpl<I, Void> {
 			public String toString() {
 				return Output.this.getClass().getName() + "Prior:" + name();
 			}
+
+			@Override
+			public void close() {
+				Output.super.close();
+				Output.this.close();
+			}
 		};
 	}
 

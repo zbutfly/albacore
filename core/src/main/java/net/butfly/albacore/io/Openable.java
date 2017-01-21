@@ -4,21 +4,11 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
-import net.butfly.albacore.utils.logger.Loggable;
-
-public interface Openable extends AutoCloseable, Loggable {
+public interface Openable extends AutoCloseable, Opening {
 	final static Map<Openable, AtomicReference<Status>> STATUS = new ConcurrentHashMap<>();
 
 	enum Status {
 		CLOSED, OPENING, OPENED, CLOSING
-	}
-
-	default void opening() {
-		logger().debug(name() + " opening...");
-	}
-
-	default void closing() {
-		logger().debug(name() + " closing...");
 	}
 
 	default void open() {
@@ -61,10 +51,6 @@ public interface Openable extends AutoCloseable, Loggable {
 
 	default AtomicReference<Status> status() {
 		return STATUS.getOrDefault(this, new AtomicReference<>(Status.CLOSED));
-	}
-
-	default String name() {
-		return getClass().getSimpleName();
 	}
 
 	default boolean opened() {

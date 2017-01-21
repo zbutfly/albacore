@@ -58,6 +58,12 @@ public abstract class Input<O> extends QImpl<Void, O> {
 			public String toString() {
 				return Input.this.getClass().getName() + "Then:" + name();
 			}
+
+			@Override
+			public void close() {
+				Input.super.close();
+				Input.this.close();
+			}
 		};
 	}
 
