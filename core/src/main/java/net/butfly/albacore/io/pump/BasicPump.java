@@ -3,6 +3,7 @@ package net.butfly.albacore.io.pump;
 import java.util.List;
 
 import net.butfly.albacore.io.queue.Q;
+import net.butfly.albacore.utils.Collections;
 import net.butfly.albacore.utils.Reflections;
 
 public class BasicPump extends PumpImpl {
@@ -15,7 +16,7 @@ public class BasicPump extends PumpImpl {
 		dests(destination);
 		pumping(() -> source.empty(), () -> {
 			if (source.opened()) {
-				List<V> l = source.dequeue(batchSize);
+				List<V> l = Collections.cleanNull(source.dequeue(batchSize));
 				if (l.size() > 0) {
 					stats(l);
 					destination.enqueue(l);

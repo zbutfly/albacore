@@ -19,7 +19,7 @@ public class FanoutPump extends PumpImpl {
 		dests(destinations);
 		pumping(() -> source.empty(), () -> {
 			if (source.opened()) {
-				List<V> l = source.dequeue(batchSize);
+				List<V> l = Collections.cleanNull(source.dequeue(batchSize));
 				if (l.size() > 0) {
 					stats(l);
 					for (Q<V, ?> q : destinations)
