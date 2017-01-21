@@ -87,11 +87,6 @@ abstract class PumpImpl implements Pump {
 	}
 
 	@Override
-	public void closing() {
-		Pump.super.closing();
-	}
-
-	@Override
 	public void close() {
 		for (OpenableThread t : threads)
 			t.close();

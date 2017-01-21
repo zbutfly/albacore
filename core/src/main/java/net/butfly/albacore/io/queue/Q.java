@@ -163,9 +163,6 @@ public interface Q<I, O> extends Openable, Serializable {
 			}
 
 			@Override
-			public void closing() {}
-
-			@Override
 			public String toString() {
 				return Q.this.getClass().getName() + "Then:" + name();
 			}
@@ -216,9 +213,6 @@ public interface Q<I, O> extends Openable, Serializable {
 			public boolean full() {
 				return Q.this.full();
 			}
-
-			@Override
-			public void closing() {}
 
 			@Override
 			public String toString() {

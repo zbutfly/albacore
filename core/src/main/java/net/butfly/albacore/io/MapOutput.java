@@ -20,7 +20,8 @@ public abstract class MapOutput<K, I> extends Output<I> implements MapQ<K, I, Vo
 	}
 
 	@Override
-	public void closing() {
+	public void close() {
+		super.close();
 		for (K k : keys()) {
 			Q<I, Void> q = q(k);
 			if (null != q) q.close();

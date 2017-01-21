@@ -9,6 +9,7 @@ import java.util.Set;
 import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.utils.Collections;
 
+@Deprecated
 public abstract class MapQImpl<K, I, O> extends QImpl<I, O> implements MapQ<K, I, O> {
 	private static final long serialVersionUID = -1;
 	private final Map<K, ? extends QImpl<I, O>> queues;
@@ -37,7 +38,8 @@ public abstract class MapQImpl<K, I, O> extends QImpl<I, O> implements MapQ<K, I
 	}
 
 	@Override
-	public void closing() {
+	public void close() {
+		super.close();
 		for (K k : keys()) {
 			Q<I, O> q = q(k);
 			if (null != q) q.close();
