@@ -4,7 +4,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
-public interface Openable extends AutoCloseable, Opening {
+import net.butfly.albacore.utils.logger.Loggable;
+
+public interface Openable extends AutoCloseable, Loggable, Named {
 	final static Map<Openable, AtomicReference<Status>> STATUS = new ConcurrentHashMap<>();
 
 	enum Status {
@@ -14,7 +16,7 @@ public interface Openable extends AutoCloseable, Opening {
 	default void open() {
 		AtomicReference<Status> s = STATUS.computeIfAbsent(this, o -> new AtomicReference<Status>(Status.CLOSED));
 		if (s.compareAndSet(Status.CLOSED, Status.OPENING)) {
-			opening();
+			logger().debug(name() + " opening...");
 			if (!s.compareAndSet(Status.OPENING, Status.OPENED)) //
 				throw new RuntimeException("Opened failure since status [" + s.get() + "] not OPENING.");
 			logger().debug(name() + " opened.");
@@ -26,7 +28,7 @@ public interface Openable extends AutoCloseable, Opening {
 	@Override
 	default void close() {
 		if (status().compareAndSet(Status.OPENED, Status.CLOSING)) {
-			closing();
+			logger().debug(name() + " closing...");
 			if (!status().compareAndSet(Status.CLOSING, Status.CLOSED))//
 				throw new RuntimeException("Closed failure since status [" + status().get() + "] not CLOSING.");
 			logger().debug(name() + " closed.");

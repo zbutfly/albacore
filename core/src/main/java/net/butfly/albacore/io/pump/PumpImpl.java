@@ -77,17 +77,13 @@ abstract class PumpImpl implements Pump {
 		Pump.super.open();
 		for (OpenableThread t : threads)
 			t.open();
-		while (true) {
-			boolean working = false;
-			for (OpenableThread t : threads)
-				working = working || t.isAlive();
-			if (!working) return;
-			else Concurrents.waitSleep(500);
-		}
+		while (opened())
+			Concurrents.waitSleep(500);
 	}
 
 	@Override
 	public void close() {
+		Pump.super.close();
 		for (OpenableThread t : threads)
 			t.close();
 		for (AutoCloseable dep : sources)
@@ -96,7 +92,6 @@ abstract class PumpImpl implements Pump {
 			} catch (Exception e) {
 				logger().error(dep.getClass().getName() + " close failed");
 			}
-		Pump.super.close();
 		for (OpenableThread t : threads)
 			while (t.isAlive())
 				Concurrents.waitSleep();
