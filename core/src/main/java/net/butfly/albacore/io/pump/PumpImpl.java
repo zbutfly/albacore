@@ -3,6 +3,8 @@ package net.butfly.albacore.io.pump;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.common.base.Supplier;
 
@@ -19,36 +21,26 @@ abstract class PumpImpl implements Pump {
 	protected final String name;
 	private final int parallelism;
 	// protected final AtomicInteger running;
-	protected final List<OpenableThread> threads = new ArrayList<>();
+	protected final Map<String, OpenableThread> threads = new ConcurrentHashMap<>();
 
 	protected long batchSize = 1000;
-	private final List<AutoCloseable> sources;
-	private final List<AutoCloseable> destinations;
+	private final List<AutoCloseable> dependencies;
 
 	protected PumpImpl(String name, int parallelism) {
 		super();
 		// running = new AtomicInteger(STATUS_OTHER);
 		this.name = name;
 		this.parallelism = parallelism;
-		sources = new ArrayList<>();
-		destinations = new ArrayList<>();
+		dependencies = new ArrayList<>();
 		logger().info("Pump [" + name + "] created with parallelism: " + parallelism);
 	}
 
-	protected final void sources(List<? extends AutoCloseable> sources) {
-		this.sources.addAll(sources);
+	protected final void depend(List<? extends AutoCloseable> dependencies) {
+		this.dependencies.addAll(dependencies);
 	}
 
-	protected final void dests(List<? extends AutoCloseable> destinations) {
-		this.destinations.addAll(destinations);
-	}
-
-	protected final void dests(AutoCloseable... destinations) {
-		dests(Arrays.asList(destinations));
-	}
-
-	protected final void sources(AutoCloseable... sources) {
-		sources(Arrays.asList(sources));
+	protected final void depend(AutoCloseable... dependencies) {
+		depend(Arrays.asList(dependencies));
 	}
 
 	protected final void pumping(Supplier<Boolean> sourceEmpty, Runnable pumping) {
@@ -59,11 +51,14 @@ abstract class PumpImpl implements Pump {
 				logger().error("Pump processing failure", th);
 			}
 		};
-		r = r.until(() -> {
-			return !opened() || sourceEmpty.get();
-		});
-		for (int i = 0; i < parallelism; i++)
-			threads.add(new OpenableThread(r, name + "#" + (i + 1)));
+		for (int i = 0; i < parallelism; i++) {
+			String threadName = name + "#" + (i + 1);
+			threads.put(threadName, new OpenableThread(r.until(() -> {
+				return !opened() || sourceEmpty.get();
+			}).then(() -> {
+				threads.remove(threadName);
+			}), threadName));
+		}
 	}
 
 	@Override
@@ -75,27 +70,18 @@ abstract class PumpImpl implements Pump {
 	@Override
 	public void open() {
 		Pump.super.open();
-		for (OpenableThread t : threads)
+		for (OpenableThread t : threads.values())
 			t.open();
-		while (opened())
+		while (opened() && !threads.isEmpty())
 			Concurrents.waitSleep(500);
 	}
 
 	@Override
 	public void close() {
 		Pump.super.close();
-		for (OpenableThread t : threads)
+		for (OpenableThread t : threads.values())
 			t.close();
-		for (AutoCloseable dep : sources)
-			try {
-				dep.close();
-			} catch (Exception e) {
-				logger().error(dep.getClass().getName() + " close failed");
-			}
-		for (OpenableThread t : threads)
-			while (t.isAlive())
-				Concurrents.waitSleep();
-		for (AutoCloseable dep : destinations)
+		for (AutoCloseable dep : dependencies)
 			try {
 				dep.close();
 			} catch (Exception e) {

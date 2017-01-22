@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
+import net.butfly.albacore.utils.async.Concurrents;
 import net.butfly.albacore.utils.logger.Loggable;
 
 public interface Openable extends AutoCloseable, Loggable, Named {
@@ -16,39 +17,30 @@ public interface Openable extends AutoCloseable, Loggable, Named {
 	default void open() {
 		AtomicReference<Status> s = STATUS.computeIfAbsent(this, o -> new AtomicReference<Status>(Status.CLOSED));
 		if (s.compareAndSet(Status.CLOSED, Status.OPENING)) {
-			logger().debug(name() + " opening...");
+			logger().trace(name() + " opening...");
 			if (!s.compareAndSet(Status.OPENING, Status.OPENED)) //
 				throw new RuntimeException("Opened failure since status [" + s.get() + "] not OPENING.");
-			logger().debug(name() + " opened.");
 		}
 		if (s.get() != Status.OPENED) //
 			throw new RuntimeException("Start failure since status [" + s.get() + "] not OPENED.");
+		logger().debug(name() + " opened.");
 	}
 
 	@Override
 	default void close() {
-		if (status().compareAndSet(Status.OPENED, Status.CLOSING)) {
-			logger().debug(name() + " closing...");
-			if (!status().compareAndSet(Status.CLOSING, Status.CLOSED))//
-				throw new RuntimeException("Closed failure since status [" + status().get() + "] not CLOSING.");
-			logger().debug(name() + " closed.");
-		}
-		if (status().get() != Status.CLOSED) //
-			throw new RuntimeException("Closing failure since status [" + status().get() + "] not OPENED.");
-		else STATUS.remove(this);
+		close(null);
 	}
 
 	default void close(Runnable closing) {
 		if (status().compareAndSet(Status.OPENED, Status.CLOSING)) {
-			logger().debug(name() + " closing...");
-			closing.run();
-			if (!status().compareAndSet(Status.CLOSING, Status.CLOSED))//
-				throw new RuntimeException("Closed failure since status [" + status().get() + "] not CLOSING.");
-			logger().debug(name() + " closed.");
-		}
-		if (status().get() != Status.CLOSED) //
-			throw new RuntimeException("Closing failure since status [" + status().get() + "] not OPENED.");
-		else STATUS.remove(this);
+			logger().trace(name() + " closing...");
+			if (null != closing) closing.run();
+			status().compareAndSet(Status.CLOSING, Status.CLOSED);
+		} else logger().warn(name() + " closing again?");
+		while (!closed())
+			Concurrents.waitSleep(500, logger(), "Waiting for closing finished...");
+		STATUS.remove(this);
+		logger().debug(name() + " closed.");
 	}
 
 	default AtomicReference<Status> status() {
