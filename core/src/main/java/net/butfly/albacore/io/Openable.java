@@ -8,14 +8,13 @@ import net.butfly.albacore.utils.async.Concurrents;
 import net.butfly.albacore.utils.logger.Loggable;
 
 public interface Openable extends AutoCloseable, Loggable, Named {
-	final static Map<Openable, AtomicReference<Status>> STATUS = new ConcurrentHashMap<>();
 
 	enum Status {
 		CLOSED, OPENING, OPENED, CLOSING
 	}
 
 	default void open() {
-		AtomicReference<Status> s = STATUS.computeIfAbsent(this, o -> new AtomicReference<Status>(Status.CLOSED));
+		AtomicReference<Status> s = Opened.STATUS.computeIfAbsent(this, o -> new AtomicReference<Status>(Status.CLOSED));
 		if (s.compareAndSet(Status.CLOSED, Status.OPENING)) {
 			logger().trace(name() + " opening...");
 			if (!s.compareAndSet(Status.OPENING, Status.OPENED)) //
@@ -23,7 +22,7 @@ public interface Openable extends AutoCloseable, Loggable, Named {
 		}
 		if (s.get() != Status.OPENED) //
 			throw new RuntimeException("Start failure since status [" + s.get() + "] not OPENED.");
-		logger().debug(name() + " opened.");
+		logger().trace(name() + " opened.");
 	}
 
 	@Override
@@ -32,26 +31,35 @@ public interface Openable extends AutoCloseable, Loggable, Named {
 	}
 
 	default void close(Runnable closing) {
-		if (status().compareAndSet(Status.OPENED, Status.CLOSING)) {
+		AtomicReference<Status> s = Opened.status(this);
+		if (s.compareAndSet(Status.OPENED, Status.CLOSING)) {
 			logger().trace(name() + " closing...");
 			if (null != closing) closing.run();
-			status().compareAndSet(Status.CLOSING, Status.CLOSED);
+			s.compareAndSet(Status.CLOSING, Status.CLOSED);
 		} else logger().warn(name() + " closing again?");
 		while (!closed())
 			Concurrents.waitSleep(500, logger(), "Waiting for closing finished...");
-		STATUS.remove(this);
-		logger().debug(name() + " closed.");
+		Opened.STATUS.remove(this);
+		logger().trace(name() + " closed.");
 	}
 
-	default AtomicReference<Status> status() {
-		return STATUS.getOrDefault(this, new AtomicReference<>(Status.CLOSED));
+	default Status status() {
+		return Opened.status(this).get();
 	}
 
 	default boolean opened() {
-		return status().get() == Status.OPENED;
+		return status() == Status.OPENED;
 	}
 
 	default boolean closed() {
-		return status().get() == Status.CLOSED;
+		return status() == Status.CLOSED;
+	}
+
+	class Opened {
+		private final static Map<Openable, AtomicReference<Status>> STATUS = new ConcurrentHashMap<>();
+
+		private static AtomicReference<Status> status(Openable inst) {
+			return Opened.STATUS.getOrDefault(inst, new AtomicReference<>(Status.CLOSED));
+		}
 	}
 }
