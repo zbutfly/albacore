@@ -11,14 +11,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
-public  class URISpec {
+public class URISpec {
 	protected final List<String> schemes;
-    protected final String username;
-    protected final String password;
-    protected final List<Pair<String, Integer>> hosts;
-    protected final List<String> paths;
-    protected final Properties query;
-    protected final String fragment;
+	protected final String username;
+	protected final String password;
+	protected final List<Pair<String, Integer>> hosts;
+	protected final List<String> paths;
+	protected final Properties query;
+	protected final String fragment;
 
 	public URISpec(String str) {
 		this(str, -1);
