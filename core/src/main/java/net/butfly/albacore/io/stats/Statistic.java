@@ -58,7 +58,7 @@ class Statistic implements Serializable {
 	}
 
 	void stats(Object v) {
-		Long l = null == sizing ? 0L : sizing.apply(v);
+		Long l = sizing == null || v == null ? 0L : sizing.apply(v);
 		stats(null == l ? 0 : l.longValue());
 	}
 

@@ -23,6 +23,19 @@ public final class Collections extends Utils {
 	}
 
 	/**
+	 * Transform Without Both I/O Null<br>
+	 * Filter null and transform (map) collection and filter null again
+	 * 
+	 * @param original
+	 * @param trans
+	 * @return
+	 */
+	public static <T, R> List<R> transN(Collection<T> original, Converter<T, R> trans) {
+		if (original == null) return null;
+		return original.parallelStream().filter(t -> t != null).map(trans).filter(t -> t != null).collect(Collectors.toList());
+	}
+
+	/**
 	 * Transform Without Null<br>
 	 * Filter null and transform (map) collection
 	 * 
@@ -48,7 +61,7 @@ public final class Collections extends Utils {
 		return original.parallelStream().map(trans).filter(t -> t != null).collect(Collectors.toList());
 	}
 
-	public static <T> List<T> cleanNull(Collection<T> original) {
+	public static <T> List<T> noNull(Collection<T> original) {
 		if (original == null) return null;
 		return original.parallelStream().filter(t -> t != null).collect(Collectors.toList());
 	}
