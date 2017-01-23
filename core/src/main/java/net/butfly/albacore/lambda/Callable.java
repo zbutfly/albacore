@@ -3,7 +3,7 @@ package net.butfly.albacore.lambda;
 import java.io.Serializable;
 
 @FunctionalInterface
-public interface Callable<V> extends java.util.concurrent.Callable<V>, Serializable {
+public interface Callable<V> extends java.util.concurrent.Callable<V>, Supplier<V>, Serializable {
 	/**
 	 * Computes a result, or throws an exception if unable to do so.
 	 *
@@ -13,4 +13,14 @@ public interface Callable<V> extends java.util.concurrent.Callable<V>, Serializa
 	 */
 	@Override
 	V call() throws Exception;
+
+	default V get() {
+		try {
+			return call();
+		} catch (RuntimeException e) {
+			throw e;
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
 }
