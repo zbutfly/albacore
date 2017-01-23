@@ -14,9 +14,14 @@ public interface Openable extends AutoCloseable, Loggable, Named {
 	}
 
 	default void open() {
+		open(null);
+	}
+
+	default void open(Runnable opening) {
 		AtomicReference<Status> s = Opened.STATUS.computeIfAbsent(this, o -> new AtomicReference<Status>(Status.CLOSED));
 		if (s.compareAndSet(Status.CLOSED, Status.OPENING)) {
 			logger().trace(name() + " opening...");
+			if (null != opening) opening.run();
 			if (!s.compareAndSet(Status.OPENING, Status.OPENED)) //
 				throw new RuntimeException("Opened failure since status [" + s.get() + "] not OPENING.");
 		}
