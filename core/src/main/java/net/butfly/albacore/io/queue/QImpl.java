@@ -6,6 +6,13 @@ public abstract class QImpl<I, O> implements Q<I, O> {
 	private final String name;
 	private final AtomicLong capacity;
 
+	protected QImpl(long capacity) {
+		super();
+		this.name = Q.super.name();
+		this.capacity = new AtomicLong(capacity);
+		open();
+	}
+
 	protected QImpl(String name, long capacity) {
 		super();
 		this.name = name;
@@ -25,6 +32,6 @@ public abstract class QImpl<I, O> implements Q<I, O> {
 
 	@Override
 	public String toString() {
-		return getClass().getName() + ":" + name();
+		return name();
 	}
 }
