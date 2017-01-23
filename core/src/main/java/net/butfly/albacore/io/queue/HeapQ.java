@@ -7,7 +7,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import net.butfly.albacore.lambda.Converter;
 
 public class HeapQ<I, O> extends QImpl<I, O> {
-	private static final long serialVersionUID = -1;
 	protected final BlockingQueue<O> impl;
 	private Converter<I, O> conv;
 

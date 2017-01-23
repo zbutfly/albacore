@@ -1,14 +1,8 @@
 package net.butfly.albacore.io.std;
 
-import net.butfly.albacore.io.Output;
+import net.butfly.albacore.io.OutputImpl;
 
-public class ConsoleOutput extends Output<String> {
-	private static final long serialVersionUID = 7782039002400807964L;
-
-	public ConsoleOutput() {
-		super("CONSOLE-OUTPUT-QUEUE");
-	}
-
+public class ConsoleOutput extends OutputImpl<String> {
 	@Override
 	public boolean enqueue0(String s) {
 		System.out.println(s);

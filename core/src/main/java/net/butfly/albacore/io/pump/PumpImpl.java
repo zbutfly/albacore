@@ -8,11 +8,12 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.common.base.Supplier;
 
+import net.butfly.albacore.base.Namedly;
 import net.butfly.albacore.io.OpenableThread;
 import net.butfly.albacore.lambda.Runnable;
 import net.butfly.albacore.utils.async.Concurrents;
 
-abstract class PumpImpl implements Pump {
+abstract class PumpImpl extends Namedly implements Pump {
 	private static final long serialVersionUID = 5115726180980986678L;
 	protected static final int STATUS_OTHER = 0;
 	protected static final int STATUS_RUNNING = 1;
@@ -20,7 +21,6 @@ abstract class PumpImpl implements Pump {
 
 	protected final String name;
 	private final int parallelism;
-	// protected final AtomicInteger running;
 	protected final Map<String, OpenableThread> threads = new ConcurrentHashMap<>();
 	protected final ThreadGroup threadGroup;
 
@@ -28,8 +28,7 @@ abstract class PumpImpl implements Pump {
 	private final List<AutoCloseable> dependencies;
 
 	protected PumpImpl(String name, int parallelism) {
-		super();
-		// running = new AtomicInteger(STATUS_OTHER);
+		super(name);
 		this.name = name;
 		this.parallelism = parallelism;
 		threadGroup = new ThreadGroup(name);
@@ -89,15 +88,5 @@ abstract class PumpImpl implements Pump {
 			} catch (Exception e) {
 				logger().error(dep.getClass().getName() + " close failed");
 			}
-	}
-
-	@Override
-	public String toString() {
-		return "Pump:" + name;
-	}
-
-	@Override
-	public String name() {
-		return name;
 	}
 }

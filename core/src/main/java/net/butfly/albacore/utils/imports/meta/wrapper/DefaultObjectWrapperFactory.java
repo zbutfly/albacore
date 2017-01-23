@@ -15,8 +15,8 @@
  */
 package net.butfly.albacore.utils.imports.meta.wrapper;
 
-import net.butfly.albacore.utils.imports.meta.MetaObject;
 import net.butfly.albacore.exception.ReflectionException;
+import net.butfly.albacore.utils.imports.meta.MetaObject;
 
 /**
  * @author Clinton Begin

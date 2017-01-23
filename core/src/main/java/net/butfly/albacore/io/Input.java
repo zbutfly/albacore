@@ -1,33 +1,55 @@
 package net.butfly.albacore.io;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import net.butfly.albacore.io.queue.QImpl;
+import net.butfly.albacore.io.pump.BasicPump;
+import net.butfly.albacore.io.pump.FanoutPump;
+import net.butfly.albacore.io.pump.Pump;
 import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.utils.Collections;
+import net.butfly.albacore.utils.async.Concurrents;
 
-public abstract class Input<O> extends QImpl<Void, O> {
-	private static final long serialVersionUID = -1;
-
-	protected Input(String name) {
-		super(name, -1);
-	}
-
-	@Override
-	public long size() {
+public interface Input<O> extends Openable {
+	default long size() {
 		return Long.MAX_VALUE;
 	}
 
-	@Override
-	public <O2> Input<O2> then(Converter<O, O2> conv) {
+	default boolean empty() {
+		return size() <= 0;
+	}
+
+	/**
+	 * basic, none blocking reading.
+	 * 
+	 * @return null on empty
+	 */
+	O dequeue0();
+
+	default List<O> dequeue(long batchSize) {
+		List<O> batch = new ArrayList<>();
+		long prev;
+		do {
+			prev = batch.size();
+			O e = dequeue0();
+			if (null != e) batch.add(e);
+			if (batch.size() == 0) Concurrents.waitSleep();
+		} while (batch.size() < batchSize && (prev != batch.size() || batch.size() == 0));
+		this.close();
+		return batch;
+	}
+
+	default <O2> Input<O2> then(Converter<O, O2> conv) {
 		return thens(Collections.convAs(conv));
 	}
 
-	@Override
-	public <O2> Input<O2> thens(Converter<List<O>, List<O2>> conv) {
-		return new Input<O2>(Input.this.name() + "Conv") {
-			private static final long serialVersionUID = -8694670290655232938L;
+	default <O2> Input<O2> thens(Converter<List<O>, List<O2>> conv) {
+		return new Input<O2>() {
+			@Override
+			public String name() {
+				return Input.super.name() + "Then";
+			}
 
 			@Override
 			public O2 dequeue0() {
@@ -55,34 +77,29 @@ public abstract class Input<O> extends QImpl<Void, O> {
 			}
 
 			@Override
-			public String toString() {
-				return Input.this.getClass().getName() + "Then:" + name();
-			}
-
-			@Override
 			public void close() {
 				Input.super.close();
 				Input.this.close();
 			}
+
+			@Override
+			public String toString() {
+				return name();
+			}
 		};
 	}
 
-	/* disable enqueue on input */
-	@Override
-	@Deprecated
-	public final boolean enqueue0(Void d) {
-		return false;
+	default Pump pump(int parallelism, Output<O> dest) {
+		return new BasicPump(this, parallelism, dest);
 	}
 
-	@Override
-	@Deprecated
-	public final long enqueue(List<Void> iter) {
-		return 0;
+	@SuppressWarnings("unchecked")
+	default Pump pump(int parallelism, Output<O>... dests) {
+		return new FanoutPump(this, parallelism, Arrays.asList(dests));
 	}
 
-	@Override
-	@Deprecated
-	public final long enqueue(Void... e) {
-		return 0;
+	default Pump pump(int parallelism, List<? extends Output<O>> dests) {
+		return new FanoutPump(this, parallelism, dests);
 	}
+
 }

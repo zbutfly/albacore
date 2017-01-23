@@ -5,13 +5,12 @@ import java.util.Map;
 
 import org.slf4j.event.Level;
 
-import net.butfly.albacore.io.Output;
+import net.butfly.albacore.io.OutputImpl;
 import net.butfly.albacore.lambda.Consumer;
 import net.butfly.albacore.utils.Instances;
 import net.butfly.albacore.utils.logger.Logger;
 
-public class LoggerOutput extends Output<String> {
-	private static final long serialVersionUID = 7782039002400807964L;
+public class LoggerOutput extends OutputImpl<String> {
 	private final Map<Level, Consumer<String>> loggings;
 	private final Logger logger;
 	private final Level level;
@@ -33,7 +32,6 @@ public class LoggerOutput extends Output<String> {
 	}
 
 	private LoggerOutput(String loggerName, Level level) {
-		super("LOGGER-OUTPUT-QUEUE-" + level.name());
 		this.level = level;
 		this.logger = Instances.fetch(() -> Logger.getLogger(loggerName), Logger.class, loggerName);
 		loggings = new HashMap<>();

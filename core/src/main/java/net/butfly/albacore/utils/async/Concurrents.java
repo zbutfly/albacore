@@ -20,12 +20,12 @@ import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import net.butfly.albacore.lambda.Callable;
+import net.butfly.albacore.lambda.Runnable;
 import net.butfly.albacore.lambda.Supplier;
 import net.butfly.albacore.utils.Instances;
 import net.butfly.albacore.utils.Systems;
 import net.butfly.albacore.utils.Utils;
 import net.butfly.albacore.utils.logger.Logger;
-import net.butfly.albacore.lambda.Runnable;
 
 public final class Concurrents extends Utils {
 	private static final Logger logger = Logger.getLogger(Concurrents.class);

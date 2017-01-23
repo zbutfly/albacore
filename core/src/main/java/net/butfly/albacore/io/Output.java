@@ -3,31 +3,52 @@ package net.butfly.albacore.io;
 import java.util.Arrays;
 import java.util.List;
 
-import net.butfly.albacore.io.queue.QImpl;
 import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.utils.Collections;
+import net.butfly.albacore.utils.async.Concurrents;
 
-public abstract class Output<I> extends QImpl<I, Void> {
-	private static final long serialVersionUID = -1;
-
-	protected Output(String name) {
-		super(name, Long.MAX_VALUE);
-	}
-
-	@Override
-	public long size() {
+public interface Output<I> extends Openable {
+	default long size() {
 		return 0;
 	}
 
-	@Override
-	public <I0> Output<I0> prior0(Converter<I0, I> conv) {
+	default long capacity() {
+		return Long.MAX_VALUE;
+	};
+
+	default boolean full() {
+		return size() >= capacity();
+	}
+
+	/**
+	 * basic, none blocking writing.
+	 * 
+	 * @param d
+	 * @return
+	 */
+	boolean enqueue0(I d);
+
+	default long enqueue(List<I> items) {
+		long c = 0;
+		while (full())
+			Concurrents.waitSleep();
+		for (I e : items)
+			if (null != e) {
+				if (enqueue0(e)) c++;
+				else logger().warn("Q enqueue failure though not full before, item maybe lost");
+			}
+		return c;
+	}
+
+	default <I0> Output<I0> prior(Converter<I0, I> conv) {
 		return priors(Collections.convAs(conv));
 	}
 
-	@Override
-	public <I0> Output<I0> priors(Converter<List<I0>, List<I>> conv) {
-		return new Output<I0>("Conv" + Output.this.name()) {
-			private static final long serialVersionUID = -3972222736579861184L;
+	default <I0> Output<I0> priors(Converter<List<I0>, List<I>> conv) {
+		return new Output<I0>() {
+			public String name() {
+				return Output.super.name() + "Prior";
+			}
 
 			@Override
 			public boolean enqueue0(I0 item) {
@@ -53,7 +74,7 @@ public abstract class Output<I> extends QImpl<I, Void> {
 
 			@Override
 			public String toString() {
-				return Output.this.getClass().getName() + "Prior:" + name();
+				return name();
 			}
 
 			@Override
@@ -61,20 +82,11 @@ public abstract class Output<I> extends QImpl<I, Void> {
 				Output.super.close();
 				Output.this.close();
 			}
+
+			@Override
+			public long capacity() {
+				return Output.this.capacity();
+			}
 		};
 	}
-
-	/* disable dequeue on output */
-	@Override
-	@Deprecated
-	public final Void dequeue0() {
-		return null;
-	}
-
-	@Override
-	@Deprecated
-	public final List<Void> dequeue(long batchSize) {
-		return null;
-	}
-
 }

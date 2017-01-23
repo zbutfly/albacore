@@ -1,15 +1,16 @@
 package net.butfly.albacore.io;
 
-import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableList;
-import net.butfly.albacore.utils.Pair;
-
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
+
+import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
+
+import net.butfly.albacore.utils.Pair;
 
 public class URISpec {
 	protected final List<String> schemes;

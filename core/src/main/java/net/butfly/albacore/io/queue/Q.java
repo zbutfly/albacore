@@ -1,17 +1,12 @@
 package net.butfly.albacore.io.queue;
 
-import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import net.butfly.albacore.io.Openable;
-import net.butfly.albacore.io.pump.BasicPump;
-import net.butfly.albacore.io.pump.FanoutPump;
-import net.butfly.albacore.io.pump.Pump;
+import net.butfly.albacore.io.Input;
+import net.butfly.albacore.io.Output;
 import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.utils.Collections;
-import net.butfly.albacore.utils.async.Concurrents;
 
 /**
  * Rich feature queue for big data processing, supporting:
@@ -41,83 +36,12 @@ import net.butfly.albacore.utils.async.Concurrents;
  * @author butfly
  *
  */
-public interface Q<I, O> extends Openable, Serializable {
+public interface Q<I, O> extends Input<O>, Output<I> {
 	static final long INFINITE_SIZE = -1;
-	static final long FULL_WAIT_MS = 500;
-	static final long EMPTY_WAIT_MS = 500;
 
 	@Override
-	String name();
-
 	long size();
-
-	long capacity();
-
-	default boolean empty() {
-		return size() <= 0;
-	}
-
-	default boolean full() {
-		return size() >= capacity();
-	}
-
-	/**
-	 * basic, none blocking reading.
-	 * 
-	 * @return null on empty
-	 */
-	O dequeue0();
-
-	default List<O> dequeue(long batchSize) {
-		List<O> batch = new ArrayList<>();
-		long prev;
-		do {
-			prev = batch.size();
-			O e = dequeue0();
-			if (null != e) batch.add(e);
-			if (batch.size() == 0) Concurrents.waitSleep(EMPTY_WAIT_MS);
-		} while (batch.size() < batchSize && (prev != batch.size() || batch.size() == 0));
-		return batch;
-	}
-
-	/**
-	 * basic, none blocking writing.
-	 * 
-	 * @param d
-	 * @return
-	 */
-	boolean enqueue0(I d);
-
-	default long enqueue(List<I> items) {
-		long c = 0;
-		while (full())
-			Concurrents.waitSleep(FULL_WAIT_MS);
-		for (I e : items)
-			if (null != e) {
-				if (enqueue0(e)) c++;
-				else logger().warn("Q enqueue failure though not full before, item maybe lost");
-			}
-		return c;
-	}
-
-	default long enqueue(@SuppressWarnings("unchecked") I... e) {
-		return enqueue(Arrays.asList(e));
-	}
-
 	/* from interfaces */
-
-	default Pump pump(int parallelism, Q<O, ?> dest) {
-		return new BasicPump(this, dest, parallelism);
-	}
-
-	@SuppressWarnings("unchecked")
-	default Pump pump(int parallelism, Q<O, ?>... dests) {
-		return new FanoutPump(this, parallelism, Arrays.asList(dests));
-	}
-
-	default Pump pump(int parallelism, List<? extends Q<O, ?>> dests) {
-		return new FanoutPump(this, parallelism, dests);
-	}
 
 	default <O2> Q<I, O2> then(Converter<O, O2> conv) {
 		return thens(Collections.convAs(conv));
@@ -125,8 +49,6 @@ public interface Q<I, O> extends Openable, Serializable {
 
 	default <O2> Q<I, O2> thens(Converter<List<O>, List<O2>> conv) {
 		return new QImpl<I, O2>(Q.this.name() + "Then", Q.this.capacity()) {
-			private static final long serialVersionUID = -5894142335125843377L;
-
 			@Override
 			public boolean enqueue0(I d) {
 				return Q.this.enqueue0(d);
@@ -174,14 +96,12 @@ public interface Q<I, O> extends Openable, Serializable {
 		};
 	}
 
-	default <I0> Q<I0, O> prior0(Converter<I0, I> conv) {
+	default <I0> Q<I0, O> prior(Converter<I0, I> conv) {
 		return priors(Collections.convAs(conv));
 	}
 
 	default <I0> Q<I0, O> priors(Converter<List<I0>, List<I>> conv) {
 		return new QImpl<I0, O>(Q.this.name() + "Prior", Q.this.capacity()) {
-			private static final long serialVersionUID = -2063675795097988806L;
-
 			@Override
 			public boolean enqueue0(I0 item) {
 				List<I> items = conv.apply(Arrays.asList(item));
