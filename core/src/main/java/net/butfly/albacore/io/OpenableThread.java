@@ -2,7 +2,6 @@ package net.butfly.albacore.io;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import net.butfly.albacore.lambda.Runnable;
 import net.butfly.albacore.utils.async.Concurrents;
 
 public class OpenableThread extends Thread implements Openable {
@@ -22,6 +21,18 @@ public class OpenableThread extends Thread implements Openable {
 
 	public OpenableThread(Runnable target, String name) {
 		super(target, name);
+	}
+
+	public OpenableThread(ThreadGroup group, Runnable target, String name) {
+		super(group, target, name);
+	}
+
+	public OpenableThread(ThreadGroup group, Runnable target) {
+		super(group, target);
+	}
+
+	public OpenableThread(ThreadGroup group, String name) {
+		super(group, name);
 	}
 
 	@Override

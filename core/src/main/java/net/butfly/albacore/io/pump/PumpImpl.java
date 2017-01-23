@@ -22,6 +22,7 @@ abstract class PumpImpl implements Pump {
 	private final int parallelism;
 	// protected final AtomicInteger running;
 	protected final Map<String, OpenableThread> threads = new ConcurrentHashMap<>();
+	protected final ThreadGroup threadGroup;
 
 	protected long batchSize = 1000;
 	private final List<AutoCloseable> dependencies;
@@ -31,6 +32,7 @@ abstract class PumpImpl implements Pump {
 		// running = new AtomicInteger(STATUS_OTHER);
 		this.name = name;
 		this.parallelism = parallelism;
+		threadGroup = new ThreadGroup(name);
 		dependencies = new ArrayList<>();
 		logger().info("Pump [" + name + "] created with parallelism: " + parallelism);
 	}
@@ -53,7 +55,7 @@ abstract class PumpImpl implements Pump {
 		};
 		for (int i = 0; i < parallelism; i++) {
 			String threadName = name + "#" + (i + 1);
-			threads.put(threadName, new OpenableThread(r.until(() -> {
+			threads.put(threadName, new OpenableThread(threadGroup, r.until(() -> {
 				return !opened() || sourceEmpty.get();
 			}).then(() -> {
 				threads.remove(threadName);
