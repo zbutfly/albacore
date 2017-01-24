@@ -2,18 +2,18 @@ package net.butfly.albacore.io.queue;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-public abstract class QImpl<I, O> implements Q<I, O> {
+public abstract class QueueImpl<I, O> implements Queue<I, O> {
 	private final String name;
 	private final AtomicLong capacity;
 
-	protected QImpl(long capacity) {
+	protected QueueImpl(long capacity) {
 		super();
-		this.name = Q.super.name();
+		this.name = Queue.super.name();
 		this.capacity = new AtomicLong(capacity);
 		open();
 	}
 
-	protected QImpl(String name, long capacity) {
+	protected QueueImpl(String name, long capacity) {
 		super();
 		this.name = name;
 		this.capacity = new AtomicLong(capacity);

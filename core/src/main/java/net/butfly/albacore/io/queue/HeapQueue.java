@@ -6,11 +6,11 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import net.butfly.albacore.lambda.Converter;
 
-public class HeapQ<I, O> extends QImpl<I, O> {
+public class HeapQueue<I, O> extends QueueImpl<I, O> {
 	protected final BlockingQueue<O> impl;
 	private Converter<I, O> conv;
 
-	public HeapQ(String name, long capacity, Converter<I, O> conv) {
+	public HeapQueue(String name, long capacity, Converter<I, O> conv) {
 		super(name, capacity);
 		impl = new LinkedBlockingQueue<>((int) capacity);
 		this.conv = conv;

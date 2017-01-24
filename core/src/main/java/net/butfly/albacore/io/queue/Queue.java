@@ -36,27 +36,27 @@ import net.butfly.albacore.utils.Collections;
  * @author butfly
  *
  */
-public interface Q<I, O> extends Input<O>, Output<I> {
+public interface Queue<I, O> extends Input<O>, Output<I> {
 	static final long INFINITE_SIZE = -1;
 
 	@Override
 	long size();
 	/* from interfaces */
 
-	default <O2> Q<I, O2> then(Converter<O, O2> conv) {
+	default <O2> Queue<I, O2> then(Converter<O, O2> conv) {
 		return thens(Collections.convAs(conv));
 	}
 
-	default <O2> Q<I, O2> thens(Converter<List<O>, List<O2>> conv) {
-		return new QImpl<I, O2>(Q.this.name() + "Then", Q.this.capacity()) {
+	default <O2> Queue<I, O2> thens(Converter<List<O>, List<O2>> conv) {
+		return new QueueImpl<I, O2>(Queue.this.name() + "Then", Queue.this.capacity()) {
 			@Override
 			public boolean enqueue0(I d) {
-				return Q.this.enqueue0(d);
+				return Queue.this.enqueue0(d);
 			}
 
 			@Override
 			public O2 dequeue0() {
-				O v = Q.this.dequeue0();
+				O v = Queue.this.dequeue0();
 				if (null == v) return null;
 				List<O2> l = conv.apply(Arrays.asList(v));
 				if (null == l || l.isEmpty()) return null;
@@ -65,88 +65,88 @@ public interface Q<I, O> extends Input<O>, Output<I> {
 
 			@Override
 			public List<O2> dequeue(long batchSize) {
-				List<O> l = Q.this.dequeue(batchSize);
+				List<O> l = Queue.this.dequeue(batchSize);
 				return conv.apply(l);
 			}
 
 			@Override
 			public long size() {
-				return Q.this.size();
+				return Queue.this.size();
 			}
 
 			@Override
 			public boolean empty() {
-				return Q.this.empty();
+				return Queue.this.empty();
 			}
 
 			@Override
 			public boolean full() {
-				return Q.this.full();
+				return Queue.this.full();
 			}
 
 			@Override
 			public String toString() {
-				return Q.this.getClass().getName() + "Then:" + name();
+				return Queue.this.getClass().getName() + "Then:" + name();
 			}
 
 			@Override
 			public void close() {
-				Q.this.close();
+				Queue.this.close();
 			}
 		};
 	}
 
-	default <I0> Q<I0, O> prior(Converter<I0, I> conv) {
+	default <I0> Queue<I0, O> prior(Converter<I0, I> conv) {
 		return priors(Collections.convAs(conv));
 	}
 
-	default <I0> Q<I0, O> priors(Converter<List<I0>, List<I>> conv) {
-		return new QImpl<I0, O>(Q.this.name() + "Prior", Q.this.capacity()) {
+	default <I0> Queue<I0, O> priors(Converter<List<I0>, List<I>> conv) {
+		return new QueueImpl<I0, O>(Queue.this.name() + "Prior", Queue.this.capacity()) {
 			@Override
 			public boolean enqueue0(I0 item) {
 				List<I> items = conv.apply(Arrays.asList(item));
 				if (null == items || items.isEmpty()) return false;
-				return Q.this.enqueue0(items.get(0));
+				return Queue.this.enqueue0(items.get(0));
 			}
 
 			@Override
 			public long enqueue(List<I0> items) {
-				return Q.this.enqueue(conv.apply(items));
+				return Queue.this.enqueue(conv.apply(items));
 			}
 
 			@Override
 			public O dequeue0() {
-				return Q.this.dequeue0();
+				return Queue.this.dequeue0();
 			}
 
 			@Override
 			public List<O> dequeue(long batchSize) {
-				return Q.this.dequeue(batchSize);
+				return Queue.this.dequeue(batchSize);
 			}
 
 			@Override
 			public long size() {
-				return Q.this.size();
+				return Queue.this.size();
 			}
 
 			@Override
 			public boolean empty() {
-				return Q.this.empty();
+				return Queue.this.empty();
 			}
 
 			@Override
 			public boolean full() {
-				return Q.this.full();
+				return Queue.this.full();
 			}
 
 			@Override
 			public String toString() {
-				return Q.this.getClass().getName() + "Prior:" + name();
+				return Queue.this.getClass().getName() + "Prior:" + name();
 			}
 
 			@Override
 			public void close() {
-				Q.this.close();
+				Queue.this.close();
 			}
 		};
 	}
