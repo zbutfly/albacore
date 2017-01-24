@@ -43,28 +43,38 @@ public interface Queue<I, O> extends Input<O>, Output<I> {
 	long size();
 	/* from interfaces */
 
-	default <O2> Queue<I, O2> then(Converter<O, O2> conv) {
+	default <O1> Queue<I, O1> then(Converter<O, O1> conv) {
 		return thens(Collections.convAs(conv));
 	}
 
-	default <O2> Queue<I, O2> thens(Converter<List<O>, List<O2>> conv) {
-		return new QueueImpl<I, O2>(Queue.this.name() + "Then", Queue.this.capacity()) {
+	default <O1> Queue<I, O1> thens(Converter<List<O>, List<O1>> conv) {
+		return new QueueImpl<I, O1>(Queue.this.name() + "Then", Queue.this.capacity()) {
 			@Override
-			public boolean enqueue0(I d) {
-				return Queue.this.enqueue0(d);
+			public O1 dequeue(boolean block) {
+				return conv.apply(Arrays.asList(Queue.this.dequeue(block))).get(0);
 			}
 
 			@Override
-			public O2 dequeue0() {
-				O v = Queue.this.dequeue0();
+			public boolean enqueue(I item, boolean block) {
+				return Queue.this.enqueue(item, block);
+			}
+
+			@Override
+			public boolean enqueue(I d) {
+				return Queue.this.enqueue(d);
+			}
+
+			@Override
+			public O1 dequeue() {
+				O v = Queue.this.dequeue();
 				if (null == v) return null;
-				List<O2> l = conv.apply(Arrays.asList(v));
+				List<O1> l = conv.apply(Arrays.asList(v));
 				if (null == l || l.isEmpty()) return null;
 				return l.get(0);
 			}
 
 			@Override
-			public List<O2> dequeue(long batchSize) {
+			public List<O1> dequeue(long batchSize) {
 				List<O> l = Queue.this.dequeue(batchSize);
 				return conv.apply(l);
 			}
@@ -102,11 +112,22 @@ public interface Queue<I, O> extends Input<O>, Output<I> {
 
 	default <I0> Queue<I0, O> priors(Converter<List<I0>, List<I>> conv) {
 		return new QueueImpl<I0, O>(Queue.this.name() + "Prior", Queue.this.capacity()) {
+
 			@Override
-			public boolean enqueue0(I0 item) {
+			public O dequeue(boolean block) {
+				return Queue.this.dequeue(block);
+			}
+
+			@Override
+			public boolean enqueue(I0 item, boolean block) {
+				return Queue.this.enqueue(conv.apply(Arrays.asList(item)).get(0), block);
+			}
+
+			@Override
+			public boolean enqueue(I0 item) {
 				List<I> items = conv.apply(Arrays.asList(item));
 				if (null == items || items.isEmpty()) return false;
-				return Queue.this.enqueue0(items.get(0));
+				return Queue.this.enqueue(items.get(0));
 			}
 
 			@Override
@@ -115,8 +136,8 @@ public interface Queue<I, O> extends Input<O>, Output<I> {
 			}
 
 			@Override
-			public O dequeue0() {
-				return Queue.this.dequeue0();
+			public O dequeue() {
+				return Queue.this.dequeue();
 			}
 
 			@Override

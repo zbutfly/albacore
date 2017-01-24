@@ -3,58 +3,58 @@ package net.butfly.albacore.io;
 import java.util.Arrays;
 import java.util.List;
 
+import net.butfly.albacore.base.Sizable;
 import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.utils.Collections;
 import net.butfly.albacore.utils.async.Concurrents;
 
-public interface Output<I> extends Openable {
+public interface Output<V> extends Openable, Sizable {
 	default long size() {
 		return 0;
-	}
-
-	default long capacity() {
-		return Long.MAX_VALUE;
-	};
-
-	default boolean full() {
-		return size() >= capacity();
 	}
 
 	/**
 	 * basic, none blocking writing.
 	 * 
-	 * @param d
+	 * @param item
 	 * @return
 	 */
-	boolean enqueue0(I d);
+	boolean enqueue(V item, boolean block);
 
-	default long enqueue(List<I> items) {
+	default boolean enqueue(V item) {
+		return enqueue(item, true);
+	};
+
+	default long enqueue(List<V> items) {
 		long c = 0;
 		while (full())
 			Concurrents.waitSleep();
-		for (I e : items)
+		for (V e : items)
 			if (null != e) {
-				if (enqueue0(e)) c++;
+				if (enqueue(e)) c++;
 				else logger().warn("Q enqueue failure though not full before, item maybe lost");
 			}
 		return c;
 	}
 
-	default <I0> Output<I0> prior(Converter<I0, I> conv) {
+	default <V0> Output<V0> prior(Converter<V0, V> conv) {
 		return priors(Collections.convAs(conv));
 	}
 
-	default <I0> Output<I0> priors(Converter<List<I0>, List<I>> conv) {
+	default <I0> Output<I0> priors(Converter<List<I0>, List<V>> conv) {
 		return new Output<I0>() {
 			public String name() {
 				return Output.super.name() + "Prior";
 			}
 
 			@Override
-			public boolean enqueue0(I0 item) {
-				List<I> dd = conv.apply(Arrays.asList(item));
-				if (null == dd || dd.isEmpty()) return false;
-				return Output.this.enqueue0(dd.get(0));
+			public boolean enqueue(I0 item, boolean block) {
+				return Output.this.enqueue(conv.apply(Arrays.asList(item)).get(0), block);
+			}
+
+			@Override
+			public boolean enqueue(I0 item) {
+				return Output.this.enqueue(conv.apply(Arrays.asList(item)).get(0));
 			}
 
 			@Override

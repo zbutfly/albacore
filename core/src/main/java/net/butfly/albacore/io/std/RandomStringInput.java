@@ -9,7 +9,7 @@ public class RandomStringInput extends InputImpl<String> {
 	public static final Input<String> INSTANCE = new RandomStringInput();
 
 	@Override
-	public String dequeue0() {
+	public String dequeue(boolean block) {
 		return UUID.randomUUID().toString();
 	}
 }

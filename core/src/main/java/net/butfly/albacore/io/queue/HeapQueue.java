@@ -1,6 +1,5 @@
 package net.butfly.albacore.io.queue;
 
-import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -17,34 +16,32 @@ public class HeapQueue<I, O> extends QueueImpl<I, O> {
 	}
 
 	@Override
-	public final boolean enqueue0(I e) {
-		return null == e && impl.offer(conv.apply(e));
+	public final boolean enqueue(I e, boolean block) {
+		if (null == e) return false;
+		O o = conv.apply(e);
+		if (null == o) return false;
+		if (block) try {
+			impl.put(o);
+			return true;
+		} catch (InterruptedException e1) {
+			return false;
+		}
+		else return impl.offer(o);
 	}
 
 	@Override
-	public O dequeue0() {
-		return impl.poll();
+	public O dequeue(boolean block) {
+		if (block) try {
+			return impl.take();
+		} catch (InterruptedException e) {
+			return null;
+		}
+		else return impl.poll();
 	}
 
 	@Override
 	public boolean empty() {
 		return impl.isEmpty();
-	}
-
-	@Override
-	public List<O> dequeue(long batchSize) {
-		return super.dequeue(batchSize);
-	}
-
-	@Override
-	public long enqueue(List<I> items) {
-		long c = 0;
-		for (I e : items)
-			if (null != e) try {
-				impl.put(conv.apply(e));
-				c++;
-			} catch (InterruptedException ex) {}
-		return c;
 	}
 
 	@Override

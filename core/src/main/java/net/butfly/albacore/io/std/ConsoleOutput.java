@@ -4,7 +4,7 @@ import net.butfly.albacore.io.OutputImpl;
 
 public class ConsoleOutput extends OutputImpl<String> {
 	@Override
-	public boolean enqueue0(String s) {
+	public boolean enqueue(String s, boolean block) {
 		System.out.println(s);
 		return true;
 	}
