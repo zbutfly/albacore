@@ -1,7 +1,7 @@
 package net.butfly.albacore.base;
 
 public abstract class Namedly implements Named {
-	protected final String name;
+	protected String name;
 
 	public Namedly() {
 		super();
@@ -20,6 +20,6 @@ public abstract class Namedly implements Named {
 
 	@Override
 	public String toString() {
-		return name();
+		return name() + "#" + hashCode();
 	}
 }

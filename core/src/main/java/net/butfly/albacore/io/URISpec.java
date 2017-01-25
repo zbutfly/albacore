@@ -127,17 +127,23 @@ public class URISpec {
 		return fragment;
 	}
 
-	@Override
-	public String toString() {
+	public String getAuthority() {
 		StringBuilder sb = new StringBuilder();
-		if (!schemes.isEmpty()) sb.append(getScheme()).append(':');
-		sb.append("//");
 		if (null != username) {
 			sb.append(username);
 			if (null != password) sb.append(':').append(password);
 			sb.append('@');
 		}
 		sb.append(getHost());
+		return sb.toString();
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		if (!schemes.isEmpty()) sb.append(getScheme()).append(':');
+		sb.append("//");
+		sb.append(getAuthority());
 		if (!paths.isEmpty()) sb.append(getPath());
 		if (!query.isEmpty()) sb.append(getQuery());
 		if (fragment != null) sb.append('#').append(fragment);
