@@ -13,7 +13,7 @@ import net.butfly.albacore.io.OpenableThread;
 import net.butfly.albacore.lambda.Runnable;
 import net.butfly.albacore.utils.async.Concurrents;
 
-abstract class PumpImpl extends Namedly implements Pump {
+abstract class PumpImpl<V> extends Namedly implements Pump<V> {
 	private static final long serialVersionUID = 5115726180980986678L;
 	protected static final int STATUS_OTHER = 0;
 	protected static final int STATUS_RUNNING = 1;
@@ -63,7 +63,7 @@ abstract class PumpImpl extends Namedly implements Pump {
 	}
 
 	@Override
-	public final Pump batch(long batchSize) {
+	public final Pump<V> batch(long batchSize) {
 		this.batchSize = batchSize;
 		return this;
 	}

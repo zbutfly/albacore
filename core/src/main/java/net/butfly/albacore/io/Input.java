@@ -9,9 +9,6 @@ import java.util.List;
 
 import net.butfly.albacore.base.Namedly;
 import net.butfly.albacore.base.Sizable;
-import net.butfly.albacore.io.pump.BasicPump;
-import net.butfly.albacore.io.pump.FanoutPump;
-import net.butfly.albacore.io.pump.Pump;
 import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.utils.Collections;
 import net.butfly.albacore.utils.async.Concurrents;
@@ -149,18 +146,4 @@ public interface Input<V> extends Openable, Sizable {
 			}
 		};
 	}
-
-	default Pump pump(int parallelism, Output<V> dest) {
-		return new BasicPump(this, parallelism, dest);
-	}
-
-	@SuppressWarnings("unchecked")
-	default Pump pump(int parallelism, Output<V>... dests) {
-		return new FanoutPump(this, parallelism, Arrays.asList(dests));
-	}
-
-	default Pump pump(int parallelism, List<? extends Output<V>> dests) {
-		return new FanoutPump(this, parallelism, dests);
-	}
-
 }

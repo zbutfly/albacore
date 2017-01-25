@@ -1,11 +1,16 @@
 package net.butfly.albacore.io.pump;
 
+import java.util.Arrays;
+import java.util.List;
+
+import net.butfly.albacore.io.Input;
 import net.butfly.albacore.io.Openable;
+import net.butfly.albacore.io.Output;
 import net.butfly.albacore.io.stats.Statistical;
 import net.butfly.albacore.utils.Systems;
 
-public interface Pump extends Statistical<Pump>, Openable {
-	Pump batch(long batchSize);
+public interface Pump<V> extends Statistical<Pump<V>>, Openable {
+	Pump<V> batch(long batchSize);
 
 	@Override
 	default void open(Runnable run) {
@@ -18,12 +23,16 @@ public interface Pump extends Statistical<Pump>, Openable {
 		});
 	}
 
-	@Deprecated
-	static void run(Pump... pumps) {
-		for (int i = pumps.length - 1; i >= 0; i--)
-			((PumpImpl) pumps[i]).open();
-		for (int i = 0; i < pumps.length; i++)
-			((PumpImpl) pumps[i]).close();
+	public static <V> Pump<V> pump(Input<V> input, int parallelism, Output<V> dest) {
+		return new BasicPump<V>(input, parallelism, dest);
 	}
 
+	@SuppressWarnings("unchecked")
+	public static <V> Pump<V> pump(Input<V> input, int parallelism, Output<V>... dests) {
+		return new FanoutPump<V>(input, parallelism, Arrays.asList(dests));
+	}
+
+	public static <V> Pump<V> pump(Input<V> input, int parallelism, List<? extends Output<V>> dests) {
+		return new FanoutPump<V>(input, parallelism, dests);
+	}
 }

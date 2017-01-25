@@ -42,7 +42,7 @@ public interface Openable extends AutoCloseable, Loggable, Named {
 			logger().trace(name() + " closing...");
 			if (null != closing) closing.run();
 			s.compareAndSet(Status.CLOSING, Status.CLOSED);
-		} else logger().warn(name() + " closing again?");
+		} // else logger().warn(name() + " closing again?");
 		while (!closed())
 			Concurrents.waitSleep(500, logger(), "Waiting for closing finished...");
 		Opened.STATUS.remove(this);
