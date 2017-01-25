@@ -20,6 +20,6 @@ public abstract class Namedly implements Named {
 
 	@Override
 	public String toString() {
-		return name() + "#" + hashCode();
+		return name() + "#" + Integer.toHexString(hashCode());
 	}
 }

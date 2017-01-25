@@ -10,7 +10,7 @@ import net.butfly.albacore.lambda.Consumer;
 import net.butfly.albacore.utils.Instances;
 import net.butfly.albacore.utils.logger.Logger;
 
-public class LoggerOutput extends OutputImpl<String> {
+public final class LoggerOutput extends OutputImpl<String> {
 	private final Map<Level, Consumer<String>> loggings;
 	private final Logger logger;
 	private final Level level;
@@ -42,6 +42,7 @@ public class LoggerOutput extends OutputImpl<String> {
 			loggings.put(Level.WARN, s -> logger.warn(s));
 			loggings.put(Level.ERROR, s -> logger.error(s));
 		}
+		open();
 	}
 
 	@Override

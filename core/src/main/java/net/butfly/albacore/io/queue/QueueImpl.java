@@ -10,14 +10,12 @@ public abstract class QueueImpl<I, O> implements Queue<I, O> {
 		super();
 		this.name = Queue.super.name();
 		this.capacity = new AtomicLong(capacity);
-		open();
 	}
 
 	protected QueueImpl(String name, long capacity) {
 		super();
 		this.name = name;
 		this.capacity = new AtomicLong(capacity);
-		open();
 	}
 
 	@Override

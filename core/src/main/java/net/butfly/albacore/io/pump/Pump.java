@@ -8,12 +8,13 @@ public interface Pump extends Statistical<Pump>, Openable {
 	Pump batch(long batchSize);
 
 	@Override
-	default void open() {
+	default void open(Runnable run) {
 		Openable.super.open(() -> {
 			// handle kill -15, CTRL-C, kill -9
 			Systems.handleSignal(sig -> close(), "TERM", "INT");
 			/* , "KILL" */
 			// kill -9 catched by system/os
+			run.run();
 		});
 	}
 

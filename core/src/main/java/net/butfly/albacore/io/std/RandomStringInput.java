@@ -5,7 +5,12 @@ import java.util.UUID;
 import net.butfly.albacore.io.Input;
 import net.butfly.albacore.io.InputImpl;
 
-public class RandomStringInput extends InputImpl<String> {
+public final class RandomStringInput extends InputImpl<String> {
+	public RandomStringInput() {
+		super();
+		open();
+	}
+
 	public static final Input<String> INSTANCE = new RandomStringInput();
 
 	@Override

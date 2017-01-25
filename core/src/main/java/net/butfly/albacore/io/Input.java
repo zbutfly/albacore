@@ -80,14 +80,20 @@ public interface Input<V> extends Openable, Sizable {
 			}
 
 			@Override
-			public void close() {
-				Input.super.close();
-				Input.this.close();
+			public void open(Runnable run) {
+				Input.super.open();
+				Input.this.open(run);
 			}
 
 			@Override
-			public String toString() {
-				return name();
+			public void close(Runnable run) {
+				Input.super.close();
+				Input.this.close(run);
+			}
+
+			@Override
+			public Status status() {
+				return Input.this.status();
 			}
 		};
 	}

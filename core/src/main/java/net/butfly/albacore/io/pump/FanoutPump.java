@@ -12,19 +12,19 @@ import net.butfly.albacore.utils.Reflections;
 public class FanoutPump extends PumpImpl {
 	private static final long serialVersionUID = -9048673309470370198L;
 
-	public <V> FanoutPump(Input<V> input, int parallelism, List<? extends Output<V>> list) {
-		super(input.name() + ">" + Joiner.on('-').join(Collections.transform(list, d -> d.name())), parallelism);
+	public <V> FanoutPump(Input<V> input, int parallelism, List<? extends Output<V>> outputs) {
+		super(input.name() + ">" + Joiner.on('-').join(Collections.transform(outputs, d -> d.name())), parallelism);
 		Reflections.noneNull("Pump source/destination should not be null", input);
-		Reflections.noneNull("Pump source/destination should not be null", list);
+		Reflections.noneNull("Pump source/destination should not be null", outputs);
 		depend(input);
-		depend(list);
+		depend(outputs);
 		pumping(() -> input.empty(), () -> {
-			if (input.opened()) {
+			if (opened() && input.opened()) {
 				List<V> l = input.dequeue(batchSize);
 				if (l.size() > 0) {
 					stats(l);
-					for (Output<V> q : list)
-						q.enqueue(l);
+					for (Output<V> output : outputs)
+						if (output.opened()) output.enqueue(l);
 				}
 			}
 		});

@@ -69,8 +69,8 @@ abstract class PumpImpl extends Namedly implements Pump {
 	}
 
 	@Override
-	public void open() {
-		Pump.super.open();
+	public void open(java.lang.Runnable run) {
+		Pump.super.open(run);
 		for (OpenableThread t : threads.values())
 			t.open();
 		while (opened() && !threads.isEmpty())
