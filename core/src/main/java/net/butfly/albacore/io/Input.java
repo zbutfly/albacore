@@ -50,41 +50,23 @@ public interface Input<V> extends Openable, Sizable {
 	class InputThenHandler<V, V1> extends Namedly implements InvocationHandler {
 		private final Input<V> input;
 		private final Converter<List<V>, List<V1>> conv;
-		private Method nameMethod, dequeueMethod0, dequeueMethod1, dequeueMethod;
 
 		private InputThenHandler(Input<V> input, Converter<List<V>, List<V1>> conv) {
 			super(input.name() + "Then");
 			this.input = input;
 			this.conv = conv;
-			try {
-				this.nameMethod = input.getClass().getMethod("name");
-			} catch (NoSuchMethodException | SecurityException e) {
-				this.nameMethod = null;
-			}
-			try {
-				this.dequeueMethod0 = input.getClass().getMethod("dequeue", boolean.class);
-			} catch (NoSuchMethodException | SecurityException e) {
-				this.dequeueMethod0 = null;
-			}
-			try {
-				this.dequeueMethod1 = input.getClass().getMethod("dequeue");
-			} catch (NoSuchMethodException | SecurityException e) {
-				this.dequeueMethod1 = null;
-			}
-			try {
-				this.dequeueMethod = input.getClass().getMethod("dequeue", long.class);
-			} catch (NoSuchMethodException | SecurityException e) {
-				this.dequeueMethod = null;
-			}
 		}
 
 		@Override
 		public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-			if (nameMethod.equals(method)) return name;
-			else if (dequeueMethod.equals(method)) return conv.apply(input.dequeue((long) args[0]));
-			else if (dequeueMethod0.equals(method)) return conv.apply(Arrays.asList(input.dequeue((boolean) args[0]))).get(0);
-			else if (dequeueMethod1.equals(method)) return conv.apply(Arrays.asList(input.dequeue())).get(0);
-			else return method.invoke(input, args);
+			if (method.getName().equals("name") && (null == args || args.length == 0)) return name;
+			else if (method.getName().equals("dequeue")) {
+				if (null == args || args.length == 0) return conv.apply(Arrays.asList(input.dequeue())).get(0);
+				if (Number.class.isAssignableFrom(args[0].getClass())) return conv.apply(input.dequeue(((Number) args[0]).longValue()));
+				if (Boolean.class.isAssignableFrom(args[0].getClass())) return conv.apply(Arrays.asList(input.dequeue((Boolean) args[0])))
+						.get(0);
+			}
+			return method.invoke(input, args);
 		}
 	}
 

@@ -49,43 +49,23 @@ public interface Output<V> extends Openable, Sizable {
 	class OutputPriorHandler<V0, V> extends Namedly implements InvocationHandler {
 		private final Output<V> output;
 		private final Converter<List<V0>, List<V>> conv;
-		private Method nameMethod, enqueueMethod0, enqueueMethod1, enqueueMethod;
 
 		private OutputPriorHandler(Output<V> output, Converter<List<V0>, List<V>> conv) {
 			super(output.name() + "Then");
 			this.output = output;
 			this.conv = conv;
-			try {
-				this.nameMethod = output.getClass().getMethod("name");
-			} catch (NoSuchMethodException | SecurityException e) {
-				this.nameMethod = null;
-			}
-			try {
-				this.enqueueMethod0 = output.getClass().getMethod("enqueue", List.class);
-			} catch (NoSuchMethodException | SecurityException e) {
-				this.enqueueMethod0 = null;
-			}
-			try {
-				this.enqueueMethod1 = output.getClass().getMethod("enqueue", Object.class, boolean.class);
-			} catch (NoSuchMethodException | SecurityException e) {
-				this.enqueueMethod1 = null;
-			}
-			try {
-				this.enqueueMethod = output.getClass().getMethod("enqueue", Object.class);
-			} catch (NoSuchMethodException | SecurityException e) {
-				this.enqueueMethod = null;
-			}
 		}
 
 		@SuppressWarnings("unchecked")
 		@Override
 		public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-			if (nameMethod.equals(method)) return name;
-			else if (enqueueMethod.equals(method)) return output.enqueue(conv.apply((List<V0>) args[0]));
-			else if (enqueueMethod0.equals(method)) return output.enqueue(conv.apply(Arrays.asList((V0) args[0])).get(0),
-					(boolean) args[1]);
-			else if (enqueueMethod1.equals(method)) return output.enqueue(conv.apply(Arrays.asList((V0) args[0])).get(0));
-			else return method.invoke(output, args);
+			if (method.getName().equals("name") && (null == args || args.length == 0)) return name;
+			else if (method.getName().equals("enqueue")) {
+				if (args.length == 2) return output.enqueue(conv.apply(Arrays.asList((V0) args[0])).get(0), (Boolean) args[1]);
+				if (List.class.isAssignableFrom(args[0].getClass())) return output.enqueue(conv.apply((List<V0>) args[0]));
+				else return output.enqueue(conv.apply(Arrays.asList((V0) args[0])).get(0));
+			}
+			return method.invoke(output, args);
 		}
 	}
 
