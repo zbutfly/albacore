@@ -102,8 +102,20 @@ public interface Queue<I, O> extends Input<O>, Output<I> {
 			}
 
 			@Override
-			public void close() {
-				Queue.this.close();
+			public void open(Runnable run) {
+				super.open(null);
+				Queue.this.open(run);
+			}
+
+			@Override
+			public void close(Runnable run) {
+				super.close(null);
+				Queue.this.close(run);
+			}
+
+			@Override
+			public Status status() {
+				return Queue.this.status();
 			}
 		};
 	}
@@ -170,8 +182,20 @@ public interface Queue<I, O> extends Input<O>, Output<I> {
 			}
 
 			@Override
-			public void close() {
-				Queue.this.close();
+			public void open(Runnable run) {
+				super.open();
+				Queue.this.open(run);
+			}
+
+			@Override
+			public void close(Runnable run) {
+				super.close();
+				Queue.this.close(run);
+			}
+
+			@Override
+			public Status status() {
+				return Queue.this.status();
 			}
 		};
 	}

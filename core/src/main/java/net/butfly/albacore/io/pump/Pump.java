@@ -14,7 +14,7 @@ public interface Pump extends Statistical<Pump>, Openable {
 			Systems.handleSignal(sig -> close(), "TERM", "INT");
 			/* , "KILL" */
 			// kill -9 catched by system/os
-			run.run();
+			if (null != run) run.run();
 		});
 	}
 

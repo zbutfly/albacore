@@ -1,9 +1,13 @@
 package net.butfly.albacore.io;
 
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import net.butfly.albacore.base.Namedly;
 import net.butfly.albacore.base.Sizable;
 import net.butfly.albacore.io.pump.BasicPump;
 import net.butfly.albacore.io.pump.FanoutPump;
@@ -46,7 +50,55 @@ public interface Input<V> extends Openable, Sizable {
 		return thens(Collections.convAs(conv));
 	}
 
+	class InputThenHandler<V, O2> extends Namedly implements InvocationHandler {
+		private final Input<V> input;
+		private final Converter<List<V>, List<O2>> conv;
+		private Method nameMethod, dequeueMethod0, dequeueMethod1, dequeueMethod;
+
+		private InputThenHandler(Input<V> input, Converter<List<V>, List<O2>> conv) {
+			super(input.name() + "Then");
+			this.input = input;
+			this.conv = conv;
+			try {
+				this.nameMethod = input.getClass().getMethod("name");
+			} catch (NoSuchMethodException | SecurityException e) {
+				this.nameMethod = null;
+			}
+			try {
+				this.dequeueMethod0 = input.getClass().getMethod("dequeue", boolean.class);
+			} catch (NoSuchMethodException | SecurityException e) {
+				this.dequeueMethod0 = null;
+			}
+			try {
+				this.dequeueMethod1 = input.getClass().getMethod("dequeue");
+			} catch (NoSuchMethodException | SecurityException e) {
+				this.dequeueMethod1 = null;
+			}
+			try {
+				this.dequeueMethod = input.getClass().getMethod("dequeue", long.class);
+			} catch (NoSuchMethodException | SecurityException e) {
+				this.dequeueMethod = null;
+			}
+		}
+
+		@Override
+		public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+			if (nameMethod.equals(method)) return name;
+			else if (dequeueMethod.equals(method)) return conv.apply(input.dequeue((long) args[0]));
+			else if (dequeueMethod0.equals(method)) return conv.apply(Arrays.asList(input.dequeue((boolean) args[0]))).get(0);
+			else if (dequeueMethod1.equals(method)) return conv.apply(Arrays.asList(input.dequeue())).get(0);
+			else return method.invoke(input, args);
+		}
+	}
+
+	@SuppressWarnings("unchecked")
 	default <O2> Input<O2> thens(Converter<List<V>, List<O2>> conv) {
+		return (Input<O2>) Proxy.newProxyInstance(this.getClass().getClassLoader(), new Class[] { Input.class },
+				new InputThenHandler<V, O2>(this, conv));
+	}
+
+	@Deprecated
+	default <O2> Input<O2> thensWrap(Converter<List<V>, List<O2>> conv) {
 		return new Input<O2>() {
 			@Override
 			public String name() {
@@ -81,13 +133,13 @@ public interface Input<V> extends Openable, Sizable {
 
 			@Override
 			public void open(Runnable run) {
-				Input.super.open();
+				Input.super.open(null);
 				Input.this.open(run);
 			}
 
 			@Override
 			public void close(Runnable run) {
-				Input.super.close();
+				Input.super.close(null);
 				Input.this.close(run);
 			}
 

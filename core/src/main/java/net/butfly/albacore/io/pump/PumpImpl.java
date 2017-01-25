@@ -75,6 +75,7 @@ abstract class PumpImpl extends Namedly implements Pump {
 			t.open();
 		while (opened() && !threads.isEmpty())
 			Concurrents.waitSleep(500);
+		logger().info(name() + " finished.");
 	}
 
 	@Override

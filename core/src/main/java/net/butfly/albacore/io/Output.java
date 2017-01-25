@@ -79,9 +79,20 @@ public interface Output<V> extends Openable, Sizable {
 			}
 
 			@Override
-			public void close() {
-				Output.super.close();
-				Output.this.close();
+			public void open(Runnable run) {
+				Output.super.open(null);
+				Output.this.open(run);
+			}
+
+			@Override
+			public void close(Runnable run) {
+				Output.super.close(null);
+				Output.this.close(run);
+			}
+
+			@Override
+			public Status status() {
+				return Output.this.status();
 			}
 
 			@Override

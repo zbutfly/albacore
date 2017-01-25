@@ -1,11 +1,14 @@
 package net.butfly.albacore.utils;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.text.MessageFormat;
 import java.util.Properties;
@@ -96,5 +99,25 @@ public final class IOs extends Utils {
 	public static void main(String... args) throws IOException {
 		int i = -8;
 		System.out.println(MessageFormat.format("{0},{1},{2},{3}", i += 8, i += 8, i += 8, i += 8));
+	}
+
+	public static byte[] toByte(Object obj) {
+		try (ByteArrayOutputStream baos = new ByteArrayOutputStream(); ObjectOutputStream out = new ObjectOutputStream(baos)) {
+			out.writeObject(obj);
+			return baos.toByteArray();
+		} catch (IOException e) {
+			logger.error("bytes converting failure", e);
+			return null;
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	public static <T> T fromByte(byte[] bytes) {
+		try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes); ObjectInputStream in = new ObjectInputStream(bais)) {
+			return (T) in.readObject();
+		} catch (ClassNotFoundException | IOException e) {
+			logger.error("bytes converting failure", e);
+			return null;
+		}
 	}
 }
