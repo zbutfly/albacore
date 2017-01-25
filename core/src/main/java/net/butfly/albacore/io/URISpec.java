@@ -31,9 +31,14 @@ public class URISpec {
 		URI uri = parseURI(str, schemes);
 		hosts = new ArrayList<>();
 		if (uri.getHost() != null) {
-			String[] u = uri.getUserInfo().split(":", 2);
-			username = u[0];
-			password = u.length == 1 ? null : u[1];
+			if (null != uri.getUserInfo()) {
+				String[] u = uri.getUserInfo().split(":", 2);
+				username = u[0];
+				password = u.length == 1 ? null : u[1];
+			} else {
+				username = null;
+				password = null;
+			}
 			hosts.add(new Pair<>(uri.getHost(), uri.getPort()));
 		} else {
 			String[] a = uri.getAuthority().split("@", 2);
