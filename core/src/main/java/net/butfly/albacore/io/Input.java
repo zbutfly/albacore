@@ -50,12 +50,12 @@ public interface Input<V> extends Openable, Sizable {
 		return thens(Collections.convAs(conv));
 	}
 
-	class InputThenHandler<V, O2> extends Namedly implements InvocationHandler {
+	class InputThenHandler<V, V1> extends Namedly implements InvocationHandler {
 		private final Input<V> input;
-		private final Converter<List<V>, List<O2>> conv;
+		private final Converter<List<V>, List<V1>> conv;
 		private Method nameMethod, dequeueMethod0, dequeueMethod1, dequeueMethod;
 
-		private InputThenHandler(Input<V> input, Converter<List<V>, List<O2>> conv) {
+		private InputThenHandler(Input<V> input, Converter<List<V>, List<V1>> conv) {
 			super(input.name() + "Then");
 			this.input = input;
 			this.conv = conv;
@@ -92,31 +92,31 @@ public interface Input<V> extends Openable, Sizable {
 	}
 
 	@SuppressWarnings("unchecked")
-	default <O2> Input<O2> thens(Converter<List<V>, List<O2>> conv) {
-		return (Input<O2>) Proxy.newProxyInstance(this.getClass().getClassLoader(), new Class[] { Input.class },
-				new InputThenHandler<V, O2>(this, conv));
+	default <V1> Input<V1> thens(Converter<List<V>, List<V1>> conv) {
+		return (Input<V1>) Proxy.newProxyInstance(this.getClass().getClassLoader(), new Class[] { Input.class },
+				new InputThenHandler<V, V1>(this, conv));
 	}
 
 	@Deprecated
-	default <O2> Input<O2> thensWrap(Converter<List<V>, List<O2>> conv) {
-		return new Input<O2>() {
+	default <V1> Input<V1> thensWrap(Converter<List<V>, List<V1>> conv) {
+		return new Input<V1>() {
 			@Override
 			public String name() {
 				return Input.super.name() + "Then";
 			}
 
 			@Override
-			public O2 dequeue(boolean block) {
+			public V1 dequeue(boolean block) {
 				return conv.apply(Arrays.asList(Input.this.dequeue(block))).get(0);
 			}
 
 			@Override
-			public O2 dequeue() {
+			public V1 dequeue() {
 				return conv.apply(Arrays.asList(Input.this.dequeue())).get(0);
 			}
 
 			@Override
-			public List<O2> dequeue(long batchSize) {
+			public List<V1> dequeue(long batchSize) {
 				List<V> l = Input.this.dequeue(batchSize);
 				return conv.apply(l);
 			}

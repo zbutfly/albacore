@@ -1,8 +1,12 @@
 package net.butfly.albacore.io;
 
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.List;
 
+import net.butfly.albacore.base.Namedly;
 import net.butfly.albacore.base.Sizable;
 import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.utils.Collections;
@@ -42,24 +46,74 @@ public interface Output<V> extends Openable, Sizable {
 		return priors(Collections.convAs(conv));
 	}
 
-	default <I0> Output<I0> priors(Converter<List<I0>, List<V>> conv) {
-		return new Output<I0>() {
+	class OutputPriorHandler<V0, V> extends Namedly implements InvocationHandler {
+		private final Output<V> output;
+		private final Converter<List<V0>, List<V>> conv;
+		private Method nameMethod, enqueueMethod0, enqueueMethod1, enqueueMethod;
+
+		private OutputPriorHandler(Output<V> output, Converter<List<V0>, List<V>> conv) {
+			super(output.name() + "Then");
+			this.output = output;
+			this.conv = conv;
+			try {
+				this.nameMethod = output.getClass().getMethod("name");
+			} catch (NoSuchMethodException | SecurityException e) {
+				this.nameMethod = null;
+			}
+			try {
+				this.enqueueMethod0 = output.getClass().getMethod("enqueue", List.class);
+			} catch (NoSuchMethodException | SecurityException e) {
+				this.enqueueMethod0 = null;
+			}
+			try {
+				this.enqueueMethod1 = output.getClass().getMethod("enqueue", Object.class, boolean.class);
+			} catch (NoSuchMethodException | SecurityException e) {
+				this.enqueueMethod1 = null;
+			}
+			try {
+				this.enqueueMethod = output.getClass().getMethod("enqueue", Object.class);
+			} catch (NoSuchMethodException | SecurityException e) {
+				this.enqueueMethod = null;
+			}
+		}
+
+		@SuppressWarnings("unchecked")
+		@Override
+		public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+			if (nameMethod.equals(method)) return name;
+			else if (enqueueMethod.equals(method)) return output.enqueue(conv.apply((List<V0>) args[0]));
+			else if (enqueueMethod0.equals(method)) return output.enqueue(conv.apply(Arrays.asList((V0) args[0])).get(0),
+					(boolean) args[1]);
+			else if (enqueueMethod1.equals(method)) return output.enqueue(conv.apply(Arrays.asList((V0) args[0])).get(0));
+			else return method.invoke(output, args);
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	default <V0> Output<V0> priors(Converter<List<V0>, List<V>> conv) {
+		return (Output<V0>) Proxy.newProxyInstance(this.getClass().getClassLoader(), new Class[] { Output.class },
+				new OutputPriorHandler<V0, V>(this, conv));
+	}
+
+	@Deprecated
+	default <V0> Output<V0> priorsWrap(Converter<List<V0>, List<V>> conv) {
+		return new Output<V0>() {
 			public String name() {
 				return Output.super.name() + "Prior";
 			}
 
 			@Override
-			public boolean enqueue(I0 item, boolean block) {
+			public boolean enqueue(V0 item, boolean block) {
 				return Output.this.enqueue(conv.apply(Arrays.asList(item)).get(0), block);
 			}
 
 			@Override
-			public boolean enqueue(I0 item) {
+			public boolean enqueue(V0 item) {
 				return Output.this.enqueue(conv.apply(Arrays.asList(item)).get(0));
 			}
 
 			@Override
-			public long enqueue(List<I0> items) {
+			public long enqueue(List<V0> items) {
 				return Output.this.enqueue(conv.apply(items));
 			}
 
