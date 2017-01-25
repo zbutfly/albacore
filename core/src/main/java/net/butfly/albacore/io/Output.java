@@ -13,6 +13,7 @@ import net.butfly.albacore.utils.Collections;
 import net.butfly.albacore.utils.async.Concurrents;
 
 public interface Output<V> extends Openable, Sizable {
+	@Override
 	default long size() {
 		return 0;
 	}
@@ -28,7 +29,7 @@ public interface Output<V> extends Openable, Sizable {
 	@Deprecated
 	default boolean enqueue(V item) {
 		return enqueue(item, true);
-	};
+	}
 
 	default long enqueue(List<V> items) {
 		long c = 0;
@@ -78,6 +79,7 @@ public interface Output<V> extends Openable, Sizable {
 	@Deprecated
 	default <V0> Output<V0> priorsWrap(Converter<List<V0>, List<V>> conv) {
 		return new Output<V0>() {
+			@Override
 			public String name() {
 				return Output.super.name() + "Prior";
 			}

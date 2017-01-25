@@ -15,6 +15,7 @@ public class SerializeKeyGenerator implements IKeyGenerator {
 	private static final DigesterEncryptor encrypt = new DigesterEncryptor(DigesterAlgorithm.MD5);
 	protected final Logger logger = Logger.getLogger(this.getClass());
 
+	@Override
 	public String getKey(Key o) {
 		String key = null;
 		try {

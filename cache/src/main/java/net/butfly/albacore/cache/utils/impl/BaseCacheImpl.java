@@ -21,6 +21,7 @@ public class BaseCacheImpl implements ICacheHelper {
 		this.strategy = StrategyFactory.getStrategy(strategyId);
 	}
 
+	@Override
 	public Object get(Key key) {
 		String key_str;
 		key_str = strategy.getKeyGenerator().getKey(key);
@@ -45,6 +46,7 @@ public class BaseCacheImpl implements ICacheHelper {
 		return result;
 	}
 
+	@Override
 	public void set(Key key, Object value) {
 		String key_str = strategy.getKeyGenerator().getKey(key);
 		try {
@@ -56,12 +58,14 @@ public class BaseCacheImpl implements ICacheHelper {
 		}
 	}
 
+	@Override
 	public boolean invalidate(Key key) {
 		String key_str = strategy.getKeyGenerator().getKey(key);
 		strategy.getMemCacheClient().delete(key_str);
 		return true;
 	}
 
+	@Override
 	public void set(Key key, Object value, int serviceType) {
 		String key_str = strategy.getKeyGenerator().getKey(key);
 		try {
@@ -74,6 +78,7 @@ public class BaseCacheImpl implements ICacheHelper {
 		}
 	}
 
+	@Override
 	public boolean invalidate(Key key, int serviceType) {
 		String key_str = strategy.getKeyGenerator().getKey(key);
 		strategy.getMemCacheClient(serviceType).delete(key_str);

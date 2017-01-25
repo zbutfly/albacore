@@ -13,6 +13,7 @@ public interface Callback<V> extends Consumer<V>, Serializable {
 	 */
 	void call(V v) throws Exception;
 
+	@Override
 	default void accept(V v) {
 		RunnableEx r = () -> call(v);
 		r.runEx();

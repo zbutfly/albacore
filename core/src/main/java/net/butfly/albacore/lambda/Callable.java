@@ -14,6 +14,7 @@ public interface Callable<V> extends java.util.concurrent.Callable<V>, Supplier<
 	@Override
 	V call() throws Exception;
 
+	@Override
 	default V get() {
 		try {
 			return call();

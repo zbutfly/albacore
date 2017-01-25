@@ -36,18 +36,8 @@ public class CacheCounter {
 		int result = -1;
 		String key_ = StringKeyGenerator.instance.getKey(new Key(key));
 		boolean main = mainClient.deleteWhithResult(key_);
-		if (main) {
-			result = 0;
-		};
-		boolean stan = standbyClient.deleteWhithResult(key_);
-		if (stan) {
-			if (main) {
-				result = 1;
-			};
-			if (!main) {
-				result = -2;
-			};
-		}
+		if (main) result = 0;
+		if (standbyClient.deleteWhithResult(key_)) result = main ? 1 : -2;
 		return result;
 	}
 }

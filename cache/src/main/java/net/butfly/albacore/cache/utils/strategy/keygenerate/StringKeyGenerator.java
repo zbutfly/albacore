@@ -9,6 +9,7 @@ public class StringKeyGenerator implements IKeyGenerator {
 	protected final Logger logger = Logger.getLogger(this.getClass());
 	public static StringKeyGenerator instance = new StringKeyGenerator();
 
+	@Override
 	public String getKey(Key o) {
 		String key = null;
 		if (o.getObj() instanceof String) {

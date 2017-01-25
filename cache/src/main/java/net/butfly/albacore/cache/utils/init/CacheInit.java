@@ -12,7 +12,7 @@ import net.butfly.albacore.cache.utils.control.CacheContant;
 import net.butfly.albacore.cache.utils.control.CacheControl;
 import net.butfly.albacore.exception.BusinessException;
 import net.butfly.albacore.exception.SystemException;
-
+import net.butfly.albacore.utils.async.Concurrents;
 import net.butfly.albacore.utils.logger.Logger;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
@@ -74,7 +74,8 @@ class CacheTask extends Thread {
 	public void run() {
 		while (true) {
 			try {
-				while (CacheInit.cacheTaskWait);
+				while (CacheInit.cacheTaskWait)
+					Concurrents.waitSleep();
 				CacheConfig[] listCacheConfig = CacheConfigBase.getCacheConfigService().loadConfig();
 				CacheConfig usedCacheServer = null; // 数据库中主用缓存服务器配置
 				CacheConfig standbyCacheServer = null; // 数据库中备用用缓存服务器配置

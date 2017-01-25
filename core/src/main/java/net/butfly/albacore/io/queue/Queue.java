@@ -43,10 +43,12 @@ public interface Queue<I, O> extends Input<O>, Output<I> {
 	long size();
 	/* from interfaces */
 
+	@Override
 	default <O1> Queue<I, O1> then(Converter<O, O1> conv) {
 		return thens(Collections.convAs(conv));
 	}
 
+	@Override
 	default <O1> Queue<I, O1> thens(Converter<List<O>, List<O1>> conv) {
 		return new QueueImpl<I, O1>(Queue.this.name() + "Then", Queue.this.capacity()) {
 			@Override
@@ -120,10 +122,12 @@ public interface Queue<I, O> extends Input<O>, Output<I> {
 		};
 	}
 
+	@Override
 	default <I0> Queue<I0, O> prior(Converter<I0, I> conv) {
 		return priors(Collections.convAs(conv));
 	}
 
+	@Override
 	default <I0> Queue<I0, O> priors(Converter<List<I0>, List<I>> conv) {
 		return new QueueImpl<I0, O>(Queue.this.name() + "Prior", Queue.this.capacity()) {
 

@@ -21,6 +21,7 @@ public class Cache4DaoAutoProxy implements MethodInterceptor {
 	public static final String HOTEL_NAMESPACE = ".hotel";
 	public static final String FLIGHT_NAMESPACE = ".flight";
 
+	@Override
 	public Object invoke(MethodInvocation invocation) throws Throwable {
 		if (invocation.getMethod().toString().contains(HOTEL_NAMESPACE) && !CacheControl.isCacheOn()) return invocation.proceed();
 		if (invocation.getMethod().toString().contains(FLIGHT_NAMESPACE)

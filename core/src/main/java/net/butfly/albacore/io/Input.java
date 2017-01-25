@@ -14,6 +14,7 @@ import net.butfly.albacore.utils.Collections;
 import net.butfly.albacore.utils.async.Concurrents;
 
 public interface Input<V> extends Openable, Sizable {
+	@Override
 	default long size() {
 		return Long.MAX_VALUE;
 	}
