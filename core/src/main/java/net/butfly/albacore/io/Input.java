@@ -24,6 +24,7 @@ public interface Input<V> extends Openable, Sizable {
 	 */
 	V dequeue(boolean block);
 
+	@Deprecated
 	default V dequeue() {
 		return dequeue(true);
 	}

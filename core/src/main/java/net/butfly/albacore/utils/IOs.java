@@ -7,6 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.text.MessageFormat;
 import java.util.Properties;
 
 import net.butfly.albacore.utils.logger.Logger;
@@ -14,18 +15,22 @@ import net.butfly.albacore.utils.logger.Logger;
 public final class IOs extends Utils {
 	private static final Logger logger = Logger.getLogger(IOs.class);
 
-	public static void writeInteger(OutputStream out, int i) throws IOException {
+	private static void writeInteger(OutputStream out, int i) throws IOException {
 		out.write(i & 0x000000FF);
-		out.write((i >> 8) & 0x000000FF);
-		out.write((i >> 16) & 0x000000FF);
-		out.write((i >> 24) & 0x000000FF);
+		i >>= 8;
+		out.write(i & 0x000000FF);
+		i >>= 8;
+		out.write(i & 0x000000FF);
+		i >>= 8;
+		out.write(i & 0x000000FF);
 	}
 
-	public static int readInteger(InputStream in) throws IOException {
-		int i = in.read();
-		i |= (in.read() << 8);
-		i |= (in.read() << 16);
-		i |= (in.read() << 24);
+	private static int readInteger(InputStream in) throws IOException {
+		int b, i = 0, offset = -8;
+		if ((b = in.read()) >= 0) i |= b << (offset += 8);
+		if ((b = in.read()) >= 0) i |= b << (offset += 8);
+		if ((b = in.read()) >= 0) i |= b << (offset += 8);
+		if ((b = in.read()) >= 0) i |= b << (offset += 8);
 		return i;
 	}
 
@@ -42,13 +47,10 @@ public final class IOs extends Utils {
 		if (l < 0) return null;
 		if (l == 0) return new byte[0];
 		byte[] bytes = new byte[l];
-		int r = in.read(bytes);
-		while (r < l && l > 0) {
+		int r;
+		while ((r = in.read(bytes)) < l && l > 0)
 			// not full read but no data remained.
 			if (r == -1) throw new IOException();
-			l -= r;
-			r = in.read(bytes, r, l);
-		}
 		return bytes;
 	}
 
@@ -92,6 +94,7 @@ public final class IOs extends Utils {
 	}
 
 	public static void main(String... args) throws IOException {
-		System.out.println(mkdirs("helloWorks"));
+		int i = -8;
+		System.out.println(MessageFormat.format("{0},{1},{2},{3}", i += 8, i += 8, i += 8, i += 8));
 	}
 }

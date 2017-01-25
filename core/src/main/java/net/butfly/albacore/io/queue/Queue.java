@@ -60,11 +60,13 @@ public interface Queue<I, O> extends Input<O>, Output<I> {
 			}
 
 			@Override
+			@Deprecated
 			public boolean enqueue(I d) {
 				return Queue.this.enqueue(d);
 			}
 
 			@Override
+			@Deprecated
 			public O1 dequeue() {
 				O v = Queue.this.dequeue();
 				if (null == v) return null;
@@ -124,6 +126,7 @@ public interface Queue<I, O> extends Input<O>, Output<I> {
 			}
 
 			@Override
+			@Deprecated
 			public boolean enqueue(I0 item) {
 				List<I> items = conv.apply(Arrays.asList(item));
 				if (null == items || items.isEmpty()) return false;
@@ -136,6 +139,7 @@ public interface Queue<I, O> extends Input<O>, Output<I> {
 			}
 
 			@Override
+			@Deprecated
 			public O dequeue() {
 				return Queue.this.dequeue();
 			}

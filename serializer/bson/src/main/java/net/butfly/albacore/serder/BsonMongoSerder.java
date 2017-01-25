@@ -1,5 +1,7 @@
 package net.butfly.albacore.serder;
 
+import java.util.Map;
+
 import org.apache.commons.beanutils.BeanMap;
 import org.bson.BSONCallback;
 import org.bson.BSONDecoder;
@@ -15,9 +17,11 @@ import net.butfly.albacore.serder.support.ClassInfoSerder;
 import net.butfly.albacore.serder.support.ContentTypeSerderBase;
 import net.butfly.albacore.serder.support.ContentTypes;
 
-public class BsonMongoSerder extends ContentTypeSerderBase implements BinarySerder<Object>, BeanSerder<Object, byte[]>,
-		ClassInfoSerder<Object, byte[]> {
+public class BsonMongoSerder<T> extends ContentTypeSerderBase implements BinarySerder<T>, BeanSerder<T, byte[]>,
+		ClassInfoSerder<T, byte[]> {
 	private static final long serialVersionUID = -4877674648803659927L;
+	@SuppressWarnings("rawtypes")
+	public static final BsonMongoSerder<Map> BSON_MAPPER = new BsonMongoSerder<Map>();
 
 	private final BSONEncoder encoder;
 	private final BSONDecoder decoder;
@@ -35,7 +39,7 @@ public class BsonMongoSerder extends ContentTypeSerderBase implements BinarySerd
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <TT> TT der(byte[] from) {
+	public <TT extends T> TT der(byte[] from) {
 		BSONCallback cb = new BasicBSONCallback();
 		decoder.decode(from, cb);
 		return (TT) cb.get();
@@ -47,7 +51,7 @@ public class BsonMongoSerder extends ContentTypeSerderBase implements BinarySerd
 	}
 
 	@Override
-	public <T> T der(byte[] from, Class<T> to) {
+	public <TT extends T> TT der(byte[] from, Class<TT> to) {
 		return this.der(from);
 	}
 }

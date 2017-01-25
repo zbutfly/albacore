@@ -21,6 +21,7 @@ public interface Output<V> extends Openable, Sizable {
 	 */
 	boolean enqueue(V item, boolean block);
 
+	@Deprecated
 	default boolean enqueue(V item) {
 		return enqueue(item, true);
 	};
