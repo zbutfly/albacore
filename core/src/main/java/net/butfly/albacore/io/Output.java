@@ -47,17 +47,23 @@ public interface Output<V> extends Openable, Sizable {
 		return priors(Collections.convAs(conv));
 	}
 
-	class OutputPriorHandler<V0, V> extends Namedly implements InvocationHandler {
+	@SuppressWarnings("unchecked")
+	default <V0> Output<V0> priors(Converter<List<V0>, List<V>> conv) {
+		return (Output<V0>) Proxy.newProxyInstance(this.getClass().getClassLoader(), new Class[] { Output.class }, new OutputPriorHandler<>(
+				this, conv));
+	}
+
+	final class OutputPriorHandler<V0, V> extends Namedly implements InvocationHandler {
 		private final Output<V> output;
 		private final Converter<List<V0>, List<V>> conv;
 
-		private OutputPriorHandler(Output<V> output, Converter<List<V0>, List<V>> conv) {
-			super(output.name() + "Then");
+		public OutputPriorHandler(Output<V> output, Converter<List<V0>, List<V>> conv) {
+			super(output.name() + "Prior");
 			this.output = output;
 			this.conv = conv;
 		}
 
-		@SuppressWarnings("unchecked")
+		@SuppressWarnings({ "unchecked" })
 		@Override
 		public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
 			if (method.getName().equals("name") && (null == args || args.length == 0)) return name;
@@ -68,12 +74,6 @@ public interface Output<V> extends Openable, Sizable {
 			}
 			return method.invoke(output, args);
 		}
-	}
-
-	@SuppressWarnings("unchecked")
-	default <V0> Output<V0> priors(Converter<List<V0>, List<V>> conv) {
-		return (Output<V0>) Proxy.newProxyInstance(this.getClass().getClassLoader(), new Class[] { Output.class },
-				new OutputPriorHandler<V0, V>(this, conv));
 	}
 
 	@Deprecated

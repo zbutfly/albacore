@@ -1,5 +1,6 @@
 package net.butfly.albacore.io.queue;
 
+import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.List;
 
@@ -49,7 +50,15 @@ public interface Queue<I, O> extends Input<O>, Output<I> {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	default <O1> Queue<I, O1> thens(Converter<List<O>, List<O1>> conv) {
+		return (Queue<I, O1>) Proxy.newProxyInstance(this.getClass().getClassLoader(), new Class[] { Queue.class }, //
+				new InputThenHandler<>(this, conv));
+	}
+
+	@Override
+	@Deprecated
+	default <O1> Queue<I, O1> thensWrap(Converter<List<O>, List<O1>> conv) {
 		return new QueueImpl<I, O1>(Queue.this.name() + "Then", Queue.this.capacity()) {
 			@Override
 			public O1 dequeue(boolean block) {
@@ -128,7 +137,15 @@ public interface Queue<I, O> extends Input<O>, Output<I> {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	default <I0> Queue<I0, O> priors(Converter<List<I0>, List<I>> conv) {
+		return (Queue<I0, O>) Proxy.newProxyInstance(this.getClass().getClassLoader(), new Class[] { Queue.class }, //
+				new OutputPriorHandler<>(this, conv));
+	}
+
+	@Override
+	@Deprecated
+	default <I0> Queue<I0, O> priorsWrap(Converter<List<I0>, List<I>> conv) {
 		return new QueueImpl<I0, O>(Queue.this.name() + "Prior", Queue.this.capacity()) {
 
 			@Override

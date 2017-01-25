@@ -1,14 +1,14 @@
 package net.butfly.albacore.lambda;
 
 import java.io.Serializable;
+import java.util.function.Function;
 
-import scala.runtime.AbstractFunction1;
-
-public final class ScalarFunction1<T, R> extends AbstractFunction1<T, R> implements Serializable, Converter<T, R> {
+public final class ScalarFunction1<T, R> extends scala.runtime.AbstractFunction1<T, R> implements Serializable, Converter<T, R>,
+		scala.Function1<T, R> {
 	private static final long serialVersionUID = 1729009288332589663L;
-	private final Converter<T, R> c;
+	private final Function<T, R> c;
 
-	public ScalarFunction1(Converter<T, R> c) {
+	public ScalarFunction1(Function<T, R> c) {
 		this.c = c;
 	}
 

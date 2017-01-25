@@ -12,7 +12,7 @@ public interface Callable<V> extends java.util.concurrent.Callable<V>, Supplier<
 	 *             if unable to compute a result
 	 */
 	@Override
-	V call() throws Exception;
+	V call();
 
 	@Override
 	default V get() {

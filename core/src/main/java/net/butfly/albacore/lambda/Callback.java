@@ -11,7 +11,7 @@ public interface Callback<V> extends Consumer<V>, Serializable {
 	 * @throws Exception
 	 *             if unable to compute a result
 	 */
-	void call(V v) throws Exception;
+	void call(V v);
 
 	@Override
 	default void accept(V v) {

@@ -48,11 +48,17 @@ public interface Input<V> extends Openable, Sizable {
 		return thens(Collections.convAs(conv));
 	}
 
-	class InputThenHandler<V, V1> extends Namedly implements InvocationHandler {
+	@SuppressWarnings("unchecked")
+	default <V1> Input<V1> thens(Converter<List<V>, List<V1>> conv) {
+		return (Input<V1>) Proxy.newProxyInstance(this.getClass().getClassLoader(), new Class[] { Input.class }, new InputThenHandler<>(
+				this, conv));
+	}
+
+	final class InputThenHandler<V, V1> extends Namedly implements InvocationHandler {
 		private final Input<V> input;
 		private final Converter<List<V>, List<V1>> conv;
 
-		private InputThenHandler(Input<V> input, Converter<List<V>, List<V1>> conv) {
+		public InputThenHandler(Input<V> input, Converter<List<V>, List<V1>> conv) {
 			super(input.name() + "Then");
 			this.input = input;
 			this.conv = conv;
@@ -69,12 +75,6 @@ public interface Input<V> extends Openable, Sizable {
 			}
 			return method.invoke(input, args);
 		}
-	}
-
-	@SuppressWarnings("unchecked")
-	default <V1> Input<V1> thens(Converter<List<V>, List<V1>> conv) {
-		return (Input<V1>) Proxy.newProxyInstance(this.getClass().getClassLoader(), new Class[] { Input.class },
-				new InputThenHandler<V, V1>(this, conv));
 	}
 
 	@Deprecated

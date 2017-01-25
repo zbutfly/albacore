@@ -35,4 +35,8 @@ public interface Runnable extends java.lang.Runnable, RunnableEx, Serializable {
 					t.run();
 		};
 	}
+
+	public static void r(RunnableEx r) {
+		r.runEx();
+	}
 }

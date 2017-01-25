@@ -20,7 +20,4 @@ public interface RunnableEx extends Serializable {
 		}
 	}
 
-	public static void r(RunnableEx r) {
-		r.runEx();
-	}
 }
