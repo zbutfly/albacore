@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import net.butfly.albacore.lambda.Converter;
 import scala.Tuple2;
@@ -116,24 +117,22 @@ public final class Collections extends Utils {
 		return e;
 	}
 
+	public static <T> List<T> asList(Collection<T> col) {
+		if (null == col) return null;
+		return col instanceof List ? (List<T>) col : col.stream().collect(Collectors.toList());
+	}
+
 	public static <T> List<T> asList(Iterable<T> it) {
 		if (null == it) return null;
-		return it instanceof List ? (List<T>) it : asList(it.iterator());
+		if (it instanceof List) return (List<T>) it;
+		return StreamSupport.stream(it.spliterator(), false).parallel().collect(Collectors.toList());
 	}
 
-	public static <T> List<T> asList(Iterator<T> iter) {
-		List<T> l = new ArrayList<>();
-		while (iter.hasNext())
-			l.add(iter.next());
-		return l;
-	}
-
-	public static <T> List<List<T>> chopped(List<T> origin, int chopSize) {
+	public static <T> List<List<T>> chopped(Collection<T> origin, int chopSize) {
 		List<List<T>> parts = new ArrayList<>();
 		int originalSize = origin.size();
 		for (int i = 0; i < originalSize; i += chopSize)
-			parts.add(new ArrayList<>(origin.subList(i, Math.min(originalSize, i + chopSize))));
+			parts.add(new ArrayList<>(asList(origin).subList(i, Math.min(originalSize, i + chopSize))));
 		return parts;
 	}
-
 }
