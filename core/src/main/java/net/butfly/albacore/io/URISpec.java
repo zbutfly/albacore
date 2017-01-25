@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
@@ -54,7 +55,8 @@ public class URISpec {
 			}
 		}
 		String p = uri.getPath();
-		paths = null != p ? Arrays.asList(uri.getPath().replaceAll("^/", "").split("/")) : new ArrayList<>();
+		paths = null != p ? Arrays.asList(uri.getPath().split("/")).stream().filter(seg -> seg.trim().length() > 0).collect(Collectors.toList())
+				: new ArrayList<>();
 		query = new Properties();
 		if (null != uri.getQuery()) for (String q : uri.getQuery().split("&")) {
 			String[] kv = q.split("=", 2);
