@@ -114,7 +114,7 @@ public class URISpec {
 
 	public String getQuery() {
 		return query.isEmpty() ? null
-				: new StringBuilder().append('?').append(Joiner.on('&').join(query.entrySet().stream().map(e -> e.getKey().toString() + "="
+				: new StringBuilder().append(Joiner.on('&').join(query.entrySet().stream().map(e -> e.getKey().toString() + "="
 						+ e.getValue().toString()).iterator())).toString();
 	}
 
