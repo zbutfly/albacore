@@ -13,7 +13,7 @@ public class FanoutPump<V> extends PumpImpl<V> {
 	private static final long serialVersionUID = -9048673309470370198L;
 
 	public FanoutPump(Input<V> input, int parallelism, List<? extends Output<V>> outputs) {
-		super(input.name() + ">" + Joiner.on('-').join(Collections.transform(outputs, d -> d.name())), parallelism);
+		super(input.name() + ">" + Joiner.on('-').join(Collections.map(outputs, d -> d.name())), parallelism);
 		Reflections.noneNull("Pump source/destination should not be null", input);
 		Reflections.noneNull("Pump source/destination should not be null", outputs);
 		depend(input);

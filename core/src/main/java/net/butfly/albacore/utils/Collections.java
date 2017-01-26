@@ -2,12 +2,12 @@ package net.butfly.albacore.utils;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import net.butfly.albacore.lambda.Converter;
@@ -15,12 +15,22 @@ import scala.Tuple2;
 
 public final class Collections extends Utils {
 	public static <T, R> Converter<List<T>, List<R>> convAs(Converter<T, R> single) {
-		return ts -> ts.stream().map(single::apply).collect(Collectors.toList());
+		return ts -> ts.parallelStream().map(single::apply).collect(Collectors.toList());
 	}
 
-	public static <T, R> List<R> transform(Collection<T> original, Converter<T, R> trans) {
+	public static <T, R> List<R> stream(Collection<T> original, Converter<Stream<T>, Stream<R>> streaming) {
 		if (original == null) return null;
-		return original.parallelStream().map(trans).collect(Collectors.toList());
+		return streaming.apply(original.parallelStream()).collect(Collectors.toList());
+	}
+
+	public static <T, R> List<R> map(Collection<T> original, Converter<T, R> mapping) {
+		if (original == null) return null;
+		return original.parallelStream().map(mapping).collect(Collectors.toList());
+	}
+
+	@Deprecated
+	public static <T, R> List<R> transform(Collection<T> original, Converter<T, R> trans) {
+		return map(original, trans);
 	}
 
 	/**
@@ -28,12 +38,12 @@ public final class Collections extends Utils {
 	 * Filter null and transform (map) collection and filter null again
 	 * 
 	 * @param original
-	 * @param trans
+	 * @param mapping
 	 * @return
 	 */
-	public static <T, R> List<R> transN(Collection<T> original, Converter<T, R> trans) {
+	public static <T, R> List<R> mapNoNull(Collection<T> original, Converter<T, R> mapping) {
 		if (original == null) return null;
-		return original.parallelStream().filter(t -> t != null).map(trans).filter(t -> t != null).collect(Collectors.toList());
+		return original.parallelStream().filter(t -> t != null).map(mapping).filter(t -> t != null).collect(Collectors.toList());
 	}
 
 	/**
@@ -41,12 +51,12 @@ public final class Collections extends Utils {
 	 * Filter null and transform (map) collection
 	 * 
 	 * @param original
-	 * @param trans
+	 * @param mapping
 	 * @return
 	 */
-	public static <T, R> List<R> transWN(Collection<T> original, Converter<T, R> trans) {
+	public static <T, R> List<R> mapNoNullIn(Collection<T> original, Converter<T, R> mapping) {
 		if (original == null) return null;
-		return original.parallelStream().filter(t -> t != null).map(trans).collect(Collectors.toList());
+		return original.parallelStream().filter(t -> t != null).map(mapping).collect(Collectors.toList());
 	}
 
 	/**
@@ -54,12 +64,12 @@ public final class Collections extends Utils {
 	 * result
 	 * 
 	 * @param original
-	 * @param trans
+	 * @param mapping
 	 * @return
 	 */
-	public static <T, R> List<R> transNN(Collection<T> original, Converter<T, R> trans) {
+	public static <T, R> List<R> mapNoNullOut(Collection<T> original, Converter<T, R> mapping) {
 		if (original == null) return null;
-		return original.parallelStream().map(trans).filter(t -> t != null).collect(Collectors.toList());
+		return original.parallelStream().map(mapping).filter(t -> t != null).collect(Collectors.toList());
 	}
 
 	public static <T> List<T> noNull(Collection<T> original) {
@@ -68,6 +78,7 @@ public final class Collections extends Utils {
 	}
 
 	@SafeVarargs
+	@Deprecated
 	public static <T, R> List<R> transform(Converter<T, R> trans, T... original) {
 		if (original == null) return null;
 		List<R> r = new ArrayList<>(original.length);
@@ -76,11 +87,13 @@ public final class Collections extends Utils {
 		return r;
 	}
 
+	@Deprecated
 	public static <T, R> List<R> transform(Iterable<T> original, Converter<T, R> trans) {
 		if (original == null) return null;
 		return transform(original.iterator(), trans);
 	}
 
+	@Deprecated
 	public static <T, R> List<R> transform(Iterator<T> original, Converter<T, R> trans) {
 		if (original == null) return null;
 		List<R> r = new ArrayList<>();
@@ -89,13 +102,9 @@ public final class Collections extends Utils {
 		return r;
 	}
 
-	public static <T, K, V> Map<K, V> transMapping(Collection<T> list, Converter<T, Tuple2<K, V>> mapping) {
-		Map<K, V> map = new HashMap<>();
-		list.forEach(t -> {
-			Tuple2<K, V> e = mapping.apply(t);
-			map.put(e._1, e._2);
-		});
-		return map;
+	public static <T, K, V> Map<K, List<V>> mapMap(Collection<T> list, Converter<T, Tuple2<K, V>> mapping) {
+		return list.parallelStream().map(mapping).collect(Collectors.groupingBy(t -> t._1, Collectors.mapping(t -> t._2, Collectors
+				.toList())));
 	}
 
 	public static <T> List<T> disorderize(Collection<T> origin) {
@@ -119,7 +128,7 @@ public final class Collections extends Utils {
 
 	public static <T> List<T> asList(Collection<T> col) {
 		if (null == col) return null;
-		return col instanceof List ? (List<T>) col : col.stream().collect(Collectors.toList());
+		return col instanceof List ? (List<T>) col : col.parallelStream().collect(Collectors.toList());
 	}
 
 	public static <T> List<T> asList(Iterable<T> it) {
