@@ -55,8 +55,8 @@ public class URISpec {
 			}
 		}
 		String p = uri.getPath();
-		paths = null != p ? Arrays.asList(uri.getPath().split("/")).stream().filter(seg -> seg.trim().length() > 0).collect(Collectors.toList())
-				: new ArrayList<>();
+		paths = null == p ? new ArrayList<>()
+				: Arrays.asList(uri.getPath().split("/")).stream().filter(seg -> seg.trim().length() > 0).collect(Collectors.toList());
 		query = new Properties();
 		if (null != uri.getQuery()) for (String q : uri.getQuery().split("&")) {
 			String[] kv = q.split("=", 2);
@@ -114,8 +114,8 @@ public class URISpec {
 
 	public String getQuery() {
 		return query.isEmpty() ? null
-				: new StringBuilder().append(Joiner.on('&').join(query.entrySet().stream().map(e -> e.getKey().toString() + "="
-						+ e.getValue().toString()).iterator())).toString();
+				: new StringBuilder().append(Joiner.on('&').join(query.entrySet().stream().map(e -> e.getKey().toString() + "=" + e
+						.getValue().toString()).iterator())).toString();
 	}
 
 	public Properties getParameters() {
