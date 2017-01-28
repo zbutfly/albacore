@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -143,5 +144,9 @@ public final class Collections extends Utils {
 		for (int i = 0; i < originalSize; i += chopSize)
 			parts.add(new ArrayList<>(asList(origin).subList(i, Math.min(originalSize, i + chopSize))));
 		return parts;
+	}
+
+	public static <T> Set<T> intersection(Collection<T> c1, Collection<T> c2) {
+		return c1.parallelStream().filter(t -> null != t && c2.contains(t)).collect(Collectors.toSet());
 	}
 }

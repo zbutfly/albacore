@@ -64,14 +64,29 @@ public interface Input<V> extends Openable, Sizable {
 			this.conv = conv;
 		}
 
+		@SuppressWarnings("unchecked")
 		@Override
 		public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-			if (method.getName().equals("name") && (null == args || args.length == 0)) return name;
-			else if (method.getName().equals("dequeue")) {
+			switch (method.getName()) {
+			case "name":
+				if (null == args || args.length == 0) return name;
+				break;
+			case "dequeue":
 				if (null == args || args.length == 0) return conv.apply(Arrays.asList(input.dequeue())).get(0);
-				if (Number.class.isAssignableFrom(args[0].getClass())) return conv.apply(input.dequeue(((Number) args[0]).longValue()));
-				if (Boolean.class.isAssignableFrom(args[0].getClass())) return conv.apply(Arrays.asList(input.dequeue((Boolean) args[0])))
-						.get(0);
+				if (args.length == 1) {
+					if (Number.class.isAssignableFrom(args[0].getClass())) return conv.apply(input.dequeue(((Number) args[0]).longValue()));
+					if (Boolean.class.isAssignableFrom(args[0].getClass())) return conv.apply(Arrays.asList(input.dequeue(
+							((Boolean) args[0]).booleanValue()))).get(0);
+				}
+				break;
+			case "then":
+				if (args.length == 1) return (Input<V1>) Proxy.newProxyInstance(this.getClass().getClassLoader(), new Class[] {
+						Input.class }, new InputThenHandler<>((Input<V>) proxy, Collections.convAs((Converter<V, V1>) args[0])));
+				break;
+			case "thens":
+				if (args.length == 1) return (Input<V1>) Proxy.newProxyInstance(this.getClass().getClassLoader(), new Class[] {
+						Input.class }, new InputThenHandler<>((Input<V>) proxy, (Converter<List<V>, List<V1>>) args[0]));
+				break;
 			}
 			return method.invoke(input, args);
 		}
