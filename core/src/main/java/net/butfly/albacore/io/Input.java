@@ -48,7 +48,7 @@ public interface Input<V> extends Openable, Sizable {
 	}
 
 	default <V1> Input<V1> thens(Converter<List<V>, List<V1>> conv) {
-		return InvocationHandler.proxy(new InputThenHandler<>(this, conv), Input.class);
+		return new InputThenHandler<>(this, conv).proxy(Input.class);
 	}
 
 	final class InputThenHandler<V, V1> extends Namedly implements InvocationHandler {
