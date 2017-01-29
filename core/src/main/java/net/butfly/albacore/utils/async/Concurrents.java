@@ -31,6 +31,14 @@ public final class Concurrents extends Utils {
 	private static final Logger logger = Logger.getLogger(Concurrents.class);
 	private static ListeningExecutorService CORE_EXECUTOR = null;
 
+	public static void setJavaParallenism(int parallelism) {
+		System.setProperty("java.util.concurrent.ForkJoinPool.common.parallelism", Integer.toString(parallelism));
+	}
+
+	public static int getJavaParallenism() {
+		return ForkJoinPool.getCommonPoolParallelism();
+	}
+
 	public static List<Object> submitAndWait(ListeningExecutorService ex, Supplier<Runnable> tasking, int parallelism) {
 		List<ListenableFuture<?>> outs = new ArrayList<>();
 		for (int i = 0; i < parallelism; i++)

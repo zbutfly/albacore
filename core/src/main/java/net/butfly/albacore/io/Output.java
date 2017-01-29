@@ -1,14 +1,13 @@
 package net.butfly.albacore.io;
 
-import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.List;
 
 import net.butfly.albacore.base.Namedly;
 import net.butfly.albacore.base.Sizable;
 import net.butfly.albacore.lambda.Converter;
+import net.butfly.albacore.lambda.InvocationHandler;
 import net.butfly.albacore.utils.Collections;
 import net.butfly.albacore.utils.async.Concurrents;
 
@@ -47,10 +46,8 @@ public interface Output<V> extends Openable, Sizable {
 		return priors(Collections.convAs(conv));
 	}
 
-	@SuppressWarnings("unchecked")
 	default <V0> Output<V0> priors(Converter<List<V0>, List<V>> conv) {
-		return (Output<V0>) Proxy.newProxyInstance(this.getClass().getClassLoader(), new Class[] { Output.class }, new OutputPriorHandler<>(
-				this, conv));
+		return InvocationHandler.proxy(new OutputPriorHandler<>(this, conv), Output.class);
 	}
 
 	final class OutputPriorHandler<V0, V> extends Namedly implements InvocationHandler {
@@ -66,11 +63,27 @@ public interface Output<V> extends Openable, Sizable {
 		@SuppressWarnings({ "unchecked" })
 		@Override
 		public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-			if (method.getName().equals("name") && (null == args || args.length == 0)) return name;
-			else if (method.getName().equals("enqueue")) {
-				if (args.length == 2) return output.enqueue(conv.apply(Arrays.asList((V0) args[0])).get(0), (Boolean) args[1]);
-				if (List.class.isAssignableFrom(args[0].getClass())) return output.enqueue(conv.apply((List<V0>) args[0]));
-				else return output.enqueue(conv.apply(Arrays.asList((V0) args[0])).get(0));
+			switch (method.getName()) {
+			case "name":
+				if (null == args || args.length == 0) return name;
+				break;
+			case "dequeue":
+				switch (args.length) {
+				case 2:
+					return output.enqueue(conv.apply(Arrays.asList((V0) args[0])).get(0), (Boolean) args[1]);
+				case 1:
+					if (List.class.isAssignableFrom(args[0].getClass())) return output.enqueue(conv.apply((List<V0>) args[0]));
+					else return output.enqueue(conv.apply(Arrays.asList((V0) args[0])).get(0));
+				}
+				break;
+			case "then":
+				if (args.length == 1) return InvocationHandler.proxy(new OutputPriorHandler<>((Output<V>) proxy, //
+						Collections.convAs((Converter<V0, V>) args[0])), Output.class);
+				break;
+			case "thens":
+				if (args.length == 1) return InvocationHandler.proxy(new OutputPriorHandler<>((Output<V>) proxy,
+						(Converter<List<V0>, List<V>>) args[0]), Output.class);
+				break;
 			}
 			return method.invoke(output, args);
 		}

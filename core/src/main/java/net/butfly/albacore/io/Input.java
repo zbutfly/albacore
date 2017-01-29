@@ -1,8 +1,6 @@
 package net.butfly.albacore.io;
 
-import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -10,6 +8,7 @@ import java.util.List;
 import net.butfly.albacore.base.Namedly;
 import net.butfly.albacore.base.Sizable;
 import net.butfly.albacore.lambda.Converter;
+import net.butfly.albacore.lambda.InvocationHandler;
 import net.butfly.albacore.utils.Collections;
 import net.butfly.albacore.utils.async.Concurrents;
 
@@ -48,10 +47,8 @@ public interface Input<V> extends Openable, Sizable {
 		return thens(Collections.convAs(conv));
 	}
 
-	@SuppressWarnings("unchecked")
 	default <V1> Input<V1> thens(Converter<List<V>, List<V1>> conv) {
-		return (Input<V1>) Proxy.newProxyInstance(this.getClass().getClassLoader(), new Class[] { Input.class }, new InputThenHandler<>(
-				this, conv));
+		return InvocationHandler.proxy(new InputThenHandler<>(this, conv), Input.class);
 	}
 
 	final class InputThenHandler<V, V1> extends Namedly implements InvocationHandler {
@@ -80,12 +77,12 @@ public interface Input<V> extends Openable, Sizable {
 				}
 				break;
 			case "then":
-				if (args.length == 1) return (Input<V1>) Proxy.newProxyInstance(this.getClass().getClassLoader(), new Class[] {
-						Input.class }, new InputThenHandler<>((Input<V>) proxy, Collections.convAs((Converter<V, V1>) args[0])));
+				if (args.length == 1) return InvocationHandler.proxy(new InputThenHandler<>((Input<V>) proxy, //
+						Collections.convAs((Converter<V, V1>) args[0])), Input.class);
 				break;
 			case "thens":
-				if (args.length == 1) return (Input<V1>) Proxy.newProxyInstance(this.getClass().getClassLoader(), new Class[] {
-						Input.class }, new InputThenHandler<>((Input<V>) proxy, (Converter<List<V>, List<V1>>) args[0]));
+				if (args.length == 1) return InvocationHandler.proxy(new InputThenHandler<>((Input<V>) proxy,
+						(Converter<List<V>, List<V1>>) args[0]), Input.class);
 				break;
 			}
 			return method.invoke(input, args);
