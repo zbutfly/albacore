@@ -67,7 +67,7 @@ public interface Output<V> extends Openable, Sizable {
 			case "name":
 				if (null == args || args.length == 0) return name;
 				break;
-			case "dequeue":
+			case "enqueue":
 				switch (args.length) {
 				case 2:
 					return output.enqueue(conv.apply(Arrays.asList((V0) args[0])).get(0), (Boolean) args[1]);
@@ -76,11 +76,11 @@ public interface Output<V> extends Openable, Sizable {
 					else return output.enqueue(conv.apply(Arrays.asList((V0) args[0])).get(0));
 				}
 				break;
-			case "then":
+			case "prior":
 				if (args.length == 1) return InvocationHandler.proxy(new OutputPriorHandler<>((Output<V>) proxy, //
 						Collections.convAs((Converter<V0, V>) args[0])), Output.class);
 				break;
-			case "thens":
+			case "priors":
 				if (args.length == 1) return InvocationHandler.proxy(new OutputPriorHandler<>((Output<V>) proxy,
 						(Converter<List<V0>, List<V>>) args[0]), Output.class);
 				break;
