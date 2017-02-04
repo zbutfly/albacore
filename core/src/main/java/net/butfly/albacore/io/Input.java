@@ -12,11 +12,6 @@ public interface Input<V> extends Openable, Sizable {
 		return Long.MAX_VALUE;
 	}
 
-	/**
-	 * basic, none blocking reading.
-	 * 
-	 * @return null on empty
-	 */
 	V dequeue();
 
 	default Stream<V> dequeue(long batchSize) {

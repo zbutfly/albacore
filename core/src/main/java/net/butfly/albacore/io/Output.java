@@ -14,12 +14,6 @@ public interface Output<V> extends Openable, Sizable {
 		return 0;
 	}
 
-	/**
-	 * basic, none blocking writing.
-	 * 
-	 * @param item
-	 * @return
-	 */
 	boolean enqueue(V item);
 
 	default long enqueue(Stream<V> items) {

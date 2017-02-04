@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -115,14 +114,19 @@ public final class Collections extends Utils {
 				.toList())));
 	}
 
-	public static <T> List<T> disorderize(Collection<T> origin) {
+	public static <T> List<T> unorderize(Collection<T> origin) {
 		if (null == origin) return null;
-		ThreadLocalRandom r = ThreadLocalRandom.current();
+		return origin.parallelStream().collect(Collectors.collectingAndThen(Collectors.partitioningBy(t -> r.nextBoolean()), m -> {
+			List<T> r1 = m.get(Boolean.TRUE);
+			r1.addAll(m.get(Boolean.FALSE));
+			return r1;
+		}));
+	}
+
+	public static <T> List<T> disorderize(Collection<T> origin) {
 		List<T> o = new ArrayList<>(origin);
-		List<T> d = new ArrayList<>(origin.size());
-		while (o.size() > 0)
-			d.add(o.remove(Math.abs(r.nextInt()) % o.size()));
-		return d;
+		java.util.Collections.shuffle(o);
+		return o;
 	}
 
 	public static <T> T random(Iterable<T> origin, int size) {
