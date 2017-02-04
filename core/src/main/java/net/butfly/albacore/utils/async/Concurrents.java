@@ -82,6 +82,12 @@ public final class Concurrents extends Utils {
 		return waitShutdown(executor, 10, logger);
 	}
 
+	public static boolean waitSleep(Supplier<Boolean> waiting) {
+		while (waiting.get())
+			if (!Concurrents.waitSleep()) return false;
+		return true;
+	}
+
 	public static boolean waitSleep() {
 		return waitSleep(500);
 	}

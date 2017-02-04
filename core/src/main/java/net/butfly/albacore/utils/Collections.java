@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
@@ -138,15 +139,21 @@ public final class Collections extends Utils {
 		return StreamSupport.stream(it.spliterator(), false).parallel().collect(Collectors.toList());
 	}
 
-	public static <T> List<List<T>> chopped(Collection<T> origin, int chopSize) {
+	public static <T> List<List<T>> chopped(Collection<T> origin, int blockSize) {
 		List<List<T>> parts = new ArrayList<>();
 		int originalSize = origin.size();
-		for (int i = 0; i < originalSize; i += chopSize)
-			parts.add(new ArrayList<>(asList(origin).subList(i, Math.min(originalSize, i + chopSize))));
+		for (int i = 0; i < originalSize; i += blockSize)
+			parts.add(new ArrayList<>(asList(origin).subList(i, Math.min(originalSize, i + blockSize))));
 		return parts;
 	}
 
 	public static <T> Set<T> intersection(Collection<T> c1, Collection<T> c2) {
 		return c1.parallelStream().filter(t -> null != t && c2.contains(t)).collect(Collectors.toSet());
+	}
+
+	private static final Random r = new Random();
+
+	public static <T> Collection<List<T>> chopped(Stream<T> origin, int blockCount) {
+		return origin.collect(Collectors.groupingBy(x -> r.nextInt(blockCount))).values();
 	}
 }

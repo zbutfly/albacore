@@ -3,6 +3,7 @@ package net.butfly.albacore.io.pump;
 import java.util.Arrays;
 import java.util.List;
 
+import net.butfly.albacore.io.FanOutput;
 import net.butfly.albacore.io.Input;
 import net.butfly.albacore.io.Openable;
 import net.butfly.albacore.io.Output;
@@ -27,12 +28,12 @@ public interface Pump<V> extends Statistical<Pump<V>>, Openable {
 		return new BasicPump<V>(input, parallelism, dest);
 	}
 
-	@SuppressWarnings("unchecked")
+	@SafeVarargs
 	public static <V> Pump<V> pump(Input<V> input, int parallelism, Output<V>... dests) {
-		return new FanoutPump<V>(input, parallelism, Arrays.asList(dests));
+		return new BasicPump<>(input, parallelism, new FanOutput<V>(Arrays.asList(dests)));
 	}
 
 	public static <V> Pump<V> pump(Input<V> input, int parallelism, List<? extends Output<V>> dests) {
-		return new FanoutPump<V>(input, parallelism, dests);
+		return new BasicPump<>(input, parallelism, new FanOutput<V>(dests));
 	}
 }

@@ -3,6 +3,7 @@ package net.butfly.albacore.io;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import net.butfly.albacore.utils.async.Concurrents;
 
@@ -15,7 +16,7 @@ public abstract class KeyInputImpl<K, V> extends InputImpl<V> {
 
 	public abstract V dequeue(K key);
 
-	public List<V> dequeue(long batchSize, Iterable<K> keys) {
+	public Stream<V> dequeue(long batchSize, Iterable<K> keys) {
 		List<V> batch = new ArrayList<>();
 		long prev;
 		try {
@@ -23,10 +24,10 @@ public abstract class KeyInputImpl<K, V> extends InputImpl<V> {
 				prev = batch.size();
 				for (K key : keys)
 					this.readTo(key, batch);
-				if (batch.size() >= batchSize) return batch;
+				if (batch.size() >= batchSize) return batch.parallelStream();
 				if (batch.size() == 0) Concurrents.waitSleep();
 			} while (opened() && batch.size() < batchSize && (prev != batch.size() || batch.size() == 0));
-			return batch;
+			return batch.parallelStream();
 		} finally {
 			readCommit();
 		}
