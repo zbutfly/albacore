@@ -13,13 +13,13 @@ import net.butfly.albacore.utils.Collections;
 public final class OutputPriorsHandler<V0, V> extends Namedly implements InvocationHandler {
 	private final Output<V> output;
 	private final Converter<List<V0>, List<V>> conv;
-	private final int parallenism;
+	private final int parallelism;
 
-	public OutputPriorsHandler(Output<V> output, Converter<List<V0>, List<V>> conv, int parallenism) {
+	public OutputPriorsHandler(Output<V> output, Converter<List<V0>, List<V>> conv, int parallelism) {
 		super(output.name() + "Prior");
 		this.output = output;
 		this.conv = conv;
-		this.parallenism = parallenism;
+		this.parallelism = parallelism;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -32,7 +32,7 @@ public final class OutputPriorsHandler<V0, V> extends Namedly implements Invocat
 		case "enqueue":
 			if (args.length == 1) {
 				if (Stream.class.isAssignableFrom(args[0].getClass())) return output.enqueue(Collections.chopped((Stream<V0>) args[0],
-						parallenism).map(conv).reduce(Collections.merging()).get().parallelStream());
+						parallelism).map(conv).reduce(Collections.merging()).get().parallelStream());
 				else return output.enqueue(conv.apply(Arrays.asList((V0) args[0])).get(0));
 			}
 			break;

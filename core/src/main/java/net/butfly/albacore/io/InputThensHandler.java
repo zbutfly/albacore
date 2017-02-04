@@ -12,13 +12,13 @@ import net.butfly.albacore.utils.Collections;
 public final class InputThensHandler<V, V1> extends Namedly implements InvocationHandler {
 	private final Input<V> input;
 	private final Converter<List<V>, List<V1>> conv;
-	private final int parallenism;
+	private final int parallelism;
 
-	public InputThensHandler(Input<V> input, Converter<List<V>, List<V1>> conv, int parallenism) {
+	public InputThensHandler(Input<V> input, Converter<List<V>, List<V1>> conv, int parallelism) {
 		super(input.name() + "Then");
 		this.input = input;
 		this.conv = conv;
-		this.parallenism = parallenism;
+		this.parallelism = parallelism;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -30,7 +30,7 @@ public final class InputThensHandler<V, V1> extends Namedly implements Invocatio
 			break;
 		case "dequeue":
 			if (args.length == 1 && Number.class.isAssignableFrom(args[0].getClass())) return Collections.chopped(//
-					input.dequeue(((Number) args[0]).longValue()), parallenism).map(conv)//
+					input.dequeue(((Number) args[0]).longValue()), parallelism).map(conv)//
 					.reduce(Collections.merging()).get().parallelStream();
 			else if (args.length == 0) return conv.apply(Arrays.asList(input.dequeue())).get(0);
 			break;

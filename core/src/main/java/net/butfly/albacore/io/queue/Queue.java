@@ -51,8 +51,8 @@ public interface Queue<I, O> extends Input<O>, Output<I> {
 	}
 
 	@Override
-	default <O1> Queue<I, O1> thens(Converter<List<O>, List<O1>> conv, int parallenism) {
-		return new InputThensHandler<>(this, conv, parallenism).proxy(Queue.class);
+	default <O1> Queue<I, O1> thens(Converter<List<O>, List<O1>> conv, int parallelism) {
+		return new InputThensHandler<>(this, conv, parallelism).proxy(Queue.class);
 	}
 
 	@Override
@@ -61,7 +61,7 @@ public interface Queue<I, O> extends Input<O>, Output<I> {
 	}
 
 	@Override
-	default <I0> Queue<I0, O> priors(Converter<List<I0>, List<I>> conv, int parallenism) {
-		return new OutputPriorsHandler<>(this, conv, parallenism).proxy(Queue.class);
+	default <I0> Queue<I0, O> priors(Converter<List<I0>, List<I>> conv, int parallelism) {
+		return new OutputPriorsHandler<>(this, conv, parallelism).proxy(Queue.class);
 	}
 }
