@@ -3,6 +3,7 @@ package net.butfly.albacore.io;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 
 import net.butfly.albacore.base.Namedly;
 import net.butfly.albacore.base.Sizable;
@@ -25,21 +26,11 @@ public interface Output<V> extends Openable, Sizable {
 	 */
 	boolean enqueue(V item, boolean block);
 
-	@Deprecated
-	default boolean enqueue(V item) {
-		return enqueue(item, true);
-	}
-
-	default long enqueue(List<V> items) {
-		long c = 0;
-		while (full())
-			Concurrents.waitSleep();
-		for (V e : items)
-			if (null != e) {
-				if (enqueue(e)) c++;
-				else logger().warn("Q enqueue failure though not full before, item maybe lost");
-			}
-		return c;
+	default long enqueue(Stream<V> items) {
+		Stream<V> s = items.filter(t -> t != null);
+		if (!Concurrents.waitSleep(() -> full())) return 0;
+		s.forEach(t -> enqueue(t, true));
+		return s.count();
 	}
 
 	default <V0> Output<V0> prior(Converter<V0, V> conv) {
@@ -71,9 +62,11 @@ public interface Output<V> extends Openable, Sizable {
 				switch (args.length) {
 				case 2:
 					return output.enqueue(conv.apply(Arrays.asList((V0) args[0])).get(0), (Boolean) args[1]);
-				case 1:
-					if (List.class.isAssignableFrom(args[0].getClass())) return output.enqueue(conv.apply((List<V0>) args[0]));
-					else return output.enqueue(conv.apply(Arrays.asList((V0) args[0])).get(0));
+				// case 1:
+				// if (List.class.isAssignableFrom(args[0].getClass())) return
+				// output.enqueueList(conv.apply((List<V0>) args[0]));
+				// else return output.enqueueOne(conv.apply(Arrays.asList((V0)
+				// args[0])).get(0));
 				}
 				break;
 			case "prior":
@@ -87,67 +80,5 @@ public interface Output<V> extends Openable, Sizable {
 			}
 			return method.invoke(output, args);
 		}
-	}
-
-	@Deprecated
-	default <V0> Output<V0> priorsWrap(Converter<List<V0>, List<V>> conv) {
-		return new Output<V0>() {
-			@Override
-			public String name() {
-				return Output.super.name() + "Prior";
-			}
-
-			@Override
-			public boolean enqueue(V0 item, boolean block) {
-				return Output.this.enqueue(conv.apply(Arrays.asList(item)).get(0), block);
-			}
-
-			@Override
-			public boolean enqueue(V0 item) {
-				return Output.this.enqueue(conv.apply(Arrays.asList(item)).get(0));
-			}
-
-			@Override
-			public long enqueue(List<V0> items) {
-				return Output.this.enqueue(conv.apply(items));
-			}
-
-			@Override
-			public long size() {
-				return Output.this.size();
-			}
-
-			@Override
-			public boolean full() {
-				return Output.this.full();
-			}
-
-			@Override
-			public String toString() {
-				return name();
-			}
-
-			@Override
-			public void open(Runnable run) {
-				Output.super.open(null);
-				Output.this.open(run);
-			}
-
-			@Override
-			public void close(Runnable run) {
-				Output.super.close(null);
-				Output.this.close(run);
-			}
-
-			@Override
-			public Status status() {
-				return Output.this.status();
-			}
-
-			@Override
-			public long capacity() {
-				return Output.this.capacity();
-			}
-		};
 	}
 }

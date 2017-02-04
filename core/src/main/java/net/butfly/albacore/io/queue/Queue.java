@@ -1,7 +1,5 @@
 package net.butfly.albacore.io.queue;
 
-import java.lang.reflect.Proxy;
-import java.util.Arrays;
 import java.util.List;
 
 import net.butfly.albacore.io.Input;
@@ -50,85 +48,8 @@ public interface Queue<I, O> extends Input<O>, Output<I> {
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	default <O1> Queue<I, O1> thens(Converter<List<O>, List<O1>> conv) {
-		return (Queue<I, O1>) Proxy.newProxyInstance(this.getClass().getClassLoader(), new Class[] { Queue.class }, //
-				new InputThenHandler<>(this, conv));
-	}
-
-	@Override
-	@Deprecated
-	default <O1> Queue<I, O1> thensWrap(Converter<List<O>, List<O1>> conv) {
-		return new QueueImpl<I, O1>(Queue.this.name() + "Then", Queue.this.capacity()) {
-			@Override
-			public O1 dequeue(boolean block) {
-				return conv.apply(Arrays.asList(Queue.this.dequeue(block))).get(0);
-			}
-
-			@Override
-			public boolean enqueue(I item, boolean block) {
-				return Queue.this.enqueue(item, block);
-			}
-
-			@Override
-			@Deprecated
-			public boolean enqueue(I d) {
-				return Queue.this.enqueue(d);
-			}
-
-			@Override
-			@Deprecated
-			public O1 dequeue() {
-				O v = Queue.this.dequeue();
-				if (null == v) return null;
-				List<O1> l = conv.apply(Arrays.asList(v));
-				if (null == l || l.isEmpty()) return null;
-				return l.get(0);
-			}
-
-			@Override
-			public List<O1> dequeue(long batchSize) {
-				List<O> l = Queue.this.dequeue(batchSize);
-				return conv.apply(l);
-			}
-
-			@Override
-			public long size() {
-				return Queue.this.size();
-			}
-
-			@Override
-			public boolean empty() {
-				return Queue.this.empty();
-			}
-
-			@Override
-			public boolean full() {
-				return Queue.this.full();
-			}
-
-			@Override
-			public String toString() {
-				return Queue.this.getClass().getName() + "Then:" + name();
-			}
-
-			@Override
-			public void open(Runnable run) {
-				super.open(null);
-				Queue.this.open(run);
-			}
-
-			@Override
-			public void close(Runnable run) {
-				super.close(null);
-				Queue.this.close(run);
-			}
-
-			@Override
-			public Status status() {
-				return Queue.this.status();
-			}
-		};
+		return new InputThenHandler<>(this, conv).proxy(Queue.class);
 	}
 
 	@Override
@@ -137,87 +58,7 @@ public interface Queue<I, O> extends Input<O>, Output<I> {
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	default <I0> Queue<I0, O> priors(Converter<List<I0>, List<I>> conv) {
-		return (Queue<I0, O>) Proxy.newProxyInstance(this.getClass().getClassLoader(), new Class[] { Queue.class }, //
-				new OutputPriorHandler<>(this, conv));
-	}
-
-	@Override
-	@Deprecated
-	default <I0> Queue<I0, O> priorsWrap(Converter<List<I0>, List<I>> conv) {
-		return new QueueImpl<I0, O>(Queue.this.name() + "Prior", Queue.this.capacity()) {
-
-			@Override
-			public O dequeue(boolean block) {
-				return Queue.this.dequeue(block);
-			}
-
-			@Override
-			public boolean enqueue(I0 item, boolean block) {
-				return Queue.this.enqueue(conv.apply(Arrays.asList(item)).get(0), block);
-			}
-
-			@Override
-			@Deprecated
-			public boolean enqueue(I0 item) {
-				List<I> items = conv.apply(Arrays.asList(item));
-				if (null == items || items.isEmpty()) return false;
-				return Queue.this.enqueue(items.get(0));
-			}
-
-			@Override
-			public long enqueue(List<I0> items) {
-				return Queue.this.enqueue(conv.apply(items));
-			}
-
-			@Override
-			@Deprecated
-			public O dequeue() {
-				return Queue.this.dequeue();
-			}
-
-			@Override
-			public List<O> dequeue(long batchSize) {
-				return Queue.this.dequeue(batchSize);
-			}
-
-			@Override
-			public long size() {
-				return Queue.this.size();
-			}
-
-			@Override
-			public boolean empty() {
-				return Queue.this.empty();
-			}
-
-			@Override
-			public boolean full() {
-				return Queue.this.full();
-			}
-
-			@Override
-			public String toString() {
-				return Queue.this.getClass().getName() + "Prior:" + name();
-			}
-
-			@Override
-			public void open(Runnable run) {
-				super.open();
-				Queue.this.open(run);
-			}
-
-			@Override
-			public void close(Runnable run) {
-				super.close();
-				Queue.this.close(run);
-			}
-
-			@Override
-			public Status status() {
-				return Queue.this.status();
-			}
-		};
+		return new OutputPriorHandler<>(this, conv).proxy(Queue.class);
 	}
 }

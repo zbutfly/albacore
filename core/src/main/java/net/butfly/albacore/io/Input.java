@@ -1,16 +1,16 @@
 package net.butfly.albacore.io;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import net.butfly.albacore.base.Namedly;
 import net.butfly.albacore.base.Sizable;
 import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.lambda.InvocationHandler;
 import net.butfly.albacore.utils.Collections;
-import net.butfly.albacore.utils.async.Concurrents;
 
 public interface Input<V> extends Openable, Sizable {
 	@Override
@@ -25,22 +25,8 @@ public interface Input<V> extends Openable, Sizable {
 	 */
 	V dequeue(boolean block);
 
-	@Deprecated
-	default V dequeue() {
-		return dequeue(true);
-	}
-
-	default List<V> dequeue(long batchSize) {
-		List<V> batch = new ArrayList<>();
-		long prev;
-		do {
-			prev = batch.size();
-			V e = dequeue(false);
-			if (null != e) batch.add(e);
-			if (batch.size() == 0) Concurrents.waitSleep();
-		} while (batch.size() < batchSize && (prev != batch.size() || batch.size() == 0));
-		this.close();
-		return batch;
+	default Stream<V> dequeue(long batchSize) {
+		return IOStreaming.batch(() -> dequeue(false), batchSize).parallelStream().filter(t -> t != null);
 	}
 
 	default <V1> Input<V1> then(Converter<V, V1> conv) {
@@ -69,9 +55,11 @@ public interface Input<V> extends Openable, Sizable {
 				if (null == args || args.length == 0) return name;
 				break;
 			case "dequeue":
-				if (null == args || args.length == 0) return conv.apply(Arrays.asList(input.dequeue())).get(0);
+				// if (null == args || args.length == 0) return
+				// conv.apply(Arrays.asList(input.dequeueOne())).get(0);
 				if (args.length == 1) {
-					if (Number.class.isAssignableFrom(args[0].getClass())) return conv.apply(input.dequeue(((Number) args[0]).longValue()));
+					if (Number.class.isAssignableFrom(args[0].getClass())) return input.dequeue(((Number) args[0]).longValue()).map(
+							item -> conv.apply(Arrays.asList(item))).collect(Collectors.toList()); // XXX:!!!
 					if (Boolean.class.isAssignableFrom(args[0].getClass())) return conv.apply(Arrays.asList(input.dequeue(
 							((Boolean) args[0]).booleanValue()))).get(0);
 				}
@@ -87,58 +75,5 @@ public interface Input<V> extends Openable, Sizable {
 			}
 			return method.invoke(input, args);
 		}
-	}
-
-	@Deprecated
-	default <V1> Input<V1> thensWrap(Converter<List<V>, List<V1>> conv) {
-		return new Input<V1>() {
-			@Override
-			public String name() {
-				return Input.super.name() + "Then";
-			}
-
-			@Override
-			public V1 dequeue(boolean block) {
-				return conv.apply(Arrays.asList(Input.this.dequeue(block))).get(0);
-			}
-
-			@Override
-			public V1 dequeue() {
-				return conv.apply(Arrays.asList(Input.this.dequeue())).get(0);
-			}
-
-			@Override
-			public List<V1> dequeue(long batchSize) {
-				List<V> l = Input.this.dequeue(batchSize);
-				return conv.apply(l);
-			}
-
-			@Override
-			public long size() {
-				return Input.this.size();
-			}
-
-			@Override
-			public boolean empty() {
-				return Input.this.empty();
-			}
-
-			@Override
-			public void open(Runnable run) {
-				Input.super.open(null);
-				Input.this.open(run);
-			}
-
-			@Override
-			public void close(Runnable run) {
-				Input.super.close(null);
-				Input.this.close(run);
-			}
-
-			@Override
-			public Status status() {
-				return Input.this.status();
-			}
-		};
 	}
 }
