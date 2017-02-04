@@ -120,15 +120,15 @@ public class URISpec {
 		return getPathAt(paths.size() - at - 1, defaults);
 	}
 
-	public String getPaths(int segs) {
+	public String getPath(int segs) {
 		return join((segs > paths.size() ? paths : paths.subList(0, segs)).toArray(new String[paths.size()]));
 	}
 
-	public String getPathsWithout(int segs) {
-		return getPaths(paths.size() - segs);
+	public String getPathSkip(int segs) {
+		return join((segs >= paths.size() ? null : paths.subList(segs, paths.size())).toArray(new String[paths.size()]));
 	}
 
-	public String getPathsLast(int segs) {
+	public String getPathLast(int segs) {
 		return join((segs > paths.size() ? paths : paths.subList(paths.size() - segs, paths.size())).toArray(new String[paths.size()]));
 	}
 
