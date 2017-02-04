@@ -22,9 +22,9 @@ public class FanOutput<V> extends OutputImpl<V> implements Output<V> {
 	}
 
 	@Override
-	public boolean enqueue(V item, boolean block) {
+	public boolean enqueue(V item) {
 		for (Output<V> o : outputs)
-			ForkJoinPool.commonPool().submit(() -> o.enqueue(item, block));
+			ForkJoinPool.commonPool().submit(() -> o.enqueue(item));
 		return true;
 	}
 

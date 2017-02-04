@@ -14,7 +14,7 @@ public final class RandomStringInput extends InputImpl<String> {
 	public static final Input<String> INSTANCE = new RandomStringInput();
 
 	@Override
-	public String dequeue(boolean block) {
+	public String dequeue() {
 		return UUID.randomUUID().toString();
 	}
 }
