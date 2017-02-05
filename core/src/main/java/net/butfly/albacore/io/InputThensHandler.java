@@ -3,6 +3,7 @@ package net.butfly.albacore.io;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 
 import net.butfly.albacore.base.Namedly;
 import net.butfly.albacore.lambda.Converter;
@@ -29,10 +30,11 @@ public final class InputThensHandler<V, V1> extends Namedly implements Invocatio
 			if (null == args || args.length == 0) return name;
 			break;
 		case "dequeue":
-			if (args.length == 1 && Number.class.isAssignableFrom(args[0].getClass())) return Collections.chopped(//
-					input.dequeue(((Number) args[0]).longValue()), parallelism).map(conv)//
-					.reduce(Collections.merging()).get().parallelStream();
-			else if (args.length == 0) return conv.apply(Arrays.asList(input.dequeue())).get(0);
+			if (args.length == 1 && Number.class.isAssignableFrom(args[0].getClass())) {
+				Stream<V> s = input.dequeue(((Number) args[0]).longValue());
+				return parallelism <= 1 ? s.map(v -> conv.apply(Arrays.asList(v)).get(0))
+						: Collections.chopped(s, parallelism).map(conv).reduce(Collections.merging()).get().parallelStream();
+			} else if (args.length == 0) return conv.apply(Arrays.asList(input.dequeue())).get(0);
 			break;
 		case "then":
 			if (args.length == 1) return new InputThenHandler<>((Input<V>) proxy, (Converter<V, V1>) args[0]).proxy(Input.class);

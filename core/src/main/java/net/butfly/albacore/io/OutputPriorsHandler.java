@@ -31,9 +31,12 @@ public final class OutputPriorsHandler<V0, V> extends Namedly implements Invocat
 			break;
 		case "enqueue":
 			if (args.length == 1) {
-				if (Stream.class.isAssignableFrom(args[0].getClass())) return output.enqueue(Collections.chopped((Stream<V0>) args[0],
-						parallelism).map(conv).reduce(Collections.merging()).get().parallelStream());
-				else return output.enqueue(conv.apply(Arrays.asList((V0) args[0])).get(0));
+				if (Stream.class.isAssignableFrom(args[0].getClass())) {
+					Stream<V> s = parallelism <= 1 ? ((Stream<V0>) args[0]).map(e -> conv.apply(Arrays.asList(e)).get(0))
+							: Collections.chopped(((Stream<V0>) args[0]), parallelism).map(conv).reduce(Collections.merging()).get()
+									.parallelStream();
+					return output.enqueue(s);
+				} else return output.enqueue(conv.apply(Arrays.asList((V0) args[0])).get(0));
 			}
 			break;
 		case "prior":
