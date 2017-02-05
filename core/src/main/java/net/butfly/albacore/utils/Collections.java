@@ -156,7 +156,7 @@ public final class Collections extends Utils {
 	private static final Random r = new Random();
 
 	private static <T> Collection<List<T>> chop(Stream<T> origin, int parallelism) {
-		return origin.collect(Collectors.groupingBy(x -> r.nextInt(parallelism < 0 ? 2 : parallelism))).values();
+		return origin.collect(Collectors.groupingBy(x -> r.nextInt(parallelism < 2 ? 2 : parallelism))).values();
 	}
 
 	public static <T> Stream<List<T>> chopped(Stream<T> origin, int parallelism) {
