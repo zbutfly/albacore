@@ -35,8 +35,8 @@ public final class OutputPriorHandler<V0, V> extends Namedly implements Invocati
 			if (args.length == 1) return new OutputPriorHandler<>((Output<V>) proxy, (Converter<V0, V>) args[0]).proxy(Output.class);
 			break;
 		case "priors":
-			if (args.length == 2) return new OutputPriorsHandler<>((Output<V>) proxy, (Converter<List<V0>, List<V>>) args[0],
-					((Number) args[1]).intValue()).proxy(Output.class);
+			if (args.length == 1) return new OutputPriorsHandler<>((Output<V>) proxy, (Converter<List<V0>, List<V>>) args[0]).proxy(
+					Output.class);
 			break;
 		}
 		return method.invoke(output, args);

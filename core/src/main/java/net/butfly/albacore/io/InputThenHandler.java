@@ -33,8 +33,8 @@ public final class InputThenHandler<V, V1> extends Namedly implements Invocation
 			if (args.length == 1) return new InputThenHandler<>((Input<V>) proxy, (Converter<V, V1>) args[0]).proxy(Input.class);
 			break;
 		case "thens":
-			if (args.length == 2) return new InputThensHandler<>((Input<V>) proxy, (Converter<List<V>, List<V1>>) args[0],
-					((Number) args[1]).intValue()).proxy(Input.class);
+			if (args.length == 1) return new InputThensHandler<>((Input<V>) proxy, (Converter<List<V>, List<V1>>) args[0]).proxy(
+					Input.class);
 			break;
 		}
 		return method.invoke(input, args);
