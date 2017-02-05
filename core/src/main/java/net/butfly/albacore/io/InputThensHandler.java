@@ -3,23 +3,20 @@ package net.butfly.albacore.io;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Stream;
+import java.util.stream.Collectors;
 
 import net.butfly.albacore.base.Namedly;
 import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.lambda.InvocationHandler;
-import net.butfly.albacore.utils.Collections;
 
 public final class InputThensHandler<V, V1> extends Namedly implements InvocationHandler {
 	private final Input<V> input;
 	private final Converter<List<V>, List<V1>> conv;
-	private final int parallelism;
 
-	public InputThensHandler(Input<V> input, Converter<List<V>, List<V1>> conv, int parallelism) {
+	public InputThensHandler(Input<V> input, Converter<List<V>, List<V1>> conv) {
 		super(input.name() + "Then");
 		this.input = input;
 		this.conv = conv;
-		this.parallelism = parallelism;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -31,17 +28,15 @@ public final class InputThensHandler<V, V1> extends Namedly implements Invocatio
 			break;
 		case "dequeue":
 			if (args.length == 1 && Number.class.isAssignableFrom(args[0].getClass())) {
-				Stream<V> s = input.dequeue(((Number) args[0]).longValue());
-				return parallelism <= 1 ? s.map(v -> conv.apply(Arrays.asList(v)).get(0))
-						: Collections.chopped(s, parallelism).map(conv).reduce(Collections.merging()).get().parallelStream();
+				return conv.apply(input.dequeue(((Number) args[0]).longValue()).collect(Collectors.toList())).parallelStream();
 			} else if (args.length == 0) return conv.apply(Arrays.asList(input.dequeue())).get(0);
 			break;
 		case "then":
 			if (args.length == 1) return new InputThenHandler<>((Input<V>) proxy, (Converter<V, V1>) args[0]).proxy(Input.class);
 			break;
 		case "thens":
-			if (args.length == 2) return new InputThensHandler<>((Input<V>) proxy, (Converter<List<V>, List<V1>>) args[0],
-					((Number) args[1]).intValue()).proxy(Input.class);
+			if (args.length == 1) return new InputThensHandler<>((Input<V>) proxy, (Converter<List<V>, List<V1>>) args[0]).proxy(
+					Input.class);
 			break;
 		}
 		return method.invoke(input, args);

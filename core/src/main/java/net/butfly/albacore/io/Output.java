@@ -30,7 +30,7 @@ public interface Output<V> extends Openable, Sizable {
 		return new OutputPriorHandler<>(this, conv).proxy(Output.class);
 	}
 
-	default <V0> Output<V0> priors(Converter<List<V0>, List<V>> conv, int parallelism) {
-		return new OutputPriorsHandler<>(this, conv, parallelism).proxy(Output.class);
+	default <V0> Output<V0> priors(Converter<List<V0>, List<V>> conv) {
+		return new OutputPriorsHandler<>(this, conv).proxy(Output.class);
 	}
 }

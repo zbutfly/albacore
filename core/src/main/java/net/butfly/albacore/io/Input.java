@@ -22,7 +22,7 @@ public interface Input<V> extends Openable, Sizable {
 		return new InputThenHandler<>(this, conv).proxy(Input.class);
 	}
 
-	default <V1> Input<V1> thens(Converter<List<V>, List<V1>> conv, int parallelism) {
-		return new InputThensHandler<>(this, conv, parallelism).proxy(Input.class);
+	default <V1> Input<V1> thens(Converter<List<V>, List<V1>> conv) {
+		return new InputThensHandler<>(this, conv).proxy(Input.class);
 	}
 }
