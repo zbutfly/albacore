@@ -27,5 +27,4 @@ public class FanOutput<V> extends OutputImpl<V> implements Output<V> {
 			ForkJoinPool.commonPool().submit(() -> o.enqueue(item));
 		return true;
 	}
-
 }

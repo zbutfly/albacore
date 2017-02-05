@@ -14,7 +14,6 @@ import net.butfly.albacore.lambda.Runnable;
 import net.butfly.albacore.utils.async.Concurrents;
 
 abstract class PumpImpl<V> extends Namedly implements Pump<V> {
-	private static final long serialVersionUID = 5115726180980986678L;
 	protected static final int STATUS_OTHER = 0;
 	protected static final int STATUS_RUNNING = 1;
 	protected static final int STATUS_STOPPED = 2;
