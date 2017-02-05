@@ -2,6 +2,7 @@ package net.butfly.albacore.io.pump;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import net.butfly.albacore.io.FanOutput;
 import net.butfly.albacore.io.Input;
@@ -17,7 +18,12 @@ public interface Pump<V> extends Statistical<Pump<V>>, Openable {
 	default void open(Runnable run) {
 		Openable.super.open(() -> {
 			// handle kill -15, CTRL-C, kill -9
-			Systems.handleSignal(sig -> close(), "TERM", "INT");
+			Systems.handleSignal(sig -> {
+				close();
+				System.err.println("Maybe you need to kill me manually: kill -9 " + Systems.pid());
+				System.err.println("Running threads: \n\t" + Systems.threadsRunning().map(t -> t.getId() + "[" + t.getName() + "]").collect(
+						Collectors.joining("\n\t")));
+			}, "TERM", "INT");
 			/* , "KILL" */
 			// kill -9 catched by system/os
 			if (null != run) run.run();
