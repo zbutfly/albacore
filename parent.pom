@@ -222,4 +222,10 @@
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
+	<repositories>
+		<repository>
+			<id>tudelft</id>
+			<url>http://simulation.tudelft.nl/maven/</url>
+		</repository>
+	</repositories>
 </project>
