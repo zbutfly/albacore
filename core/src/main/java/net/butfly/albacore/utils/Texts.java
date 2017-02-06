@@ -1,6 +1,7 @@
 package net.butfly.albacore.utils;
 
 import java.text.DateFormat;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -86,5 +87,40 @@ public final class Texts extends Utils {
 			params.put(kv[0], kv.length > 1 ? kv[1] : null);
 		}
 		return params;
+	}
+
+	private static DecimalFormat f = new DecimalFormat("#.##");
+
+	private static long K = 1024;
+	private static long M = K * K;
+	private static long G = M * K;
+	private static long T = G * K;
+
+	public static String formatKilo(long n, String unit) {
+		double d = n;
+		if (d > T) return f.format(d / T) + "/T" + unit;
+		// +"+" + formatBytes(bytes % T);
+		if (d > G) return f.format(d / G) + "/G" + unit;
+		// +"+" + formatBytes(bytes % G);
+		if (d > M) return f.format(d / M) + "/M" + unit;
+		// +"+" + formatBytes(bytes % M);
+		if (d > K) return f.format(d / K) + "/K" + unit;
+		// +"+" + formatBytes(bytes % K);
+		return f.format(d) + "/" + unit;
+	}
+
+	private static int SECOND = 1000;
+	private static int MINUTE = 60 * SECOND;
+	private static int HOUR = 60 * MINUTE;
+
+	public static String formatMillis(long millis) {
+		double ms = millis * 1.0;
+		if (ms > HOUR) return f.format(ms / HOUR) + "/h";
+		// + "+" + formatMillis(millis % HOUR);
+		if (ms > MINUTE) return f.format(ms / MINUTE) + "/m";
+		// + "+" + formatMillis(millis % MINUTE);
+		if (ms > SECOND) return f.format(millis / SECOND) + "/s";
+		// + "+" + formatMillis(millis % SECOND);
+		return f.format(ms) + "/ms";
 	}
 }

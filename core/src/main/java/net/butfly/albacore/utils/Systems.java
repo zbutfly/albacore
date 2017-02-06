@@ -1,21 +1,58 @@
 package net.butfly.albacore.utils;
 
+import java.lang.management.ManagementFactory;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 import net.butfly.albacore.io.OpenableThread;
 import net.butfly.albacore.lambda.Consumer;
 import net.butfly.albacore.utils.logger.Logger;
+import sun.management.VMManagement;
 import sun.misc.Signal;
 
 @SuppressWarnings({ "restriction" })
 public final class Systems extends Utils {
 	final static Logger logger = Logger.getLogger(Systems.class);
+
+	public static void main(String... args) {
+		System.err.println(threadsRunning());
+	}
+
+	public static Stream<Thread> threadsRunning() {
+		Set<Thread> threads = new HashSet<>(Thread.getAllStackTraces().keySet());
+		return threads.stream().filter(t -> !t.isDaemon());
+	}
+
+	public static int pid() {
+		VMManagement vm = Reflections.get(ManagementFactory.getRuntimeMXBean(), "jvm");
+		Method m;
+		try {
+			m = vm.getClass().getDeclaredMethod("getProcessId");
+		} catch (NoSuchMethodException | SecurityException e) {
+			throw new RuntimeException(e);
+		}
+		boolean acc = m.isAccessible();
+		m.setAccessible(true);
+		try {
+			return ((Integer) m.invoke(vm)).intValue();
+		} catch (IllegalAccessException | IllegalArgumentException e) {
+			throw new RuntimeException(e);
+		} catch (InvocationTargetException e) {
+			throw new RuntimeException(e.getTargetException());
+		} finally {
+			m.setAccessible(acc);
+		}
+	}
 
 	public static Class<?> getMainClass() {
 		try {

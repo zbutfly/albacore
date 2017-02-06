@@ -1,7 +1,6 @@
 package net.butfly.albacore.io.stats;
 
 import java.io.Serializable;
-import java.text.DecimalFormat;
 import java.text.MessageFormat;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicLong;
@@ -10,6 +9,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.lambda.Supplier;
 import net.butfly.albacore.utils.Reflections;
+import net.butfly.albacore.utils.Texts;
 import net.butfly.albacore.utils.logger.Logger;
 
 class Statistic implements Serializable {
@@ -57,14 +57,10 @@ class Statistic implements Serializable {
 
 	}
 
-	void stats(Object v) {
+	<T> T stats(T v) {
 		Long l = sizing == null || v == null ? 0L : sizing.apply(v);
 		stats(null == l ? 0 : l.longValue());
-	}
-
-	void stats(Iterable<?> vv) {
-		for (Object v : vv)
-			stats(v);
+		return v;
 	}
 
 	void trace() {
@@ -75,44 +71,10 @@ class Statistic implements Serializable {
 		logger.debug(() -> {
 			String ss = null == detailing ? "" : detailing.get();
 			ss = null == ss ? "" : ", [" + ss + "]";
-			return MessageFormat.format("Statistic: [Step: {0}/objs,{1},{2}], [Total: {3}/objs,{4},{5}]{6}.", step.packs, formatBytes(
-					step.bytes), formatMillis(step.millis), total.packs, formatBytes(total.bytes), formatMillis(total.millis), ss);
+			return MessageFormat.format("Statistic: [Step: {0}/objs,{1},{2}], [Total: {3}/objs,{4},{5}]{6}.", step.packs, Texts.formatKilo(
+					step.bytes, "B"), Texts.formatMillis(step.millis), total.packs, Texts.formatKilo(total.bytes, "B"), Texts.formatMillis(
+							total.millis), ss);
 		});
-	}
-
-	private static DecimalFormat f = new DecimalFormat("#.##");
-
-	private static long K = 1024;
-	private static long M = K * K;
-	private static long G = M * K;
-	private static long T = G * K;
-
-	String formatBytes(long bytes) {
-		double b = bytes;
-		if (b > T) return f.format(b / T) + "/TB";
-		// +"+" + formatBytes(bytes % T);
-		if (b > G) return f.format(b / G) + "/GB";
-		// +"+" + formatBytes(bytes % G);
-		if (b > M) return f.format(b / M) + "/MB";
-		// +"+" + formatBytes(bytes % M);
-		if (b > K) return f.format(b / K) + "/KB";
-		// +"+" + formatBytes(bytes % K);
-		return f.format(b) + "/Bytes";
-	}
-
-	private static int SECOND = 1000;
-	private static int MINUTE = 60 * SECOND;
-	private static int HOUR = 60 * MINUTE;
-
-	String formatMillis(long millis) {
-		double ms = millis * 1.0;
-		if (ms > HOUR) return f.format(ms / HOUR) + "/h";
-		// + "+" + formatMillis(millis % HOUR);
-		if (ms > MINUTE) return f.format(ms / MINUTE) + "/m";
-		// + "+" + formatMillis(millis % MINUTE);
-		if (ms > SECOND) return f.format(millis / SECOND) + "/s";
-		// + "+" + formatMillis(millis % SECOND);
-		return f.format(ms) + "/ms";
 	}
 
 	static class Result {

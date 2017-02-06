@@ -31,11 +31,11 @@ public final class Concurrents extends Utils {
 	private static final Logger logger = Logger.getLogger(Concurrents.class);
 	private static ListeningExecutorService CORE_EXECUTOR = null;
 
-	public static void setJavaParallenism(int parallelism) {
+	public static void setJavaParallelism(int parallelism) {
 		System.setProperty("java.util.concurrent.ForkJoinPool.common.parallelism", Integer.toString(parallelism));
 	}
 
-	public static int getJavaParallenism() {
+	public static int getJavaParallelism() {
 		return ForkJoinPool.getCommonPoolParallelism();
 	}
 

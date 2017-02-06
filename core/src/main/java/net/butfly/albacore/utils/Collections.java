@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -16,8 +16,13 @@ import net.butfly.albacore.lambda.Converter;
 import scala.Tuple2;
 
 public final class Collections extends Utils {
-	public static <T, R> Converter<List<T>, List<R>> convAs(Converter<T, R> single) {
-		return ts -> ts.parallelStream().map(single::apply).collect(Collectors.toList());
+	public static <T> BinaryOperator<List<T>> merging() {
+		return (t1, t2) -> {
+			List<T> l = new ArrayList<>();
+			l.addAll(t1);
+			l.addAll(t2);
+			return l;
+		};
 	}
 
 	public static <T, R> List<R> stream(Collection<T> original, Converter<Stream<T>, Stream<R>> streaming) {
@@ -109,14 +114,19 @@ public final class Collections extends Utils {
 				.toList())));
 	}
 
-	public static <T> List<T> disorderize(Collection<T> origin) {
+	public static <T> List<T> unorderize(Collection<T> origin) {
 		if (null == origin) return null;
-		ThreadLocalRandom r = ThreadLocalRandom.current();
+		return origin.parallelStream().collect(Collectors.collectingAndThen(Collectors.partitioningBy(t -> r.nextBoolean()), m -> {
+			List<T> r1 = m.get(Boolean.TRUE);
+			r1.addAll(m.get(Boolean.FALSE));
+			return r1;
+		}));
+	}
+
+	public static <T> List<T> disorderize(Collection<T> origin) {
 		List<T> o = new ArrayList<>(origin);
-		List<T> d = new ArrayList<>(origin.size());
-		while (o.size() > 0)
-			d.add(o.remove(Math.abs(r.nextInt()) % o.size()));
-		return d;
+		java.util.Collections.shuffle(o);
+		return o;
 	}
 
 	public static <T> T random(Iterable<T> origin, int size) {
@@ -139,21 +149,30 @@ public final class Collections extends Utils {
 		return StreamSupport.stream(it.spliterator(), false).parallel().collect(Collectors.toList());
 	}
 
-	public static <T> List<List<T>> chopped(Collection<T> origin, int blockSize) {
-		List<List<T>> parts = new ArrayList<>();
-		int originalSize = origin.size();
-		for (int i = 0; i < originalSize; i += blockSize)
-			parts.add(new ArrayList<>(asList(origin).subList(i, Math.min(originalSize, i + blockSize))));
-		return parts;
-	}
-
 	public static <T> Set<T> intersection(Collection<T> c1, Collection<T> c2) {
 		return c1.parallelStream().filter(t -> null != t && c2.contains(t)).collect(Collectors.toSet());
 	}
 
 	private static final Random r = new Random();
 
-	public static <T> Collection<List<T>> chopped(Stream<T> origin, int blockCount) {
-		return origin.collect(Collectors.groupingBy(x -> r.nextInt(blockCount))).values();
+	private static <T> Collection<List<T>> chop(Stream<T> origin, int parallelism) {
+		return origin.collect(Collectors.groupingBy(x -> r.nextInt(parallelism < 2 ? 2 : parallelism))).values();
+	}
+
+	public static <T> Stream<List<T>> chopped(Stream<T> origin, int parallelism) {
+		return chop(origin, parallelism).parallelStream();
+	}
+
+	public static <T> Collection<List<T>> chopped(Collection<T> origin, int blockSize) {
+		return chop(origin.parallelStream(), origin.size() / blockSize);
+	}
+
+	@Deprecated
+	public static <T> List<List<T>> chopStatic(List<T> origin, int blockSize) {
+		List<List<T>> parts = new ArrayList<>();
+		int originalSize = origin.size();
+		for (int i = 0; i < originalSize; i += blockSize)
+			parts.add(new ArrayList<>(origin.subList(i, Math.min(originalSize, i + blockSize))));
+		return parts;
 	}
 }

@@ -3,9 +3,12 @@ package net.butfly.albacore.io.queue;
 import java.util.List;
 
 import net.butfly.albacore.io.Input;
+import net.butfly.albacore.io.InputThenHandler;
+import net.butfly.albacore.io.InputThensHandler;
 import net.butfly.albacore.io.Output;
+import net.butfly.albacore.io.OutputPriorHandler;
+import net.butfly.albacore.io.OutputPriorsHandler;
 import net.butfly.albacore.lambda.Converter;
-import net.butfly.albacore.utils.Collections;
 
 /**
  * Rich feature queue for big data processing, supporting:
@@ -44,21 +47,21 @@ public interface Queue<I, O> extends Input<O>, Output<I> {
 
 	@Override
 	default <O1> Queue<I, O1> then(Converter<O, O1> conv) {
-		return thens(Collections.convAs(conv));
-	}
-
-	@Override
-	default <O1> Queue<I, O1> thens(Converter<List<O>, List<O1>> conv) {
 		return new InputThenHandler<>(this, conv).proxy(Queue.class);
 	}
 
 	@Override
+	default <O1> Queue<I, O1> thens(Converter<List<O>, List<O1>> conv) {
+		return new InputThensHandler<>(this, conv).proxy(Queue.class);
+	}
+
+	@Override
 	default <I0> Queue<I0, O> prior(Converter<I0, I> conv) {
-		return priors(Collections.convAs(conv));
+		return new OutputPriorHandler<>(this, conv).proxy(Queue.class);
 	}
 
 	@Override
 	default <I0> Queue<I0, O> priors(Converter<List<I0>, List<I>> conv) {
-		return new OutputPriorHandler<>(this, conv).proxy(Queue.class);
+		return new OutputPriorsHandler<>(this, conv).proxy(Queue.class);
 	}
 }

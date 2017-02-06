@@ -104,12 +104,36 @@ public class URISpec {
 		return Joiner.on(',').join(hosts.stream().map(p -> p.value1() + (p.value2() <= 0 ? "" : (":" + p.value2()))).iterator());
 	}
 
-	public String[] getPathSegs() {
+	public String[] getPaths() {
 		return paths.toArray(new String[paths.size()]);
 	}
 
+	private String join(String[] segs) {
+		return segs == null || segs.length == 0 ? null : Joiner.on('/').join(segs);
+	}
+
+	public String getPathAt(int at, String... defaults) {
+		return at >= paths.size() || at < 0 ? join(defaults) : paths.get(at);
+	}
+
+	public String getPathAtLast(int at, String... defaults) {
+		return getPathAt(paths.size() - at - 1, defaults);
+	}
+
+	public String getPath(int segs) {
+		return join((segs > paths.size() ? paths : paths.subList(0, segs)).toArray(new String[paths.size()]));
+	}
+
+	public String getPathSkip(int segs) {
+		return join((segs >= paths.size() ? null : paths.subList(segs, paths.size())).toArray(new String[paths.size()]));
+	}
+
+	public String getPathLast(int segs) {
+		return join((segs > paths.size() ? paths : paths.subList(paths.size() - segs, paths.size())).toArray(new String[paths.size()]));
+	}
+
 	public String getPath() {
-		return paths.isEmpty() ? null : new StringBuilder().append('/').append(Joiner.on('/').join(paths)).toString();
+		return paths.isEmpty() ? null : "/" + join(paths.toArray(new String[paths.size()]));
 	}
 
 	public String getQuery() {
