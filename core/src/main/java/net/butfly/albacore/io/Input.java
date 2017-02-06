@@ -6,7 +6,9 @@ import java.util.stream.Stream;
 import net.butfly.albacore.base.Sizable;
 import net.butfly.albacore.lambda.Converter;
 
-public interface Input<V> extends Openable, Sizable {
+/*, Supplier<List<V>> */
+public interface Input<V> extends Openable, Sizable, IOput {
+
 	@Override
 	default long size() {
 		return Long.MAX_VALUE;

@@ -8,7 +8,7 @@ import net.butfly.albacore.base.Sizable;
 import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.utils.async.Concurrents;
 
-public interface Output<V> extends Openable, Sizable {
+public interface Output<V> extends Openable, Sizable, IOput {
 	@Override
 	default long size() {
 		return 0;

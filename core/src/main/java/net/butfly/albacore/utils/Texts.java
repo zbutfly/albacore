@@ -98,15 +98,15 @@ public final class Texts extends Utils {
 
 	public static String formatKilo(long n, String unit) {
 		double d = n;
-		if (d > T) return f.format(d / T) + "/T" + unit;
+		if (d > T) return f.format(d / T) + "T" + unit;
 		// +"+" + formatBytes(bytes % T);
-		if (d > G) return f.format(d / G) + "/G" + unit;
+		if (d > G) return f.format(d / G) + "G" + unit;
 		// +"+" + formatBytes(bytes % G);
-		if (d > M) return f.format(d / M) + "/M" + unit;
+		if (d > M) return f.format(d / M) + "M" + unit;
 		// +"+" + formatBytes(bytes % M);
-		if (d > K) return f.format(d / K) + "/K" + unit;
+		if (d > K) return f.format(d / K) + "K" + unit;
 		// +"+" + formatBytes(bytes % K);
-		return f.format(d) + "/" + unit;
+		return f.format(d) + unit;
 	}
 
 	private static int SECOND = 1000;
@@ -115,12 +115,12 @@ public final class Texts extends Utils {
 
 	public static String formatMillis(long millis) {
 		double ms = millis * 1.0;
-		if (ms > HOUR) return f.format(ms / HOUR) + "/h";
+		if (ms > HOUR) return f.format(ms / HOUR) + " Hours";
 		// + "+" + formatMillis(millis % HOUR);
-		if (ms > MINUTE) return f.format(ms / MINUTE) + "/m";
+		if (ms > MINUTE) return f.format(ms / MINUTE) + " Minutes";
 		// + "+" + formatMillis(millis % MINUTE);
-		if (ms > SECOND) return f.format(millis / SECOND) + "/s";
+		if (ms > SECOND) return f.format(millis / SECOND) + " Secs";
 		// + "+" + formatMillis(millis % SECOND);
-		return f.format(ms) + "/ms";
+		return f.format(ms) + " MS";
 	}
 }

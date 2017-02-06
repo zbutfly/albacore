@@ -49,7 +49,7 @@ class Statistic implements Serializable {
 		packsInTotal.incrementAndGet();
 		bytesInTotal.addAndGet(bytes < 0 ? 0 : bytes);
 		bytesInStep.addAndGet(bytes < 0 ? 0 : bytes);
-		if (packsInStep.incrementAndGet() > packsStep.get() && logger.isTraceEnabled() && lock.tryLock()) try {
+		if (packsInStep.incrementAndGet() > packsStep.get() && logger.isInfoEnabled() && lock.tryLock()) try {
 			trace();
 		} finally {
 			lock.unlock();
@@ -68,7 +68,7 @@ class Statistic implements Serializable {
 		Statistic.Result step, total;
 		step = new Statistic.Result(packsInStep.getAndSet(0), bytesInStep.getAndSet(0), now - statsed.getAndSet(now));
 		total = new Statistic.Result(packsInTotal.get(), bytesInTotal.get(), new Date().getTime() - begin);
-		logger.debug(() -> {
+		logger.info(() -> {
 			String ss = null == detailing ? "" : detailing.get();
 			ss = null == ss ? "" : ", [" + ss + "]";
 			return MessageFormat.format("Statistic: [Step: {0}/objs,{1},{2}], [Total: {3}/objs,{4},{5}]{6}.", step.packs, Texts.formatKilo(
