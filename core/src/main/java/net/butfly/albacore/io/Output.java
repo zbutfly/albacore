@@ -2,13 +2,20 @@ package net.butfly.albacore.io;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import net.butfly.albacore.base.Sizable;
 import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.utils.async.Concurrents;
 
-public interface Output<V> extends Openable, Sizable, IOput {
+@FunctionalInterface
+public interface Output<V> extends Openable, Sizable, IOput, Consumer<V> {
+	@Override
+	default void accept(V t) {
+		if (!enqueue(t)) throw new RuntimeException("Enqueue failure");
+	}
+
 	@Override
 	default long size() {
 		return 0;

@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.BinaryOperator;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -174,5 +175,19 @@ public final class Collections extends Utils {
 		for (int i = 0; i < originalSize; i += blockSize)
 			parts.add(new ArrayList<>(origin.subList(i, Math.min(originalSize, i + blockSize))));
 		return parts;
+	}
+
+	public static <T> Iterator<T> iterator(Supplier<T> supplier) {
+		return new Iterator<T>() {
+			@Override
+			public boolean hasNext() {
+				return true;
+			}
+
+			@Override
+			public T next() {
+				return supplier.get();
+			}
+		};
 	}
 }

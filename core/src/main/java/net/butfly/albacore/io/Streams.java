@@ -6,12 +6,11 @@ import java.util.function.Supplier;
 
 import org.apache.log4j.Logger;
 
+import net.butfly.albacore.utils.Utils;
 import net.butfly.albacore.utils.async.Concurrents;
 
-public final class IOStreaming {
-	private static final Logger logger = Logger.getLogger(IOStreaming.class);
-
-	private IOStreaming() {}
+public final class Streams extends Utils {
+	private static final Logger logger = Logger.getLogger(Streams.class);
 
 	static <V> List<V> batch(Supplier<V> get, long batchSize) {
 		List<V> batch = new ArrayList<>();

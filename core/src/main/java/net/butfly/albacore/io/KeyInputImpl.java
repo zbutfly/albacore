@@ -17,6 +17,7 @@ public abstract class KeyInputImpl<K, V> extends InputImpl<V> {
 
 	public abstract V dequeue(K key);
 
+	@Override
 	public final V dequeue() {
 		while (true) {
 			for (K k : Collections.disorderize(keys())) {
