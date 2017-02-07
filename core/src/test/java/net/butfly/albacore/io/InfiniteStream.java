@@ -7,11 +7,11 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 public class InfiniteStream {
+	static final Random r = new Random();
 
 	public static void main(String[] args) {
-		Random r = new Random();
 		AtomicInteger seed = new AtomicInteger(1);
-//		Spliterators.spliteratorUnknownSize(iterator, characteristics)
+		// Spliterators.spliteratorUnknownSize(iterator, characteristics)
 		IntStream s = IntStream.iterate(seed.get(), i -> {
 			int d = seed.get();
 			return seed.getAndSet(d + i);

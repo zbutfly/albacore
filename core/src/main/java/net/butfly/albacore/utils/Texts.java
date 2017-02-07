@@ -96,8 +96,8 @@ public final class Texts extends Utils {
 	private static long G = M * K;
 	private static long T = G * K;
 
-	public static String formatKilo(long n, String unit) {
-		double d = n;
+	public static String formatKilo(double d, String unit) {
+		// double d = n;
 		if (d > T) return f.format(d / T) + "T" + unit;
 		// +"+" + formatBytes(bytes % T);
 		if (d > G) return f.format(d / G) + "G" + unit;
@@ -113,14 +113,13 @@ public final class Texts extends Utils {
 	private static int MINUTE = 60 * SECOND;
 	private static int HOUR = 60 * MINUTE;
 
-	public static String formatMillis(long millis) {
-		double ms = millis * 1.0;
-		if (ms > HOUR) return f.format(ms / HOUR) + " Hours";
+	public static String formatMillis(double millis) {
+		if (millis > HOUR) return f.format(millis / HOUR) + " Hours";
 		// + "+" + formatMillis(millis % HOUR);
-		if (ms > MINUTE) return f.format(ms / MINUTE) + " Minutes";
+		if (millis > MINUTE) return f.format(millis / MINUTE) + " Minutes";
 		// + "+" + formatMillis(millis % MINUTE);
-		if (ms > SECOND) return f.format(millis / SECOND) + " Secs";
+		if (millis > SECOND) return f.format(millis / SECOND) + " Secs";
 		// + "+" + formatMillis(millis % SECOND);
-		return f.format(ms) + " MS";
+		return f.format(millis) + " MS";
 	}
 }

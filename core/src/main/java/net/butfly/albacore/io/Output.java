@@ -9,7 +9,6 @@ import net.butfly.albacore.base.Sizable;
 import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.utils.async.Concurrents;
 
-@FunctionalInterface
 public interface Output<V> extends Openable, Sizable, IOput, Consumer<V> {
 	@Override
 	default void accept(V t) {
