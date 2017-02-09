@@ -49,16 +49,12 @@ public interface Openable extends AutoCloseable, Loggable, Named {
 		logger().trace(name() + " closed.");
 	}
 
-	default Status status() {
-		return Opened.status(this).get();
-	}
-
 	default boolean opened() {
-		return status() == Status.OPENED;
+		return Opened.status(this).get() == Status.OPENED;
 	}
 
 	default boolean closed() {
-		return status() == Status.CLOSED;
+		return Opened.status(this).get() == Status.CLOSED;
 	}
 
 	class Opened {

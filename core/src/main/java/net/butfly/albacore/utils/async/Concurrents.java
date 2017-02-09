@@ -89,7 +89,7 @@ public final class Concurrents extends Utils {
 	}
 
 	public static boolean waitSleep() {
-		return waitSleep(500);
+		return waitSleep(100);
 	}
 
 	public static boolean waitSleep(long millis) {
