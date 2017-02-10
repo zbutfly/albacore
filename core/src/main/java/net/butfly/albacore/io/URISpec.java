@@ -101,7 +101,7 @@ public class URISpec {
 	}
 
 	public String getHost() {
-		return Joiner.on(',').join(hosts.stream().map(p -> p.value1() + (p.value2() <= 0 ? "" : (":" + p.value2()))).iterator());
+		return Joiner.on(',').join(hosts.stream().map(p -> p.v1() + (p.v2() <= 0 ? "" : (":" + p.v2()))).iterator());
 	}
 
 	public String[] getPaths() {
