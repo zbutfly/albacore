@@ -1,6 +1,7 @@
 package net.butfly.albacore.io;
 
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
@@ -33,7 +34,11 @@ public interface IO extends Sizable, Openable {
 		return io.list(stream);
 	}
 
-	static <V, R> List<R> list(Iterable<V> list, Function<V, R> mapper) {
-		return io.list(list, mapper);
+	static <V, R> List<R> list(Iterable<V> col, Function<V, R> mapper) {
+		return io.list(col, mapper);
+	}
+
+	static <V> void each(Iterable<V> col, Consumer<? super V> consumer) {
+		io.each(col, consumer);
 	}
 }

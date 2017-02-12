@@ -74,27 +74,28 @@ public class Exceptions extends Utils {
 	private static final List<Method> WRAPPING_METHODS;
 	static {
 		try {
-			WRAPPING_METHODS = Arrays.asList(//
+			WRAPPING_METHODS = new ArrayList<>(Arrays.asList(//
 					ExecutionException.class.getMethod("getCause"), //
 					InvocationTargetException.class.getMethod("getTargetException"), //
 					UndeclaredThrowableException.class.getMethod("getUndeclaredThrowable"), //
 					RuntimeException.class.getMethod("getCause") //
-			);
-		} catch (NoSuchMethodException | SecurityException e) {
-			throw new RuntimeException();
+			));
+		} catch (NoSuchMethodException e) {
+			throw new RuntimeException(e);
 		}
 	}
 
 	public static Throwable unwrap(Throwable ex) {
-		return unwrap(ex, WRAPPING_METHODS);
+		return unwrap(ex, new Method[0]);
 	}
 
-	public static Throwable unwrap(Throwable ex, List<Method> wrappingMethods) {
+	public static Throwable unwrap(Throwable ex, Method... otherMathods) {
 		if (null == ex) return null;
-		for (Method m : wrappingMethods)
+		if (null != otherMathods && otherMathods.length > 0) WRAPPING_METHODS.addAll(Arrays.asList(otherMathods));
+		for (Method m : WRAPPING_METHODS)
 			if (m.getDeclaringClass().isAssignableFrom(ex.getClass())) try {
 				Throwable cause = (Throwable) m.invoke(ex);
-				return null == cause || ex.equals(cause) ? ex : unwrap(cause, wrappingMethods);
+				return null == cause || ex.equals(cause) ? ex : unwrap(cause, otherMathods);
 			} catch (Exception e) {}
 		return ex;
 	}
