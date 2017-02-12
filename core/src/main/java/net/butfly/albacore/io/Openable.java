@@ -9,7 +9,6 @@ import net.butfly.albacore.utils.async.Concurrents;
 import net.butfly.albacore.utils.logger.Loggable;
 
 public interface Openable extends AutoCloseable, Loggable, Named {
-
 	enum Status {
 		CLOSED, OPENING, OPENED, CLOSING
 	}

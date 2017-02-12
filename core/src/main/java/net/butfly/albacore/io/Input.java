@@ -6,11 +6,10 @@ import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import net.butfly.albacore.base.Sizable;
 import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.utils.Collections;
 
-public interface Input<V> extends Openable, Sizable, IOput, Supplier<V>, Iterator<V> {
+public interface Input<V> extends IO, Supplier<V>, Iterator<V> {
 	@Override
 	default V get() {
 		return dequeue();
@@ -34,7 +33,7 @@ public interface Input<V> extends Openable, Sizable, IOput, Supplier<V>, Iterato
 	V dequeue();
 
 	default Stream<V> dequeue(long batchSize) {
-		return Streams.batch(() -> dequeue(), batchSize).parallelStream().filter(t -> t != null);
+		return Streams.of(Streams.batch(() -> dequeue(), batchSize));
 	}
 
 	default <V1> Input<V1> then(Converter<V, V1> conv) {

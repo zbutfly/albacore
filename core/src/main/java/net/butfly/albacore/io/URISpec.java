@@ -3,10 +3,10 @@ package net.butfly.albacore.io;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
@@ -56,7 +56,7 @@ public class URISpec {
 		}
 		String p = uri.getPath();
 		paths = null == p ? new ArrayList<>()
-				: Arrays.asList(uri.getPath().split("/")).stream().filter(seg -> seg.trim().length() > 0).collect(Collectors.toList());
+				: Stream.of(uri.getPath().split("/")).filter(seg -> seg.trim().length() > 0).collect(Collectors.toList());
 		query = new Properties();
 		if (null != uri.getQuery()) for (String q : uri.getQuery().split("&")) {
 			String[] kv = q.split("=", 2);
@@ -101,7 +101,7 @@ public class URISpec {
 	}
 
 	public String getHost() {
-		return Joiner.on(',').join(hosts.stream().map(p -> p.v1() + (p.v2() <= 0 ? "" : (":" + p.v2()))).iterator());
+		return Joiner.on(',').join(Streams.of(hosts).map(p -> p.v1() + (p.v2() <= 0 ? "" : (":" + p.v2()))).iterator());
 	}
 
 	public String[] getPaths() {
@@ -138,7 +138,7 @@ public class URISpec {
 
 	public String getQuery() {
 		return query.isEmpty() ? null
-				: new StringBuilder().append(Joiner.on('&').join(query.entrySet().stream().map(e -> e.getKey().toString() + "=" + e
+				: new StringBuilder().append(Joiner.on('&').join(Streams.of(query.entrySet()).map(e -> e.getKey().toString() + "=" + e
 						.getValue().toString()).iterator())).toString();
 	}
 

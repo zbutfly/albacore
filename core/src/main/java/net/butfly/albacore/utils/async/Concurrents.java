@@ -1,11 +1,14 @@
 package net.butfly.albacore.utils.async;
 
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinWorkerThread;
+import java.util.concurrent.ForkJoinPool.ForkJoinWorkerThreadFactory;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -30,14 +33,7 @@ import net.butfly.albacore.utils.logger.Logger;
 public final class Concurrents extends Utils {
 	private static final Logger logger = Logger.getLogger(Concurrents.class);
 	private static ListeningExecutorService CORE_EXECUTOR = null;
-
-	public static void setJavaParallelism(int parallelism) {
-		System.setProperty("java.util.concurrent.ForkJoinPool.common.parallelism", Integer.toString(parallelism));
-	}
-
-	public static int getJavaParallelism() {
-		return ForkJoinPool.getCommonPoolParallelism();
-	}
+	private static long DEFAULT_WAIT_MS = 100;
 
 	public static List<Object> submitAndWait(ListeningExecutorService ex, Supplier<Runnable> tasking, int parallelism) {
 		List<ListenableFuture<?>> outs = new ArrayList<>();
@@ -57,7 +53,7 @@ public final class Concurrents extends Utils {
 		ThreadPoolExecutor pool = (ThreadPoolExecutor) executor;
 		while (pool.getActiveCount() >= pool.getMaximumPoolSize()) {
 			logger.trace("Executor [" + pool.getClass().getSimpleName() + "] is full, waiting...");
-			waitSleep(1000);
+			waitSleep(DEFAULT_WAIT_MS);
 		}
 	}
 
@@ -79,7 +75,7 @@ public final class Concurrents extends Utils {
 	}
 
 	public static boolean waitShutdown(ExecutorService executor, Logger logger) {
-		return waitShutdown(executor, 10, logger);
+		return waitShutdown(executor, DEFAULT_WAIT_MS * 10, logger);
 	}
 
 	public static boolean waitSleep(Supplier<Boolean> waiting) {
@@ -89,7 +85,7 @@ public final class Concurrents extends Utils {
 	}
 
 	public static boolean waitSleep() {
-		return waitSleep(100);
+		return waitSleep(DEFAULT_WAIT_MS);
 	}
 
 	public static boolean waitSleep(long millis) {
@@ -117,6 +113,37 @@ public final class Concurrents extends Utils {
 
 	public static <V> Future<V> submit(Callable<V> thread) {
 		return CORE_EXECUTOR.submit(thread);
+	}
+
+	public static ForkJoinPool executorForkJoin(int parallelism, String threadNamePrefix, UncaughtExceptionHandler handler) {
+		return new ForkJoinPool(parallelism, threadNamePrefix != null || handler != null ? new ForkJoinWorkerThreadFactory() {
+			@Override
+			public ForkJoinWorkerThread newThread(ForkJoinPool pool) {
+				ForkJoinWorkerThread worker = ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread(pool);
+				if (null != threadNamePrefix) worker.setName(threadNamePrefix + "#" + worker.getPoolIndex());
+				if (null != handler) worker.setUncaughtExceptionHandler(handler);
+				return worker;
+			}
+		} : ForkJoinPool.defaultForkJoinWorkerThreadFactory, handler, false);
+	}
+
+	public static boolean shutdown(ExecutorService executor) {
+		return shutdown(executor, true);
+	}
+
+	public static boolean shutdown(ExecutorService executor, boolean wait) {
+		if (wait) {
+			executor.shutdown();
+			while (true)
+				try {
+					if (executor.awaitTermination(DEFAULT_WAIT_MS, TimeUnit.MILLISECONDS)) return true;
+				} catch (InterruptedException e) {
+					return false;
+				}
+		} else {
+			executor.shutdownNow();
+			return true;
+		}
 	}
 
 	/**

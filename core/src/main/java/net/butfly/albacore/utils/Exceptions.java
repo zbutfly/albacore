@@ -7,9 +7,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.UndeclaredThrowableException;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 public class Exceptions extends Utils {
@@ -72,35 +71,30 @@ public class Exceptions extends Utils {
 		return Reflections.construct(expect, message, ex);
 	}
 
-	public static Exception unwrap(Throwable ex) {
-		return unwrap(ex, null);
-	}
-
-	public static Exception unwrap(Throwable ex, Map<Class<? extends Throwable>, Method> wrapperClasses) {
-		if (wrapperClasses == null) wrapperClasses = new HashMap<Class<? extends Throwable>, Method>();
+	private static final List<Method> WRAPPING_METHODS;
+	static {
 		try {
-			wrapperClasses.put(Exception.class, RuntimeException.class.getMethod("getCause"));
-			wrapperClasses.put(RuntimeException.class, RuntimeException.class.getMethod("getCause"));
-			wrapperClasses.put(ExecutionException.class, ExecutionException.class.getMethod("getCause"));
-			wrapperClasses.put(InvocationTargetException.class, InvocationTargetException.class.getMethod("getTargetException"));
-			wrapperClasses.put(UndeclaredThrowableException.class, UndeclaredThrowableException.class.getMethod("getUndeclaredThrowable"));
-		} catch (Exception e) {
-			throw new RuntimeException(e);
+			WRAPPING_METHODS = Arrays.asList(//
+					ExecutionException.class.getMethod("getCause"), //
+					InvocationTargetException.class.getMethod("getTargetException"), //
+					UndeclaredThrowableException.class.getMethod("getUndeclaredThrowable"), //
+					RuntimeException.class.getMethod("getCause") //
+			);
+		} catch (NoSuchMethodException | SecurityException e) {
+			throw new RuntimeException();
 		}
-
-		Throwable original;
-		do {
-			original = ex;
-			ex = unwrapOneTime(ex, wrapperClasses);
-		} while (!ex.equals(original));
-		return (ex instanceof Exception) ? (Exception) ex : new RuntimeException(ex);
 	}
 
-	private static Throwable unwrapOneTime(Throwable ex, Map<Class<? extends Throwable>, Method> wrapperClasses) {
-		for (Map.Entry<Class<? extends Throwable>, Method> m : wrapperClasses.entrySet())
-			if (m.getKey().equals(ex.getClass())) try {
-				Throwable cause = (Throwable) m.getValue().invoke(ex);
-				if (cause != null) return cause;
+	public static Throwable unwrap(Throwable ex) {
+		return unwrap(ex, WRAPPING_METHODS);
+	}
+
+	public static Throwable unwrap(Throwable ex, List<Method> wrappingMethods) {
+		if (null == ex) return null;
+		for (Method m : wrappingMethods)
+			if (m.getDeclaringClass().isAssignableFrom(ex.getClass())) try {
+				Throwable cause = (Throwable) m.invoke(ex);
+				return null == cause || ex.equals(cause) ? ex : unwrap(cause, wrappingMethods);
 			} catch (Exception e) {}
 		return ex;
 	}

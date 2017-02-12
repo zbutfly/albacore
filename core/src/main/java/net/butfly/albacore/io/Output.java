@@ -5,11 +5,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import net.butfly.albacore.base.Sizable;
 import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.utils.async.Concurrents;
 
-public interface Output<V> extends Openable, Sizable, IOput, Consumer<V> {
+public interface Output<V> extends IO, Consumer<V> {
 	@Override
 	default void accept(V t) {
 		if (!enqueue(t)) throw new RuntimeException("Enqueue failure");
@@ -23,10 +22,9 @@ public interface Output<V> extends Openable, Sizable, IOput, Consumer<V> {
 	boolean enqueue(V item);
 
 	default long enqueue(Stream<V> items) {
-		Stream<V> s = items.filter(t -> t != null);
 		if (!Concurrents.waitSleep(() -> full())) return 0;
 		AtomicLong c = new AtomicLong(0);
-		s.forEach(t -> {
+		Streams.of(items).forEach(t -> {
 			if (enqueue(t)) c.incrementAndGet();
 		});
 		return c.get();

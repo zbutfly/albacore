@@ -7,14 +7,13 @@ import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 import net.butfly.albacore.io.OpenableThread;
+import net.butfly.albacore.io.Streams;
 import net.butfly.albacore.lambda.Consumer;
 import net.butfly.albacore.utils.logger.Logger;
 import sun.management.VMManagement;
@@ -29,8 +28,7 @@ public final class Systems extends Utils {
 	}
 
 	public static Stream<Thread> threadsRunning() {
-		Set<Thread> threads = new HashSet<>(Thread.getAllStackTraces().keySet());
-		return threads.stream().filter(t -> !t.isDaemon());
+		return Streams.of(Thread.getAllStackTraces().keySet()).filter(t -> !t.isDaemon());
 	}
 
 	public static int pid() {

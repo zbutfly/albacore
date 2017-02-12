@@ -43,7 +43,7 @@ public abstract class KeyInputImpl<K, V> extends InputImpl<V> {
 			if (batch.size() >= batchSize) break;
 			if (batch.size() == 0) Concurrents.waitSleep();
 		} while (opened() && batch.size() < batchSize && (prev != batch.size() || batch.size() == 0));
-		return batch.parallelStream().filter(t -> null != t);
+		return Streams.of(batch);
 	}
 
 	protected abstract void read(K key, List<V> batch);

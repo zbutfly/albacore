@@ -11,8 +11,8 @@ import java.util.function.BinaryOperator;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
+import net.butfly.albacore.io.Streams;
 import net.butfly.albacore.lambda.Converter;
 import scala.Tuple2;
 
@@ -147,7 +147,7 @@ public final class Collections extends Utils {
 	public static <T> List<T> asList(Iterable<T> it) {
 		if (null == it) return null;
 		if (it instanceof List) return (List<T>) it;
-		return StreamSupport.stream(it.spliterator(), false).parallel().collect(Collectors.toList());
+		return Streams.of(it).collect(Collectors.toList());
 	}
 
 	public static <T> Set<T> intersection(Collection<T> c1, Collection<T> c2) {

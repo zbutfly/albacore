@@ -2,7 +2,12 @@ package net.butfly.albacore.utils.collection;
 
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+
+import net.butfly.albacore.io.Streams;
+import net.butfly.albacore.utils.Pair;
 
 public class Maps {
 	@SuppressWarnings("unchecked")
@@ -14,10 +19,10 @@ public class Maps {
 	}
 
 	public static Map<String, String> of(Properties props) {
-		Map<String, String> map = new ConcurrentHashMap<>();
-		props.entrySet().parallelStream().forEach(e -> {
-			if (e.getValue() != null) map.put(e.getKey().toString(), e.getValue().toString());
-		});
-		return map;
+		return Streams.of(props).collect(Collectors.toConcurrentMap(e -> e.getKey().toString(), e -> e.getValue().toString()));
+	}
+
+	public static <K, V> Set<Pair<K, V>> pairs(Map<K, V> map) {
+		return Streams.of(map).map(e -> new Pair<>(e.getKey(), e.getValue())).collect(Collectors.toSet());
 	}
 }

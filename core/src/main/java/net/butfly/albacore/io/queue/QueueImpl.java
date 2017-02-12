@@ -32,4 +32,5 @@ public abstract class QueueImpl<I, O> implements Queue<I, O> {
 	public String toString() {
 		return name();
 	}
+
 }

@@ -37,12 +37,13 @@ public final class IOs extends Utils {
 		return i;
 	}
 
-	public static void writeBytes(OutputStream out, byte[]... bytes) throws IOException {
+	public static <S extends OutputStream> S writeBytes(S out, byte[]... bytes) throws IOException {
 		for (byte[] b : bytes) {
 			if (null == b) writeInteger(out, -1);
 			writeInteger(out, b.length);
 			if (b.length > 0) out.write(b);
 		}
+		return out;
 	}
 
 	public static byte[] readBytes(InputStream in) throws IOException {

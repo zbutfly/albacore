@@ -1,8 +1,8 @@
 package net.butfly.albacore.io.stats;
 
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
+import net.butfly.albacore.io.Streams;
 import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.lambda.Supplier;
 import net.butfly.albacore.utils.Instances;
@@ -46,9 +46,7 @@ public interface Statistical<T extends Statistical<T>> {
 
 	default <V> Iterable<V> stats(Iterable<V> vv) {
 		Statistic s = Instances.fetch(() -> null, Statistic.class, this);
-		if (null != s) StreamSupport.stream(vv.spliterator(), true).forEach(v -> {
-			if (null != s) s.stats(v);
-		});
+		if (null != s) Streams.of(vv).forEach(v -> s.stats(v));
 		return vv;
 	}
 

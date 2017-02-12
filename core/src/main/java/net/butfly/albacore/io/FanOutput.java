@@ -2,16 +2,12 @@ package net.butfly.albacore.io;
 
 import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
-import com.google.common.base.Joiner;
-
-public class FanOutput<V> extends OutputImpl<V> implements Output<V> {
+public class FanOutput<V> extends OutputImpl<V> {
 	private final Iterable<? extends Output<V>> outputs;
 
 	public FanOutput(Iterable<? extends Output<V>> outputs) {
-		this("FanOutTo" + new StringBuilder(":").append(Joiner.on('&').join(StreamSupport.stream(outputs.spliterator(), false).map(o -> o
-				.name()).collect(Collectors.toList()))).toString().toString(), outputs);
+		this("FanOutTo" + ":" + io.collect(Streams.of(outputs).map(o -> o.name()), Collectors.joining("&")), outputs);
 		open();
 	}
 
