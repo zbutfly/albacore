@@ -124,12 +124,6 @@ public final class Collections extends Utils {
 		}));
 	}
 
-	public static <T> List<T> disorderize(Collection<T> origin) {
-		List<T> o = new ArrayList<>(origin);
-		java.util.Collections.shuffle(o);
-		return o;
-	}
-
 	public static <T> T random(Iterable<T> origin, int size) {
 		int i = (int) (Math.random() * size);
 		Iterator<T> it = origin.iterator();

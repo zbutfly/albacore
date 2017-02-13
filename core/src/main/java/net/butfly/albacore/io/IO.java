@@ -9,7 +9,7 @@ import java.util.stream.Stream;
 import net.butfly.albacore.base.Sizable;
 
 public interface IO extends Sizable, Openable {
-	final int IO_PARALLELISM = Integer.parseInt(System.getProperty("albacore.io.parallenism", "16"));
+	final int IO_PARALLELISM = Integer.parseInt(System.getProperty("albacore.io.parallelism", "16"));
 	final StreamExecutor io = new StreamExecutor(IO_PARALLELISM, "AlbacoreIOExecutor", false);
 
 	long size();

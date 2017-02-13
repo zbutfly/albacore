@@ -100,17 +100,14 @@ public final class Systems extends Utils {
 			}).add(handler);
 	}
 
-	private static class GCMonitor extends OpenableThread {
+	private static class GC extends OpenableThread {
 		private final long cms;
 
-		public GCMonitor(long cms) {
+		public GC(long cms) {
 			super();
-			if (cms < 500) {
-				logger.warn("Manually gc interval less 500 ms and too small. reset to 500 ms");
-				cms = 500;
-			} else logger.info("Manually gc interval " + cms + " ms.");
+			logger.info("Full GC Manually every [" + cms + " ms].");
 			this.cms = cms;
-			setPriority(MAX_PRIORITY);
+			setPriority(MIN_PRIORITY);
 			setName("AlbacoreGCer");
 			setDaemon(true);
 		}
@@ -128,21 +125,15 @@ public final class Systems extends Utils {
 		}
 	}
 
-	private static GCMonitor w = null;
+	public final static GC gc = gc(Long.parseLong(System.getProperty("albacore.gc.interval.ms", "0")));
 
-	public static void enableGC() {
-		if (w == null) {
-			long ms = Long.parseLong(System.getProperty("albacore.gc.interval.ms", "1000"));
-			if (ms > 0) w = new GCMonitor(ms);
-			w.start();
-			Systems.handleSignal(sig -> w.close(), "TERM", "INT");
-		}
-	}
-
-	public static void disableGC() {
-		if (w != null) {
-			w.close();
-		}
+	private static GC gc(long ms) {
+		if (ms <= 0) return null;
+		if (ms < 500) ms = 500;
+		GC gc = new GC(ms);
+		gc.start();
+		Systems.handleSignal(sig -> gc.close(), "TERM", "INT");
+		return gc;
 	}
 
 	public static String getDefaultCachePathBase() {

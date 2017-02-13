@@ -5,10 +5,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import net.butfly.albacore.utils.Collections;
 import net.butfly.albacore.utils.async.Concurrents;
 
 public abstract class KeyInputImpl<K, V> extends InputImpl<V> {
+	private List<K> keyAccess = null;
+
 	public KeyInputImpl(String name) {
 		super(name);
 	}
@@ -19,13 +20,24 @@ public abstract class KeyInputImpl<K, V> extends InputImpl<V> {
 
 	@Override
 	public final V dequeue() {
+		List<K> ks = keyAccess();
 		while (true) {
-			for (K k : Collections.disorderize(keys())) {
+			for (K k : ks) {
 				V e = dequeue(k);
 				if (null != e) return e;
 			}
 			if (!Concurrents.waitSleep()) return null;
 		}
+	}
+
+	protected List<K> keyAccess() {
+		if (keyAccess == null) keyAccess = new ArrayList<>(keys());
+		if (keyAccess.size() != keys().size()) {
+			keyAccess.clear();
+			keyAccess.addAll(keys());
+		}
+		java.util.Collections.shuffle(keyAccess);
+		return keyAccess;
 	}
 
 	@Override

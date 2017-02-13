@@ -49,9 +49,8 @@ public class StreamExecutor extends Namedly implements AutoCloseable {
 			return f.get();
 		} catch (InterruptedException e) {
 			throw new RuntimeException("Streaming inturrupted", e);
-		} catch (ExecutionException e) {
-			throw (e.getCause() instanceof RuntimeException) ? (RuntimeException) e.getCause()
-					: new RuntimeException("Streaming failure", e.getCause());
+		} catch (Exception e) {
+			throw wrap(unwrap(e));
 		}
 	}
 
