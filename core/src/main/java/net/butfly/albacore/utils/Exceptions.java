@@ -7,9 +7,13 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.UndeclaredThrowableException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import net.butfly.albacore.utils.collection.Maps;
 
 public class Exceptions extends Utils {
 	public interface Code {
@@ -71,32 +75,44 @@ public class Exceptions extends Utils {
 		return Reflections.construct(expect, message, ex);
 	}
 
-	private static final List<Method> WRAPPING_METHODS;
+	private static final ReentrantReadWriteLock METHODS_LOCK = new ReentrantReadWriteLock();
+	private static final Map<Class<? extends Throwable>, Method> WRAPPING_METHODS;
 	static {
 		try {
-			WRAPPING_METHODS = new ArrayList<>(Arrays.asList(//
-					ExecutionException.class.getMethod("getCause"), //
-					InvocationTargetException.class.getMethod("getTargetException"), //
-					UndeclaredThrowableException.class.getMethod("getUndeclaredThrowable"), //
-					RuntimeException.class.getMethod("getCause") //
-			));
+			WRAPPING_METHODS = Maps.of(//
+					ExecutionException.class, ExecutionException.class.getMethod("getCause"), //
+					InvocationTargetException.class, InvocationTargetException.class.getMethod("getTargetException"), //
+					UndeclaredThrowableException.class, UndeclaredThrowableException.class.getMethod("getUndeclaredThrowable"), //
+					RuntimeException.class, RuntimeException.class.getMethod("getCause") //
+			);
 		} catch (NoSuchMethodException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
-	public static Throwable unwrap(Throwable ex) {
-		return unwrap(ex, new Method[0]);
+	public static void unwrap(Class<? extends Throwable> t, String methodName) {
+		METHODS_LOCK.writeLock().lock();
+		try {
+			WRAPPING_METHODS.put(t, t.getMethod(methodName));
+		} catch (NoSuchMethodException e) {
+			throw new RuntimeException();
+		} finally {
+			METHODS_LOCK.writeLock().unlock();
+		}
 	}
 
-	public static Throwable unwrap(Throwable ex, Method... otherMathods) {
+	public static Throwable unwrap(Throwable ex) {
 		if (null == ex) return null;
-		if (null != otherMathods && otherMathods.length > 0) WRAPPING_METHODS.addAll(Arrays.asList(otherMathods));
-		for (Method m : WRAPPING_METHODS)
-			if (m.getDeclaringClass().isAssignableFrom(ex.getClass())) try {
-				Throwable cause = (Throwable) m.invoke(ex);
-				return null == cause || ex.equals(cause) ? ex : unwrap(cause, otherMathods);
-			} catch (Exception e) {}
+		METHODS_LOCK.readLock().lock();
+		try {
+			for (Entry<Class<? extends Throwable>, Method> t : WRAPPING_METHODS.entrySet())
+				if (t.getKey().isAssignableFrom(ex.getClass())) try {
+					Throwable cause = (Throwable) t.getValue().invoke(ex);
+					return null == cause || ex.equals(cause) ? ex : unwrap(cause);
+				} catch (Exception e) {}
+		} finally {
+			METHODS_LOCK.readLock().unlock();
+		}
 		return ex;
 	}
 
