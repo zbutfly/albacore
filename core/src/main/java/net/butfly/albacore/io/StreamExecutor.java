@@ -14,13 +14,18 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
+
 import net.butfly.albacore.base.Namedly;
 import net.butfly.albacore.utils.async.Concurrents;
 import net.butfly.albacore.utils.logger.Logger;
 
 public class StreamExecutor extends Namedly implements AutoCloseable {
 	private static final Logger logger = Logger.getLogger(StreamExecutor.class);
-	private ForkJoinPool executor;
+	private final ForkJoinPool executor;
+	private final ListeningExecutorService lex;
 
 	public StreamExecutor(int parallelism, String threadNamePrefix, boolean throwException) {
 		if (parallelism <= 0) parallelism = Runtime.getRuntime().availableProcessors() / 2;
@@ -29,9 +34,10 @@ public class StreamExecutor extends Namedly implements AutoCloseable {
 			logger.error("Migrater pool task failure @" + t.getName(), e);
 			if (throwException) throw wrap(unwrap(e));
 		});
+		lex = MoreExecutors.listeningDecorator(executor);
 	}
 
-	private void run(Runnable task) {
+	void run(Runnable task) {
 		ForkJoinTask<?> f = executor.submit(task);
 		try {
 			f.get();
@@ -43,7 +49,7 @@ public class StreamExecutor extends Namedly implements AutoCloseable {
 		}
 	}
 
-	private <T> T run(Callable<T> task) {
+	<T> T run(Callable<T> task) {
 		ForkJoinTask<T> f = executor.submit(task);
 		try {
 			return f.get();
@@ -52,6 +58,24 @@ public class StreamExecutor extends Namedly implements AutoCloseable {
 		} catch (Exception e) {
 			throw wrap(unwrap(e));
 		}
+	}
+
+	<T> ForkJoinTask<T> submit(Callable<T> task) {
+		return executor.submit(task);
+	}
+
+	public <T> List<T> submit(List<Callable<T>> list) {
+		try {
+			return Futures.successfulAsList(list(list, c -> lex.submit(c))).get();
+		} catch (InterruptedException e) {
+			throw new RuntimeException("Streaming inturrupted", e);
+		} catch (Exception e) {
+			throw wrap(unwrap(e));
+		}
+	}
+
+	ForkJoinTask<?> submit(Runnable task) {
+		return executor.submit(task);
 	}
 
 	public <V, A, R> R map(Iterable<V> col, Function<V, A> mapper, Collector<? super A, ?, R> collector) {
@@ -90,4 +114,5 @@ public class StreamExecutor extends Namedly implements AutoCloseable {
 	public <V> void each(Stream<V> of, Consumer<? super V> consumer) {
 		run(() -> Streams.of(of).forEach(consumer));
 	}
+
 }

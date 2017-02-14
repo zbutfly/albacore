@@ -1,7 +1,8 @@
 package net.butfly.albacore.io;
 
-import java.util.concurrent.ForkJoinPool;
+import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class FanOutput<V> extends OutputImpl<V> {
 	private final Iterable<? extends Output<V>> outputs;
@@ -19,8 +20,15 @@ public class FanOutput<V> extends OutputImpl<V> {
 	@Override
 	public boolean enqueue(V item) {
 		if (null == item) return false;
-		for (Output<V> o : outputs)
-			ForkJoinPool.commonPool().submit(() -> o.enqueue(item));
-		return true;
+		boolean r = true;
+		List<Boolean> rs = io.submit(io.list(outputs, o -> () -> o.enqueue(item)));
+		for (Boolean b : rs)
+			r = r && b;
+		return r;
+	}
+
+	@Override
+	public long enqueue(Stream<V> items) {
+		return io.collect(io.submit(io.list(outputs, o -> () -> o.enqueue(items))), Collectors.summingLong(Long::longValue));
 	}
 }
