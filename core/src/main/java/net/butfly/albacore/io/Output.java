@@ -9,6 +9,15 @@ import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.utils.async.Concurrents;
 
 public interface Output<V> extends IO, Consumer<V> {
+	static <V> Output<V> NULL() {
+		return new OutputImpl<V>() {
+			@Override
+			public boolean enqueue(V item) {
+				return true;
+			}
+		};
+	}
+
 	@Override
 	default void accept(V t) {
 		if (!enqueue(t)) throw new RuntimeException("Enqueue failure");

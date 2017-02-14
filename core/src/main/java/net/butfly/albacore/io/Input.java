@@ -10,6 +10,15 @@ import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.utils.Collections;
 
 public interface Input<V> extends IO, Supplier<V>, Iterator<V> {
+	static <V> Input<V> NULL() {
+		return new InputImpl<V>() {
+			@Override
+			public V dequeue() {
+				return null;
+			}
+		};
+	}
+
 	@Override
 	default V get() {
 		return dequeue();
