@@ -1,92 +1,82 @@
 package net.butfly.albacore.serder;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.util.concurrent.LinkedBlockingQueue;
 
+import org.bson.BSONCallback;
+import org.bson.BSONDecoder;
+import org.bson.BSONEncoder;
 import org.bson.BSONObject;
+import org.bson.BasicBSONCallback;
+import org.bson.BasicBSONDecoder;
+import org.bson.BasicBSONEncoder;
 import org.bson.BasicBSONObject;
-import org.bson.LazyBSONCallback;
-import org.bson.LazyBSONObject;
-import org.bson.io.BasicOutputBuffer;
-import org.bson.io.OutputBuffer;
 
-import com.mongodb.LazyDBObject;
-
-import net.butfly.albacore.serder.bson.DBEncoder;
-import net.butfly.albacore.serder.support.BeanSerder;
 import net.butfly.albacore.serder.support.ContentTypeSerder;
 import net.butfly.albacore.serder.support.ContentTypeSerderBase;
 import net.butfly.albacore.serder.support.ContentTypes;
-import net.butfly.albacore.utils.Reflections;
+import scala.Tuple2;
 
 public final class BsonObjectSerder extends ContentTypeSerderBase implements Serder<BSONObject, byte[]>, ContentTypeSerder {
 	private static final long serialVersionUID = 6664350391207228363L;
 	public static final BsonObjectSerder DEFAULT = new BsonObjectSerder();
 
+	private final LinkedBlockingQueue<Tuple2<BSONEncoder, BasicBSONObject>> encoders;
+	private final LinkedBlockingQueue<Tuple2<BSONDecoder, BSONCallback>> decoders;
+
 	public BsonObjectSerder() {
+		this(50);
+	}
+
+	public BsonObjectSerder(int parallelism) {
 		this.contentType = ContentTypes.APPLICATION_BSON;
+		encoders = new LinkedBlockingQueue<>(parallelism);
+		decoders = new LinkedBlockingQueue<>(parallelism);
+		for (int i = 0; i < parallelism; i++) {
+			encoders.offer(new Tuple2<>(new BasicBSONEncoder(), new BasicBSONObject()));
+			decoders.offer(new Tuple2<>(new BasicBSONDecoder(), new BasicBSONCallback()));
+		}
 	}
 
 	@Override
 	public byte[] ser(BSONObject from) {
-		if (null == from) return null;
-		OutputBuffer buf = new BasicOutputBuffer();
+		Tuple2<BSONEncoder, BasicBSONObject> t;
 		try {
-			ByteArrayOutputStream bao = new ByteArrayOutputStream();
-			try {
-				new DBEncoder().writeObject(buf, from);
-			} catch (Exception ex) {
-				return null;
-			}
-			try {
-				bao.write(buf.toByteArray());
-			} catch (IOException e) {
-				return null;
-			}
-			return bao.toByteArray();
+			t = encoders.take();
+		} catch (InterruptedException e) {
+			throw new RuntimeException(e);
+		}
+		BasicBSONObject b = t._2;
+		b.putAll(from);
+		try {
+			return t._1.encode(b);
 		} finally {
-			buf.close();
+			b.clear();
+			try {
+				encoders.put(t);
+			} catch (InterruptedException e) {
+				throw new RuntimeException(e);
+			}
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public <T extends BSONObject> T der(byte[] from, Class<T> to) {
-		if (!BasicBSONObject.class.isAssignableFrom(to)) throw new UnsupportedOperationException();
-		T r = Reflections.construct(to);
-		r.putAll(new LazyBSONObject(from, new LazyBSONCallback()));
-		return r;
-	}
-
-	public static class MongoSerder implements BeanSerder<Object, BSONObject> {
-		private static final long serialVersionUID = 8050515547072577482L;
-		public static final MongoSerder DEFAULT = new MongoSerder();
-
-		@Override
-		public BSONObject ser(Object from) {
-			BSONObject origin = new LazyDBObject(BsonSerder.DEFAULT_OBJ.ser(from), new LazyBSONCallback());
-			BSONObject mapped = new BasicBSONObject();
-			for (String key : origin.keySet())
-				mapped.put(mappingFieldName(key), origin.get(key));
-			return mapped;
+		Tuple2<BSONDecoder, BSONCallback> t;
+		try {
+			t = decoders.take();
+		} catch (InterruptedException e) {
+			throw new RuntimeException(e);
 		}
-
-		@Override
-		public <T> T der(BSONObject from, Class<T> to) {
-			BSONObject mapped = new BasicBSONObject();
-			for (String prop : from.keySet()) {
-				String fieldName = unmappingFieldName(to, prop);
-				mapped.put(fieldName, processEmbedded(from.get(prop), Reflections.getDeclaredField(to, fieldName).getType()));
+		try {
+			t._1.decode(from, t._2);
+			return ((T) t._2.get());
+		} finally {
+			try {
+				decoders.put(t);
+			} catch (InterruptedException e) {
+				throw new RuntimeException(e);
 			}
-			try (OutputBuffer buf = new BasicOutputBuffer();) {
-				new DBEncoder().writeObject(buf, mapped);
-				return BsonSerder.DEFAULT_OBJ.der(buf.toByteArray(), to);
-			}
-		}
-
-		private Object processEmbedded(Object fieldValue, Class<?> fieldClass) {
-			if (null == fieldValue) return null;
-			if (fieldValue instanceof BSONObject) return der((BSONObject) fieldValue, fieldClass);
-			return fieldValue;
 		}
 	}
 }
