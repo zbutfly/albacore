@@ -86,4 +86,14 @@ public final class Pair<T1, T2> implements Serializable, Entry<T1, T2> {
 	public static <T1, T2> Pair<T1, T2> of(Tuple2<? extends T1, ? extends T2> t) {
 		return new Pair<>(t._1, t._2);
 	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (null == obj || !Pair.class.isAssignableFrom(obj.getClass())) return false;
+		@SuppressWarnings("rawtypes")
+		Pair p = (Pair) obj;
+		if (null == v1 && p.v1 != v1) return false;
+		if (null == v2 && p.v2 != v2) return false;
+		return v1.equals(p.v1()) && v2.equals(p.v2);
+	}
 }
