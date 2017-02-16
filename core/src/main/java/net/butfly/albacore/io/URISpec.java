@@ -176,7 +176,7 @@ public class URISpec {
 		sb.append("//");
 		sb.append(getAuthority());
 		if (!paths.isEmpty()) sb.append(getPath());
-		if (!query.isEmpty()) sb.append(getQuery());
+		if (!query.isEmpty()) sb.append('?').append(getQuery());
 		if (fragment != null) sb.append('#').append(fragment);
 		return sb.toString();
 	}
