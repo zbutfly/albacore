@@ -3,9 +3,13 @@ package net.butfly.albacore.utils;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public final class Texts extends Utils {
 	public static boolean isEmpty(String str) {
@@ -121,5 +125,10 @@ public final class Texts extends Utils {
 		if (millis > SECOND) return f.format(millis / SECOND) + " Secs";
 		// + "+" + formatMillis(millis % SECOND);
 		return f.format(millis) + " MS";
+	}
+
+	public static List<String> split(String origin, String split) {
+		if (origin == null) return new ArrayList<>();
+		return Stream.of(origin.split(split)).map(s -> s.trim()).filter(s -> !"".equals(s)).collect(Collectors.toList());
 	}
 }
