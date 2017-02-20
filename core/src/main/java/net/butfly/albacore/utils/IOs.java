@@ -29,7 +29,7 @@ public final class IOs extends Utils {
 		if (loader == null || file == null || file.length == 0) return null;
 		for (String f : file) {
 			try {
-				InputStream s = loader.getClassLoader().getResourceAsStream(f.startsWith("/") ? f : "/" + f);
+				InputStream s = loader.getClassLoader().getResourceAsStream(f);
 				if (null != s) return s;
 			} catch (Exception e) {}
 		}

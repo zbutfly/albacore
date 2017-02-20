@@ -14,6 +14,7 @@ import org.bson.BasicBSONObject;
 import net.butfly.albacore.serder.support.ContentTypeSerder;
 import net.butfly.albacore.serder.support.ContentTypeSerderBase;
 import net.butfly.albacore.serder.support.ContentTypes;
+import net.butfly.albacore.utils.Configs;
 import scala.Tuple2;
 
 public final class BsonObjectSerder extends ContentTypeSerderBase implements Serder<BSONObject, byte[]>, ContentTypeSerder {
@@ -24,9 +25,10 @@ public final class BsonObjectSerder extends ContentTypeSerderBase implements Ser
 	private final LinkedBlockingQueue<Tuple2<BSONDecoder, BSONCallback>> decoders;
 
 	public BsonObjectSerder() {
-		this(50);
+		this(Integer.parseInt(Configs.MAIN_CONF.getOrDefault("albacore.serder.bson.parallelism", "100")));
 	}
 
+	@Deprecated
 	public BsonObjectSerder(int parallelism) {
 		this.contentType = ContentTypes.APPLICATION_BSON;
 		encoders = new LinkedBlockingQueue<>(parallelism);

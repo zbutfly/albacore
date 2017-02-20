@@ -1,23 +1,35 @@
 package net.butfly.albacore.io;
 
 import java.util.List;
+import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
 
 import net.butfly.albacore.base.Sizable;
+import net.butfly.albacore.utils.Configs;
+import net.butfly.albacore.utils.logger.Logger;
 
 public interface IO extends Sizable, Openable {
-	final int IO_PARALLELISM = calcIoParallelism();
+	class Context {
+		private static final Logger logger = Logger.getLogger(Context.class);
+		private static final int IO_PARALLELISM = calcIoParallelism();
 
-	final StreamExecutor io = new StreamExecutor(IO_PARALLELISM, "AlbacoreIOExecutor", false);
+		private static int calcIoParallelism() {
+			double r = Double.parseDouble(Configs.MAIN_CONF.getOrDefault("albacore.io.parallelism.ratio", "1"));
+			int p = 16 + (int) Math.round((ForkJoinPool.getCommonPoolParallelism() - 16) * (r - 1));
+			if (p < 1) p = 1;
+			logger.info("AlbacoreIO parallelism calced as: " + p + " [from: (((-Dalbacore.io.parallelism.ratio(" + r
+					+ ")) - 1) * (JVM_DEFAULT_PARALLELISM(" + ForkJoinPool.getCommonPoolParallelism()
+					+ ") - IO_DEFAULT_PARALLELISM(16))) + IO_DEFAULT_PARALLELISM(16) ]");
+			return p;
+		}
+	}
+
+	final StreamExecutor io = new StreamExecutor(Context.IO_PARALLELISM, "AlbacoreIOExecutor", false);
 
 	long size();
-
-	static int calcIoParallelism() {
-		return Integer.parseInt(System.getProperty("albacore.io.parallelism", "16"));
-	}
 
 	static <V, A, R> R map(Iterable<V> col, Function<V, A> mapper, Collector<? super A, ?, R> collector) {
 		return io.map(col, mapper, collector);

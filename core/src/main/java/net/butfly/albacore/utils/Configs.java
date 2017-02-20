@@ -2,8 +2,9 @@ package net.butfly.albacore.utils;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -15,6 +16,7 @@ import net.butfly.albacore.utils.logger.Logger;
 public class Configs extends Utils {
 	private static final Logger logger = Logger.getLogger(Configs.class);
 	private static final String MAIN_CONF_PROP_NAME = "albacore.config";
+	private static final String DEFAULT_PROP_EXT = "." + System.getProperty("albacore.config.ext", "properties");
 	public static final Map<String, String> MAIN_CONF = load();
 
 	public static void setConfig(String config) {
@@ -38,36 +40,37 @@ public class Configs extends Utils {
 		return loadAll(configed, CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_HYPHEN, configed.getSimpleName()));
 	}
 
-	private static final String DEFAULT_PROP_EXT = "." + System.getProperty("albacore.config.ext", "properties");
-
 	/**
 	 * Config definition priorities:
 	 * <ol>
 	 * <li>Systme Properties.
-	 * <li>Config file: class-name.properties
+	 * <li>First found of: {@code filename}.properties
 	 * <ol>
-	 * <li>File in runnable path.
-	 * <li>File in classpath (based on classpath root).
+	 * <li>In runnable path.
+	 * <li>In classpath (based on classpath root).
 	 * </ol>
 	 * <li>System Variables.
-	 * <li>XXXX-default.properties file in classpath of {@code loader}.
+	 * <li>{@code filename}-default.properties file in classpath of
+	 * {@code loader}.
 	 * <ol>
 	 * 
 	 * @return
 	 */
 	public static Map<String, String> loadAll(Class<?> loader, String filename) {
 		logger.info("Load configs from file: " + filename + DEFAULT_PROP_EXT);
+		if (filename.endsWith(DEFAULT_PROP_EXT)) filename = filename.substring(0, filename.length() - DEFAULT_PROP_EXT.length());
 		Map<String, String> settings = new ConcurrentHashMap<>();
-		fill(settings, mapProps(System.getProperties()), null, Configs::filter);
+		fill(settings, null, Configs::filterSystemAndInvalidPrefix, mapProps(System.getProperties()));
 		try (InputStream in = IOs.openFile(filename + DEFAULT_PROP_EXT);) {
-			if (!fill(settings, null, null, in)) {
-				if (null != loader) try (InputStream in2 = IOs.openClasspath(loader, filename + DEFAULT_PROP_EXT);) {
-					fill(settings, null, null, in2);
-				} catch (IOException e) {}
-			}
+			if (!fill(settings, null, null, in) && null != loader) try (InputStream in2 = IOs.openClasspath(loader, filename
+					+ DEFAULT_PROP_EXT);) {
+				fill(settings, null, null, in2);
+			} catch (IOException e) {}
 		} catch (IOException e) {}
-		fill(settings, System.getenv(), s -> CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_DOT, s), Configs::filter);
-		String defaultFile = loader.getPackage().toString().replaceAll("\\.", "/") + "/" + filename + DEFAULT_PROP_EXT;
+		fill(settings, s -> CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_DOT, s), Configs::filterSystemAndInvalidPrefix, System
+				.getenv());
+		String defaultFile = loader.getPackage().getName().replaceAll("\\.", "/") + "/" + filename + "-default" + DEFAULT_PROP_EXT;
+		logger.info("Load configs from default classpath file: " + defaultFile);
 		if (null != loader) try (InputStream in = IOs.openClasspath(loader, defaultFile);) {
 			fill(settings, null, null, in);
 		} catch (IOException e) {}
@@ -82,26 +85,27 @@ public class Configs extends Utils {
 		} catch (Exception e) {
 			return false;
 		}
-		return fill(origin, mapProps(p), mapping, filter);
+		return fill(origin, mapping, filter, mapProps(p));
 	}
 
-	private static boolean fill(Map<String, String> origin, Map<String, String> next, Function<String, String> mapping,
-			Predicate<String> filter) {
-		if (null == next) return false;
-		for (Entry<String, String> e : next.entrySet()) {
-			if (filter.test(e.getKey())) continue;
-			String key = mapping != null ? mapping.apply(e.getKey()) : e.getKey();
-			origin.putIfAbsent(key, next.get(key));
+	private static boolean fill(Map<String, String> origin, Function<String, String> mapping, Predicate<String> filter,
+			Map<String, String> defaults) {
+		if (null == defaults) return false;
+		for (String key : defaults.keySet()) {
+			if (null == defaults.get(key)) continue;
+			String k = null == mapping ? key : mapping.apply(key);
+			if (null == filter || !filter.test(k)) origin.putIfAbsent(k, defaults.get(key));
 		}
 		return true;
 	}
 
-	private static String[] IGNORE_PREFIXS = new String[] { "java", "sun", "os", "user", "file", "path" };
-
-	private static boolean filter(String key) {
-		for (String ig : IGNORE_PREFIXS)
-			if (ig.equals(key) || key.startsWith(ig)) return true;
-		return (key.charAt(0) >= 'A' && key.charAt(0) <= 'Z');
+	private static boolean filterSystemAndInvalidPrefix(String key) {
+		char first = key.charAt(0);
+		if (first < 'a' || first > 'z') return true;
+		List<String> igs = Arrays.asList("java", "sun", "os", "user", "file", "path", "awt", "line", "home", "hostname", "shell", "lang");
+		for (String i : igs)
+			if (i.equals(key) || key.startsWith(i + ".")) return true;
+		return false;
 	}
 
 	public static Map<String, String> mapProps(Properties props) {
