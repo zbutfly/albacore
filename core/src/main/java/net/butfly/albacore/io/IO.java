@@ -9,10 +9,15 @@ import java.util.stream.Stream;
 import net.butfly.albacore.base.Sizable;
 
 public interface IO extends Sizable, Openable {
-	final int IO_PARALLELISM = Integer.parseInt(System.getProperty("albacore.io.parallelism", "16"));
+	final int IO_PARALLELISM = calcIoParallelism();
+
 	final StreamExecutor io = new StreamExecutor(IO_PARALLELISM, "AlbacoreIOExecutor", false);
 
 	long size();
+
+	static int calcIoParallelism() {
+		return Integer.parseInt(System.getProperty("albacore.io.parallelism", "16"));
+	}
 
 	static <V, A, R> R map(Iterable<V> col, Function<V, A> mapper, Collector<? super A, ?, R> collector) {
 		return io.map(col, mapper, collector);

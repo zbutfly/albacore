@@ -4,50 +4,49 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
-import java.text.MessageFormat;
-import java.util.Properties;
 
 import net.butfly.albacore.utils.logger.Logger;
 
 public final class IOs extends Utils {
 	private static final Logger logger = Logger.getLogger(IOs.class);
 
-	private static void writeInteger(OutputStream out, int i) throws IOException {
-		out.write(i & 0x000000FF);
-		i >>= 8;
-		out.write(i & 0x000000FF);
-		i >>= 8;
-		out.write(i & 0x000000FF);
-		i >>= 8;
-		out.write(i & 0x000000FF);
+	public static InputStream openFile(String... file) {
+		if (file == null || file.length == 0) return null;
+		for (String f : file)
+			try {
+				FileInputStream s = new FileInputStream(f);
+				if (null != s) return s;
+			} catch (Exception e) {}
+		return null;
 	}
 
-	private static int readInteger(InputStream in) throws IOException {
-		int b, i = 0, offset = -8;
-		if ((b = in.read()) >= 0) i |= b << (offset += 8);
-		if ((b = in.read()) >= 0) i |= b << (offset += 8);
-		if ((b = in.read()) >= 0) i |= b << (offset += 8);
-		if ((b = in.read()) >= 0) i |= b << (offset += 8);
-		return i;
+	public static InputStream openClasspath(Class<?> loader, String... file) {
+		if (loader == null || file == null || file.length == 0) return null;
+		for (String f : file) {
+			try {
+				InputStream s = loader.getClassLoader().getResourceAsStream(f.startsWith("/") ? f : "/" + f);
+				if (null != s) return s;
+			} catch (Exception e) {}
+		}
+		return null;
 	}
 
 	public static <S extends OutputStream> S writeBytes(S out, byte[]... bytes) throws IOException {
 		for (byte[] b : bytes) {
-			if (null == b) writeInteger(out, -1);
-			writeInteger(out, b.length);
+			if (null == b) writeLength(out, -1);
+			writeLength(out, b.length);
 			if (b.length > 0) out.write(b);
 		}
 		return out;
 	}
 
 	public static byte[] readBytes(InputStream in) throws IOException {
-		int l = readInteger(in);
+		int l = readLength(in);
 		if (l < 0) return null;
 		if (l == 0) return new byte[0];
 		byte[] bytes = new byte[l];
@@ -58,24 +57,23 @@ public final class IOs extends Utils {
 		return bytes;
 	}
 
-	public static InputStream loadJavaFile(String file) {
-		try {
-			return new FileInputStream(file);
-		} catch (FileNotFoundException e) {
-			return Thread.currentThread().getContextClassLoader().getResourceAsStream(file);
-		}
+	private static void writeLength(OutputStream out, int i) throws IOException {
+		out.write(i & 0x000000FF);
+		i >>= 8;
+		out.write(i & 0x000000FF);
+		i >>= 8;
+		out.write(i & 0x000000FF);
+		i >>= 8;
+		out.write(i & 0x000000FF);
 	}
 
-	@Deprecated
-	public static Properties loadAsProps(String classpathPropsFile) {
-		Properties props = new Properties();
-		InputStream ips = Thread.currentThread().getContextClassLoader().getResourceAsStream(classpathPropsFile);
-		if (null != ips) try {
-			props.load(ips);
-		} catch (IOException e) {
-			logger.error("Properties file " + classpathPropsFile + " loading failure", e);
-		}
-		return props;
+	private static int readLength(InputStream in) throws IOException {
+		int b, i = 0, offset = -8;
+		if ((b = in.read()) >= 0) i |= b << (offset += 8);
+		if ((b = in.read()) >= 0) i |= b << (offset += 8);
+		if ((b = in.read()) >= 0) i |= b << (offset += 8);
+		if ((b = in.read()) >= 0) i |= b << (offset += 8);
+		return i;
 	}
 
 	public static byte[] readAll(final InputStream is) {
@@ -95,11 +93,6 @@ public final class IOs extends Utils {
 		File dir = new File(path + "/");
 		if (!dir.exists() || !dir.isDirectory()) dir.mkdirs();
 		return dir.getCanonicalPath();
-	}
-
-	public static void main(String... args) throws IOException {
-		int i = -8;
-		System.out.println(MessageFormat.format("{0},{1},{2},{3}", i += 8, i += 8, i += 8, i += 8));
 	}
 
 	public static byte[] toByte(Object obj) {

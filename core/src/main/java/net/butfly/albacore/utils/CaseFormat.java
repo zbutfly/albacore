@@ -47,20 +47,15 @@ public enum CaseFormat {
 		return LOWER_CAMEL;
 	}
 
-	CaseFormat(com.google.common.base.CaseFormat format) {
+	private CaseFormat(com.google.common.base.CaseFormat format) {
 		this.format = format;
 	}
 
 	public final String to(CaseFormat to, String str) {
-		Objects.noneNull(to, str);
-		return (to == this) ? str : convert(to, str);
-	}
-
-	String convert(CaseFormat to, String str) {
 		if (format == to.format) return str;
-		else if (format == null) // LOWER_DOT
-			return com.google.common.base.CaseFormat.LOWER_UNDERSCORE.to(to.format, str.replaceAll("\\.", "_"));
-		else if (to.format == null) return format.to(com.google.common.base.CaseFormat.LOWER_UNDERSCORE, str).replaceAll("_", "\\.");
-		else return format.to(to.format, str);
+		// LOWER_DOT
+		if (format == null) return com.google.common.base.CaseFormat.LOWER_HYPHEN.to(to.format, str.replaceAll("\\.", "-"));
+		if (to.format == null) return format.to(com.google.common.base.CaseFormat.LOWER_HYPHEN, str).replaceAll("-", "\\.");
+		return format.to(to.format, str);
 	}
 }
