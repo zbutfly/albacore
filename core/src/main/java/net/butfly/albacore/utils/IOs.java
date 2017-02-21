@@ -38,15 +38,15 @@ public final class IOs extends Utils {
 
 	public static <S extends OutputStream> S writeBytes(S out, byte[]... bytes) throws IOException {
 		for (byte[] b : bytes) {
-			if (null == b) writeLength(out, -1);
-			writeLength(out, b.length);
+			if (null == b) writeInt(out, -1);
+			writeInt(out, b.length);
 			if (b.length > 0) out.write(b);
 		}
 		return out;
 	}
 
 	public static byte[] readBytes(InputStream in) throws IOException {
-		int l = readLength(in);
+		int l = readInt(in);
 		if (l < 0) return null;
 		if (l == 0) return new byte[0];
 		byte[] bytes = new byte[l];
@@ -57,7 +57,7 @@ public final class IOs extends Utils {
 		return bytes;
 	}
 
-	private static void writeLength(OutputStream out, int i) throws IOException {
+	public static void writeInt(OutputStream out, int i) throws IOException {
 		out.write(i & 0x000000FF);
 		i >>= 8;
 		out.write(i & 0x000000FF);
@@ -67,7 +67,7 @@ public final class IOs extends Utils {
 		out.write(i & 0x000000FF);
 	}
 
-	private static int readLength(InputStream in) throws IOException {
+	public static int readInt(InputStream in) throws IOException {
 		int b, i = 0, offset = -8;
 		if ((b = in.read()) >= 0) i |= b << (offset += 8);
 		if ((b = in.read()) >= 0) i |= b << (offset += 8);

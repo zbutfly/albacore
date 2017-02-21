@@ -1,6 +1,7 @@
 package net.butfly.albacore.utils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -151,7 +152,8 @@ public final class Collections extends Utils {
 	private static final Random r = new Random();
 
 	private static <T> Collection<List<T>> chop(Stream<T> origin, int parallelism) {
-		return origin.collect(Collectors.groupingBy(x -> r.nextInt(parallelism < 2 ? 2 : parallelism))).values();
+		if (parallelism <= 1) return Arrays.asList(origin.collect(Collectors.toList()));
+		else return origin.collect(Collectors.groupingBy(x -> r.nextInt(parallelism))).values();
 	}
 
 	public static <T> Stream<List<T>> chopped(Stream<T> origin, int parallelism) {

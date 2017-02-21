@@ -4,6 +4,7 @@ import static net.butfly.albacore.utils.Exceptions.unwrap;
 import static net.butfly.albacore.utils.Exceptions.wrap;
 
 import java.text.MessageFormat;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -39,12 +40,12 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 	}
 
 	public void run(Runnable task) {
-		while (true)
+		for (int i = 1;; i++)
 			try {
 				executor.submit(task).get();
 				return;
 			} catch (RejectedExecutionException e) {
-				tracePool("Rejected");
+				tracePool("Rejected #" + i);
 				Concurrents.waitSleep();
 			} catch (InterruptedException e) {
 				throw new RuntimeException("Streaming inturrupted", e);
@@ -54,18 +55,31 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 	}
 
 	public <T> T run(Callable<T> task) {
-		while (true) {
+		for (int i = 1;; i++)
 			try {
 				return executor.submit(task).get();
 			} catch (RejectedExecutionException e) {
-				tracePool("Rejected");
+				tracePool("Rejected #" + i);
 				Concurrents.waitSleep();
 			} catch (InterruptedException e) {
 				throw new RuntimeException("Streaming inturrupted", e);
 			} catch (Exception e) {
 				throw wrap(unwrap(e));
 			}
-		}
+	}
+
+	public <T> List<T> run(@SuppressWarnings("unchecked") Callable<T>... tasks) {
+		for (int i = 1;; i++)
+			try {
+				return listen(Arrays.asList(tasks)).get();
+			} catch (RejectedExecutionException e) {
+				tracePool("Rejected #" + i);
+				Concurrents.waitSleep();
+			} catch (InterruptedException e) {
+				throw new RuntimeException("Streaming inturrupted", e);
+			} catch (Exception e) {
+				throw wrap(unwrap(e));
+			}
 	}
 
 	public <V, A, R> R map(Iterable<V> col, Function<V, A> mapper, Collector<? super A, ?, R> collector) {
