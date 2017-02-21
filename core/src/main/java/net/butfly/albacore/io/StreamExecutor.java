@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ForkJoinTask;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collector;
@@ -30,9 +30,8 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 	private final ListeningExecutorService lex;
 
 	public StreamExecutor(int parallelism, String threadNamePrefix, boolean throwException) {
-		if (parallelism <= 0) parallelism = Runtime.getRuntime().availableProcessors() / 2;
-		if (parallelism <= 0) parallelism = 2;
-		executor = Concurrents.executorForkJoin(parallelism, "AlbatisIOPool", (t, e) -> {
+		if (parallelism < 1) executor = ForkJoinPool.commonPool();
+		else executor = Concurrents.executorForkJoin(parallelism, "AlbatisIOPool", (t, e) -> {
 			logger.error("Migrater pool task failure @" + t.getName(), e);
 			if (throwException) throw wrap(unwrap(e));
 		});
@@ -40,42 +39,33 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 	}
 
 	public void run(Runnable task) {
-		ForkJoinTask<?> f = executor.submit(task);
-		try {
-			f.get();
-		} catch (InterruptedException e) {
-			throw new RuntimeException("Streaming inturrupted", e);
-		} catch (ExecutionException e) {
-			throw (e.getCause() instanceof RuntimeException) ? (RuntimeException) e.getCause()
-					: new RuntimeException("Streaming failure", e.getCause());
-		}
+		while (true)
+			try {
+				executor.submit(task).get();
+				return;
+			} catch (RejectedExecutionException e) {
+				tracePool("Rejected");
+				Concurrents.waitSleep();
+			} catch (InterruptedException e) {
+				throw new RuntimeException("Streaming inturrupted", e);
+			} catch (ExecutionException e) {
+				throw wrap(unwrap(e));
+			}
 	}
 
 	public <T> T run(Callable<T> task) {
-		ForkJoinTask<T> f = executor.submit(task);
-		try {
-			return f.get();
-		} catch (InterruptedException e) {
-			throw new RuntimeException("Streaming inturrupted", e);
-		} catch (Exception e) {
-			throw wrap(unwrap(e));
+		while (true) {
+			try {
+				return executor.submit(task).get();
+			} catch (RejectedExecutionException e) {
+				tracePool("Rejected");
+				Concurrents.waitSleep();
+			} catch (InterruptedException e) {
+				throw new RuntimeException("Streaming inturrupted", e);
+			} catch (Exception e) {
+				throw wrap(unwrap(e));
+			}
 		}
-	}
-
-	public ForkJoinTask<?> submit(Runnable task) {
-		return executor.submit(task);
-	}
-
-	public <T> ForkJoinTask<T> submit(Callable<T> task) {
-		return executor.submit(task);
-	}
-
-	public <T> ListenableFuture<List<T>> listen(List<? extends Callable<T>> list) {
-		return Futures.successfulAsList(list(list, c -> lex.submit(c)));
-	}
-
-	public ListenableFuture<List<Object>> listenRun(List<? extends Runnable> list) {
-		return Futures.successfulAsList(list(list, c -> lex.submit(c)));
 	}
 
 	public <V, A, R> R map(Iterable<V> col, Function<V, A> mapper, Collector<? super A, ?, R> collector) {
@@ -102,11 +92,6 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 		return map(col, mapper, Collectors.toList());
 	}
 
-	@Override
-	public void close() throws Exception {
-		Concurrents.shutdown(executor);
-	}
-
 	public <V> void each(Iterable<V> col, Consumer<? super V> consumer) {
 		run(() -> Streams.of(col).forEach(consumer));
 	}
@@ -115,10 +100,27 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 		run(() -> Streams.of(of).forEach(consumer));
 	}
 
-	public void tracePool() {
-		logger.debug(() -> MessageFormat.format(
-				"IO Fork/Join: active/running threads={2}/{3}, steals={4}, pool Size/parallelism={1}/{0}, .", executor.getParallelism(),
-				executor.getPoolSize(), executor.getActiveThreadCount(), executor.getRunningThreadCount(), executor.getStealCount()));
+	public <T> ListenableFuture<List<T>> listen(List<? extends Callable<T>> list) {
+		return Futures.successfulAsList(list(list, c -> lex.submit(c)));
 	}
 
+	public ListenableFuture<List<Object>> listenRun(List<? extends Runnable> list) {
+		return Futures.successfulAsList(list(list, c -> lex.submit(c)));
+	}
+
+	public void tracePool(String prefix) {
+		logger.debug(() -> MessageFormat.format(
+				"{6}, Fork/Join: tasks={5}, threads(active/running)={2}/{3}, steals={4}, pool size/parallelism={1}/{0}.", executor
+						.getParallelism(), executor.getPoolSize(), executor.getActiveThreadCount(), executor.getRunningThreadCount(),
+				executor.getStealCount(), executor.getQueuedTaskCount(), prefix));
+	}
+
+	@Override
+	public void close() throws Exception {
+		Concurrents.shutdown(executor);
+	}
+
+	public int parallelism() {
+		return executor.getParallelism();
+	}
 }

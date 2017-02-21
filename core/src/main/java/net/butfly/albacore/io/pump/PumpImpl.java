@@ -19,7 +19,7 @@ abstract class PumpImpl<V, P extends PumpImpl<V, P>> extends Namedly implements 
 	protected static final int STATUS_STOPPED = 2;
 
 	protected final String name;
-	private final int parallelism;
+	// private final int parallelism;
 	private final List<Runnable> tasks = new ArrayList<>();
 
 	protected long batchSize = 1000;
@@ -28,7 +28,7 @@ abstract class PumpImpl<V, P extends PumpImpl<V, P>> extends Namedly implements 
 	protected PumpImpl(String name, int parallelism) {
 		super(name);
 		this.name = name;
-		this.parallelism = parallelism;
+		// this.parallelism = parallelism;
 		dependencies = new ArrayList<>();
 		logger().info("Pump [" + name + "] created with parallelism: " + parallelism);
 	}
@@ -50,10 +50,9 @@ abstract class PumpImpl<V, P extends PumpImpl<V, P>> extends Namedly implements 
 			}
 		};
 		Runnable rr = r.until(() -> {
-			IO.io.tracePool();
 			return !opened() || sourceEmpty.get();
 		});
-		for (int i = 0; i < parallelism; i++)
+		for (int i = 0; i < IO.io.parallelism(); i++)
 			tasks.add(rr);
 	}
 

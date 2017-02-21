@@ -17,14 +17,18 @@ public interface IO extends Sizable, Openable {
 		private static final int IO_PARALLELISM = calcIoParallelism();
 
 		private static int calcIoParallelism() {
-			double r = Double.parseDouble(Configs.MAIN_CONF.getOrDefault("albacore.io.parallelism.ratio", "1"));
-			int p = 16 + (int) Math.round((ForkJoinPool.getCommonPoolParallelism() - 16) * (r - 1));
-			if (p < 2) p = 2;
-			if (p > ForkJoinPool.getCommonPoolParallelism()) p = ForkJoinPool.getCommonPoolParallelism();
-			logger.info("AlbacoreIO parallelism calced as: " + p + " [from: (((-Dalbacore.io.parallelism.ratio(" + r
-					+ ")) - 1) * (JVM_DEFAULT_PARALLELISM(" + ForkJoinPool.getCommonPoolParallelism()
-					+ ") - IO_DEFAULT_PARALLELISM(16))) + IO_DEFAULT_PARALLELISM(16), Max=JVM_DEFAULT_PARALLELISM, Min=2 ] ");
-			return p;
+			if (Configs.MAIN_CONF.containsKey("albacore.io.parallelism.ratio")) {
+				double r = Double.parseDouble(Configs.MAIN_CONF.get("albacore.io.parallelism.ratio"));
+				int p = 16 + (int) Math.round((ForkJoinPool.getCommonPoolParallelism() - 16) * (r - 1));
+				if (p < 2) p = 2;
+				logger.info("AlbacoreIO parallelism calced as: " + p + " [from: (((-Dalbacore.io.parallelism.ratio(" + r
+						+ ")) - 1) * (JVM_DEFAULT_PARALLELISM(" + ForkJoinPool.getCommonPoolParallelism()
+						+ ") - IO_DEFAULT_PARALLELISM(16))) + IO_DEFAULT_PARALLELISM(16), Max=JVM_DEFAULT_PARALLELISM, Min=2 ]");
+				return p;
+			} else {
+				logger.info("AlbacoreIO use JVM common ForkJoinPool.");
+				return 0;
+			}
 		}
 	}
 
