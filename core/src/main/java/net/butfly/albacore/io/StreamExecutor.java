@@ -45,7 +45,7 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 				executor.submit(task).get();
 				return;
 			} catch (RejectedExecutionException e) {
-				tracePool("Rejected #" + i);
+				logger.warn(tracePool("Rejected #" + i), e);
 				Concurrents.waitSleep();
 			} catch (InterruptedException e) {
 				throw new RuntimeException("Streaming inturrupted", e);
@@ -59,7 +59,7 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 			try {
 				return executor.submit(task).get();
 			} catch (RejectedExecutionException e) {
-				tracePool("Rejected #" + i);
+				logger.warn(tracePool("Rejected #" + i), e);
 				Concurrents.waitSleep();
 			} catch (InterruptedException e) {
 				throw new RuntimeException("Streaming inturrupted", e);
@@ -73,7 +73,7 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 			try {
 				return listen(Arrays.asList(tasks)).get();
 			} catch (RejectedExecutionException e) {
-				tracePool("Rejected #" + i);
+				logger.warn(tracePool("Rejected #" + i), e);
 				Concurrents.waitSleep();
 			} catch (InterruptedException e) {
 				throw new RuntimeException("Streaming inturrupted", e);
@@ -122,11 +122,11 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 		return Futures.successfulAsList(list(list, c -> lex.submit(c)));
 	}
 
-	public void tracePool(String prefix) {
-		logger.debug(() -> MessageFormat.format(
+	public String tracePool(String prefix) {
+		return MessageFormat.format(
 				"{6}, Fork/Join: tasks={5}, threads(active/running)={2}/{3}, steals={4}, pool size/parallelism={1}/{0}.", executor
 						.getParallelism(), executor.getPoolSize(), executor.getActiveThreadCount(), executor.getRunningThreadCount(),
-				executor.getStealCount(), executor.getQueuedTaskCount(), prefix));
+				executor.getStealCount(), executor.getQueuedTaskCount(), prefix);
 	}
 
 	@Override
