@@ -30,17 +30,17 @@ public interface Pump<V> extends Statistical<Pump<V>>, Openable {
 		});
 	}
 
-	public static <V> Pump<V> pump(Input<V> input, int parallelism, Output<V> dest) {
-		return new BasicPump<V>(input, parallelism, dest);
+	public static <V> Pump<V> pump(Input<V> input, Output<V> dest) {
+		return new BasicPump<V>(input, dest);
 	}
 
 	@SafeVarargs
-	public static <V> Pump<V> pump(Input<V> input, int parallelism, Output<V>... dests) {
-		return new BasicPump<>(input, parallelism, new FanOutput<V>(Arrays.asList(dests)));
+	public static <V> Pump<V> pump(Input<V> input, Output<V>... dests) {
+		return new BasicPump<>(input, new FanOutput<V>(Arrays.asList(dests)));
 	}
 
-	public static <V> Pump<V> pump(Input<V> input, int parallelism, List<? extends Output<V>> dests) {
-		return new BasicPump<>(input, parallelism, new FanOutput<V>(dests));
+	public static <V> Pump<V> pump(Input<V> input, List<? extends Output<V>> dests) {
+		return new BasicPump<>(input, new FanOutput<V>(dests));
 	}
 
 }
