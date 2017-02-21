@@ -3,6 +3,7 @@ package net.butfly.albacore.io;
 import static net.butfly.albacore.utils.Exceptions.unwrap;
 import static net.butfly.albacore.utils.Exceptions.wrap;
 
+import java.text.MessageFormat;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -15,6 +16,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 
@@ -22,7 +24,7 @@ import net.butfly.albacore.base.Namedly;
 import net.butfly.albacore.utils.async.Concurrents;
 import net.butfly.albacore.utils.logger.Logger;
 
-public class StreamExecutor extends Namedly implements AutoCloseable {
+public final class StreamExecutor extends Namedly implements AutoCloseable {
 	private static final Logger logger = Logger.getLogger(StreamExecutor.class);
 	private final ForkJoinPool executor;
 	private final ListeningExecutorService lex;
@@ -37,7 +39,7 @@ public class StreamExecutor extends Namedly implements AutoCloseable {
 		lex = MoreExecutors.listeningDecorator(executor);
 	}
 
-	void run(Runnable task) {
+	public void run(Runnable task) {
 		ForkJoinTask<?> f = executor.submit(task);
 		try {
 			f.get();
@@ -49,7 +51,7 @@ public class StreamExecutor extends Namedly implements AutoCloseable {
 		}
 	}
 
-	<T> T run(Callable<T> task) {
+	public <T> T run(Callable<T> task) {
 		ForkJoinTask<T> f = executor.submit(task);
 		try {
 			return f.get();
@@ -60,22 +62,20 @@ public class StreamExecutor extends Namedly implements AutoCloseable {
 		}
 	}
 
-	<T> ForkJoinTask<T> submit(Callable<T> task) {
+	public ForkJoinTask<?> submit(Runnable task) {
 		return executor.submit(task);
 	}
 
-	public <T> List<T> submit(List<Callable<T>> list) {
-		try {
-			return Futures.successfulAsList(list(list, c -> lex.submit(c))).get();
-		} catch (InterruptedException e) {
-			throw new RuntimeException("Streaming inturrupted", e);
-		} catch (Exception e) {
-			throw wrap(unwrap(e));
-		}
+	public <T> ForkJoinTask<T> submit(Callable<T> task) {
+		return executor.submit(task);
 	}
 
-	ForkJoinTask<?> submit(Runnable task) {
-		return executor.submit(task);
+	public <T> ListenableFuture<List<T>> listen(List<? extends Callable<T>> list) {
+		return Futures.successfulAsList(list(list, c -> lex.submit(c)));
+	}
+
+	public ListenableFuture<List<Object>> listenRun(List<? extends Runnable> list) {
+		return Futures.successfulAsList(list(list, c -> lex.submit(c)));
 	}
 
 	public <V, A, R> R map(Iterable<V> col, Function<V, A> mapper, Collector<? super A, ?, R> collector) {
@@ -113,6 +113,12 @@ public class StreamExecutor extends Namedly implements AutoCloseable {
 
 	public <V> void each(Stream<V> of, Consumer<? super V> consumer) {
 		run(() -> Streams.of(of).forEach(consumer));
+	}
+
+	public void tracePool() {
+		logger.debug(() -> MessageFormat.format(
+				"IO Fork/Join: active/running threads={2}/{3}, steals={4}, pool Size/parallelism={1}/{0}, .", executor.getParallelism(),
+				executor.getPoolSize(), executor.getActiveThreadCount(), executor.getRunningThreadCount(), executor.getStealCount()));
 	}
 
 }

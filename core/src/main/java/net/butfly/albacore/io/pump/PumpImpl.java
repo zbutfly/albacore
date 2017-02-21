@@ -1,17 +1,17 @@
 package net.butfly.albacore.io.pump;
 
+import static net.butfly.albacore.utils.Exceptions.unwrap;
+import static net.butfly.albacore.utils.Exceptions.wrap;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.common.base.Supplier;
 
 import net.butfly.albacore.base.Namedly;
-import net.butfly.albacore.io.OpenableThread;
+import net.butfly.albacore.io.IO;
 import net.butfly.albacore.lambda.Runnable;
-import net.butfly.albacore.utils.async.Concurrents;
 
 abstract class PumpImpl<V, P extends PumpImpl<V, P>> extends Namedly implements Pump<V> {
 	protected static final int STATUS_OTHER = 0;
@@ -20,8 +20,7 @@ abstract class PumpImpl<V, P extends PumpImpl<V, P>> extends Namedly implements 
 
 	protected final String name;
 	private final int parallelism;
-	protected final Map<String, OpenableThread> threads = new ConcurrentHashMap<>();
-	protected final ThreadGroup threadGroup;
+	private final List<Runnable> tasks = new ArrayList<>();
 
 	protected long batchSize = 1000;
 	private final List<AutoCloseable> dependencies;
@@ -30,7 +29,6 @@ abstract class PumpImpl<V, P extends PumpImpl<V, P>> extends Namedly implements 
 		super(name);
 		this.name = name;
 		this.parallelism = parallelism;
-		threadGroup = new ThreadGroup(name);
 		dependencies = new ArrayList<>();
 		logger().info("Pump [" + name + "] created with parallelism: " + parallelism);
 	}
@@ -51,14 +49,12 @@ abstract class PumpImpl<V, P extends PumpImpl<V, P>> extends Namedly implements 
 				logger().error("Pump processing failure", th);
 			}
 		};
-		for (int i = 0; i < parallelism; i++) {
-			String threadName = name + "#" + (i + 1);
-			threads.put(threadName, new OpenableThread(threadGroup, r.until(() -> {
-				return !opened() || sourceEmpty.get();
-			}).then(() -> {
-				threads.remove(threadName);
-			}), threadName));
-		}
+		Runnable rr = r.until(() -> {
+			IO.io.tracePool();
+			return !opened() || sourceEmpty.get();
+		});
+		for (int i = 0; i < parallelism; i++)
+			tasks.add(rr);
 	}
 
 	@Override
@@ -70,23 +66,22 @@ abstract class PumpImpl<V, P extends PumpImpl<V, P>> extends Namedly implements 
 	@Override
 	public void open(java.lang.Runnable run) {
 		Pump.super.open(run);
-		for (OpenableThread t : threads.values())
-			t.open();
-		while (opened() && !threads.isEmpty())
-			Concurrents.waitSleep(500);
+		try {
+			IO.io.listenRun(tasks).get();
+		} catch (InterruptedException e) {} catch (Exception e) {
+			throw wrap(unwrap(e));
+		}
 		logger().info(name() + " finished.");
-	}
-
-	@Override
-	public void close() {
-		Pump.super.close();
-		for (OpenableThread t : threads.values())
-			t.close();
 		for (AutoCloseable dep : dependencies)
 			try {
 				dep.close();
 			} catch (Exception e) {
 				logger().error(dep.getClass().getName() + " close failed");
 			}
+	}
+
+	@Override
+	public void close() {
+		Pump.super.close();
 	}
 }

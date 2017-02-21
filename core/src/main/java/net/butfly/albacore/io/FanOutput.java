@@ -1,8 +1,13 @@
 package net.butfly.albacore.io;
 
+import static net.butfly.albacore.utils.Exceptions.unwrap;
+import static net.butfly.albacore.utils.Exceptions.wrap;
+
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import com.google.common.util.concurrent.ListenableFuture;
 
 public class FanOutput<V> extends OutputImpl<V> {
 	private final Iterable<? extends Output<V>> outputs;
@@ -21,7 +26,15 @@ public class FanOutput<V> extends OutputImpl<V> {
 	public boolean enqueue(V item) {
 		if (null == item) return false;
 		boolean r = true;
-		List<Boolean> rs = io.submit(io.list(outputs, o -> () -> o.enqueue(item)));
+		ListenableFuture<List<Boolean>> fs = io.listen(io.list(outputs, o -> () -> o.enqueue(item)));
+		List<Boolean> rs;
+		try {
+			rs = fs.get();
+		} catch (InterruptedException e) {
+			throw new RuntimeException("Streaming inturrupted", e);
+		} catch (Exception e) {
+			throw wrap(unwrap(e));
+		}
 		for (Boolean b : rs)
 			r = r && b;
 		return r;
@@ -29,6 +42,15 @@ public class FanOutput<V> extends OutputImpl<V> {
 
 	@Override
 	public long enqueue(Stream<V> items) {
-		return io.collect(io.submit(io.list(outputs, o -> () -> o.enqueue(items))), Collectors.summingLong(Long::longValue));
+		ListenableFuture<List<Long>> fs = io.listen(io.list(outputs, o -> () -> o.enqueue(items)));
+		List<Long> rs;
+		try {
+			rs = fs.get();
+		} catch (InterruptedException e) {
+			throw new RuntimeException("Streaming inturrupted", e);
+		} catch (Exception e) {
+			throw wrap(unwrap(e));
+		}
+		return io.collect(rs, Collectors.summingLong(Long::longValue));
 	}
 }
