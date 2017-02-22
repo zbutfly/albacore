@@ -123,10 +123,9 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 	}
 
 	public String tracePool(String prefix) {
-		return MessageFormat.format(
-				"{6}, Fork/Join: tasks={5}, threads(active/running)={2}/{3}, steals={4}, pool size/parallelism={1}/{0}.", executor
-						.getParallelism(), executor.getPoolSize(), executor.getActiveThreadCount(), executor.getRunningThreadCount(),
-				executor.getStealCount(), executor.getQueuedTaskCount(), prefix);
+		return MessageFormat.format("{6}, Fork/Join: tasks={5}, threads(active/running)={2}/{3}, steals={4}, pool size={1}.", null, executor
+				.getPoolSize(), executor.getActiveThreadCount(), executor.getRunningThreadCount(), executor.getStealCount(), executor
+						.getQueuedTaskCount(), prefix);
 	}
 
 	@Override
