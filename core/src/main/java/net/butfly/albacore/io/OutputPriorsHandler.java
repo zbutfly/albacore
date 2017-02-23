@@ -46,7 +46,7 @@ public final class OutputPriorsHandler<V0, V> extends Namedly implements Invocat
 		Iterator<V0> it = items.iterator();
 		List<ListenableFuture<Long>> fs = new ArrayList<>();
 		while (it.hasNext())
-			fs.add(IO.listen(() -> output.enqueue(Streams.of(conv.apply(Streams.batch(batchSize, it, null, false))))));
+			fs.add(IO.listen(() -> output.enqueue(Streams.of(conv.apply(IO.list(Streams.batch(batchSize, it)))))));
 		return IO.sum(fs, logger());
 	}
 }

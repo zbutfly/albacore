@@ -24,7 +24,7 @@ public abstract class InputImpl<V> extends Namedly implements Input<V>, Supplier
 
 	@Override
 	public Stream<V> dequeue(long batchSize) {
-		return Streams.of(Streams.batch(batchSize, () -> dequeue(), () -> empty(), null, true));
+		return Streams.of(Streams.batch(batchSize, () -> dequeue(), () -> empty()));
 	}
 
 	@Override

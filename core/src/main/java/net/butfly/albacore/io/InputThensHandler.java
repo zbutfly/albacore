@@ -51,7 +51,7 @@ public final class InputThensHandler<V, V1> extends Namedly implements Invocatio
 		Iterator<V> it = input.dequeue(_batchSize).iterator();
 		Builder<ListenableFuture<List<V1>>> b = Stream.builder();
 		while (it.hasNext())
-			b.add(IO.listen(() -> conv.apply(Streams.batch(batchSize, it, null, false))));
+			b.add(IO.listen(() -> conv.apply(IO.list(Streams.batch(batchSize, it)))));
 		return b.build().flatMap(f -> {
 			try {
 				return Streams.of(f.get());

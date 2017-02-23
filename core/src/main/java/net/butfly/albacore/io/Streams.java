@@ -1,11 +1,12 @@
 package net.butfly.albacore.io;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -21,29 +22,55 @@ import net.butfly.albacore.utils.async.Concurrents;
 public final class Streams extends Utils {
 	private static final Logger logger = Logger.getLogger(Streams.class);
 	public static final Predicate<Object> NOT_NULL = t -> null != t;
+	private final static int c = Spliterator.ORDERED | Spliterator.NONNULL | Spliterator.IMMUTABLE | Spliterator.SIZED
+			| Spliterator.SUBSIZED;
 
-	public static <V> List<V> batch(long batchSize, Supplier<V> get, Supplier<Boolean> ending, WriteLock lock, boolean retryOnException) {
-		List<V> batch = new ArrayList<>();
+	public static <V> Stream<V> batch(long batchSize, Iterator<V> it) {
+		return StreamSupport.stream(Spliterators.spliteratorUnknownSize(it, c), true).limit(batchSize);
+	}
+
+	public static <V> Stream<V> batch(long batchSize, Supplier<V> get, Supplier<Boolean> ending) {
+		return batch(batchSize, new Iterator<V>() {
+			@Override
+			public boolean hasNext() {
+				return !ending.get();
+			}
+
+			@Override
+			public V next() {
+				return get.get();
+			}
+		});
+	}
+
+	@Deprecated
+	public static <V> Stream<V> batchOld(long batchSize, Supplier<V> get, Supplier<Boolean> ending, WriteLock lock,
+			boolean retryOnException) {
+		Stream.Builder<V> batch = Stream.builder();
+		int c = 0;
 		do {
-			long prev = batch.size();
-			while (!ending.get() && batch.size() < batchSize)
+			long prev = c;
+			while (!ending.get() && c < batchSize)
 				if (null == lock || lock.tryLock()) try {
 					V e = get.get();
-					if (null != e) batch.add(e);
+					if (null != e) {
+						batch.add(e);
+						c++;
+					}
 				} catch (Exception ex) {
 					logger.warn("Dequeue fail", ex);
-					if (!retryOnException) return batch;
+					if (!retryOnException) return batch.build();
 				} finally {
 					if (null != lock) lock.unlock();
 				}
-			if (batch.size() >= batchSize || ending.get()) return batch;
-			if (batch.size() > 0 && batch.size() == prev) return batch;
+			if (c >= batchSize || ending.get()) return batch.build();
+			if (c > 0 && c == prev) return batch.build();
 			Concurrents.waitSleep();
 		} while (true);
 	}
 
-	public static <V> List<V> batch(long batchSize, Iterator<V> it, WriteLock lock, boolean retryOnException) {
-		return batch(batchSize, () -> it.next(), () -> it.hasNext(), lock, retryOnException);
+	public static <V> Stream<V> batchSync(long batchSize, Iterator<V> it, WriteLock lock, boolean retryOnException) {
+		return batchOld(batchSize, () -> it.next(), () -> it.hasNext(), lock, retryOnException);
 	}
 
 	static <V> Stream<List<V>> page(Stream<V> s, long pageSize) {
