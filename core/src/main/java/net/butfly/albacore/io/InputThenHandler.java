@@ -1,7 +1,6 @@
 package net.butfly.albacore.io;
 
 import java.lang.reflect.Method;
-import java.util.List;
 
 import net.butfly.albacore.base.Namedly;
 import net.butfly.albacore.lambda.Converter;
@@ -33,7 +32,7 @@ public final class InputThenHandler<V, V1> extends Namedly implements Invocation
 			break;
 		case "thens":
 			if (args.length == 2 && Number.class.isAssignableFrom(args[1].getClass())) return new InputThensHandler<>((Input<V>) proxy,
-					(Converter<List<V>, List<V1>>) args[0], ((Number) args[1]).intValue()).proxy(Input.class);
+					(Converter<Iterable<V>, Iterable<V1>>) args[0], ((Number) args[1]).intValue()).proxy(Input.class);
 			break;
 		}
 		return method.invoke(input, args);

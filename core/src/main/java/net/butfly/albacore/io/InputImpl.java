@@ -1,7 +1,6 @@
 package net.butfly.albacore.io;
 
 import java.util.Iterator;
-import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -18,13 +17,12 @@ public abstract class InputImpl<V> extends Namedly implements Input<V>, Supplier
 	}
 
 	protected V dequeue() {
-		List<V> l = IO.list(dequeue(1));
-		return null == l || l.isEmpty() ? null : l.get(0);
+		return dequeue(1).findFirst().orElse(null);
 	}
 
 	@Override
 	public Stream<V> dequeue(long batchSize) {
-		return Streams.of(Streams.batch(batchSize, () -> dequeue(), () -> empty()));
+		return Streams.fetch(batchSize, () -> dequeue(), () -> empty(), null, true);
 	}
 
 	@Override

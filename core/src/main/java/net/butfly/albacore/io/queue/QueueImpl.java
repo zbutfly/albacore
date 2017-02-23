@@ -34,11 +34,13 @@ public abstract class QueueImpl<I, O> implements Queue<I, O> {
 		return c.get();
 	}
 
-	protected abstract O dequeue();
+	protected O dequeue() {
+		return dequeue(1).findFirst().orElse(null);
+	}
 
 	@Override
 	public Stream<O> dequeue(long batchSize) {
-		return Streams.of(Streams.batch(batchSize, () -> dequeue(), () -> empty()));
+		return Streams.fetch(batchSize, () -> dequeue(), () -> empty(), null, true);
 	}
 
 	@Override

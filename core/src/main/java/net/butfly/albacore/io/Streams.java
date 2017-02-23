@@ -1,13 +1,14 @@
 package net.butfly.albacore.io;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Spliterator;
-import java.util.Spliterators;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -22,18 +23,41 @@ import net.butfly.albacore.utils.async.Concurrents;
 public final class Streams extends Utils {
 	private static final Logger logger = Logger.getLogger(Streams.class);
 	public static final Predicate<Object> NOT_NULL = t -> null != t;
-	private final static int c = Spliterator.ORDERED | Spliterator.NONNULL | Spliterator.IMMUTABLE | Spliterator.SIZED
-			| Spliterator.SUBSIZED;
 
-	public static <V> Stream<V> batch(long batchSize, Iterator<V> it) {
-		return StreamSupport.stream(Spliterators.spliteratorUnknownSize(it, c), true).limit(batchSize);
+	public static <V> List<Iterator<V>> batch(int parallelism, Iterator<V> it) {
+		List<Iterator<V>> its = new ArrayList<>();
+		ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+		for (int i = 0; i < parallelism; i++)
+			its.add(new Iterator<V>() {
+				@Override
+				public boolean hasNext() {
+					lock.writeLock().lock();
+					try {
+						return it.hasNext();
+					} finally {
+						lock.writeLock().unlock();
+					}
+				}
+
+				@Override
+				public V next() {
+					lock.writeLock().lock();
+					try {
+						if (it.hasNext()) return it.next();
+						else return null;
+					} finally {
+						lock.writeLock().unlock();
+					}
+				}
+			});
+		return its;
 	}
 
-	public static <V> Stream<V> batch(long batchSize, Supplier<V> get, Supplier<Boolean> ending) {
-		return batch(batchSize, new Iterator<V>() {
+	public static <V> List<Iterator<V>> batch(int parallelism, Supplier<V> get, Supplier<Boolean> end) {
+		return batch(parallelism, new Iterator<V>() {
 			@Override
 			public boolean hasNext() {
-				return !ending.get();
+				return !end.get();
 			}
 
 			@Override
@@ -43,9 +67,18 @@ public final class Streams extends Utils {
 		});
 	}
 
-	@Deprecated
-	public static <V> Stream<V> batchOld(long batchSize, Supplier<V> get, Supplier<Boolean> ending, WriteLock lock,
-			boolean retryOnException) {
+	public static <V> List<Stream<V>> batch(int parallelism, Stream<V> s) {
+		return IO.list(batch(parallelism, s.iterator()), it -> StreamSupport.stream(((Iterable<V>) () -> it).spliterator(),
+				DEFAULT_PARALLEL_ENABLE).filter(NOT_NULL));
+
+	}
+
+	public static <V, V1> Stream<V1> batchMap(int parallelism, Stream<V> s, Function<Iterable<V>, Iterable<V1>> convs) {
+		Stream<Iterable<V1>> ss = of(batch(parallelism, s.iterator())).map(it -> convs.apply((Iterable<V>) () -> it));
+		return ss.flatMap(it -> StreamSupport.stream(it.spliterator(), DEFAULT_PARALLEL_ENABLE).filter(NOT_NULL));
+	}
+
+	public static <V> Stream<V> fetch(long batchSize, Supplier<V> get, Supplier<Boolean> ending, WriteLock lock, boolean retryOnException) {
 		Stream.Builder<V> batch = Stream.builder();
 		int c = 0;
 		do {
@@ -69,23 +102,6 @@ public final class Streams extends Utils {
 		} while (true);
 	}
 
-	public static <V> Stream<V> batchSync(long batchSize, Iterator<V> it, WriteLock lock, boolean retryOnException) {
-		return batchOld(batchSize, () -> it.next(), () -> it.hasNext(), lock, retryOnException);
-	}
-
-	static <V> Stream<List<V>> page(Stream<V> s, long pageSize) {
-		return null;
-	}
-
-	public static <V> Stream<V> of(Iterator<V> it) {
-		return of(new Iterable<V>() {
-			@Override
-			public Iterator<V> iterator() {
-				return it;
-			}
-		});
-	}
-
 	private static final boolean DEFAULT_PARALLEL_ENABLE = Boolean.parseBoolean(Configs.MAIN_CONF.getOrDefault(
 			"albacore.parallel.stream.enable", "false"));
 
@@ -98,11 +114,17 @@ public final class Streams extends Utils {
 		return of(col, DEFAULT_PARALLEL_ENABLE);
 	}
 
+	public static <V> Stream<V> of(Iterator<V> it) {
+		return of(() -> it);
+	}
+
 	public static <V> Stream<V> of(Iterable<V> col, boolean parallel) {
+		Stream<V> s;
 		if (Collection.class.isAssignableFrom(col.getClass())) {
-			Stream<V> s = ((Collection<V>) col).stream();
-			return parallel ? s.parallel() : s;
-		} else return StreamSupport.stream(col.spliterator(), parallel);
+			Collection<V> c = (Collection<V>) col;
+			s = parallel ? c.parallelStream() : c.stream();
+		} else s = StreamSupport.stream(col.spliterator(), parallel);
+		return s.filter(NOT_NULL);
 	}
 
 	public static <K, V> Stream<Entry<K, V>> of(Map<K, V> map) {
@@ -113,4 +135,5 @@ public final class Streams extends Utils {
 	public static <V> Stream<V> of(V... values) {
 		return of(Stream.of(values));
 	}
+
 }

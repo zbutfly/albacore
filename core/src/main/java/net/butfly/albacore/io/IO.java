@@ -44,8 +44,6 @@ public interface IO extends Sizable, Openable {
 		final private static StreamExecutor io = new StreamExecutor(EXECUTOR_NAME, calcParallelism(), false);
 	}
 
-	long size();
-
 	static <V, A, R> R map(Iterable<V> col, Function<V, A> mapper, Collector<? super A, ?, R> collector) {
 		return Context.io.collect(col, mapper, collector);
 	}
@@ -102,6 +100,11 @@ public interface IO extends Sizable, Openable {
 	@SafeVarargs
 	static <T> List<T> run(Callable<T>... tasks) {
 		return Context.io.run(tasks);
+	}
+
+	@SafeVarargs
+	static void run(Runnable... tasks) {
+		Context.io.run(tasks);
 	}
 
 	static <T, T1, K, V> Map<K, V> map(Stream<T> col, Function<T, T1> mapper, Function<T1, K> keying, Function<T1, V> valuing) {

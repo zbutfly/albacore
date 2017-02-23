@@ -114,7 +114,8 @@ public final class Collections extends Utils {
 
 	@Deprecated
 	public static <T, K, V> Map<K, List<V>> mapMap(Collection<T> list, Converter<T, Tuple2<K, V>> mapping) {
-		return of(list).map(mapping).collect(Collectors.groupingBy(t -> t._1, Collectors.mapping(t -> t._2, Collectors.toList())));
+		return of(list).map(mapping).collect(Collectors.groupingByConcurrent(t -> t._1, Collectors.mapping(t -> t._2, Collectors
+				.toList())));
 	}
 
 	public static <T> List<T> unorderize(Collection<T> origin) {

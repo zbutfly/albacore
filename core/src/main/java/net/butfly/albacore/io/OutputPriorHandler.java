@@ -1,7 +1,6 @@
 package net.butfly.albacore.io;
 
 import java.lang.reflect.Method;
-import java.util.List;
 import java.util.stream.Stream;
 
 import net.butfly.albacore.base.Namedly;
@@ -35,7 +34,7 @@ public final class OutputPriorHandler<V0, V> extends Namedly implements Invocati
 			break;
 		case "priors":
 			if (args.length == 2 && Number.class.isAssignableFrom(args[1].getClass())) return new OutputPriorsHandler<>((Output<V>) proxy,
-					(Converter<List<V0>, List<V>>) args[0], ((Number) args[1]).intValue()).proxy(Output.class);
+					(Converter<Iterable<V0>, Iterable<V>>) args[0], ((Number) args[1]).intValue()).proxy(Output.class);
 			break;
 		}
 		return method.invoke(output, args);

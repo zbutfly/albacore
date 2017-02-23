@@ -1,7 +1,5 @@
 package net.butfly.albacore.io.queue;
 
-import java.util.List;
-
 import net.butfly.albacore.io.Input;
 import net.butfly.albacore.io.InputThenHandler;
 import net.butfly.albacore.io.InputThensHandler;
@@ -52,8 +50,8 @@ public interface Queue<I, O> extends Input<O>, Output<I> {
 
 	@SuppressWarnings("resource")
 	@Override
-	default <O1> Queue<I, O1> thens(Converter<List<O>, List<O1>> conv, int batchSize) {
-		return new InputThensHandler<>(this, conv, batchSize).proxy(Queue.class);
+	default <O1> Queue<I, O1> thens(Converter<Iterable<O>, Iterable<O1>> conv, int parallelism) {
+		return new InputThensHandler<>(this, conv, parallelism).proxy(Queue.class);
 	}
 
 	@Override
@@ -63,7 +61,7 @@ public interface Queue<I, O> extends Input<O>, Output<I> {
 
 	@SuppressWarnings("resource")
 	@Override
-	default <I0> Queue<I0, O> priors(Converter<List<I0>, List<I>> conv, int batchSize) {
-		return new OutputPriorsHandler<>(this, conv, batchSize).proxy(Queue.class);
+	default <I0> Queue<I0, O> priors(Converter<Iterable<I0>, Iterable<I>> conv, int parallelism) {
+		return new OutputPriorsHandler<>(this, conv, parallelism).proxy(Queue.class);
 	}
 }

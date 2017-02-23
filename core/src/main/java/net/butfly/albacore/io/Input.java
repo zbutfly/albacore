@@ -2,14 +2,13 @@ package net.butfly.albacore.io;
 
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.utils.Collections;
 
-public interface Input<V> extends IO {
+public interface Input<V> extends IO{
 	static <V> Input<V> NULL() {
 		return new InputImpl<V>() {
 			@Override
@@ -31,8 +30,8 @@ public interface Input<V> extends IO {
 	}
 
 	@SuppressWarnings("resource")
-	default <V1> Input<V1> thens(Converter<List<V>, List<V1>> conv, int batchSize) {
-		return new InputThensHandler<>(this, conv, batchSize).proxy(Input.class);
+	default <V1> Input<V1> thens(Converter<Iterable<V>, Iterable<V1>> conv, int parallelism) {
+		return new InputThensHandler<>(this, conv, parallelism).proxy(Input.class);
 	}
 
 	public static <T> Input<T> of(Collection<? extends T> collection) {

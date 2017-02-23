@@ -1,6 +1,5 @@
 package net.butfly.albacore.io;
 
-import java.util.List;
 import java.util.stream.Stream;
 
 import net.butfly.albacore.lambda.Converter;
@@ -9,7 +8,7 @@ public interface Output<V> extends IO {
 	static <V> Output<V> NULL() {
 		return new OutputImpl<V>() {
 			@Override
-			protected boolean enqueue(V item) { 
+			protected boolean enqueue(V item) {
 				return true;
 			}
 		};
@@ -27,7 +26,7 @@ public interface Output<V> extends IO {
 	}
 
 	@SuppressWarnings("resource")
-	default <V0> Output<V0> priors(Converter<List<V0>, List<V>> conv, int batchSize) {
-		return new OutputPriorsHandler<>(this, conv, batchSize).proxy(Output.class);
+	default <V0> Output<V0> priors(Converter<Iterable<V0>, Iterable<V>> conv, int parallelism) {
+		return new OutputPriorsHandler<>(this, conv, parallelism).proxy(Output.class);
 	}
 }
