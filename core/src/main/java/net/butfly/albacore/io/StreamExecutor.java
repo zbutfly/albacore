@@ -142,7 +142,7 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 					prefix);
 		} else if (executor instanceof ThreadPoolExecutor) {
 			ThreadPoolExecutor ex = (ThreadPoolExecutor) executor;
-			return MessageFormat.format("{3}, Fork/Join: tasks={2}, threads(active)={1}, pool size={0}.", ex.getPoolSize(), ex
+			return MessageFormat.format("{3}, ThreadPool: tasks={2}, threads(active)={1}, pool size={0}.", ex.getPoolSize(), ex
 					.getActiveCount(), ex.getTaskCount(), prefix);
 		} else return prefix + ": " + executor.toString();
 	}

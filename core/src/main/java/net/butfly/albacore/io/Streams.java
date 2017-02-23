@@ -59,17 +59,18 @@ public final class Streams extends Utils {
 	}
 
 	public static <V> Stream<V> of(Iterable<V> col) {
-		return of(col, true);
+		return of(col, DEFAULT_PARALLEL_ENABLE);
 	}
 
 	public static <V> Stream<V> of(Iterable<V> col, boolean parallel) {
-		return of(Collection.class.isAssignableFrom(col.getClass()) ? (//
-		parallel ? of((Collection<V>) col) : ((Collection<V>) col).stream()//
-		) : StreamSupport.stream(col.spliterator(), parallel));
+		if (Collection.class.isAssignableFrom(col.getClass())) {
+			Stream<V> s = ((Collection<V>) col).stream();
+			return parallel ? s.parallel() : s;
+		} else return StreamSupport.stream(col.spliterator(), parallel);
 	}
 
 	public static <K, V> Stream<Entry<K, V>> of(Map<K, V> map) {
-		return Streams.of(map.entrySet()).filter(e -> e.getKey() != null && e.getValue() != null);
+		return of(map.entrySet()).filter(e -> e.getKey() != null && e.getValue() != null);
 	}
 
 	@SafeVarargs

@@ -4,7 +4,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -19,7 +20,7 @@ public class URISpec {
 	protected final String password;
 	protected final List<Pair<String, Integer>> hosts;
 	protected final List<String> paths;
-	protected final Properties query;
+	protected final Map<String, String> query;
 	protected final String fragment;
 
 	public URISpec(String str) {
@@ -57,10 +58,10 @@ public class URISpec {
 		String p = uri.getPath();
 		paths = null == p ? new ArrayList<>()
 				: Stream.of(uri.getPath().split("/")).filter(seg -> seg.trim().length() > 0).collect(Collectors.toList());
-		query = new Properties();
+		query = new ConcurrentHashMap<>();
 		if (null != uri.getQuery()) for (String q : uri.getQuery().split("&")) {
 			String[] kv = q.split("=", 2);
-			query.setProperty(kv[0], kv.length == 1 ? "" : kv[1]);
+			query.put(kv[0], kv.length == 1 ? "" : kv[1]);
 		}
 		fragment = uri.getFragment();
 	}
@@ -142,16 +143,16 @@ public class URISpec {
 						.getValue().toString()).iterator())).toString();
 	}
 
-	public Properties getParameters() {
+	public Map<String, String> getParameters() {
 		return query;
 	}
 
 	public String getParameter(String name) {
-		return query.getProperty(name);
+		return query.get(name);
 	}
 
 	public String getParameter(String name, String defaultValue) {
-		return query.getProperty(name, defaultValue);
+		return query.getOrDefault(name, defaultValue);
 	}
 
 	public String getFragment() {
