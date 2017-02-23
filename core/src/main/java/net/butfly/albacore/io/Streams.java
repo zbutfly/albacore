@@ -1,7 +1,6 @@
 package net.butfly.albacore.io;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -14,6 +13,7 @@ import java.util.stream.StreamSupport;
 
 import org.apache.log4j.Logger;
 
+import net.butfly.albacore.utils.Configs;
 import net.butfly.albacore.utils.Utils;
 import net.butfly.albacore.utils.async.Concurrents;
 
@@ -37,6 +37,10 @@ public final class Streams extends Utils {
 		return batch;
 	}
 
+	static <V> Stream<List<V>> page(Stream<V> get, long pageSize) {
+		return null;
+	}
+
 	public static <V> Stream<V> of(Iterator<V> it) {
 		return of(new Iterable<V>() {
 			@Override
@@ -46,8 +50,12 @@ public final class Streams extends Utils {
 		});
 	}
 
+	private static final boolean DEFAULT_PARALLEL_ENABLE = Boolean.parseBoolean(Configs.MAIN_CONF.getOrDefault(
+			"albacore.parallel.stream.enable", "false"));
+
 	public static <V> Stream<V> of(Stream<V> s) {
-		return s.parallel().filter(NOT_NULL);
+		if (DEFAULT_PARALLEL_ENABLE) s = s.parallel();
+		return s.filter(NOT_NULL);
 	}
 
 	public static <V> Stream<V> of(Iterable<V> col) {
@@ -56,7 +64,7 @@ public final class Streams extends Utils {
 
 	public static <V> Stream<V> of(Iterable<V> col, boolean parallel) {
 		return of(Collection.class.isAssignableFrom(col.getClass()) ? (//
-		parallel ? ((Collection<V>) col).parallelStream() : ((Collection<V>) col).stream()//
+		parallel ? of((Collection<V>) col) : ((Collection<V>) col).stream()//
 		) : StreamSupport.stream(col.spliterator(), parallel));
 	}
 
@@ -64,10 +72,8 @@ public final class Streams extends Utils {
 		return Streams.of(map.entrySet()).filter(e -> e.getKey() != null && e.getValue() != null);
 	}
 
-	public static void main(String... args) {
-		of(of(Arrays.asList("1", "2", null, null, "3").iterator())).map(e -> {
-			System.out.println(e);
-			return e;
-		}).count();
+	@SafeVarargs
+	public static <V> Stream<V> of(V... values) {
+		return of(Stream.of(values));
 	}
 }

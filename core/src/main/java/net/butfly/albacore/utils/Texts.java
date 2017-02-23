@@ -2,12 +2,16 @@ package net.butfly.albacore.utils;
 
 import java.text.DateFormat;
 import java.text.DecimalFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -62,26 +66,41 @@ public final class Texts extends Utils {
 		return l;
 	}
 
-	private static final ThreadLocal<Map<String, DateFormat>> DATE_CACHE = new ThreadLocal<Map<String, DateFormat>>() {
-		@Override
-		protected Map<String, DateFormat> initialValue() {
-			return new HashMap<String, DateFormat>();
-		}
-	};
+	private static final int POOL_SIZE = Integer.parseInt(Configs.MAIN_CONF.getOrDefault("albacore.parallel.object.cache.size", Integer
+			.toString(Runtime.getRuntime().availableProcessors() - 1)));
 
-	private static final String DEFAULT_FORMAT = "";
+	private static final Map<String, LinkedBlockingQueue<DateFormat>> DATE_FORMATS = new ConcurrentHashMap<>();
+	public static final String SEGUST_DATE_FORMAT = "yyyy-MM-dd'T'hh:mm:ss.SSSZ";
+	public static final String DEFAULT_DATE_FORMAT = Configs.MAIN_CONF.getOrDefault("albacore.text.date.format", SEGUST_DATE_FORMAT);
 
-	public static DateFormat dateFormat() {
-		return dateFormat(DEFAULT_FORMAT);
+	public static String formatDate(Date date) {
+		return formatDate(DEFAULT_DATE_FORMAT, date);
 	}
 
-	public static DateFormat dateFormat(String format) {
-		Map<String, DateFormat> map = DATE_CACHE.get();
-		DateFormat f = map.get(format);
-		if (null != f) return f;
-		f = new SimpleDateFormat(format);
-		map.put(format, f);
-		return f;
+	public static String formatDate(String format, Date date) {
+		LinkedBlockingQueue<DateFormat> cache = DATE_FORMATS.computeIfAbsent(format, f -> new LinkedBlockingQueue<>(POOL_SIZE));
+		DateFormat f = cache.poll();
+		if (null == f) f = new SimpleDateFormat(format);
+		try {
+			return f.format(date);
+		} finally {
+			cache.offer(f);
+		}
+	}
+
+	public static Date parseDate(String date) throws ParseException {
+		return parseDate(DEFAULT_DATE_FORMAT, date);
+	}
+
+	public static Date parseDate(String format, String date) throws ParseException {
+		LinkedBlockingQueue<DateFormat> cache = DATE_FORMATS.computeIfAbsent(format, f -> new LinkedBlockingQueue<>(POOL_SIZE));
+		DateFormat f = cache.poll();
+		if (null == f) f = new SimpleDateFormat(format);
+		try {
+			return f.parse(date);
+		} finally {
+			cache.offer(f);
+		}
 	}
 
 	public static Map<String, String> parseQueryParams(String query) {
@@ -93,7 +112,7 @@ public final class Texts extends Utils {
 		return params;
 	}
 
-	private static DecimalFormat f = new DecimalFormat("#.##");
+	private static LinkedBlockingQueue<DecimalFormat> DEC_FORMATS = new LinkedBlockingQueue<>(POOL_SIZE);
 
 	private static long K = 1024;
 	private static long M = K * K;
@@ -101,16 +120,22 @@ public final class Texts extends Utils {
 	private static long T = G * K;
 
 	public static String formatKilo(double d, String unit) {
-		// double d = n;
-		if (d > T) return f.format(d / T) + "T" + unit;
-		// +"+" + formatBytes(bytes % T);
-		if (d > G) return f.format(d / G) + "G" + unit;
-		// +"+" + formatBytes(bytes % G);
-		if (d > M) return f.format(d / M) + "M" + unit;
-		// +"+" + formatBytes(bytes % M);
-		if (d > K) return f.format(d / K) + "K" + unit;
-		// +"+" + formatBytes(bytes % K);
-		return f.format(d) + unit;
+		DecimalFormat f = DEC_FORMATS.poll();
+		if (null == f) f = new DecimalFormat("#.##");
+		try {
+			// double d = n;
+			if (d > T) return f.format(d / T) + "T" + unit;
+			// +"+" + formatBytes(bytes % T);
+			if (d > G) return f.format(d / G) + "G" + unit;
+			// +"+" + formatBytes(bytes % G);
+			if (d > M) return f.format(d / M) + "M" + unit;
+			// +"+" + formatBytes(bytes % M);
+			if (d > K) return f.format(d / K) + "K" + unit;
+			// +"+" + formatBytes(bytes % K);
+			return f.format(d) + unit;
+		} finally {
+			DEC_FORMATS.offer(f);
+		}
 	}
 
 	private static int SECOND = 1000;
@@ -118,13 +143,19 @@ public final class Texts extends Utils {
 	private static int HOUR = 60 * MINUTE;
 
 	public static String formatMillis(double millis) {
-		if (millis > HOUR) return f.format(millis / HOUR) + " Hours";
-		// + "+" + formatMillis(millis % HOUR);
-		if (millis > MINUTE) return f.format(millis / MINUTE) + " Minutes";
-		// + "+" + formatMillis(millis % MINUTE);
-		if (millis > SECOND) return f.format(millis / SECOND) + " Secs";
-		// + "+" + formatMillis(millis % SECOND);
-		return f.format(millis) + " MS";
+		DecimalFormat f = DEC_FORMATS.poll();
+		if (null == f) f = new DecimalFormat("#.##");
+		try {
+			if (millis > HOUR) return f.format(millis / HOUR) + " Hours";
+			// + "+" + formatMillis(millis % HOUR);
+			if (millis > MINUTE) return f.format(millis / MINUTE) + " Minutes";
+			// + "+" + formatMillis(millis % MINUTE);
+			if (millis > SECOND) return f.format(millis / SECOND) + " Secs";
+			// + "+" + formatMillis(millis % SECOND);
+			return f.format(millis) + " MS";
+		} finally {
+			DEC_FORMATS.offer(f);
+		}
 	}
 
 	public static List<String> split(String origin, String split) {

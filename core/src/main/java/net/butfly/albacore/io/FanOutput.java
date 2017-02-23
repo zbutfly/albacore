@@ -13,7 +13,7 @@ public class FanOutput<V> extends OutputImpl<V> {
 	private final Iterable<? extends Output<V>> outputs;
 
 	public FanOutput(Iterable<? extends Output<V>> outputs) {
-		this("FanOutTo" + ":" + io.collect(Streams.of(outputs).map(o -> o.name()), Collectors.joining("&")), outputs);
+		this("FanOutTo" + ":" + IO.collect(Streams.of(outputs).map(o -> o.name()), Collectors.joining("&")), outputs);
 		open();
 	}
 
@@ -26,7 +26,7 @@ public class FanOutput<V> extends OutputImpl<V> {
 	public boolean enqueue(V item) {
 		if (null == item) return false;
 		boolean r = true;
-		ListenableFuture<List<Boolean>> fs = io.listen(io.list(outputs, o -> () -> o.enqueue(item)));
+		ListenableFuture<List<Boolean>> fs = IO.listen(IO.list(outputs, o -> () -> o.enqueue(item)));
 		List<Boolean> rs;
 		try {
 			rs = fs.get();
@@ -42,7 +42,7 @@ public class FanOutput<V> extends OutputImpl<V> {
 
 	@Override
 	public long enqueue(Stream<V> items) {
-		ListenableFuture<List<Long>> fs = io.listen(io.list(outputs, o -> () -> o.enqueue(items)));
+		ListenableFuture<List<Long>> fs = IO.listen(IO.list(outputs, o -> () -> o.enqueue(items)));
 		List<Long> rs;
 		try {
 			rs = fs.get();
@@ -51,6 +51,6 @@ public class FanOutput<V> extends OutputImpl<V> {
 		} catch (Exception e) {
 			throw wrap(unwrap(e));
 		}
-		return io.collect(rs, Collectors.summingLong(Long::longValue));
+		return IO.collect(rs, Collectors.summingLong(Long::longValue));
 	}
 }

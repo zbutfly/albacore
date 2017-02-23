@@ -1,5 +1,6 @@
 package net.butfly.albacore.utils;
 
+import static net.butfly.albacore.io.Streams.of;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -27,14 +28,10 @@ public final class Collections extends Utils {
 		};
 	}
 
-	public static <T, R> List<R> stream(Collection<T> original, Converter<Stream<T>, Stream<R>> streaming) {
-		if (original == null) return null;
-		return streaming.apply(original.parallelStream()).collect(Collectors.toList());
-	}
-
+	@Deprecated
 	public static <T, R> List<R> map(Collection<T> original, Converter<T, R> mapping) {
 		if (original == null) return null;
-		return original.parallelStream().map(mapping).collect(Collectors.toList());
+		return of(original).map(mapping).collect(Collectors.toList());
 	}
 
 	@Deprecated
@@ -50,9 +47,10 @@ public final class Collections extends Utils {
 	 * @param mapping
 	 * @return
 	 */
+	@Deprecated
 	public static <T, R> List<R> mapNoNull(Collection<T> original, Converter<T, R> mapping) {
 		if (original == null) return null;
-		return original.parallelStream().filter(t -> t != null).map(mapping).filter(t -> t != null).collect(Collectors.toList());
+		return of(original).filter(t -> t != null).map(mapping).filter(t -> t != null).collect(Collectors.toList());
 	}
 
 	/**
@@ -63,9 +61,10 @@ public final class Collections extends Utils {
 	 * @param mapping
 	 * @return
 	 */
+	@Deprecated
 	public static <T, R> List<R> mapNoNullIn(Collection<T> original, Converter<T, R> mapping) {
 		if (original == null) return null;
-		return original.parallelStream().filter(t -> t != null).map(mapping).collect(Collectors.toList());
+		return of(original).filter(t -> t != null).map(mapping).collect(Collectors.toList());
 	}
 
 	/**
@@ -76,14 +75,16 @@ public final class Collections extends Utils {
 	 * @param mapping
 	 * @return
 	 */
+	@Deprecated
 	public static <T, R> List<R> mapNoNullOut(Collection<T> original, Converter<T, R> mapping) {
 		if (original == null) return null;
-		return original.parallelStream().map(mapping).filter(t -> t != null).collect(Collectors.toList());
+		return of(original).map(mapping).filter(t -> t != null).collect(Collectors.toList());
 	}
 
+	@Deprecated
 	public static <T> List<T> noNull(Collection<T> original) {
 		if (original == null) return null;
-		return original.parallelStream().filter(t -> t != null).collect(Collectors.toList());
+		return of(original).filter(t -> t != null).collect(Collectors.toList());
 	}
 
 	@SafeVarargs
@@ -111,14 +112,14 @@ public final class Collections extends Utils {
 		return r;
 	}
 
+	@Deprecated
 	public static <T, K, V> Map<K, List<V>> mapMap(Collection<T> list, Converter<T, Tuple2<K, V>> mapping) {
-		return list.parallelStream().map(mapping).collect(Collectors.groupingBy(t -> t._1, Collectors.mapping(t -> t._2, Collectors
-				.toList())));
+		return of(list).map(mapping).collect(Collectors.groupingBy(t -> t._1, Collectors.mapping(t -> t._2, Collectors.toList())));
 	}
 
 	public static <T> List<T> unorderize(Collection<T> origin) {
 		if (null == origin) return null;
-		return origin.parallelStream().collect(Collectors.collectingAndThen(Collectors.partitioningBy(t -> r.nextBoolean()), m -> {
+		return of(origin).collect(Collectors.collectingAndThen(Collectors.partitioningBy(t -> r.nextBoolean()), m -> {
 			List<T> r1 = m.get(Boolean.TRUE);
 			r1.addAll(m.get(Boolean.FALSE));
 			return r1;
@@ -136,7 +137,7 @@ public final class Collections extends Utils {
 
 	public static <T> List<T> asList(Collection<T> col) {
 		if (null == col) return null;
-		return col instanceof List ? (List<T>) col : col.parallelStream().collect(Collectors.toList());
+		return col instanceof List ? (List<T>) col : of(col).collect(Collectors.toList());
 	}
 
 	public static <T> List<T> asList(Iterable<T> it) {
@@ -146,7 +147,7 @@ public final class Collections extends Utils {
 	}
 
 	public static <T> Set<T> intersection(Collection<T> c1, Collection<T> c2) {
-		return c1.parallelStream().filter(t -> null != t && c2.contains(t)).collect(Collectors.toSet());
+		return of(c1).filter(t -> null != t && c2.contains(t)).collect(Collectors.toSet());
 	}
 
 	private static final Random r = new Random();
@@ -157,11 +158,11 @@ public final class Collections extends Utils {
 	}
 
 	public static <T> Stream<List<T>> chopped(Stream<T> origin, int parallelism) {
-		return chop(origin, parallelism).parallelStream();
+		return of(chop(origin, parallelism));
 	}
 
 	public static <T> Collection<List<T>> chopped(Collection<T> origin, int blockSize) {
-		return chop(origin.parallelStream(), origin.size() / blockSize);
+		return chop(of(origin), origin.size() / blockSize);
 	}
 
 	@Deprecated

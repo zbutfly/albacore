@@ -28,7 +28,7 @@ abstract class PumpImpl<V, P extends PumpImpl<V, P>> extends Namedly implements 
 	protected PumpImpl(String name, int parallelism) {
 		super(name);
 		this.name = name;
-		if (parallelism < 0) this.parallelism = (int) Math.floor(Math.sqrt(IO.io.parallelism())) - parallelism;
+		if (parallelism < 0) this.parallelism = (int) Math.floor(Math.sqrt(IO.parallelism())) - parallelism;
 		else if (parallelism == 0) this.parallelism = 16;
 		else this.parallelism = parallelism;
 		dependencies = new ArrayList<>();
@@ -68,7 +68,7 @@ abstract class PumpImpl<V, P extends PumpImpl<V, P>> extends Namedly implements 
 	public void open(java.lang.Runnable run) {
 		Pump.super.open(run);
 		try {
-			IO.io.listenRun(tasks).get();
+			IO.listenRun(tasks).get();
 		} catch (InterruptedException e) {} catch (Exception e) {
 			throw wrap(unwrap(e));
 		}

@@ -5,11 +5,17 @@ import static net.butfly.albacore.utils.Exceptions.wrap;
 
 import java.text.MessageFormat;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collector;
@@ -22,17 +28,23 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 
 import net.butfly.albacore.base.Namedly;
+import net.butfly.albacore.utils.Texts;
 import net.butfly.albacore.utils.async.Concurrents;
 import net.butfly.albacore.utils.logger.Logger;
 
 public final class StreamExecutor extends Namedly implements AutoCloseable {
 	private static final Logger logger = Logger.getLogger(StreamExecutor.class);
-	private final ForkJoinPool executor;
+	private final ExecutorService executor;
 	private final ListeningExecutorService lex;
+	private final static Map<String, ThreadGroup> g = new ConcurrentHashMap<>();
 
-	public StreamExecutor(int parallelism, String threadNamePrefix, boolean throwException) {
-		if (parallelism < 1) executor = ForkJoinPool.commonPool();
-		else executor = Concurrents.executorForkJoin(parallelism, "AlbatisIOPool", (t, e) -> {
+	public StreamExecutor(String name, int parallelism, boolean throwException) {
+		if (parallelism < 1) {
+			executor = Executors.newCachedThreadPool(r -> new Thread(g.computeIfAbsent(name, n -> new ThreadGroup(name + "-ThreadGroup")),
+					r, name + "@" + Texts.formatDate(new Date())));
+			((ThreadPoolExecutor) executor).setRejectedExecutionHandler((r, ex) -> logger.error(tracePool(
+					"Task rejected by the executor")));
+		} else executor = Concurrents.executorForkJoin(parallelism, name, (t, e) -> {
 			logger.error("Migrater pool task failure @" + t.getName(), e);
 			if (throwException) throw wrap(unwrap(e));
 		});
@@ -123,9 +135,16 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 	}
 
 	public String tracePool(String prefix) {
-		return MessageFormat.format("{6}, Fork/Join: tasks={5}, threads(active/running)={2}/{3}, steals={4}, pool size={1}.", null, executor
-				.getPoolSize(), executor.getActiveThreadCount(), executor.getRunningThreadCount(), executor.getStealCount(), executor
-						.getQueuedTaskCount(), prefix);
+		if (executor instanceof ForkJoinPool) {
+			ForkJoinPool ex = (ForkJoinPool) executor;
+			return MessageFormat.format("{5}, Fork/Join: tasks={4}, threads(active/running)={1}/{2}, steals={3}, pool size={0}.", ex
+					.getPoolSize(), ex.getActiveThreadCount(), ex.getRunningThreadCount(), ex.getStealCount(), ex.getQueuedTaskCount(),
+					prefix);
+		} else if (executor instanceof ThreadPoolExecutor) {
+			ThreadPoolExecutor ex = (ThreadPoolExecutor) executor;
+			return MessageFormat.format("{3}, Fork/Join: tasks={2}, threads(active)={1}, pool size={0}.", ex.getPoolSize(), ex
+					.getActiveCount(), ex.getTaskCount(), prefix);
+		} else return prefix + ": " + executor.toString();
 	}
 
 	@Override
@@ -134,6 +153,6 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 	}
 
 	public int parallelism() {
-		return executor.getParallelism();
+		return executor instanceof ForkJoinPool ? ((ForkJoinPool) executor).getParallelism() : 0;
 	}
 }
