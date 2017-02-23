@@ -1,8 +1,11 @@
 package net.butfly.albacore.io;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collector;
@@ -13,6 +16,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import net.butfly.albacore.base.Sizable;
 import net.butfly.albacore.lambda.Runnable;
 import net.butfly.albacore.utils.Configs;
+import net.butfly.albacore.utils.Exceptions;
 import net.butfly.albacore.utils.logger.Logger;
 
 public interface IO extends Sizable, Openable {
@@ -43,11 +47,12 @@ public interface IO extends Sizable, Openable {
 	long size();
 
 	static <V, A, R> R map(Iterable<V> col, Function<V, A> mapper, Collector<? super A, ?, R> collector) {
-		return Context.io.map(col, mapper, collector);
+		return Context.io.collect(col, mapper, collector);
 	}
 
-	static <V, A, R> R collect(Iterable<V> col, Function<Stream<V>, Stream<A>> mapping, Collector<? super A, ?, R> collector) {
-		return Context.io.collect(col, mapping, collector);
+	@Deprecated
+	static <V, A, R> R mapping(Iterable<V> col, Function<Stream<V>, Stream<A>> mapping, Collector<? super A, ?, R> collector) {
+		return Context.io.mapping(col, mapping, collector);
 	}
 
 	static <V, R> R collect(Iterable<? extends V> col, Collector<V, ?, R> collector) {
@@ -78,6 +83,10 @@ public interface IO extends Sizable, Openable {
 		return Context.io.listen(tasks);
 	}
 
+	static <T> ListenableFuture<T> listen(Callable<T> task) {
+		return Context.io.listen(task);
+	}
+
 	static ListenableFuture<List<Object>> listenRun(List<Runnable> tasks) {
 		return Context.io.listenRun(tasks);
 	}
@@ -93,5 +102,32 @@ public interface IO extends Sizable, Openable {
 	@SafeVarargs
 	static <T> List<T> run(Callable<T>... tasks) {
 		return Context.io.run(tasks);
+	}
+
+	static <T, T1, K, V> Map<K, V> map(Stream<T> col, Function<T, T1> mapper, Function<T1, K> keying, Function<T1, V> valuing) {
+		return Context.io.map(col, mapper, keying, valuing);
+	}
+
+	static <T, K, V> Map<K, V> map(Stream<T> col, Function<T, K> keying, Function<T, V> valuing) {
+		return Context.io.map(col, keying, valuing);
+	}
+
+	static long sum(Iterable<? extends Future<? extends Number>> futures, Logger errorLogger) {
+		long count = 0;
+		for (Future<? extends Number> f : futures) {
+			Number n;
+			try {
+				n = f.get();
+			} catch (InterruptedException e) {
+				errorLogger.error("Batch interrupted");
+				continue;
+			} catch (ExecutionException e) {
+				errorLogger.error("Batch fail", Exceptions.unwrap(e));
+				continue;
+			}
+			if (null != n) count += n.longValue();
+		}
+		return count;
+
 	}
 }

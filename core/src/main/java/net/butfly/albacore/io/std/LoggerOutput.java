@@ -46,7 +46,7 @@ public final class LoggerOutput extends OutputImpl<String> {
 	}
 
 	@Override
-	public boolean enqueue(String message) {
+	protected boolean enqueue(String message) { 
 		loggings.get(level).accept(message);
 		return true;
 	}

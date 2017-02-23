@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -21,23 +22,31 @@ public final class Streams extends Utils {
 	private static final Logger logger = Logger.getLogger(Streams.class);
 	public static final Predicate<Object> NOT_NULL = t -> null != t;
 
-	static <V> List<V> batch(Supplier<V> get, long batchSize) {
+	public static <V> List<V> batch(long batchSize, Supplier<V> get, Supplier<Boolean> ending, WriteLock lock, boolean retryOnException) {
 		List<V> batch = new ArrayList<>();
-		long prev;
 		do {
-			prev = batch.size();
-			try {
-				V e = get.get();
-				if (null != e) batch.add(e);
-			} catch (Exception ex) {
-				logger.warn("Dequeue fail but continue", ex);
-			}
-			if (batch.size() == 0) Concurrents.waitSleep();
-		} while (batch.size() < batchSize && (prev != batch.size() || batch.size() == 0));
-		return batch;
+			long prev = batch.size();
+			while (!ending.get() && batch.size() < batchSize)
+				if (null == lock || lock.tryLock()) try {
+					V e = get.get();
+					if (null != e) batch.add(e);
+				} catch (Exception ex) {
+					logger.warn("Dequeue fail", ex);
+					if (!retryOnException) return batch;
+				} finally {
+					if (null != lock) lock.unlock();
+				}
+			if (batch.size() >= batchSize || ending.get()) return batch;
+			if (batch.size() > 0 && batch.size() == prev) return batch;
+			Concurrents.waitSleep();
+		} while (true);
 	}
 
-	static <V> Stream<List<V>> page(Stream<V> get, long pageSize) {
+	public static <V> List<V> batch(long batchSize, Iterator<V> it, WriteLock lock, boolean retryOnException) {
+		return batch(batchSize, () -> it.next(), () -> it.hasNext(), lock, retryOnException);
+	}
+
+	static <V> Stream<List<V>> page(Stream<V> s, long pageSize) {
 		return null;
 	}
 

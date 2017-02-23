@@ -16,7 +16,7 @@ public class HeapQueue<I, O> extends QueueImpl<I, O> {
 	}
 
 	@Override
-	public final boolean enqueue(I e) {
+	protected final boolean enqueue(I e) { 
 		if (null == e) return false;
 		O o = conv.apply(e);
 		if (null == o) return false;
@@ -29,7 +29,7 @@ public class HeapQueue<I, O> extends QueueImpl<I, O> {
 	}
 
 	@Override
-	public O dequeue() {
+	protected O dequeue() {
 		try {
 			return impl.take();
 		} catch (InterruptedException e) {

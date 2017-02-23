@@ -50,9 +50,10 @@ public interface Queue<I, O> extends Input<O>, Output<I> {
 		return new InputThenHandler<>(this, conv).proxy(Queue.class);
 	}
 
+	@SuppressWarnings("resource")
 	@Override
-	default <O1> Queue<I, O1> thens(Converter<List<O>, List<O1>> conv) {
-		return new InputThensHandler<>(this, conv).proxy(Queue.class);
+	default <O1> Queue<I, O1> thens(Converter<List<O>, List<O1>> conv, int batchSize) {
+		return new InputThensHandler<>(this, conv, batchSize).proxy(Queue.class);
 	}
 
 	@Override
@@ -60,8 +61,9 @@ public interface Queue<I, O> extends Input<O>, Output<I> {
 		return new OutputPriorHandler<>(this, conv).proxy(Queue.class);
 	}
 
+	@SuppressWarnings("resource")
 	@Override
-	default <I0> Queue<I0, O> priors(Converter<List<I0>, List<I>> conv) {
-		return new OutputPriorsHandler<>(this, conv).proxy(Queue.class);
+	default <I0> Queue<I0, O> priors(Converter<List<I0>, List<I>> conv, int batchSize) {
+		return new OutputPriorsHandler<>(this, conv, batchSize).proxy(Queue.class);
 	}
 }

@@ -39,19 +39,20 @@ public interface Statistical<T extends Statistical<T>> {
 		return t;
 	}
 
-	default <V> V stats(V v) {
+	default <V> void stats(V v) {
 		Statistic s = Instances.fetch(() -> null, Statistic.class, this);
-		return null != s ? s.stats(v) : v;
+		if (null != s) s.stats(v);
 	}
 
-	default <V> Iterable<V> stats(Iterable<V> vv) {
+	default <V> void stats(Iterable<V> vv) {
 		Statistic s = Instances.fetch(() -> null, Statistic.class, this);
 		if (null != s) Streams.of(vv).forEach(v -> s.stats(v));
-		return vv;
 	}
 
 	default <V> Stream<V> stats(Stream<V> vv) {
 		Statistic s = Instances.fetch(() -> null, Statistic.class, this);
-		return null != s ? vv.map(v -> null != s ? s.stats(v) : v) : vv;
+		return null != s ? vv.peek(v -> {
+			if (null != v) s.stats(v);
+		}) : vv;
 	}
 }

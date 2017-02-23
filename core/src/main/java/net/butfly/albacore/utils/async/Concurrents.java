@@ -25,6 +25,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import net.butfly.albacore.lambda.Callable;
 import net.butfly.albacore.lambda.Runnable;
 import net.butfly.albacore.lambda.Supplier;
+import net.butfly.albacore.utils.Exceptions;
 import net.butfly.albacore.utils.Instances;
 import net.butfly.albacore.utils.Systems;
 import net.butfly.albacore.utils.Utils;
@@ -42,7 +43,7 @@ public final class Concurrents extends Utils {
 		try {
 			return Futures.successfulAsList(outs).get();
 		} catch (InterruptedException | ExecutionException e) {
-			throw new RuntimeException("Task failure", e);
+			throw new RuntimeException("Task failure", Exceptions.unwrap(e));
 		} finally {
 			ex.shutdown();
 			Concurrents.waitShutdown(ex, logger);

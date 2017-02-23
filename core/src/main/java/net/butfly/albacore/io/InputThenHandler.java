@@ -25,16 +25,15 @@ public final class InputThenHandler<V, V1> extends Namedly implements Invocation
 			if (null == args || args.length == 0) return name;
 			break;
 		case "dequeue":
-			if (args.length == 1 && Number.class.isAssignableFrom(args[0].getClass())) return //
-			input.dequeue(((Number) args[0]).longValue()).map(conv);
-			else if (args.length == 0) return conv.apply(input.dequeue());
+			if (args.length == 1 && Number.class.isAssignableFrom(args[0].getClass())) //
+				return input.dequeue(((Number) args[0]).longValue()).map(conv);
 			break;
 		case "then":
 			if (args.length == 1) return new InputThenHandler<>((Input<V>) proxy, (Converter<V, V1>) args[0]).proxy(Input.class);
 			break;
 		case "thens":
-			if (args.length == 1) return new InputThensHandler<>((Input<V>) proxy, (Converter<List<V>, List<V1>>) args[0]).proxy(
-					Input.class);
+			if (args.length == 2 && Number.class.isAssignableFrom(args[1].getClass())) return new InputThensHandler<>((Input<V>) proxy,
+					(Converter<List<V>, List<V1>>) args[0], ((Number) args[1]).intValue()).proxy(Input.class);
 			break;
 		}
 		return method.invoke(input, args);

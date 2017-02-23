@@ -19,7 +19,7 @@ public abstract class KeyInputImpl<K, V> extends InputImpl<V> {
 	public abstract V dequeue(K key);
 
 	@Override
-	public final V dequeue() {
+	protected final V dequeue() {
 		List<K> ks = keyAccess();
 		while (true) {
 			for (K k : ks) {

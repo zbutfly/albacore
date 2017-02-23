@@ -23,11 +23,11 @@ public class FanOutput<V> extends OutputImpl<V> {
 	}
 
 	@Override
-	public boolean enqueue(V item) {
+	protected boolean enqueue(V item) { 
 		if (null == item) return false;
 		boolean r = true;
-		ListenableFuture<List<Boolean>> fs = IO.listen(IO.list(outputs, o -> () -> o.enqueue(item)));
-		List<Boolean> rs;
+		ListenableFuture<List<Long>> fs = IO.listen(IO.list(outputs, o -> () -> o.enqueue(Streams.of(item))));
+		List<Long> rs;
 		try {
 			rs = fs.get();
 		} catch (InterruptedException e) {
@@ -35,8 +35,8 @@ public class FanOutput<V> extends OutputImpl<V> {
 		} catch (Exception e) {
 			throw wrap(unwrap(e));
 		}
-		for (Boolean b : rs)
-			r = r && b;
+		for (Long b : rs)
+			r = r && b == 1;
 		return r;
 	}
 

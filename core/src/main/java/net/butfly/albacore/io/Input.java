@@ -9,29 +9,14 @@ import java.util.stream.Stream;
 import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.utils.Collections;
 
-public interface Input<V> extends IO, Supplier<V>, Iterator<V> {
+public interface Input<V> extends IO {
 	static <V> Input<V> NULL() {
 		return new InputImpl<V>() {
 			@Override
-			public V dequeue() {
+			protected V dequeue() {
 				return null;
 			}
 		};
-	}
-
-	@Override
-	default V get() {
-		return dequeue();
-	}
-
-	@Override
-	default boolean hasNext() {
-		return !empty();
-	}
-
-	@Override
-	default V next() {
-		return dequeue();
 	}
 
 	@Override
@@ -39,18 +24,15 @@ public interface Input<V> extends IO, Supplier<V>, Iterator<V> {
 		return Long.MAX_VALUE;
 	}
 
-	V dequeue();
-
-	default Stream<V> dequeue(long batchSize) {
-		return Streams.of(Streams.batch(() -> dequeue(), batchSize));
-	}
+	Stream<V> dequeue(long batchSize);
 
 	default <V1> Input<V1> then(Converter<V, V1> conv) {
 		return new InputThenHandler<>(this, conv).proxy(Input.class);
 	}
 
-	default <V1> Input<V1> thens(Converter<List<V>, List<V1>> conv) {
-		return new InputThensHandler<>(this, conv).proxy(Input.class);
+	@SuppressWarnings("resource")
+	default <V1> Input<V1> thens(Converter<List<V>, List<V1>> conv, int batchSize) {
+		return new InputThensHandler<>(this, conv, batchSize).proxy(Input.class);
 	}
 
 	public static <T> Input<T> of(Collection<? extends T> collection) {

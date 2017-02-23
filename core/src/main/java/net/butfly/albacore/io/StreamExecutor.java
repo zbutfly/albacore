@@ -94,11 +94,19 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 			}
 	}
 
-	public <V, A, R> R map(Iterable<V> col, Function<V, A> mapper, Collector<? super A, ?, R> collector) {
+	public <V, A, R> R collect(Iterable<V> col, Function<V, A> mapper, Collector<? super A, ?, R> collector) {
 		return collect(Streams.of(col).map(mapper), collector);
 	}
 
-	public <V, A, R> R collect(Iterable<V> col, Function<Stream<V>, Stream<A>> mapping, Collector<? super A, ?, R> collector) {
+	public <T, T1, K, V> Map<K, V> map(Stream<T> col, Function<T, T1> mapper, Function<T1, K> keying, Function<T1, V> valuing) {
+		return collect(col.map(mapper), Collectors.toMap(keying, valuing));
+	}
+
+	public <T, K, V> Map<K, V> map(Stream<T> col, Function<T, K> keying, Function<T, V> valuing) {
+		return collect(col, Collectors.toMap(keying, valuing));
+	}
+
+	public <V, A, R> R mapping(Iterable<V> col, Function<Stream<V>, Stream<A>> mapping, Collector<? super A, ?, R> collector) {
 		return collect(mapping.apply(Streams.of(col)), collector);
 	}
 
@@ -115,7 +123,7 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 	}
 
 	public <V, R> List<R> list(Iterable<V> col, Function<V, R> mapper) {
-		return map(col, mapper, Collectors.toList());
+		return collect(col, mapper, Collectors.toList());
 	}
 
 	public <V> void each(Iterable<V> col, Consumer<? super V> consumer) {
@@ -130,6 +138,10 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 		return Futures.successfulAsList(list(list, c -> lex.submit(c)));
 	}
 
+	public <T> ListenableFuture<T> listen(Callable<T> task) {
+		return lex.submit(task);
+	}
+
 	public ListenableFuture<List<Object>> listenRun(List<? extends Runnable> list) {
 		return Futures.successfulAsList(list(list, c -> lex.submit(c)));
 	}
@@ -137,12 +149,12 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 	public String tracePool(String prefix) {
 		if (executor instanceof ForkJoinPool) {
 			ForkJoinPool ex = (ForkJoinPool) executor;
-			return MessageFormat.format("{5}, Fork/Join: tasks={4}, threads(active/running)={1}/{2}, steals={3}, pool size={0}.", ex
+			return MessageFormat.format("{5}, Fork/Join: tasks={4}, threads(active/running)={1}/{2}, steals={3}, pool size={0}", ex
 					.getPoolSize(), ex.getActiveThreadCount(), ex.getRunningThreadCount(), ex.getStealCount(), ex.getQueuedTaskCount(),
 					prefix);
 		} else if (executor instanceof ThreadPoolExecutor) {
 			ThreadPoolExecutor ex = (ThreadPoolExecutor) executor;
-			return MessageFormat.format("{3}, ThreadPool: tasks={2}, threads(active)={1}, pool size={0}.", ex.getPoolSize(), ex
+			return MessageFormat.format("{3}, ThreadPool: tasks={2}, threads(active)={1}, pool size={0}", ex.getPoolSize(), ex
 					.getActiveCount(), ex.getTaskCount(), prefix);
 		} else return prefix + ": " + executor.toString();
 	}
@@ -155,4 +167,5 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 	public int parallelism() {
 		return executor instanceof ForkJoinPool ? ((ForkJoinPool) executor).getParallelism() : 0;
 	}
+
 }
