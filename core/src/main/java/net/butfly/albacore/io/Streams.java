@@ -73,9 +73,10 @@ public final class Streams extends Utils {
 
 	}
 
-	public static <V, V1> Stream<V1> batchMap(int parallelism, Stream<V> s, Function<Iterable<V>, Iterable<V1>> convs) {
-		return of(batch(parallelism, s.iterator())).map(it -> convs.apply((Iterable<V>) () -> it)).flatMap(it -> StreamSupport.stream(it
-				.spliterator(), DEFAULT_PARALLEL_ENABLE).filter(NOT_NULL));
+	public static <V, V1> Stream<Stream<V1>> batchMap(int parallelism, Stream<V> s, Function<Iterable<V>, Iterable<V1>> convs) {
+		return of(batch(parallelism, s.iterator())).map(it -> of(convs.apply((Iterable<V>) () -> it).iterator()));
+		// .flatMap(it -> StreamSupport.stream(it .spliterator(),
+		// DEFAULT_PARALLEL_ENABLE).filter(NOT_NULL));
 	}
 
 	public static <V> Stream<V> fetch(long batchSize, Supplier<V> get, Supplier<Boolean> ending, WriteLock lock, boolean retryOnException) {

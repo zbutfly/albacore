@@ -7,7 +7,7 @@ import net.butfly.albacore.base.Namedly;
 import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.lambda.InvocationHandler;
 
-public final class InputThensHandler<V, V1> extends Namedly implements InvocationHandler, Input<V1> {
+public final class InputThensHandler<V, V1> extends Namedly implements InvocationHandler, Input<Stream<V1>> {
 	private final Input<V> input;
 	private final Converter<Iterable<V>, Iterable<V1>> conv;
 	private final int parallelism;
@@ -40,7 +40,7 @@ public final class InputThensHandler<V, V1> extends Namedly implements Invocatio
 	}
 
 	@Override
-	public Stream<V1> dequeue(long batchSize) {
+	public Stream<Stream<V1>> dequeue(long batchSize) {
 		return Streams.batchMap(parallelism, input.dequeue(batchSize), this.conv);
 	}
 }

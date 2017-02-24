@@ -8,7 +8,7 @@ import java.util.stream.Stream;
 import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.utils.Collections;
 
-public interface Input<V> extends IO{
+public interface Input<V> extends IO {
 	static <V> Input<V> NULL() {
 		return new InputImpl<V>() {
 			@Override
@@ -26,12 +26,18 @@ public interface Input<V> extends IO{
 	Stream<V> dequeue(long batchSize);
 
 	default <V1> Input<V1> then(Converter<V, V1> conv) {
-		return new InputThenHandler<>(this, conv).proxy(Input.class);
+		Input<V1> i = batchSize -> dequeue(batchSize).map(conv);
+		i.open();
+		return i;
+		// return new InputThenHandler<>(this, conv).proxy(Input.class);
 	}
 
-	@SuppressWarnings("resource")
-	default <V1> Input<V1> thens(Converter<Iterable<V>, Iterable<V1>> conv, int parallelism) {
-		return new InputThensHandler<>(this, conv, parallelism).proxy(Input.class);
+	default <V1> Input<Stream<V1>> thens(Converter<Iterable<V>, Iterable<V1>> conv, int parallelism) {
+		Input<Stream<V1>> i = batchSize -> Streams.batchMap(parallelism, dequeue(batchSize), conv);
+		i.open();
+		return i;
+		// return new InputThensHandler<>(this, conv,
+		// parallelism).proxy(Input.class);
 	}
 
 	public static <T> Input<T> of(Collection<? extends T> collection) {

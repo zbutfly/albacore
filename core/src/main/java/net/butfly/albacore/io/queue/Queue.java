@@ -1,5 +1,7 @@
 package net.butfly.albacore.io.queue;
 
+import java.util.stream.Stream;
+
 import net.butfly.albacore.io.Input;
 import net.butfly.albacore.io.InputThenHandler;
 import net.butfly.albacore.io.InputThensHandler;
@@ -50,7 +52,7 @@ public interface Queue<I, O> extends Input<O>, Output<I> {
 
 	@SuppressWarnings("resource")
 	@Override
-	default <O1> Queue<I, O1> thens(Converter<Iterable<O>, Iterable<O1>> conv, int parallelism) {
+	default <O1> Queue<I, Stream<O1>> thens(Converter<Iterable<O>, Iterable<O1>> conv, int parallelism) {
 		return new InputThensHandler<>(this, conv, parallelism).proxy(Queue.class);
 	}
 
