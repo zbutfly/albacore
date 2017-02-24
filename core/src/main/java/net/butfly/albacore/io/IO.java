@@ -44,7 +44,7 @@ public interface IO extends Sizable, Openable {
 		final private static StreamExecutor io = new StreamExecutor(EXECUTOR_NAME, calcParallelism(), false);
 	}
 
-	static <V, A, R> R map(Iterable<V> col, Function<V, A> mapper, Collector<? super A, ?, R> collector) {
+	static <V, A, R> R collect(Iterable<V> col, Function<V, A> mapper, Collector<? super A, ?, R> collector) {
 		return Context.io.collect(col, mapper, collector);
 	}
 

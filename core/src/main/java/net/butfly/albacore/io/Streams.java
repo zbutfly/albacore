@@ -24,7 +24,7 @@ public final class Streams extends Utils {
 	private static final Logger logger = Logger.getLogger(Streams.class);
 	public static final Predicate<Object> NOT_NULL = t -> null != t;
 
-	public static <V> List<Iterator<V>> batch(int parallelism, Iterator<V> it) {
+	public static <V> Stream<Iterator<V>> batch(int parallelism, Iterator<V> it) {
 		List<Iterator<V>> its = new ArrayList<>();
 		ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 		for (int i = 0; i < parallelism; i++)
@@ -50,10 +50,10 @@ public final class Streams extends Utils {
 					}
 				}
 			});
-		return its;
+		return its.parallelStream();
 	}
 
-	public static <V> List<Iterator<V>> batch(int parallelism, Supplier<V> get, Supplier<Boolean> end) {
+	public static <V> Stream<Iterator<V>> batch(int parallelism, Supplier<V> get, Supplier<Boolean> end) {
 		return batch(parallelism, new Iterator<V>() {
 			@Override
 			public boolean hasNext() {
@@ -67,15 +67,15 @@ public final class Streams extends Utils {
 		});
 	}
 
-	public static <V> List<Stream<V>> batch(int parallelism, Stream<V> s) {
-		return IO.list(batch(parallelism, s.iterator()), it -> StreamSupport.stream(((Iterable<V>) () -> it).spliterator(),
+	public static <V> Stream<Stream<V>> batch(int parallelism, Stream<V> s) {
+		return batch(parallelism, s.iterator()).map(it -> StreamSupport.stream(((Iterable<V>) () -> it).spliterator(),
 				DEFAULT_PARALLEL_ENABLE).filter(NOT_NULL));
 
 	}
 
 	public static <V, V1> Stream<V1> batchMap(int parallelism, Stream<V> s, Function<Iterable<V>, Iterable<V1>> convs) {
-		Stream<Iterable<V1>> ss = of(batch(parallelism, s.iterator())).map(it -> convs.apply((Iterable<V>) () -> it));
-		return ss.flatMap(it -> StreamSupport.stream(it.spliterator(), DEFAULT_PARALLEL_ENABLE).filter(NOT_NULL));
+		return of(batch(parallelism, s.iterator())).map(it -> convs.apply((Iterable<V>) () -> it)).flatMap(it -> StreamSupport.stream(it
+				.spliterator(), DEFAULT_PARALLEL_ENABLE).filter(NOT_NULL));
 	}
 
 	public static <V> Stream<V> fetch(long batchSize, Supplier<V> get, Supplier<Boolean> ending, WriteLock lock, boolean retryOnException) {

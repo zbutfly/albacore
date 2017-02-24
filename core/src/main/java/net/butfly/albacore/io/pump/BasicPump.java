@@ -10,7 +10,7 @@ public class BasicPump<V> extends PumpImpl<V, BasicPump<V>> {
 		Reflections.noneNull("Pump source/destination should not be null", input, output);
 		depend(input, output);
 		pumping(() -> input.empty(), () -> {
-			if (opened() && input.opened() && output.opened()) output.enqueue(input.dequeue(batchSize).peek(e -> stats(e)));
+			if (opened() && input.opened() && output.opened()) output.enqueue(stats(input.dequeue(batchSize)));
 		});
 	}
 }

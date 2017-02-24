@@ -1,11 +1,7 @@
 package net.butfly.albacore.io;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.stream.Stream;
-
-import com.google.common.util.concurrent.ListenableFuture;
 
 import net.butfly.albacore.base.Namedly;
 import net.butfly.albacore.lambda.Converter;
@@ -42,9 +38,7 @@ public final class OutputPriorsHandler<V0, V> extends Namedly implements Invocat
 
 	@Override
 	public long enqueue(Stream<V0> items) {
-		List<ListenableFuture<Long>> fs = new ArrayList<>();
-		for (Stream<V0> s0 : Streams.batch(parallelism, items))
-			fs.add(IO.listen(() -> output.enqueue(Streams.of(conv.apply((Iterable<V0>) () -> s0.iterator())))));
-		return IO.sum(fs, logger());
+		return IO.run(() -> Streams.batch(parallelism, items).mapToLong(s0 -> output.enqueue(Streams.of(conv.apply((Iterable<V0>) () -> s0
+				.iterator())))).sum());
 	}
 }
