@@ -26,49 +26,10 @@ public final class Streams extends Utils {
 
 	public static <V> Stream<Iterator<V>> batch(int parallelism, Iterator<V> it) {
 		List<Iterator<V>> its = new ArrayList<>();
-		ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+		ReentrantReadWriteLock lock = new ReentrantReadWriteLock(true);
 		for (int i = 0; i < parallelism; i++)
 			its.add(it(it, lock));
 		return its.parallelStream();
-	}
-
-	public static <V> Iterator<V> it(Supplier<V> get, Supplier<Boolean> end) {
-		return new Iterator<V>() {
-			@Override
-			public boolean hasNext() {
-				return !end.get();
-			}
-
-			@Override
-			public V next() {
-				return get.get();
-			}
-		};
-	}
-
-	public static <V> Iterator<V> it(Iterator<V> it, ReentrantReadWriteLock lock) {
-		return new Iterator<V>() {
-			@Override
-			public boolean hasNext() {
-				if (null != lock) lock.writeLock().lock();
-				try {
-					return it.hasNext();
-				} finally {
-					if (null != lock) lock.writeLock().unlock();
-				}
-			}
-
-			@Override
-			public V next() {
-				if (null != lock) lock.writeLock().lock();
-				try {
-					if (it.hasNext()) return it.next();
-					else return null;
-				} finally {
-					if (null != lock) lock.writeLock().unlock();
-				}
-			}
-		};
 	}
 
 	public static <V> Stream<Iterator<V>> batch(int parallelism, Supplier<V> get, Supplier<Boolean> end) {
@@ -85,8 +46,7 @@ public final class Streams extends Utils {
 
 	public static <V, V1> Stream<Stream<V1>> batchMap(int parallelism, Stream<V> s, Function<Iterable<V>, Iterable<V1>> convs) {
 		if (parallelism == 1) return Stream.of(of(convs.apply(() -> s.iterator())));
-		Stream<Iterator<V>> b = batch(parallelism, s.iterator());
-		return b.parallel().map(it -> {
+		return batch(parallelism, s.iterator()).parallel().map(it -> {
 			return of(convs.apply((Iterable<V>) () -> it));
 		});
 		// .flatMap(it -> StreamSupport.stream(it .spliterator(),
@@ -151,4 +111,42 @@ public final class Streams extends Utils {
 		return of(Stream.of(values));
 	}
 
+	public static <V> Iterator<V> it(Supplier<V> get, Supplier<Boolean> end) {
+		return new Iterator<V>() {
+			@Override
+			public boolean hasNext() {
+				return !end.get();
+			}
+
+			@Override
+			public V next() {
+				return get.get();
+			}
+		};
+	}
+
+	public static <V> Iterator<V> it(Iterator<V> it, ReentrantReadWriteLock lock) {
+		return new Iterator<V>() {
+			@Override
+			public boolean hasNext() {
+				if (null != lock) lock.writeLock().lock();
+				try {
+					return it.hasNext();
+				} finally {
+					if (null != lock) lock.writeLock().unlock();
+				}
+			}
+
+			@Override
+			public V next() {
+				if (null != lock) lock.writeLock().lock();
+				try {
+					if (it.hasNext()) return it.next();
+					else return null;
+				} finally {
+					if (null != lock) lock.writeLock().unlock();
+				}
+			}
+		};
+	}
 }
