@@ -29,8 +29,10 @@ public interface Output<V> extends IO {
 	}
 
 	default <V0> Output<V0> priors(Converter<Iterable<V0>, Iterable<V>> conv, int parallelism) {
-		Output<V0> o = items -> IO.run(() -> Streams.batch(parallelism, items).mapToLong(s0 -> this.enqueue(Streams.of(conv.apply(
-				(Iterable<V0>) () -> s0.iterator())))).sum());
+		Output<V0> o = items -> {
+			return IO.run(() -> Streams.batch(parallelism, items).mapToLong(s0 -> this.enqueue(Streams.of(conv.apply((Iterable<V0>) () -> s0
+					.iterator())))).sum());
+		};
 		o.open();
 		return o;
 		// return new OutputPriorsHandler<>(this, conv,
@@ -38,7 +40,9 @@ public interface Output<V> extends IO {
 	}
 
 	default Output<Stream<V>> stream() {
-		Output<Stream<V>> o = items -> IO.run(() -> items.parallel().mapToLong(s -> enqueue(s)).sum());
+		Output<Stream<V>> o = items -> {
+			return IO.run(() -> items.parallel().mapToLong(s -> enqueue(s)).sum());
+		};
 		o.open();
 		return o;
 	}
