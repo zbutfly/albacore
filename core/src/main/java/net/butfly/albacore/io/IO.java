@@ -145,7 +145,7 @@ public interface IO extends Sizable, Openable {
 		return Context.io.listen(task);
 	}
 
-	static ListenableFuture<List<Object>> listenRun(List<Runnable> tasks) {
+	static ListenableFuture<List<Object>> listenRun(List<? extends Runnable> tasks) {
 		return Context.io.listenRun(tasks);
 	}
 
