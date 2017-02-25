@@ -22,11 +22,26 @@ public interface Output<V> extends IO {
 	long enqueue(Stream<V> items);
 
 	default <V0> Output<V0> prior(Converter<V0, V> conv) {
-		return new OutputPriorHandler<>(this, conv).proxy(Output.class);
+		Output<V0> o = items -> enqueue(Streams.of(items.map(conv)));
+		o.open();
+		return o;
+		// return new OutputPriorHandler<>(this, conv).proxy(Output.class);
 	}
 
-	@SuppressWarnings("resource")
 	default <V0> Output<V0> priors(Converter<Iterable<V0>, Iterable<V>> conv, int parallelism) {
-		return new OutputPriorsHandler<>(this, conv, parallelism).proxy(Output.class);
+		Output<V0> o = items -> IO.run(() -> Streams.batch(parallelism, items).mapToLong(s0 -> enqueue(Streams.of(conv.apply(
+				(Iterable<V0>) () -> s0.iterator())))).sum());
+		o.open();
+		return o;
+		// return new OutputPriorsHandler<>(this, conv,
+		// parallelism).proxy(Output.class);
+	}
+
+	default Output<Stream<V>> stream() {
+		Output<Stream<V>> o = items -> {
+			return IO.run(() -> items.parallel().mapToLong(s -> enqueue(s)).sum());
+		};
+		o.open();
+		return o;
 	}
 }

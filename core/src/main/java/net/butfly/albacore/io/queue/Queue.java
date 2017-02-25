@@ -1,11 +1,11 @@
 package net.butfly.albacore.io.queue;
 
+import java.util.stream.Stream;
+
+import net.butfly.albacore.io.IO;
 import net.butfly.albacore.io.Input;
-import net.butfly.albacore.io.InputThenHandler;
-import net.butfly.albacore.io.InputThensHandler;
 import net.butfly.albacore.io.Output;
-import net.butfly.albacore.io.OutputPriorHandler;
-import net.butfly.albacore.io.OutputPriorsHandler;
+import net.butfly.albacore.io.Streams;
 import net.butfly.albacore.lambda.Converter;
 
 /**
@@ -41,27 +41,95 @@ public interface Queue<I, O> extends Input<O>, Output<I> {
 
 	@Override
 	long size();
+
 	/* from interfaces */
 
 	@Override
 	default <O1> Queue<I, O1> then(Converter<O, O1> conv) {
-		return new InputThenHandler<>(this, conv).proxy(Queue.class);
+		Queue<I, O1> i = new Queue<I, O1>() {
+			@Override
+			public Stream<O1> dequeue(long batchSize) {
+				return Streams.of(Queue.this.dequeue(batchSize).map(conv));
+			}
+
+			@Override
+			public long enqueue(Stream<I> items) {
+				return Queue.this.enqueue(items);
+			}
+
+			@Override
+			public long size() {
+				return Queue.this.size();
+			}
+		};
+		i.open();
+		return i;
 	}
 
-	@SuppressWarnings("resource")
 	@Override
-	default <O1> Queue<I, O1> thens(Converter<Iterable<O>, Iterable<O1>> conv, int parallelism) {
-		return new InputThensHandler<>(this, conv, parallelism).proxy(Queue.class);
+	default <O1> Queue<I, Stream<O1>> thens(Converter<Iterable<O>, Iterable<O1>> conv, int parallelism) {
+		Queue<I, Stream<O1>> i = new Queue<I, Stream<O1>>() {
+			@Override
+			public Stream<Stream<O1>> dequeue(long batchSize) {
+				return Streams.batchMap(parallelism, Queue.this.dequeue(batchSize), conv);
+			}
+
+			@Override
+			public long enqueue(Stream<I> items) {
+				return Queue.this.enqueue(items);
+			}
+
+			@Override
+			public long size() {
+				return Queue.this.size();
+			}
+		};
+		i.open();
+		return i;
 	}
 
 	@Override
 	default <I0> Queue<I0, O> prior(Converter<I0, I> conv) {
-		return new OutputPriorHandler<>(this, conv).proxy(Queue.class);
+		Queue<I0, O> o = new Queue<I0, O>() {
+			@Override
+			public Stream<O> dequeue(long batchSize) {
+				return Queue.this.dequeue(batchSize);
+			}
+
+			@Override
+			public long enqueue(Stream<I0> items) {
+				return Queue.this.enqueue(Streams.of(items.map(conv)));
+			}
+
+			@Override
+			public long size() {
+				return Queue.this.size();
+			}
+		};
+		o.open();
+		return o;
 	}
 
-	@SuppressWarnings("resource")
 	@Override
 	default <I0> Queue<I0, O> priors(Converter<Iterable<I0>, Iterable<I>> conv, int parallelism) {
-		return new OutputPriorsHandler<>(this, conv, parallelism).proxy(Queue.class);
+		Queue<I0, O> o = new Queue<I0, O>() {
+			@Override
+			public Stream<O> dequeue(long batchSize) {
+				return Queue.this.dequeue(batchSize);
+			}
+
+			@Override
+			public long enqueue(Stream<I0> items) {
+				return IO.run(() -> Streams.batch(parallelism, items).mapToLong(s0 -> Queue.this.enqueue(Streams.of(conv.apply(
+						(Iterable<I0>) () -> s0.iterator())))).sum());
+			}
+
+			@Override
+			public long size() {
+				return Queue.this.size();
+			}
+		};
+		o.open();
+		return o;
 	}
 }

@@ -65,8 +65,8 @@ abstract class PumpImpl<V, P extends PumpImpl<V, P>> extends Namedly implements 
 	}
 
 	@Override
-	public void open(java.lang.Runnable run) {
-		Pump.super.open(run);
+	public void open() {
+		Pump.super.open();
 		try {
 			IO.listenRun(tasks).get();
 		} catch (InterruptedException e) {} catch (Exception e) {

@@ -4,6 +4,7 @@ import static net.butfly.albacore.utils.Exceptions.unwrap;
 import static net.butfly.albacore.utils.Exceptions.wrap;
 
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -14,6 +15,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Consumer;
@@ -34,8 +36,8 @@ import net.butfly.albacore.utils.logger.Logger;
 
 public final class StreamExecutor extends Namedly implements AutoCloseable {
 	private static final Logger logger = Logger.getLogger(StreamExecutor.class);
-	private final ExecutorService executor;
-	private final ListeningExecutorService lex;
+	final ExecutorService executor;
+	final ListeningExecutorService lex;
 	private final static Map<String, ThreadGroup> g = new ConcurrentHashMap<>();
 
 	public StreamExecutor(String name, int parallelism, boolean throwException) {
@@ -52,8 +54,15 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 	}
 
 	public void run(Runnable... tasks) {
+		List<Future<?>> l = new ArrayList<>();
 		for (Runnable r : tasks)
-			run(r);
+			l.add(executor.submit(r));
+		for (Future<?> f : l)
+			try {
+				f.get();
+			} catch (InterruptedException e) {} catch (ExecutionException e) {
+				logger.error("Subtask error", wrap(unwrap(e)));
+			}
 	}
 
 	public void run(Runnable task) {
@@ -67,6 +76,7 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 			} catch (InterruptedException e) {
 				throw new RuntimeException("Streaming inturrupted", e);
 			} catch (ExecutionException e) {
+				logger.error("Subtask error", wrap(unwrap(e)));
 				throw wrap(unwrap(e));
 			}
 	}
@@ -81,6 +91,7 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 			} catch (InterruptedException e) {
 				throw new RuntimeException("Streaming inturrupted", e);
 			} catch (Exception e) {
+				logger.error("Subtask error", wrap(unwrap(e)));
 				throw wrap(unwrap(e));
 			}
 	}

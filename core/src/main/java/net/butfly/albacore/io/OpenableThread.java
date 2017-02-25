@@ -7,20 +7,18 @@ import net.butfly.albacore.utils.async.Concurrents;
 public class OpenableThread extends Thread implements Openable {
 	private final AtomicBoolean started = new AtomicBoolean(false);
 
-	public OpenableThread() {
-		super();
-	}
+	private static final ThreadGroup g = new ThreadGroup("OpenableThreads");
 
 	public OpenableThread(String name) {
-		super(name);
+		super(g, name);
 	}
 
 	public OpenableThread(Runnable target) {
-		super(target);
+		super(g, target);
 	}
 
 	public OpenableThread(Runnable target, String name) {
-		super(target, name);
+		super(g, target, name);
 	}
 
 	public OpenableThread(ThreadGroup group, Runnable target, String name) {

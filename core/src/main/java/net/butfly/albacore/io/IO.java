@@ -1,11 +1,16 @@
 package net.butfly.albacore.io;
 
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collector;
@@ -16,12 +21,13 @@ import com.google.common.util.concurrent.ListenableFuture;
 import net.butfly.albacore.base.Sizable;
 import net.butfly.albacore.utils.Configs;
 import net.butfly.albacore.utils.Exceptions;
+import net.butfly.albacore.utils.logger.Loggable;
 import net.butfly.albacore.utils.logger.Logger;
 
 public interface IO extends Sizable, Openable {
 	static final String PARALLELISM_RATIO_KEY = "albacore.io.parallelism.ratio";
 
-	class Context {
+	class Context implements Loggable {
 		final static String EXECUTOR_NAME = "Albacore-IO-Streaming";
 
 		private static int calcParallelism() {
@@ -41,9 +47,64 @@ public interface IO extends Sizable, Openable {
 		}
 
 		final private static StreamExecutor io = new StreamExecutor(EXECUTOR_NAME, calcParallelism(), false);
+
+		private static class ConcatSpliterator<V> implements Spliterator<V> {
+			private final Iterator<Spliterator<V>> it;
+			private final AtomicLong estimateSize;
+			private Spliterator<V> curr, next;
+
+			private ConcatSpliterator(Iterable<Spliterator<V>> splits) {
+				super();
+				it = splits.iterator();
+				curr = it.next();
+				next = it.hasNext() ? it.next() : null;
+				long s = 0;
+				for (Spliterator<V> it : splits) {
+					long s0 = it.estimateSize();
+					if (s0 == Long.MAX_VALUE || (s += s0) < -1) {
+						s = Long.MAX_VALUE;
+						break;
+					}
+				}
+				estimateSize = s < Long.MAX_VALUE ? new AtomicLong(s) : null;
+			}
+
+			@Override
+			public boolean tryAdvance(Consumer<? super V> using) {
+				boolean used;
+				while (!(used = curr.tryAdvance(using))) {
+					if (null != next) {
+						curr = next;
+						next = it.hasNext() ? it.next() : null;
+					} else return false;
+				}
+				if (used && estimateSize != null) estimateSize.decrementAndGet();
+				return used;
+			}
+
+			@Override
+			public Spliterator<V> trySplit() {
+				if (null != next) {
+					Spliterator<V> s = next;
+					next = it.hasNext() ? it.next() : null;
+					return s;
+				}
+				return curr.trySplit();
+			}
+
+			@Override
+			public long estimateSize() {
+				return estimateSize.get();
+			}
+
+			@Override
+			public int characteristics() {
+				return curr.characteristics();
+			}
+		}
 	}
 
-	static <V, A, R> R map(Iterable<V> col, Function<V, A> mapper, Collector<? super A, ?, R> collector) {
+	static <V, A, R> R collect(Iterable<V> col, Function<V, A> mapper, Collector<? super A, ?, R> collector) {
 		return Context.io.collect(col, mapper, collector);
 	}
 
@@ -135,5 +196,39 @@ public interface IO extends Sizable, Openable {
 		}
 		return count;
 
+	}
+
+	public static <V> void split(Spliterator<V> origin, long max, Consumer<Spliterator<V>> using) {
+		List<Future<?>> fs = new ArrayList<>();
+		while (origin.estimateSize() > max) {
+			Spliterator<V> split = origin.trySplit();
+			if (null != split) fs.add(Context.io.executor.submit(() -> split(split, max, using)));
+		}
+		if (origin.estimateSize() > 0) using.accept(origin);
+		for (Future<?> f : fs) {
+			try {
+				f.get();
+			} catch (InterruptedException e) {} catch (ExecutionException e) {
+				// logger().error("split exec error", e);
+			}
+		}
+	}
+
+	public static <V, R> Spliterator<R> splitv(Spliterator<V> origin, long max, Function<Spliterator<V>, Spliterator<R>> using) {
+		List<Future<Spliterator<R>>> fs = new ArrayList<>();
+		while (origin.estimateSize() > max) {
+			Spliterator<V> split = origin.trySplit();
+			if (null != split) fs.add(Context.io.executor.submit(() -> splitv(split, max, using)));
+		}
+		Spliterator<R> v = origin.estimateSize() > 0 ? using.apply(origin) : null;
+		List<Spliterator<R>> rs = IO.list(fs, f -> {
+			try {
+				return f.get();
+			} catch (InterruptedException | ExecutionException e) {
+				return Spliterators.emptySpliterator();
+			}
+		});
+		if (null != v) rs.add(0, v);
+		return new Context.ConcatSpliterator<>(rs);
 	}
 }
