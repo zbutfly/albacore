@@ -28,7 +28,6 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 
 import net.butfly.albacore.base.Namedly;
-import net.butfly.albacore.lambda.Runnable;
 import net.butfly.albacore.utils.Texts;
 import net.butfly.albacore.utils.async.Concurrents;
 import net.butfly.albacore.utils.logger.Logger;
@@ -152,6 +151,10 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 		return Futures.successfulAsList(list(list, c -> lex.submit(c)));
 	}
 
+	public ListenableFuture<?> listenRun(Runnable task) {
+		return lex.submit(task);
+	}
+
 	public String tracePool(String prefix) {
 		if (executor instanceof ForkJoinPool) {
 			ForkJoinPool ex = (ForkJoinPool) executor;
@@ -173,4 +176,5 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 	public int parallelism() {
 		return executor instanceof ForkJoinPool ? ((ForkJoinPool) executor).getParallelism() : 0;
 	}
+
 }

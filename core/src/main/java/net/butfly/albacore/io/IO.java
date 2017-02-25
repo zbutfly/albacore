@@ -14,7 +14,6 @@ import java.util.stream.Stream;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import net.butfly.albacore.base.Sizable;
-import net.butfly.albacore.lambda.Runnable;
 import net.butfly.albacore.utils.Configs;
 import net.butfly.albacore.utils.Exceptions;
 import net.butfly.albacore.utils.logger.Logger;
@@ -87,6 +86,10 @@ public interface IO extends Sizable, Openable {
 
 	static ListenableFuture<List<Object>> listenRun(List<Runnable> tasks) {
 		return Context.io.listenRun(tasks);
+	}
+
+	static ListenableFuture<?> listenRun(Runnable task) {
+		return Context.io.listenRun(task);
 	}
 
 	static int parallelism() {
