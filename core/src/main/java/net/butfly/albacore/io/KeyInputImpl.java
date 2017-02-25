@@ -3,10 +3,12 @@ package net.butfly.albacore.io;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import net.butfly.albacore.utils.async.Concurrents;
 
+@Deprecated
 public abstract class KeyInputImpl<K, V> extends InputImpl<V> {
 	private List<K> keyAccess = null;
 
@@ -41,8 +43,8 @@ public abstract class KeyInputImpl<K, V> extends InputImpl<V> {
 	}
 
 	@Override
-	public final Stream<V> dequeue(long batchSize) {
-		return dequeue(batchSize, keys());
+	public final void dequeue(Consumer<Stream<V>> using, long batchSize) {
+		using.accept(dequeue(batchSize, keys()));
 	}
 
 	public Stream<V> dequeue(long batchSize, Iterable<K> keys) {

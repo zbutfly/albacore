@@ -1,5 +1,6 @@
 package net.butfly.albacore.io.queue;
 
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import net.butfly.albacore.io.IO;
@@ -48,8 +49,8 @@ public interface Queue<I, O> extends Input<O>, Output<I> {
 	default <O1> Queue<I, O1> then(Converter<O, O1> conv) {
 		Queue<I, O1> i = new Queue<I, O1>() {
 			@Override
-			public Stream<O1> dequeue(long batchSize) {
-				return Streams.of(Queue.this.dequeue(batchSize).map(conv));
+			public void dequeue(Consumer<Stream<O1>> using, long batchSize) {
+				Queue.this.dequeue(s -> using.accept(s.map(conv)), batchSize);
 			}
 
 			@Override
@@ -70,8 +71,8 @@ public interface Queue<I, O> extends Input<O>, Output<I> {
 	default <O1> Queue<I, Stream<O1>> thens(Converter<Iterable<O>, Iterable<O1>> conv, int parallelism) {
 		Queue<I, Stream<O1>> i = new Queue<I, Stream<O1>>() {
 			@Override
-			public Stream<Stream<O1>> dequeue(long batchSize) {
-				return Streams.batchMap(parallelism, Queue.this.dequeue(batchSize), conv);
+			public void dequeue(Consumer<Stream<Stream<O1>>> using, long batchSize) {
+				Queue.this.dequeue(s -> using.accept(Streams.batchMap(parallelism, s, conv)), batchSize);
 			}
 
 			@Override
@@ -92,8 +93,8 @@ public interface Queue<I, O> extends Input<O>, Output<I> {
 	default <I0> Queue<I0, O> prior(Converter<I0, I> conv) {
 		Queue<I0, O> o = new Queue<I0, O>() {
 			@Override
-			public Stream<O> dequeue(long batchSize) {
-				return Queue.this.dequeue(batchSize);
+			public void dequeue(Consumer<Stream<O>> using, long batchSize) {
+				Queue.this.dequeue(using, batchSize);
 			}
 
 			@Override
@@ -114,8 +115,8 @@ public interface Queue<I, O> extends Input<O>, Output<I> {
 	default <I0> Queue<I0, O> priors(Converter<Iterable<I0>, Iterable<I>> conv, int parallelism) {
 		Queue<I0, O> o = new Queue<I0, O>() {
 			@Override
-			public Stream<O> dequeue(long batchSize) {
-				return Queue.this.dequeue(batchSize);
+			public void dequeue(Consumer<Stream<O>> using, long batchSize) {
+				Queue.this.dequeue(using, batchSize);
 			}
 
 			@Override

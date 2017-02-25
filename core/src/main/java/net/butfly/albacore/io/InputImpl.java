@@ -1,6 +1,8 @@
 package net.butfly.albacore.io;
 
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -17,12 +19,14 @@ public abstract class InputImpl<V> extends Namedly implements Input<V>, Supplier
 	}
 
 	protected V dequeue() {
-		return dequeue(1).findFirst().orElse(null);
+		AtomicReference<V> ref = new AtomicReference<>();
+		dequeue(s -> ref.lazySet(s.findFirst().orElse(null)), 1);
+		return ref.get();
 	}
 
 	@Override
-	public Stream<V> dequeue(long batchSize) {
-		return Streams.fetch(batchSize, () -> dequeue(), () -> empty(), null, true);
+	public void dequeue(Consumer<Stream<V>> using, long batchSize) {
+		using.accept(Streams.fetch(batchSize, () -> dequeue(), () -> empty(), null, true));
 	}
 
 	@Override

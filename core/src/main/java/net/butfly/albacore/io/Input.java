@@ -2,6 +2,7 @@ package net.butfly.albacore.io;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -12,9 +13,7 @@ public interface Input<V> extends IO {
 	static <V> Input<V> NULL() {
 		return new InputImpl<V>() {
 			@Override
-			protected V dequeue() {
-				return null;
-			}
+			public void dequeue(Consumer<Stream<V>> using, long batchSize) {}
 		};
 	}
 
@@ -23,21 +22,18 @@ public interface Input<V> extends IO {
 		return Long.MAX_VALUE;
 	}
 
-	Stream<V> dequeue(long batchSize);
+	void dequeue(Consumer<Stream<V>> using, long batchSize);
 
 	default <V1> Input<V1> then(Converter<V, V1> conv) {
-		Input<V1> i = batchSize -> Streams.of(dequeue(batchSize).map(conv));
+		Input<V1> i = (using, batchSize) -> dequeue(s -> using.accept(s.map(conv)), batchSize);
 		i.open();
 		return i;
-		// return new InputThenHandler<>(this, conv).proxy(Input.class);
 	}
 
 	default <V1> Input<Stream<V1>> thens(Converter<Iterable<V>, Iterable<V1>> conv, int parallelism) {
-		Input<Stream<V1>> i = batchSize -> Streams.batchMap(parallelism, dequeue(batchSize), conv);
+		Input<Stream<V1>> i = (using, batchSize) -> dequeue(s -> using.accept(Streams.batchMap(parallelism, s, conv)), batchSize);
 		i.open();
 		return i;
-		// return new InputThensHandler<>(this, conv,
-		// parallelism).proxy(Input.class);
 	}
 
 	public static <T> Input<T> of(Collection<? extends T> collection) {
