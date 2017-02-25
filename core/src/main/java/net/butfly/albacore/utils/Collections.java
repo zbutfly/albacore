@@ -50,7 +50,7 @@ public final class Collections extends Utils {
 	@Deprecated
 	public static <T, R> List<R> mapNoNull(Collection<T> original, Converter<T, R> mapping) {
 		if (original == null) return null;
-		return of(original).filter(t -> t != null).map(mapping).filter(t -> t != null).collect(Collectors.toList());
+		return of(of(original).map(mapping)).collect(Collectors.toList());
 	}
 
 	/**
@@ -64,7 +64,7 @@ public final class Collections extends Utils {
 	@Deprecated
 	public static <T, R> List<R> mapNoNullIn(Collection<T> original, Converter<T, R> mapping) {
 		if (original == null) return null;
-		return of(original).filter(t -> t != null).map(mapping).collect(Collectors.toList());
+		return of(original).map(mapping).collect(Collectors.toList());
 	}
 
 	/**
@@ -78,13 +78,13 @@ public final class Collections extends Utils {
 	@Deprecated
 	public static <T, R> List<R> mapNoNullOut(Collection<T> original, Converter<T, R> mapping) {
 		if (original == null) return null;
-		return of(original).map(mapping).filter(t -> t != null).collect(Collectors.toList());
+		return of(of(original).map(mapping)).collect(Collectors.toList());
 	}
 
 	@Deprecated
 	public static <T> List<T> noNull(Collection<T> original) {
 		if (original == null) return null;
-		return of(original).filter(t -> t != null).collect(Collectors.toList());
+		return of(original).collect(Collectors.toList());
 	}
 
 	@SafeVarargs
@@ -148,7 +148,7 @@ public final class Collections extends Utils {
 	}
 
 	public static <T> Set<T> intersection(Collection<T> c1, Collection<T> c2) {
-		return of(c1).filter(t -> null != t && c2.contains(t)).collect(Collectors.toSet());
+		return of(c1).filter(c2::contains).collect(Collectors.toSet());
 	}
 
 	private static final Random r = new Random();

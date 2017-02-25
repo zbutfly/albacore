@@ -10,10 +10,7 @@ public class BasicPump<V> extends PumpImpl<V, BasicPump<V>> {
 		Reflections.noneNull("Pump source/destination should not be null", input, output);
 		depend(input, output);
 		pumping(() -> input.empty(), () -> {
-			// long now = System.currentTimeMillis();
 			if (opened() && input.opened() && output.opened()) input.dequeue(s -> output.enqueue(stats(s)), batchSize);
-			// logger().error("Time of [" + batchSize + "] writing: " +
-			// (System.currentTimeMillis() - now));
 		});
 	}
 }

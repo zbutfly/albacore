@@ -51,8 +51,6 @@ public interface Statistical<T extends Statistical<T>> {
 
 	default <V> Stream<V> stats(Stream<V> vv) {
 		Statistic s = Instances.fetch(() -> null, Statistic.class, this);
-		return null != s ? vv.peek(v -> {
-			if (null != v) s.stats(v);
-		}) : vv;
+		return null != s ? vv.peek(s::stats) : vv;
 	}
 }

@@ -1,24 +1,18 @@
 package net.butfly.albacore.io;
 
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import net.butfly.albacore.base.Namedly;
 import net.butfly.albacore.utils.async.Concurrents;
 
-public abstract class OutputImpl<V> extends Namedly implements Output<V>, Consumer<V> {
+public abstract class OutputImpl<V> extends Namedly implements Output<V> {
 	protected OutputImpl() {
 		super();
 	}
 
 	protected OutputImpl(String name) {
 		super(name);
-	}
-
-	@Override
-	public void accept(V t) {
-		if (!enqueue(t)) throw new RuntimeException("Enqueue failure");
 	}
 
 	protected boolean enqueue(V item) {
