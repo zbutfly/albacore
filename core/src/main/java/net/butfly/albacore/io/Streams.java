@@ -78,6 +78,7 @@ public final class Streams extends Utils {
 
 	public static <V> Stream<V> of(Stream<V> s) {
 		if (DEFAULT_PARALLEL_ENABLE) s = s.parallel();
+		// else s = s.sequential();
 		return s.filter(NOT_NULL);
 	}
 

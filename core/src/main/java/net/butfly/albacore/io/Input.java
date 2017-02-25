@@ -26,7 +26,7 @@ public interface Input<V> extends IO {
 	Stream<V> dequeue(long batchSize);
 
 	default <V1> Input<V1> then(Converter<V, V1> conv) {
-		Input<V1> i = batchSize -> dequeue(batchSize).map(conv);
+		Input<V1> i = batchSize -> Streams.of(dequeue(batchSize).map(conv));
 		i.open();
 		return i;
 		// return new InputThenHandler<>(this, conv).proxy(Input.class);

@@ -62,7 +62,7 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 			try {
 				f.get();
 			} catch (InterruptedException e) {} catch (ExecutionException e) {
-				throw wrap(unwrap(e));
+				logger.error("Subtask error", wrap(unwrap(e)));
 			}
 	}
 
@@ -77,6 +77,7 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 			} catch (InterruptedException e) {
 				throw new RuntimeException("Streaming inturrupted", e);
 			} catch (ExecutionException e) {
+				logger.error("Subtask error", wrap(unwrap(e)));
 				throw wrap(unwrap(e));
 			}
 	}
@@ -91,6 +92,7 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 			} catch (InterruptedException e) {
 				throw new RuntimeException("Streaming inturrupted", e);
 			} catch (Exception e) {
+				logger.error("Subtask error", wrap(unwrap(e)));
 				throw wrap(unwrap(e));
 			}
 	}
