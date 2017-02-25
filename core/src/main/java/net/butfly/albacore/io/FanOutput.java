@@ -23,7 +23,7 @@ public class FanOutput<V> extends OutputImpl<V> {
 	}
 
 	@Override
-	protected boolean enqueue(V item) { 
+	protected boolean enqueue(V item) {
 		if (null == item) return false;
 		boolean r = true;
 		ListenableFuture<List<Long>> fs = IO.listen(IO.list(outputs, o -> () -> o.enqueue(Streams.of(item))));
@@ -42,7 +42,8 @@ public class FanOutput<V> extends OutputImpl<V> {
 
 	@Override
 	public long enqueue(Stream<V> items) {
-		ListenableFuture<List<Long>> fs = IO.listen(IO.list(outputs, o -> () -> o.enqueue(items)));
+		List<V> values = IO.list(items);
+		ListenableFuture<List<Long>> fs = IO.listen(IO.list(outputs, o -> () -> o.enqueue(Streams.of(values))));
 		List<Long> rs;
 		try {
 			rs = fs.get();

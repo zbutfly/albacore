@@ -1,7 +1,11 @@
 package net.butfly.albacore.io;
 
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
@@ -9,6 +13,7 @@ import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collector;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.common.util.concurrent.ListenableFuture;
@@ -132,5 +137,53 @@ public interface IO extends Sizable, Openable {
 		}
 		return count;
 
+	}
+
+	public static <V, R> Spliterator<R> split(Spliterator<V> origin, long max, Function<Spliterator<V>, Spliterator<R>> using) {
+		List<Future<Spliterator<R>>> fs = new ArrayList<>();
+		while (origin.estimateSize() > max) {
+			Spliterator<V> split = origin.trySplit();
+			if (null != split) {
+				fs.add(Context.io.executor.submit(() -> using.apply(split)));
+			}
+		}
+		fs.add(Context.io.executor.submit(() -> using.apply(origin)));
+		List<Spliterator<R>> rs = IO.list(fs, f -> {
+			try {
+				return f.get();
+			} catch (InterruptedException | ExecutionException e) {
+				return Spliterators.emptySpliterator();
+			}
+		});
+		return merge(rs);
+	}
+
+	static <V> Spliterator<V> merge(Iterable<Spliterator<V>> rs) {
+		long size = Streams.of(rs).collect(Collectors.summingLong(i -> i.estimateSize()));
+		Iterator<Spliterator<V>> it = rs.iterator();
+		if (!it.hasNext()) return Spliterators.emptySpliterator();
+
+		return new Spliterator<V>() {
+			@Override
+			public boolean tryAdvance(Consumer<? super V> action) {
+				return false;
+			}
+
+			@Override
+			public Spliterator<V> trySplit() {
+				// TODO Auto-generated method stub
+				return null;
+			}
+
+			@Override
+			public long estimateSize() {
+				return size;
+			}
+
+			@Override
+			public int characteristics() {
+				return 0;
+			}
+		};
 	}
 }

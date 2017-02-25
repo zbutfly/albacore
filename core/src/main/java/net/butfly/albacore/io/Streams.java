@@ -1,9 +1,7 @@
 package net.butfly.albacore.io;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -25,11 +23,11 @@ public final class Streams extends Utils {
 	public static final Predicate<Object> NOT_NULL = t -> null != t;
 
 	public static <V> Stream<Iterator<V>> batch(int parallelism, Iterator<V> it) {
-		List<Iterator<V>> its = new ArrayList<>();
-		ReentrantReadWriteLock lock = new ReentrantReadWriteLock(true);
+		Stream.Builder<Iterator<V>> b = Stream.builder();
+		ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 		for (int i = 0; i < parallelism; i++)
-			its.add(it(it, lock));
-		return its.parallelStream();
+			b.add(it(it, lock));
+		return b.build().parallel();
 	}
 
 	public static <V> Stream<Iterator<V>> batch(int parallelism, Supplier<V> get, Supplier<Boolean> end) {
@@ -46,9 +44,7 @@ public final class Streams extends Utils {
 
 	public static <V, V1> Stream<Stream<V1>> batchMap(int parallelism, Stream<V> s, Function<Iterable<V>, Iterable<V1>> convs) {
 		if (parallelism == 1) return Stream.of(of(convs.apply(() -> s.iterator())));
-		return batch(parallelism, s.iterator()).parallel().map(it -> {
-			return of(convs.apply((Iterable<V>) () -> it));
-		});
+		return batch(parallelism, s.iterator()).parallel().map(it -> of(convs.apply((Iterable<V>) () -> it)));
 		// .flatMap(it -> StreamSupport.stream(it .spliterator(),
 		// DEFAULT_PARALLEL_ENABLE).filter(NOT_NULL));
 	}

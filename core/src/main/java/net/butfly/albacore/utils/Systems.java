@@ -104,11 +104,10 @@ public final class Systems extends Utils {
 		private final long cms;
 
 		public GC(long cms) {
-			super();
+			super("AlbacoreGCer");
 			logger.info("Full GC Manually every [" + cms + " ms].");
 			this.cms = cms;
 			setPriority(MIN_PRIORITY);
-			setName("AlbacoreGCer");
 			setDaemon(true);
 		}
 
