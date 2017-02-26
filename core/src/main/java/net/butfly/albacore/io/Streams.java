@@ -7,6 +7,7 @@ import java.util.Map.Entry;
 import java.util.Spliterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -20,6 +21,12 @@ import net.butfly.albacore.utils.collection.Maps;
 
 public final class Streams extends Utils {
 	public static final Predicate<Object> NOT_NULL = t -> null != t;
+	public static final BinaryOperator<Long> LONG_SUM = (r1, r2) -> {
+		if (null == r1 && null == r2) return 0L;
+		if (null == r1) return r2;
+		if (null == r2) return r1;
+		return r1 + r2;
+	};
 
 	public static <V> Map<Integer, Spliterator<V>> spatial(Spliterator<V> it, int parallelism) {
 		Map<Integer, Spliterator<V>> b = new ConcurrentHashMap<>();
@@ -34,7 +41,7 @@ public final class Streams extends Utils {
 
 	public static <V, V1> Stream<Stream<V1>> spatialMap(Stream<V> s, int parallelism, Function<Spliterator<V>, Spliterator<V1>> convs) {
 		return parallelism == 1 ? Stream.of(StreamSupport.stream(convs.apply(s.spliterator()), s.isParallel()))
-				: spatial(s, parallelism).values().parallelStream().map(e -> StreamSupport.stream(convs.apply(e), s.isParallel()));
+				: of(spatial(s, parallelism).values()).map(e -> StreamSupport.stream(convs.apply(e), s.isParallel()));
 	}
 
 	public static <V> Stream<V> of(Supplier<V> get, long size, Supplier<Boolean> ending) {
@@ -127,4 +134,5 @@ public final class Streams extends Utils {
 	public static long calcBatchSize(long total, int parallelism) {
 		return total == 0 ? 0 : (((total - 1) / parallelism) + 1);
 	}
+
 }

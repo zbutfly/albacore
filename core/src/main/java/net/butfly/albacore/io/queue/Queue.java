@@ -4,7 +4,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import net.butfly.albacore.io.IO;
 import net.butfly.albacore.io.Input;
 import net.butfly.albacore.io.Its;
 import net.butfly.albacore.io.Output;
@@ -124,8 +123,8 @@ public interface Queue<I, O> extends Input<O>, Output<I> {
 
 			@Override
 			public long enqueue(Stream<I0> items) {
-				return IO.run(Streams.spatial(items, parallelism).values().parallelStream().mapToLong(s0 -> Queue.this.enqueue(Streams.of(
-						conv.apply((Iterable<I0>) () -> Its.it(s0)))))::sum);
+				return eachs(Streams.spatial(items, parallelism).values(), s0 -> Queue.this.enqueue(Streams.of(conv.apply(
+						(Iterable<I0>) () -> Its.it(s0)))), Streams.LONG_SUM);
 			}
 
 			@Override

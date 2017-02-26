@@ -34,8 +34,8 @@ public interface Output<V> extends IO, Consumer<Stream<V>> {
 	}
 
 	default <V0> Output<V0> priors(Converter<Iterable<V0>, Iterable<V>> conv, int parallelism) {
-		Output<V0> o = items -> IO.run(Streams.spatial(items, parallelism).values().parallelStream().mapToLong(s0 -> enqueue(Streams.of(conv
-				.apply((Iterable<V0>) () -> Its.it(s0)))))::sum);
+		Output<V0> o = items -> eachs(Streams.spatial(items, parallelism).values(), s0 -> enqueue(Streams.of(conv.apply(
+				(Iterable<V0>) () -> Its.it(s0)))), Streams.LONG_SUM);
 		o.open();
 		return o;
 	}

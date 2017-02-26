@@ -31,8 +31,8 @@ public interface Input<V> extends IO {
 	}
 
 	default <V1> Input<V1> thens(Function<Iterable<V>, Iterable<V1>> conv, int parallelism) {
-		Input<V1> i = (using, batchSize) -> dequeue(s -> Streams.spatialMap(s, parallelism, t -> conv.apply(() -> Its.it(t)).spliterator())
-				.forEach(s1 -> using.accept(s1)), batchSize);
+		Input<V1> i = (using, batchSize) -> dequeue(s -> eachs(IO.list(Streams.spatialMap(s, parallelism, t -> conv.apply(() -> Its.it(t))
+				.spliterator())), s1 -> using.accept(s1)), batchSize);
 		i.open();
 		return i;
 	}

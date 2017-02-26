@@ -11,9 +11,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collector;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.common.util.concurrent.ListenableFuture;
@@ -230,5 +232,47 @@ public interface IO extends Sizable, Openable {
 		});
 		if (null != v) rs.add(0, v);
 		return new Context.ConcatSpliterator<>(rs);
+	}
+
+	/**
+	 * Strict Parallel traversing.
+	 * 
+	 * @param src
+	 * @param doing
+	 * @param accumulator
+	 * @return
+	 */
+	default <R, V> R eachs(Iterable<V> src, Function<V, R> doing, BinaryOperator<R> accumulator) {
+		List<ListenableFuture<R>> fs = new ArrayList<>();
+		src.forEach(v -> fs.add(IO.listen(() -> doing.apply(v))));
+		List<R> rs = new ArrayList<>();
+		R r;
+		for (ListenableFuture<R> f : fs)
+			try {
+				r = f.get();
+				if (null != r) rs.add(r);
+			} catch (InterruptedException e) {} catch (ExecutionException e) {
+				logger().error("Subtask error", e);
+			}
+		return rs.parallelStream().collect(Collectors.reducing(null, accumulator));
+	}
+
+	/**
+	 * Strict Parallel traversing.
+	 * 
+	 * @param src
+	 * @param doing
+	 * @param accumulator
+	 * @return
+	 */
+	default <V> void eachs(Iterable<V> src, Consumer<V> doing) {
+		List<ListenableFuture<?>> fs = new ArrayList<>();
+		src.forEach(v -> fs.add(IO.listenRun(() -> doing.accept(v))));
+		for (ListenableFuture<?> f : fs)
+			try {
+				f.get();
+			} catch (InterruptedException e) {} catch (ExecutionException e) {
+				logger().error("Subtask error", e);
+			}
 	}
 }
