@@ -39,8 +39,10 @@ public final class IOs extends Utils {
 	public static <S extends OutputStream> S writeBytes(S out, byte[]... bytes) throws IOException {
 		for (byte[] b : bytes) {
 			if (null == b) writeInt(out, -1);
-			writeInt(out, b.length);
-			if (b.length > 0) out.write(b);
+			else {
+				writeInt(out, b.length);
+				if (b.length > 0) out.write(b);
+			}
 		}
 		return out;
 	}
