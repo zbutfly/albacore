@@ -84,7 +84,7 @@ public final class Its extends Utils {
 			@Override
 			public V next() {
 				AtomicReference<V> ref = new AtomicReference<>();
-				if (!t.tryAdvance(v -> ref.set(v))) throw new NoSuchElementException();
+				if (!t.tryAdvance(v -> ref.set(v))) return null;
 				return ref.get();
 			}
 		};
