@@ -6,7 +6,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-public class InfiniteStream {
+public class InfiniteTest {
 	static final Random r = new Random();
 
 	public static void main(String[] args) {

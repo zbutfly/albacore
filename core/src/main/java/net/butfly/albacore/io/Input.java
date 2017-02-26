@@ -3,10 +3,10 @@ package net.butfly.albacore.io;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.utils.Collections;
 
 public interface Input<V> extends IO {
@@ -24,14 +24,15 @@ public interface Input<V> extends IO {
 
 	void dequeue(Consumer<Stream<V>> using, long batchSize);
 
-	default <V1> Input<V1> then(Converter<V, V1> conv) {
+	default <V1> Input<V1> then(Function<V, V1> conv) {
 		Input<V1> i = (using, batchSize) -> dequeue(s -> using.accept(s.map(conv)), batchSize);
 		i.open();
 		return i;
 	}
 
-	default <V1> Input<Stream<V1>> thens(Converter<Iterable<V>, Iterable<V1>> conv, int parallelism) {
-		Input<Stream<V1>> i = (using, batchSize) -> dequeue(s -> using.accept(Streams.batchMap(parallelism, s, conv)), batchSize);
+	default <V1> Input<V1> thens(Function<Iterable<V>, Iterable<V1>> conv, int parallelism) {
+		Input<V1> i = (using, batchSize) -> dequeue(s -> Streams.spatialMap(s, parallelism, t -> conv.apply(() -> Its.it(t)).spliterator())
+				.forEach(s1 -> using.accept(s1)), batchSize);
 		i.open();
 		return i;
 	}

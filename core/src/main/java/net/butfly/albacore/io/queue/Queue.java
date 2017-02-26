@@ -1,10 +1,12 @@
 package net.butfly.albacore.io.queue;
 
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import net.butfly.albacore.io.IO;
 import net.butfly.albacore.io.Input;
+import net.butfly.albacore.io.Its;
 import net.butfly.albacore.io.Output;
 import net.butfly.albacore.io.Streams;
 import net.butfly.albacore.lambda.Converter;
@@ -46,7 +48,7 @@ public interface Queue<I, O> extends Input<O>, Output<I> {
 	/* from interfaces */
 
 	@Override
-	default <O1> Queue<I, O1> then(Converter<O, O1> conv) {
+	default <O1> Queue<I, O1> then(Function<O, O1> conv) {
 		Queue<I, O1> i = new Queue<I, O1>() {
 			@Override
 			public void dequeue(Consumer<Stream<O1>> using, long batchSize) {
@@ -68,11 +70,12 @@ public interface Queue<I, O> extends Input<O>, Output<I> {
 	}
 
 	@Override
-	default <O1> Queue<I, Stream<O1>> thens(Converter<Iterable<O>, Iterable<O1>> conv, int parallelism) {
-		Queue<I, Stream<O1>> i = new Queue<I, Stream<O1>>() {
+	default <O1> Queue<I, O1> thens(Function<Iterable<O>, Iterable<O1>> conv, int parallelism) {
+		Queue<I, O1> i = new Queue<I, O1>() {
 			@Override
-			public void dequeue(Consumer<Stream<Stream<O1>>> using, long batchSize) {
-				Queue.this.dequeue(s -> using.accept(Streams.batchMap(parallelism, s, conv)), batchSize);
+			public void dequeue(Consumer<Stream<O1>> using, long batchSize) {
+				Queue.this.dequeue(s -> Streams.spatialMap(s, parallelism, t -> conv.apply(() -> Its.it(t)).spliterator()).forEach(
+						s1 -> using.accept(s1)), batchSize);
 			}
 
 			@Override
@@ -121,8 +124,8 @@ public interface Queue<I, O> extends Input<O>, Output<I> {
 
 			@Override
 			public long enqueue(Stream<I0> items) {
-				return IO.run(() -> Streams.batch(parallelism, items).mapToLong(s0 -> Queue.this.enqueue(Streams.of(conv.apply(
-						(Iterable<I0>) () -> s0.iterator())))).sum());
+				return IO.run(Streams.spatial(items, parallelism).values().parallelStream().mapToLong(s0 -> Queue.this.enqueue(Streams.of(
+						conv.apply((Iterable<I0>) () -> Its.it(s0)))))::sum);
 			}
 
 			@Override

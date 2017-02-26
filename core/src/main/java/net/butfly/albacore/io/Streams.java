@@ -4,73 +4,81 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Spliterator;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import org.apache.log4j.Logger;
-
 import net.butfly.albacore.utils.Configs;
 import net.butfly.albacore.utils.Utils;
-import net.butfly.albacore.utils.async.Concurrents;
+import net.butfly.albacore.utils.collection.Maps;
 
 public final class Streams extends Utils {
-	private static final Logger logger = Logger.getLogger(Streams.class);
 	public static final Predicate<Object> NOT_NULL = t -> null != t;
 
-	public static <V> Stream<Iterator<V>> batch(int parallelism, Iterator<V> it) {
-		Stream.Builder<Iterator<V>> b = Stream.builder();
-		ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+	public static <V> Map<Integer, Spliterator<V>> spatial(Spliterator<V> it, int parallelism) {
+		Map<Integer, Spliterator<V>> b = new ConcurrentHashMap<>();
 		for (int i = 0; i < parallelism; i++)
-			b.add(it(it, lock));
-		return b.build().parallel();
+			b.put(i, Its.wrap(it));
+		return b;
 	}
 
-	public static <V> Stream<Iterator<V>> batch(int parallelism, Supplier<V> get, Supplier<Boolean> end) {
-		if (parallelism == 1) return Stream.of(it(get, end));
-		return batch(parallelism, it(get, end));
+	public static <V> Map<Integer, Spliterator<V>> spatial(Stream<V> s, int parallelism) {
+		return parallelism == 1 ? Maps.of(0, s.spliterator()) : spatial(s.spliterator(), parallelism);
 	}
 
-	public static <V> Stream<Stream<V>> batch(int parallelism, Stream<V> s) {
-		if (parallelism == 1) return Stream.of(s);
-		return batch(parallelism, s.iterator()).map(it -> StreamSupport.stream(((Iterable<V>) () -> it).spliterator(),
-				DEFAULT_PARALLEL_ENABLE).filter(NOT_NULL));
-
+	public static <V, V1> Stream<Stream<V1>> spatialMap(Stream<V> s, int parallelism, Function<Spliterator<V>, Spliterator<V1>> convs) {
+		return parallelism == 1 ? Stream.of(StreamSupport.stream(convs.apply(s.spliterator()), s.isParallel()))
+				: spatial(s, parallelism).values().parallelStream().map(e -> StreamSupport.stream(convs.apply(e), s.isParallel()));
 	}
 
-	public static <V, V1> Stream<Stream<V1>> batchMap(int parallelism, Stream<V> s, Function<Iterable<V>, Iterable<V1>> convs) {
-		if (parallelism == 1) return Stream.of(of(convs.apply(() -> s.iterator())));
-		return batch(parallelism, s.iterator()).parallel().map(it -> of(convs.apply((Iterable<V>) () -> it)));
-		// .flatMap(it -> StreamSupport.stream(it .spliterator(),
-		// DEFAULT_PARALLEL_ENABLE).filter(NOT_NULL));
-	}
+	public static <V> Stream<V> of(Supplier<V> get, long size, Supplier<Boolean> ending) {
+		return Streams.of(new Spliterator<V>() {
+			private final int characteristics = Spliterator.CONCURRENT | Spliterator.IMMUTABLE | Spliterator.ORDERED | Spliterator.SIZED
+					| Spliterator.SUBSIZED;
+			private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock(true);
+			private long est = size;
 
-	public static <V> Stream<V> fetch(long batchSize, Supplier<V> get, Supplier<Boolean> ending, WriteLock lock, boolean retryOnException) {
-		Stream.Builder<V> batch = Stream.builder();
-		int c = 0;
-		do {
-			long prev = c;
-			while (!ending.get() && c < batchSize)
-				if (null == lock || lock.tryLock()) try {
-					V e = get.get();
-					if (null != e) {
-						batch.add(e);
-						c++;
-					}
-				} catch (Exception ex) {
-					logger.warn("Dequeue fail", ex);
-					if (!retryOnException) return batch.build();
+			@Override
+			public synchronized boolean tryAdvance(Consumer<? super V> action) {
+				lock.writeLock().lock();
+				try {
+					boolean next = !ending.get();
+					if (!next) est = 0;
+					else est--;
+					next = next && est > 0;
+					if (next) action.accept(get.get());
+					return next;
 				} finally {
-					if (null != lock) lock.unlock();
+					lock.writeLock().unlock();
 				}
-			if (c >= batchSize || ending.get()) return batch.build();
-			if (c > 0 && c == prev) return batch.build();
-			Concurrents.waitSleep();
-		} while (true);
+			}
+
+			@Override
+			public Spliterator<V> trySplit() {
+				return null;
+			}
+
+			@Override
+			public long estimateSize() {
+				lock.readLock().lock();
+				try {
+					return est;
+				} finally {
+					lock.readLock().unlock();
+				}
+			}
+
+			@Override
+			public int characteristics() {
+				return characteristics;
+			}
+		});
 	}
 
 	private static final boolean DEFAULT_PARALLEL_ENABLE = Boolean.parseBoolean(Configs.MAIN_CONF.getOrDefault(
@@ -80,6 +88,10 @@ public final class Streams extends Utils {
 		if (DEFAULT_PARALLEL_ENABLE) s = s.parallel();
 		// else s = s.sequential();
 		return s.filter(NOT_NULL);
+	}
+
+	public static <V> Stream<V> of(Spliterator<V> it) {
+		return StreamSupport.stream(it, DEFAULT_PARALLEL_ENABLE).filter(NOT_NULL);
 	}
 
 	public static <V> Stream<V> of(Iterable<V> col) {
@@ -108,42 +120,11 @@ public final class Streams extends Utils {
 		return of(Stream.of(values));
 	}
 
-	public static <V> Iterator<V> it(Supplier<V> get, Supplier<Boolean> end) {
-		return new Iterator<V>() {
-			@Override
-			public boolean hasNext() {
-				return !end.get();
-			}
-
-			@Override
-			public V next() {
-				return get.get();
-			}
-		};
+	public static int calcParallelism(long total, long batch) {
+		return total == 0 ? 0 : (int) (((total - 1) / batch) + 1);
 	}
 
-	public static <V> Iterator<V> it(Iterator<V> it, ReentrantReadWriteLock lock) {
-		return new Iterator<V>() {
-			@Override
-			public boolean hasNext() {
-				if (null != lock) lock.writeLock().lock();
-				try {
-					return it.hasNext();
-				} finally {
-					if (null != lock) lock.writeLock().unlock();
-				}
-			}
-
-			@Override
-			public V next() {
-				if (null != lock) lock.writeLock().lock();
-				try {
-					if (it.hasNext()) return it.next();
-					else return null;
-				} finally {
-					if (null != lock) lock.writeLock().unlock();
-				}
-			}
-		};
+	public static long calcBatchSize(long total, int parallelism) {
+		return total == 0 ? 0 : (((total - 1) / parallelism) + 1);
 	}
 }

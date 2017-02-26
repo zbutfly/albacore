@@ -31,22 +31,11 @@ public interface Output<V> extends IO, Consumer<Stream<V>> {
 		Output<V0> o = items -> enqueue(Streams.of(items.map(conv)));
 		o.open();
 		return o;
-		// return new OutputPriorHandler<>(this, conv).proxy(Output.class);
 	}
 
 	default <V0> Output<V0> priors(Converter<Iterable<V0>, Iterable<V>> conv, int parallelism) {
-		Output<V0> o = items -> IO.run(() -> Streams.batch(parallelism, items).mapToLong(s0 -> enqueue(Streams.of(conv.apply(
-				(Iterable<V0>) () -> s0.iterator())))).sum());
-		o.open();
-		return o;
-		// return new OutputPriorsHandler<>(this, conv,
-		// parallelism).proxy(Output.class);
-	}
-
-	default Output<Stream<V>> stream() {
-		Output<Stream<V>> o = items -> {
-			return IO.run(() -> items.parallel().mapToLong(s -> enqueue(s)).sum());
-		};
+		Output<V0> o = items -> IO.run(Streams.spatial(items, parallelism).values().parallelStream().mapToLong(s0 -> enqueue(Streams.of(conv
+				.apply((Iterable<V0>) () -> Its.it(s0)))))::sum);
 		o.open();
 		return o;
 	}
