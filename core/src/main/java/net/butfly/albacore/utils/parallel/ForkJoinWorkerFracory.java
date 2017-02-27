@@ -1,4 +1,4 @@
-package net.butfly.albacore.utils.async;
+package net.butfly.albacore.utils.parallel;
 
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinPool.ForkJoinWorkerThreadFactory;

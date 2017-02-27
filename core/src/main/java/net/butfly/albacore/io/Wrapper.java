@@ -29,40 +29,40 @@ interface Wrapper {
 	}
 
 	abstract class WrapInput<V> implements Input<V> {
-		private final Input<?> origin;
+		protected final Input<?> base;
 
-		private WrapInput(Input<?> origin) {
-			this.origin = origin;
+		protected WrapInput(Input<?> origin) {
+			this.base = origin;
 		}
 
 		@Override
 		public long capacity() {
-			return origin.capacity();
+			return base.capacity();
 		}
 
 		@Override
 		public boolean empty() {
-			return origin.empty();
+			return base.empty();
 		}
 
 		@Override
 		public boolean full() {
-			return origin.full();
+			return base.full();
 		}
 
 		@Override
 		public Logger logger() {
-			return origin.logger();
+			return base.logger();
 		}
 
 		@Override
 		public String name() {
-			return origin.name() + "Wrapper";
+			return base.name() + "Wrapper";
 		}
 
 		@Override
 		public long size() {
-			return origin.size();
+			return base.size();
 		}
 	}
 

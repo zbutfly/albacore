@@ -2,7 +2,7 @@ package net.butfly.albacore.io;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import net.butfly.albacore.utils.async.Concurrents;
+import net.butfly.albacore.utils.parallel.Concurrents;
 
 public class OpenableThread extends Thread implements Openable {
 	private final AtomicBoolean started = new AtomicBoolean(false);

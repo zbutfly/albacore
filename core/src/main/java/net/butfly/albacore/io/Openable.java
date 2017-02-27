@@ -5,8 +5,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 import net.butfly.albacore.base.Named;
-import net.butfly.albacore.utils.async.Concurrents;
 import net.butfly.albacore.utils.logger.Loggable;
+import net.butfly.albacore.utils.parallel.Concurrents;
 
 public interface Openable extends AutoCloseable, Loggable, Named {
 	enum Status {

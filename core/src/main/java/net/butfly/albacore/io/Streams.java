@@ -18,6 +18,7 @@ import java.util.stream.StreamSupport;
 import net.butfly.albacore.utils.Configs;
 import net.butfly.albacore.utils.Utils;
 import net.butfly.albacore.utils.collection.Maps;
+import net.butfly.albacore.utils.parallel.ResPool;
 
 public final class Streams extends Utils {
 	public static final Predicate<Object> NOT_NULL = t -> null != t;
@@ -48,12 +49,12 @@ public final class Streams extends Utils {
 		return Streams.of(new Spliterator<V>() {
 			private final int characteristics = Spliterator.CONCURRENT | Spliterator.IMMUTABLE | Spliterator.ORDERED | Spliterator.SIZED
 					| Spliterator.SUBSIZED;
-			private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock(true);
+			private final ResPool<ReentrantReadWriteLock>.Res lock = ResPool.LOCKERS_FAIR.aquire();
 			private long est = size;
 
 			@Override
 			public synchronized boolean tryAdvance(Consumer<? super V> action) {
-				lock.writeLock().lock();
+				lock.res.writeLock().lock();
 				try {
 					boolean next = !ending.get();
 					if (!next) est = 0;
@@ -66,8 +67,14 @@ public final class Streams extends Utils {
 					}
 					return next;
 				} finally {
-					lock.writeLock().unlock();
+					lock.res.writeLock().unlock();
 				}
+			}
+
+			@Override
+			protected void finalize() throws Throwable {
+				lock.close();
+				super.finalize();
 			}
 
 			@Override
@@ -77,11 +84,11 @@ public final class Streams extends Utils {
 
 			@Override
 			public long estimateSize() {
-				lock.readLock().lock();
+				lock.res.readLock().lock();
 				try {
 					return est;
 				} finally {
-					lock.readLock().unlock();
+					lock.res.readLock().unlock();
 				}
 			}
 

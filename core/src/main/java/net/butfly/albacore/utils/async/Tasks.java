@@ -17,6 +17,7 @@ import net.butfly.albacore.lambda.Consumer;
 import net.butfly.albacore.utils.Instances;
 import net.butfly.albacore.utils.Utils;
 import net.butfly.albacore.utils.logger.Logger;
+import net.butfly.albacore.utils.parallel.Concurrents;
 
 public final class Tasks extends Utils {
 	private static final Logger logger = Logger.getLogger(Tasks.class);

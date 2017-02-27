@@ -6,15 +6,15 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import net.butfly.albacore.io.Streams;
-import net.butfly.albacore.utils.async.Concurrents;
+import net.butfly.albacore.utils.parallel.Concurrents;
 
-public abstract class QueueImpl<I, O> implements Queue0<I, O> {
+public abstract class QueueImpl<V> implements Queue<V> {
 	private final String name;
 	private final AtomicLong capacity;
 
 	protected QueueImpl(long capacity) {
 		super();
-		this.name = Queue0.super.name();
+		this.name = Queue.super.name();
 		this.capacity = new AtomicLong(capacity);
 	}
 
@@ -24,10 +24,10 @@ public abstract class QueueImpl<I, O> implements Queue0<I, O> {
 		this.capacity = new AtomicLong(capacity);
 	}
 
-	protected abstract boolean enqueue(I item);
+	protected abstract boolean enqueue(V item);
 
 	@Override
-	public long enqueue(Stream<I> items) {
+	public long enqueue(Stream<V> items) {
 		if (!Concurrents.waitSleep(() -> full())) return 0;
 		AtomicLong c = new AtomicLong(0);
 		Streams.of(items).forEach(t -> {
@@ -36,14 +36,14 @@ public abstract class QueueImpl<I, O> implements Queue0<I, O> {
 		return c.get();
 	}
 
-	protected O dequeue() {
-		AtomicReference<O> ref = new AtomicReference<>();
+	protected V dequeue() {
+		AtomicReference<V> ref = new AtomicReference<>();
 		dequeue(s -> ref.lazySet(s.findFirst().orElse(null)), 1);
 		return ref.get();
 	}
 
 	@Override
-	public void dequeue(Consumer<Stream<O>> using, long batchSize) {
+	public void dequeue(Consumer<Stream<V>> using, long batchSize) {
 		using.accept(Streams.of(() -> dequeue(), batchSize, () -> empty()));
 	}
 

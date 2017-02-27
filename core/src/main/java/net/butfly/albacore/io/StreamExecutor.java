@@ -31,8 +31,8 @@ import com.google.common.util.concurrent.MoreExecutors;
 
 import net.butfly.albacore.base.Namedly;
 import net.butfly.albacore.utils.Texts;
-import net.butfly.albacore.utils.async.Concurrents;
 import net.butfly.albacore.utils.logger.Logger;
+import net.butfly.albacore.utils.parallel.Concurrents;
 
 public final class StreamExecutor extends Namedly implements AutoCloseable {
 	private static final Logger logger = Logger.getLogger(StreamExecutor.class);

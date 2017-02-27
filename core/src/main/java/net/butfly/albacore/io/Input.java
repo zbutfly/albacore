@@ -29,23 +29,13 @@ public interface Input<V> extends IO, Dequeue<V>, Supplier<V>, Iterator<V> {
 
 	// more extends
 	default Input<V> prefetch(Queue0<V, V> pool, long fetchSize) {
-		return new Input<V>() {
-			private final OpenableThread fetch = new OpenableThread(() -> {
-				while (opened())
-					Input.this.dequeue(s -> pool.enqueue(s), fetchSize);
-			}, Input.this.name() + "PrefetcherThread");
+		return Wrapper.wrap(this, new Dequeue<V>() {
 
 			@Override
 			public void dequeue(Consumer<Stream<V>> using, long batchSize) {
 				pool.dequeue(using, batchSize);
 			}
-
-			@Override
-			public void close() {
-				Input.super.close();
-				fetch.close();
-			}
-		};
+		});
 	}
 
 	// constructor

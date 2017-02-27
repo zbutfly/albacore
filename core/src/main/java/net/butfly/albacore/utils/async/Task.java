@@ -5,6 +5,7 @@ import java.util.concurrent.ExecutorService;
 
 import net.butfly.albacore.lambda.Consumer;
 import net.butfly.albacore.lambda.Supplier;
+import net.butfly.albacore.utils.parallel.Concurrents;
 
 public class Task<T> {
 	protected java.util.concurrent.Callable<T> call;
