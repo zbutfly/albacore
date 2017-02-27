@@ -20,7 +20,7 @@ public abstract class InputImpl<V> extends Namedly implements Input<V>, Supplier
 
 	@Override
 	public final void dequeue(Consumer<Stream<V>> using, long batchSize) {
-		using.accept(Streams.of(() -> dequeue(), batchSize, () -> empty()));
+		using.accept(Streams.of(() -> dequeue(), batchSize, () -> empty() && opened()));
 	}
 
 	@Override

@@ -44,7 +44,7 @@ public abstract class QueueImpl<V> implements Queue<V> {
 
 	@Override
 	public void dequeue(Consumer<Stream<V>> using, long batchSize) {
-		using.accept(Streams.of(() -> dequeue(), batchSize, () -> empty()));
+		using.accept(Streams.of(() -> dequeue(), batchSize, () -> empty() && opened()));
 	}
 
 	@Override

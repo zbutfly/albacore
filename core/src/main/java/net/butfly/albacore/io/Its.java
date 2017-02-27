@@ -88,4 +88,21 @@ public final class Its extends Utils {
 			}
 		};
 	}
+
+	public static <V> Iterator<V> loop(Iterable<V> itbl) {
+		return new Iterator<V>() {
+			Iterator<V> it = itbl.iterator();
+
+			@Override
+			public boolean hasNext() {
+				return true;
+			}
+
+			@Override
+			public V next() {
+				if (!it.hasNext()) it = itbl.iterator();
+				return it.next();
+			}
+		};
+	}
 }
