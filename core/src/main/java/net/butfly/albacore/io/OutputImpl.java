@@ -15,12 +15,10 @@ public abstract class OutputImpl<V> extends Namedly implements Output<V> {
 		super(name);
 	}
 
-	protected boolean enqueue(V item) {
-		return enqueue(Stream.of(item)) == 1;
-	}
+	protected abstract boolean enqueue(V item);
 
 	@Override
-	public long enqueue(Stream<V> items) {
+	public final long enqueue(Stream<V> items) {
 		if (!Concurrents.waitSleep(() -> full())) return 0;
 		AtomicLong c = new AtomicLong(0);
 		Streams.of(items).forEach(t -> {

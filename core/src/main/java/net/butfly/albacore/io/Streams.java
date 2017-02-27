@@ -59,7 +59,11 @@ public final class Streams extends Utils {
 					if (!next) est = 0;
 					else est--;
 					next = next && est > 0;
-					if (next) action.accept(get.get());
+					if (next) {
+						V v = get.get();
+						next = v != null;
+						if (next) action.accept(v);
+					}
 					return next;
 				} finally {
 					lock.writeLock().unlock();

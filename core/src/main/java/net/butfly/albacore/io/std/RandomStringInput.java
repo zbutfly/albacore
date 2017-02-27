@@ -17,4 +17,5 @@ public final class RandomStringInput extends InputImpl<String> {
 	protected String dequeue() {
 		return UUID.randomUUID().toString();
 	}
+
 }

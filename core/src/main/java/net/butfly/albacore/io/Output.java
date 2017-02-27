@@ -4,18 +4,11 @@ import java.util.Collection;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import net.butfly.albacore.io.queue.Queue;
+import net.butfly.albacore.io.queue.Queue0;
 import net.butfly.albacore.lambda.Converter;
 
 public interface Output<V> extends IO, Consumer<Stream<V>>, Enqueue<V> {
-	static <V> Output<V> NULL() {
-		return new OutputImpl<V>() {
-			@Override
-			protected boolean enqueue(V item) {
-				return true;
-			}
-		};
-	}
+	static Output<?> NULL = items -> 0;
 
 	@Override
 	default long size() {
@@ -37,11 +30,11 @@ public interface Output<V> extends IO, Consumer<Stream<V>>, Enqueue<V> {
 	}
 
 	// more extends
-	default Output<V> lazy(Queue<V, V> pool, long lazySize) {
+	default Output<V> lazy(Queue0<V, V> pool, long lazySize) {
 		return null;
 	}
 
-	default Output<V> failover(Queue<V, V> pool, long failoverSize) {
+	default Output<V> failover(Queue0<V, V> pool, long failoverSize) {
 		return null;
 	}
 

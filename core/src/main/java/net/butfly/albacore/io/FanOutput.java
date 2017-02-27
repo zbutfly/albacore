@@ -9,7 +9,9 @@ import java.util.stream.Stream;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
-public class FanOutput<V> extends OutputImpl<V> {
+import net.butfly.albacore.base.Namedly;
+
+public class FanOutput<V> extends Namedly implements Output<V> {
 	private final Iterable<? extends Output<V>> outputs;
 
 	public FanOutput(Iterable<? extends Output<V>> outputs) {
@@ -20,24 +22,6 @@ public class FanOutput<V> extends OutputImpl<V> {
 	public FanOutput(String name, Iterable<? extends Output<V>> outputs) {
 		super(name);
 		this.outputs = outputs;
-	}
-
-	@Override
-	protected boolean enqueue(V item) {
-		if (null == item) return false;
-		boolean r = true;
-		ListenableFuture<List<Long>> fs = IO.listen(IO.list(outputs, o -> () -> o.enqueue(Streams.of(item))));
-		List<Long> rs;
-		try {
-			rs = fs.get();
-		} catch (InterruptedException e) {
-			throw new RuntimeException("Streaming inturrupted", e);
-		} catch (Exception e) {
-			throw wrap(unwrap(e));
-		}
-		for (Long b : rs)
-			r = r && b == 1;
-		return r;
 	}
 
 	@Override

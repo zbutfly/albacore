@@ -2,14 +2,15 @@ package net.butfly.albacore.io;
 
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import net.butfly.albacore.io.queue.Queue;
+import net.butfly.albacore.io.queue.Queue0;
 
-public interface Input<V> extends IO, Dequeue<V> {
+public interface Input<V> extends IO, Dequeue<V>, Supplier<V>, Iterator<V> {
 	static Input<?> NULL = (using, batchSize) -> {};
 
 	@Override
@@ -27,7 +28,7 @@ public interface Input<V> extends IO, Dequeue<V> {
 	}
 
 	// more extends
-	default Input<V> prefetch(Queue<V, V> pool, long fetchSize) {
+	default Input<V> prefetch(Queue0<V, V> pool, long fetchSize) {
 		return new Input<V>() {
 			private final OpenableThread fetch = new OpenableThread(() -> {
 				while (opened())
@@ -68,5 +69,22 @@ public interface Input<V> extends IO, Dequeue<V> {
 
 	public static <T> Input<T> of(Supplier<? extends T> next, Supplier<Boolean> ending) {
 		return of(Its.it(next, ending));
+	}
+
+	@Override
+	default V get() {
+		AtomicReference<V> ref = new AtomicReference<>();
+		dequeue(s -> ref.lazySet(s.findFirst().orElse(null)), 1);
+		return ref.get();
+	}
+
+	@Override
+	default boolean hasNext() {
+		return !empty();
+	}
+
+	@Override
+	default V next() {
+		return get();
 	}
 }

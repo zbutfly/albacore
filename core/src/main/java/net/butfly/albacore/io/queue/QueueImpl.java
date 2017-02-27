@@ -8,13 +8,13 @@ import java.util.stream.Stream;
 import net.butfly.albacore.io.Streams;
 import net.butfly.albacore.utils.async.Concurrents;
 
-public abstract class QueueImpl<I, O> implements Queue<I, O> {
+public abstract class QueueImpl<I, O> implements Queue0<I, O> {
 	private final String name;
 	private final AtomicLong capacity;
 
 	protected QueueImpl(long capacity) {
 		super();
-		this.name = Queue.super.name();
+		this.name = Queue0.super.name();
 		this.capacity = new AtomicLong(capacity);
 	}
 
