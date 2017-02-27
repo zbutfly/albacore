@@ -1,8 +1,5 @@
 package net.butfly.albacore.io.pump;
 
-import static net.butfly.albacore.utils.Exceptions.unwrap;
-import static net.butfly.albacore.utils.Exceptions.wrap;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -20,7 +17,7 @@ abstract class PumpImpl<V, P extends PumpImpl<V, P>> extends Namedly implements 
 
 	protected final String name;
 	private final int parallelism;
-	private final List<Runnable> tasks = new ArrayList<>();
+	private final List<Thread> tasks = new ArrayList<>();
 
 	protected long batchSize = 1000;
 	private final List<AutoCloseable> dependencies;
@@ -55,7 +52,7 @@ abstract class PumpImpl<V, P extends PumpImpl<V, P>> extends Namedly implements 
 			return !opened() || sourceEmpty.get();
 		});
 		for (int i = 0; i < parallelism; i++)
-			tasks.add(rr);
+			tasks.add(new Thread(rr, name() + "PumpThread#" + i));
 	}
 
 	@Override
@@ -67,11 +64,12 @@ abstract class PumpImpl<V, P extends PumpImpl<V, P>> extends Namedly implements 
 	@Override
 	public void open() {
 		Pump.super.open();
-		try {
-			IO.listenRun(tasks).get();
-		} catch (InterruptedException e) {} catch (Exception e) {
-			throw wrap(unwrap(e));
-		}
+		for (Thread t : tasks)
+			t.start();
+		for (Thread t : tasks)
+			try {
+				t.join();
+			} catch (InterruptedException e1) {}
 		logger().info(name() + " finished.");
 		for (AutoCloseable dep : dependencies)
 			try {
