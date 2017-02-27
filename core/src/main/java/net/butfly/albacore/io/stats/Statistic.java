@@ -3,6 +3,7 @@ package net.butfly.albacore.io.stats;
 import java.io.Serializable;
 import java.text.MessageFormat;
 import java.util.Date;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -58,8 +59,10 @@ class Statistic implements Serializable {
 	}
 
 	<T> T stats(T v) {
-		Long l = sizing == null || v == null ? 0L : sizing.apply(v);
-		stats(null == l ? 0 : l.longValue());
+		ForkJoinPool.commonPool().submit(() -> {
+			Long l = sizing == null || v == null ? 0L : sizing.apply(v);
+			stats(null == l ? 0 : l.longValue());
+		});
 		return v;
 	}
 

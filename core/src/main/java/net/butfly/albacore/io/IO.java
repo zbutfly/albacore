@@ -23,6 +23,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import net.butfly.albacore.base.Sizable;
 import net.butfly.albacore.utils.Configs;
 import net.butfly.albacore.utils.Exceptions;
+import net.butfly.albacore.utils.Systems;
 import net.butfly.albacore.utils.logger.Loggable;
 import net.butfly.albacore.utils.logger.Logger;
 
@@ -48,7 +49,11 @@ public interface IO extends Sizable, Openable {
 			}
 		}
 
-		final private static StreamExecutor io = new StreamExecutor(EXECUTOR_NAME, calcParallelism(), false);
+		final private static StreamExecutor io;
+		static {
+			io = new StreamExecutor(EXECUTOR_NAME, calcParallelism(), false);
+			Systems.handleSignal(sig -> io.close(), "TERM", "INT");
+		}
 
 		private static class ConcatSpliterator<V> implements Spliterator<V> {
 			private final Iterator<Spliterator<V>> it;
@@ -245,6 +250,7 @@ public interface IO extends Sizable, Openable {
 	default <R, V> R eachs(Iterable<V> src, Function<V, R> doing, BinaryOperator<R> accumulator) {
 		List<ListenableFuture<R>> fs = new ArrayList<>();
 		src.forEach(v -> fs.add(IO.listen(() -> doing.apply(v))));
+		if (fs.isEmpty()) return null;
 		List<R> rs = new ArrayList<>();
 		R r;
 		for (ListenableFuture<R> f : fs)

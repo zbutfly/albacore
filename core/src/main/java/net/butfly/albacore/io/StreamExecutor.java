@@ -180,7 +180,7 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 	}
 
 	@Override
-	public void close() throws Exception {
+	public void close() {
 		Concurrents.shutdown(executor);
 	}
 
