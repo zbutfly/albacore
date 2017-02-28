@@ -15,7 +15,7 @@ public class SplitTest {
 		// return i + 1;
 		// }).spliterator();
 		AtomicInteger si = new AtomicInteger();
-		IO.split(s, 1024, sp -> System.out.println("split#" + si.getAndIncrement() + ": " + sp.estimateSize()));
+		Its.splitRun(s, 1024, sp -> System.out.println("split#" + si.getAndIncrement() + ": " + sp.estimateSize()));
 		System.out.println("ready advancing..........................");
 		System.out.println("s1: " + s.estimateSize());
 	}

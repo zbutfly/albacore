@@ -40,15 +40,13 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 	private final static Map<String, ThreadGroup> g = new ConcurrentHashMap<>();
 
 	public StreamExecutor(String name, int parallelism, boolean throwException) {
-		if (parallelism < 1) {
-			executor = Executors.newCachedThreadPool(r -> new Thread(g.computeIfAbsent(name, n -> new ThreadGroup(name + "-ThreadGroup")),
-					r, name + "@" + Texts.formatDate(new Date())));
-			((ThreadPoolExecutor) executor).setRejectedExecutionHandler((r, ex) -> logger.error(tracePool(
-					"Task rejected by the executor")));
-		} else executor = Concurrents.executorForkJoin(parallelism, name, (t, e) -> {
-			logger.error("Migrater pool task failure @" + t.getName(), e);
-			if (throwException) throw wrap(unwrap(e));
-		});
+		executor = parallelism < 1 ? Executors.newCachedThreadPool(r -> new Thread(g.computeIfAbsent(name, n -> new ThreadGroup(name
+				+ "-ThreadGroup")), r, name + "@" + Texts.formatDate(new Date())))
+				: Concurrents.executorForkJoin(parallelism, name, (t, e) -> {
+					logger.error("Migrater pool task failure @" + t.getName(), e);
+					if (throwException) throw wrap(unwrap(e));
+				});
+		((ThreadPoolExecutor) executor).setRejectedExecutionHandler((r, ex) -> logger.error(tracePool("Task rejected by the executor")));
 		lex = MoreExecutors.listeningDecorator(executor);
 	}
 
@@ -149,7 +147,7 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 
 	@Override
 	public void close() {
-//		Concurrents.shutdown(executor);
+		// Concurrents.shutdown(executor);
 	}
 
 	public int parallelism() {
