@@ -49,21 +49,21 @@ public final class JNDIUtils extends Utils {
 
 		Context env = JNDIUtils.confirmName(new InitialContext(), parent);
 
-		for (Element res : (List<Element>) doc.getRootElement().selectNodes("ResPool")) {
+		for (Element res : (List<Element>) doc.getRootElement().selectNodes("Resource")) {
 			String name = res.attributeValue("name");
-			if (name == null) logger.error("ResPool name not defined");
+			if (name == null) logger.error("Resource name not defined");
 			else try {
 				JNDIUtils.confirmName(env, name);
 				env.bind(name, JNDIUtils.parseResource(env, res));
 				logger.trace("JNDI [" + name + "] in [" + env.getNameInNamespace() + "] binded.");
 			} catch (Exception e) {
-				logger.error("ResPool parsing failure", e);
+				logger.error("Resource parsing failure", e);
 			}
 		}
 	}
 
 	private static Object parseResource(Context ctx, Element resource) throws Exception {
-		if (logger.isTraceEnabled()) logger.trace("JNDI ResPool parsing: " + XMLUtils.format(resource));
+		if (logger.isTraceEnabled()) logger.trace("JNDI Resource parsing: " + XMLUtils.format(resource));
 
 		String fact = resource.attributeValue("factory");
 		String type = resource.attributeValue("type");
