@@ -4,7 +4,6 @@ import static net.butfly.albacore.utils.Exceptions.unwrap;
 import static net.butfly.albacore.utils.Exceptions.wrap;
 
 import java.text.MessageFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -35,7 +34,7 @@ import net.butfly.albacore.utils.logger.Logger;
 import net.butfly.albacore.utils.parallel.Concurrents;
 
 public final class StreamExecutor extends Namedly implements AutoCloseable {
-	private static final Logger logger = Logger.getLogger(StreamExecutor.class);
+	static final Logger logger = Logger.getLogger(StreamExecutor.class);
 	final ExecutorService executor;
 	final ListeningExecutorService lex;
 	private final static Map<String, ThreadGroup> g = new ConcurrentHashMap<>();
@@ -54,60 +53,45 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 	}
 
 	public void run(Runnable... tasks) {
-		List<Future<?>> l = new ArrayList<>();
-		for (Runnable r : tasks)
-			l.add(executor.submit(r));
-		for (Future<?> f : l)
-			try {
-				f.get();
-			} catch (InterruptedException e) {} catch (ExecutionException e) {
-				logger.error("Subtask error", wrap(unwrap(e)));
-			}
+		get(listenRun(tasks));
 	}
 
 	public void run(Runnable task) {
-		for (int i = 1;; i++)
-			try {
-				executor.submit(task).get();
-				return;
-			} catch (RejectedExecutionException e) {
-				logger.warn(tracePool("Rejected #" + i), e);
-				Concurrents.waitSleep();
-			} catch (InterruptedException e) {
-				throw new RuntimeException("Streaming inturrupted", e);
-			} catch (ExecutionException e) {
-				logger.error("Subtask error", wrap(unwrap(e)));
-				throw wrap(unwrap(e));
-			}
+		get(listenRun(task));
 	}
 
 	public <T> T run(Callable<T> task) {
-		for (int i = 1;; i++)
-			try {
-				return executor.submit(task).get();
-			} catch (RejectedExecutionException e) {
-				logger.warn(tracePool("Rejected #" + i), e);
-				Concurrents.waitSleep();
-			} catch (InterruptedException e) {
-				throw new RuntimeException("Streaming inturrupted", e);
-			} catch (Exception e) {
-				logger.error("Subtask error", wrap(unwrap(e)));
-				throw wrap(unwrap(e));
-			}
+		return get(listen(task));
 	}
 
-	public <T> List<T> run(@SuppressWarnings("unchecked") Callable<T>... tasks) {
-		for (int i = 1;; i++)
-			try {
-				return listen(Arrays.asList(tasks)).get();
-			} catch (RejectedExecutionException e) {
-				logger.warn(tracePool("Rejected #" + i), e);
-				Concurrents.waitSleep();
-			} catch (InterruptedException e) {
-				throw new RuntimeException("Streaming inturrupted", e);
-			} catch (Exception e) {
-				throw wrap(unwrap(e));
-			}
+	public <T> List<T> run(List<Callable<T>> tasks) {
+		return get(listen(tasks));
+	}
+
+	public <T> ListenableFuture<List<T>> listen(List<? extends Callable<T>> tasks) {
+		return Futures.successfulAsList(list(tasks, this::listen));
+	}
+
+	public <T> ListenableFuture<T> listen(Callable<T> task) {
+		try {
+			return lex.submit(task);
+		} catch (RejectedExecutionException e) {
+			logger.error("Rejected");
+			throw e;
+		}
+	}
+
+	public ListenableFuture<List<Object>> listenRun(Runnable... tasks) {
+		return Futures.successfulAsList(list(Arrays.asList(tasks), this::listenRun));
+	}
+
+	public ListenableFuture<?> listenRun(Runnable task) {
+		try {
+			return lex.submit(task);
+		} catch (RejectedExecutionException e) {
+			logger.error("Rejected");
+			throw e;
+		}
 	}
 
 	public <V, A, R> R collect(Iterable<V> col, Function<V, A> mapper, Collector<? super A, ?, R> collector) {
@@ -131,11 +115,11 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 	}
 
 	public <V, R> R collect(Stream<? extends V> stream, Collector<? super V, ?, R> collector) {
-		return run(() -> Streams.of(stream).collect(collector));
+		return Streams.of(stream).collect(collector);
 	}
 
 	public <V> List<V> list(Stream<? extends V> stream) {
-		return collect(stream, Collectors.toList());
+		return collect(Streams.of(stream), Collectors.toList());
 	}
 
 	public <V, R> List<R> list(Iterable<V> col, Function<V, R> mapper) {
@@ -143,27 +127,11 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 	}
 
 	public <V> void each(Iterable<V> col, Consumer<? super V> consumer) {
-		run(() -> Streams.of(col).forEach(consumer));
+		each(Streams.of(col), consumer);
 	}
 
-	public <V> void each(Stream<V> of, Consumer<? super V> consumer) {
-		run(() -> Streams.of(of).forEach(consumer));
-	}
-
-	public <T> ListenableFuture<List<T>> listen(List<? extends Callable<T>> list) {
-		return Futures.successfulAsList(list(list, c -> lex.submit(c)));
-	}
-
-	public <T> ListenableFuture<T> listen(Callable<T> task) {
-		return lex.submit(task);
-	}
-
-	public ListenableFuture<List<Object>> listenRun(List<? extends Runnable> list) {
-		return Futures.successfulAsList(list(list, c -> lex.submit(c)));
-	}
-
-	public ListenableFuture<?> listenRun(Runnable task) {
-		return lex.submit(task);
+	private <V> void each(Stream<V> s, Consumer<? super V> consumer) {
+		get(Futures.successfulAsList(list(Streams.of(s).map(v -> listenRun(() -> consumer.accept(v))))));
 	}
 
 	public String tracePool(String prefix) {
@@ -181,11 +149,19 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 
 	@Override
 	public void close() {
-		Concurrents.shutdown(executor);
+//		Concurrents.shutdown(executor);
 	}
 
 	public int parallelism() {
 		return executor instanceof ForkJoinPool ? ((ForkJoinPool) executor).getParallelism() : 0;
 	}
 
+	private <T> T get(Future<T> f) {
+		try {
+			return f.get();
+		} catch (InterruptedException e) {} catch (ExecutionException e) {
+			logger.error("Subtask error", unwrap(e));
+		}
+		return null;
+	}
 }

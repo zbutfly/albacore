@@ -22,7 +22,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import net.butfly.albacore.base.Sizable;
 import net.butfly.albacore.utils.Configs;
-import net.butfly.albacore.utils.Exceptions;
+import static net.butfly.albacore.utils.Exceptions.*;
 import net.butfly.albacore.utils.Systems;
 import net.butfly.albacore.utils.logger.Loggable;
 import net.butfly.albacore.utils.logger.Logger;
@@ -111,37 +111,21 @@ public interface IO extends Sizable, Openable {
 		}
 	}
 
-	static <V, A, R> R collect(Iterable<V> col, Function<V, A> mapper, Collector<? super A, ?, R> collector) {
-		return Context.io.collect(col, mapper, collector);
+	// parallel
+	static <T> T run(Callable<T> task) {
+		return Context.io.run(task);
 	}
 
-	@Deprecated
-	static <V, A, R> R mapping(Iterable<V> col, Function<Stream<V>, Stream<A>> mapping, Collector<? super A, ?, R> collector) {
-		return Context.io.mapping(col, mapping, collector);
+	static void run(Runnable task) {
+		Context.io.run(task);
 	}
 
-	static <V, R> R collect(Iterable<? extends V> col, Collector<V, ?, R> collector) {
-		return Context.io.collect(col, collector);
+	static void run(Runnable... tasks) {
+		Context.io.run(tasks);
 	}
 
-	static <V, R> R collect(Stream<? extends V> stream, Collector<V, ?, R> collector) {
-		return Context.io.collect(stream, collector);
-	}
-
-	static <V> List<V> list(Stream<V> stream) {
-		return Context.io.list(stream);
-	}
-
-	static <V, R> List<R> list(Iterable<V> col, Function<V, R> mapper) {
-		return Context.io.list(col, mapper);
-	}
-
-	static <V> void each(Iterable<V> col, Consumer<? super V> consumer) {
-		Context.io.each(col, consumer);
-	}
-
-	static String tracePool(String prefix) {
-		return Context.io.tracePool(prefix);
+	static <T> List<T> run(List<Callable<T>> tasks) {
+		return Context.io.run(tasks);
 	}
 
 	static <T> ListenableFuture<List<T>> listen(List<Callable<T>> tasks) {
@@ -152,7 +136,7 @@ public interface IO extends Sizable, Openable {
 		return Context.io.listen(task);
 	}
 
-	static ListenableFuture<List<Object>> listenRun(List<? extends Runnable> tasks) {
+	static ListenableFuture<List<Object>> listenRun(Runnable... tasks) {
 		return Context.io.listenRun(tasks);
 	}
 
@@ -160,51 +144,7 @@ public interface IO extends Sizable, Openable {
 		return Context.io.listenRun(task);
 	}
 
-	static int parallelism() {
-		return Context.io.parallelism();
-	}
-
-	static <T> T run(Callable<T> task) {
-		return Context.io.run(task);
-	}
-
-	@SafeVarargs
-	static <T> List<T> run(Callable<T>... tasks) {
-		return Context.io.run(tasks);
-	}
-
-	@SafeVarargs
-	static void run(Runnable... tasks) {
-		Context.io.run(tasks);
-	}
-
-	static <T, T1, K, V> Map<K, V> map(Stream<T> col, Function<T, T1> mapper, Function<T1, K> keying, Function<T1, V> valuing) {
-		return Context.io.map(col, mapper, keying, valuing);
-	}
-
-	static <T, K, V> Map<K, V> map(Stream<T> col, Function<T, K> keying, Function<T, V> valuing) {
-		return Context.io.map(col, keying, valuing);
-	}
-
-	static long sum(Iterable<? extends Future<? extends Number>> futures, Logger errorLogger) {
-		long count = 0;
-		for (Future<? extends Number> f : futures) {
-			Number n;
-			try {
-				n = f.get();
-			} catch (InterruptedException e) {
-				errorLogger.error("Batch interrupted");
-				continue;
-			} catch (ExecutionException e) {
-				errorLogger.error("Batch fail", Exceptions.unwrap(e));
-				continue;
-			}
-			if (null != n) count += n.longValue();
-		}
-		return count;
-
-	}
-
+	// ex parallel
 	public static <V> void split(Spliterator<V> origin, long max, Consumer<Spliterator<V>> using) {
 		List<Future<?>> fs = new ArrayList<>();
 		while (origin.estimateSize() > max) {
@@ -216,7 +156,7 @@ public interface IO extends Sizable, Openable {
 			try {
 				f.get();
 			} catch (InterruptedException e) {} catch (ExecutionException e) {
-				// logger().error("split exec error", e);
+				StreamExecutor.logger.error("Subtask error", unwrap(e));
 			}
 		}
 	}
@@ -258,7 +198,7 @@ public interface IO extends Sizable, Openable {
 				r = f.get();
 				if (null != r) rs.add(r);
 			} catch (InterruptedException e) {} catch (ExecutionException e) {
-				logger().error("Subtask error", e);
+				logger().error("Subtask error", unwrap(e));
 			}
 		return rs.parallelStream().collect(Collectors.reducing(null, accumulator));
 	}
@@ -278,7 +218,73 @@ public interface IO extends Sizable, Openable {
 			try {
 				f.get();
 			} catch (InterruptedException e) {} catch (ExecutionException e) {
-				logger().error("Subtask error", e);
+				logger().error("Subtask error", unwrap(e));
 			}
+	}
+
+	// mapping
+	static <V, A, R> R collect(Iterable<V> col, Function<V, A> mapper, Collector<? super A, ?, R> collector) {
+		return Context.io.collect(col, mapper, collector);
+	}
+
+	@Deprecated
+	static <V, A, R> R mapping(Iterable<V> col, Function<Stream<V>, Stream<A>> mapping, Collector<? super A, ?, R> collector) {
+		return Context.io.mapping(col, mapping, collector);
+	}
+
+	static <V, R> R collect(Iterable<? extends V> col, Collector<V, ?, R> collector) {
+		return Context.io.collect(col, collector);
+	}
+
+	static <V, R> R collect(Stream<? extends V> stream, Collector<V, ?, R> collector) {
+		return Context.io.collect(stream, collector);
+	}
+
+	static <V> List<V> list(Stream<V> stream) {
+		return Context.io.list(stream);
+	}
+
+	static <V, R> List<R> list(Iterable<V> col, Function<V, R> mapper) {
+		return Context.io.list(col, mapper);
+	}
+
+	static <V> void each(Iterable<V> col, Consumer<? super V> consumer) {
+		Context.io.each(col, consumer);
+	}
+
+	static <T, T1, K, V> Map<K, V> map(Stream<T> col, Function<T, T1> mapper, Function<T1, K> keying, Function<T1, V> valuing) {
+		return Context.io.map(col, mapper, keying, valuing);
+	}
+
+	static <T, K, V> Map<K, V> map(Stream<T> col, Function<T, K> keying, Function<T, V> valuing) {
+		return Context.io.map(col, keying, valuing);
+	}
+
+	static long sum(Iterable<? extends Future<? extends Number>> futures, Logger errorLogger) {
+		long count = 0;
+		for (Future<? extends Number> f : futures) {
+			Number n;
+			try {
+				n = f.get();
+			} catch (InterruptedException e) {
+				errorLogger.error("Batch interrupted");
+				continue;
+			} catch (ExecutionException e) {
+				errorLogger.error("Batch fail", unwrap(e));
+				continue;
+			}
+			if (null != n) count += n.longValue();
+		}
+		return count;
+
+	}
+
+	// status
+	static int parallelism() {
+		return Context.io.parallelism();
+	}
+
+	static String tracePool(String prefix) {
+		return Context.io.tracePool(prefix);
 	}
 }
