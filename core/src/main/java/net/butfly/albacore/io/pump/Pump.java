@@ -20,9 +20,10 @@ public interface Pump<V> extends Statistical<Pump<V>>, Openable {
 			// handle kill -15, CTRL-C, kill -9
 			Systems.handleSignal(sig -> {
 				close();
-				System.err.println("Maybe you need to kill me manually: kill -9 " + Systems.pid());
-				System.err.println("Running threads: \n\t" + Systems.threadsRunning().map(t -> t.getId() + "[" + t.getName() + "]").collect(
-						Collectors.joining("\n\t")));
+				System.err.println("Maybe you need to kill me manually: kill -9 " + Systems.pid() + ", \n\t " + Systems.threadsRunning()
+						.count() + " threads remain: ");
+				System.err.println("\t" + Systems.threadsRunning().map(t -> t.getId() + "[" + t.getName() + "]").collect(Collectors.joining(
+						"\n\t")));
 			}, "TERM", "INT");
 			/* , "KILL" */
 			// kill -9 catched by system/os

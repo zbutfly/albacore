@@ -17,6 +17,7 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collector;
@@ -46,7 +47,8 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 					logger.error("Migrater pool task failure @" + t.getName(), e);
 					if (throwException) throw wrap(unwrap(e));
 				});
-		((ThreadPoolExecutor) executor).setRejectedExecutionHandler((r, ex) -> logger.error(tracePool("Task rejected by the executor")));
+		if (executor instanceof ThreadPoolExecutor) ((ThreadPoolExecutor) executor).setRejectedExecutionHandler((r, ex) -> logger.error(
+				tracePool("Task rejected by the executor")));
 		lex = MoreExecutors.listeningDecorator(executor);
 	}
 
@@ -112,8 +114,12 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 		return collect(Streams.of(col), collector);
 	}
 
-	public <V, R> R collect(Stream<? extends V> stream, Collector<? super V, ?, R> collector) {
-		return Streams.of(stream).collect(collector);
+	public <V, R> R collect(Stream<? extends V> s, Collector<? super V, ?, R> collector) {
+		if (!logger.isTraceEnabled()) return Streams.of(s).collect(collector);
+		AtomicLong c = new AtomicLong();
+		R r = Streams.of(s).peek(e -> c.incrementAndGet()).collect(collector);
+		logger.debug("One stream collected [" + c.get() + "] elements, performance issue?");
+		return r;
 	}
 
 	public <V> List<V> list(Stream<? extends V> stream) {
