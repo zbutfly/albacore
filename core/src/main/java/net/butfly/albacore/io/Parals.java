@@ -29,4 +29,11 @@ public final class Parals extends Utils {
 		}
 	}
 
+	public static int calcParallelism(long total, long batch) {
+		return total == 0 ? 0 : (int) (((total - 1) / batch) + 1);
+	}
+
+	public static long calcBatchSize(long total, int parallelism) {
+		return total == 0 ? 0 : (((total - 1) / parallelism) + 1);
+	}
 }

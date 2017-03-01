@@ -43,11 +43,11 @@ public final class Its extends Utils {
 		};
 	}
 
-	public static <V> Iterator<V> it(Supplier<V> get, Supplier<Boolean> end) {
+	public static <V> Iterator<V> it(Supplier<V> get, Supplier<Boolean> ending) {
 		return new Iterator<V>() {
 			@Override
 			public boolean hasNext() {
-				return !end.get();
+				return !ending.get();
 			}
 
 			@Override
@@ -131,11 +131,11 @@ public final class Its extends Utils {
 		}
 	}
 
-	public static <V, R> Spliterator<R> split(Spliterator<V> origin, long max, Function<Spliterator<V>, Spliterator<R>> using) {
+	public static <V, R> Spliterator<R> splitMap(Spliterator<V> origin, long maxSize, Function<Spliterator<V>, Spliterator<R>> using) {
 		List<Future<Spliterator<R>>> fs = new ArrayList<>();
-		while (origin.estimateSize() > max) {
+		while (origin.estimateSize() > maxSize) {
 			Spliterator<V> split = origin.trySplit();
-			if (null != split) fs.add(IO.listen(() -> split(split, max, using)));
+			if (null != split) fs.add(IO.listen(() -> splitMap(split, maxSize, using)));
 		}
 		Spliterator<R> v = origin.estimateSize() > 0 ? using.apply(origin) : null;
 		List<Spliterator<R>> rs = IO.list(fs, f -> {

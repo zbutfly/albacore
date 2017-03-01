@@ -6,9 +6,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Spliterator;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BinaryOperator;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -18,7 +16,7 @@ import java.util.stream.StreamSupport;
 import net.butfly.albacore.utils.Configs;
 import net.butfly.albacore.utils.Utils;
 import net.butfly.albacore.utils.collection.Maps;
-import net.butfly.albacore.utils.parallel.ResPool;
+import net.butfly.albacore.utils.parallel.Suppliterator;
 
 public final class Streams extends Utils {
 	public static final Predicate<Object> NOT_NULL = t -> null != t;
@@ -46,57 +44,7 @@ public final class Streams extends Utils {
 	}
 
 	public static <V> Stream<V> of(Supplier<V> get, long size, Supplier<Boolean> ending) {
-		return Streams.of(new Spliterator<V>() {
-			private final int characteristics = Spliterator.CONCURRENT | Spliterator.IMMUTABLE | Spliterator.ORDERED | Spliterator.SIZED
-					| Spliterator.SUBSIZED;
-			private final ResPool<ReentrantReadWriteLock>.Res lock = ResPool.LOCKERS_FAIR.aquire();
-			private long est = size;
-
-			@Override
-			public synchronized boolean tryAdvance(Consumer<? super V> action) {
-				lock.res.writeLock().lock();
-				try {
-					boolean next = !ending.get();
-					if (!next) est = 0;
-					else est--;
-					next = next && est > 0;
-					if (next) {
-						V v = get.get();
-						next = v != null;
-						if (next) action.accept(v);
-					}
-					return next;
-				} finally {
-					lock.res.writeLock().unlock();
-				}
-			}
-
-			@Override
-			protected void finalize() throws Throwable {
-				lock.close();
-				super.finalize();
-			}
-
-			@Override
-			public Spliterator<V> trySplit() {
-				return null;
-			}
-
-			@Override
-			public long estimateSize() {
-				lock.res.readLock().lock();
-				try {
-					return est;
-				} finally {
-					lock.res.readLock().unlock();
-				}
-			}
-
-			@Override
-			public int characteristics() {
-				return characteristics;
-			}
-		});
+		return Streams.of(new Suppliterator<>(get, size, ending));
 	}
 
 	private static final boolean DEFAULT_PARALLEL_ENABLE = Boolean.parseBoolean(Configs.MAIN_CONF.getOrDefault(
@@ -137,13 +85,4 @@ public final class Streams extends Utils {
 	public static <V> Stream<V> of(V... values) {
 		return of(Stream.of(values));
 	}
-
-	public static int calcParallelism(long total, long batch) {
-		return total == 0 ? 0 : (int) (((total - 1) / batch) + 1);
-	}
-
-	public static long calcBatchSize(long total, int parallelism) {
-		return total == 0 ? 0 : (((total - 1) / parallelism) + 1);
-	}
-
 }

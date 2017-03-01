@@ -2,6 +2,7 @@ package net.butfly.albacore.utils.parallel;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
 
@@ -32,8 +33,9 @@ public class ResPool<R> {
 		return new Res();
 	}
 
-	public static final ResPool<ReentrantReadWriteLock> LOCKERS = new ResPool<>(Integer.parseInt(System.getProperty(
+	public static final ResPool<ReentrantReadWriteLock> RW_LOCKERS = new ResPool<>(Integer.parseInt(System.getProperty(
 			"albacore.parallel.pool.number.locker", "100")), () -> new ReentrantReadWriteLock());
 	public static final ResPool<ReentrantReadWriteLock> LOCKERS_FAIR = new ResPool<>(Integer.parseInt(System.getProperty(
 			"albacore.parallel.pool.number.locker.fair", "100")), () -> new ReentrantReadWriteLock(true));
+	public static final ResPool<ReentrantLock> FAIR_LOCKERS = new ResPool<>(100, () -> new ReentrantLock(true));
 }
