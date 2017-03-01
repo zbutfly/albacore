@@ -7,8 +7,6 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
-import com.google.common.base.Joiner;
-
 import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.lambda.Supplier;
 import net.butfly.albacore.utils.Reflections;
@@ -68,20 +66,22 @@ class Statistic implements Serializable {
 		return v;
 	}
 
-	void trace(String... prefixes) {
+	void trace() {
 		long now = new Date().getTime();
 		Statistic.Result step, total;
 		step = new Statistic.Result(packsInStep.getAndSet(0), bytesInStep.getAndSet(0), now - statsed.getAndSet(now));
 		total = new Statistic.Result(packsInTotal.get(), bytesInTotal.get(), new Date().getTime() - begin);
-		logger.info(() -> {
+		logger.debug(() -> {
 			String ss = null == detailing ? "" : detailing.get();
 			ss = null == ss ? "" : ", [" + ss + "]";
-			String info = MessageFormat.format("Statistic: [Step: {0}/objs,{1},{2}], [Total: {3}/objs,{4},{5}]{6}.", step.packs, Texts
-					.formatKilo(step.bytes, "B"), Texts.formatMillis(step.millis), total.packs, Texts.formatKilo(total.bytes, "B"), Texts
-							.formatMillis(total.millis), ss);
-			if (null != prefixes && prefixes.length > 0) info = Joiner.on(",").join(prefixes) + ", " + info;
-			return info;
+			return MessageFormat.format("Statistic: [Step: {0}/objs,{1},{2}], [Total: {3}/objs,{4},{5}]{6}.", step.packs, Texts.formatKilo(
+					step.bytes, "B"), Texts.formatMillis(step.millis), total.packs, Texts.formatKilo(total.bytes, "B"), Texts.formatMillis(
+							total.millis), ss);
 		});
+	}
+
+	void trace(String info) {
+		logger.info(info);
 	}
 
 	static class Result {
