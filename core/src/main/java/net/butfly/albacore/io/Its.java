@@ -19,30 +19,6 @@ import java.util.function.Supplier;
 import net.butfly.albacore.utils.Utils;
 
 public final class Its extends Utils {
-	public static <V> Spliterator<V> wrap(Spliterator<V> it) {
-		return new Spliterator<V>() {
-			@Override
-			public boolean tryAdvance(Consumer<? super V> action) {
-				return it.tryAdvance(action);
-			}
-
-			@Override
-			public Spliterator<V> trySplit() {
-				return it.trySplit();
-			}
-
-			@Override
-			public long estimateSize() {
-				return it.estimateSize();
-			}
-
-			@Override
-			public int characteristics() {
-				return it.characteristics();
-			}
-		};
-	}
-
 	public static <V> Iterator<V> it(Supplier<V> get, Supplier<Boolean> ending) {
 		return new Iterator<V>() {
 			@Override
@@ -53,6 +29,22 @@ public final class Its extends Utils {
 			@Override
 			public V next() {
 				return get.get();
+			}
+		};
+	}
+
+	public static <V> Iterator<V> it(Spliterator<V> t) {
+		return new Iterator<V>() {
+			@Override
+			public boolean hasNext() {
+				return t.estimateSize() > 0;
+			}
+
+			@Override
+			public V next() {
+				AtomicReference<V> ref = new AtomicReference<>();
+				if (!t.tryAdvance(v -> ref.set(v))) return null;
+				return ref.get();
 			}
 		};
 	}
@@ -81,23 +73,6 @@ public final class Its extends Utils {
 		};
 	}
 
-	public static <V> Iterator<V> it(Spliterator<V> t) {
-		// return Spliterators.iterator(t);
-		return new Iterator<V>() {
-			@Override
-			public boolean hasNext() {
-				return t.estimateSize() > 0;
-			}
-
-			@Override
-			public V next() {
-				AtomicReference<V> ref = new AtomicReference<>();
-				if (!t.tryAdvance(v -> ref.set(v))) return null;
-				return ref.get();
-			}
-		};
-	}
-
 	public static <V> Iterator<V> loop(Iterable<V> itbl) {
 		return new Iterator<V>() {
 			Iterator<V> it = itbl.iterator();
@@ -111,6 +86,30 @@ public final class Its extends Utils {
 			public V next() {
 				if (!it.hasNext()) it = itbl.iterator();
 				return it.next();
+			}
+		};
+	}
+
+	public static <V> Spliterator<V> wrap(Spliterator<V> it) {
+		return new Spliterator<V>() {
+			@Override
+			public boolean tryAdvance(Consumer<? super V> action) {
+				return it.tryAdvance(action);
+			}
+
+			@Override
+			public Spliterator<V> trySplit() {
+				return it.trySplit();
+			}
+
+			@Override
+			public long estimateSize() {
+				return it.estimateSize();
+			}
+
+			@Override
+			public int characteristics() {
+				return it.characteristics();
 			}
 		};
 	}

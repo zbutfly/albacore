@@ -1,5 +1,6 @@
 package net.butfly.albacore.utils.parallel;
 
+import java.util.Iterator;
 import java.util.Spliterator;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
@@ -11,6 +12,14 @@ public class Suppliterator<V> implements Spliterator<V> {
 	private final Supplier<V> get;
 	private final Supplier<Boolean> ending;
 	private long est;
+
+	public Suppliterator(Iterator<V> it) {
+		this(() -> it.next(), Long.MAX_VALUE, () -> !it.hasNext());
+	}
+
+	public Suppliterator(Iterator<V> it, long size) {
+		this(() -> it.next(), size, () -> !it.hasNext());
+	}
 
 	public Suppliterator(Supplier<V> get, Supplier<Boolean> ending) {
 		this(get, Long.MAX_VALUE, ending);
@@ -34,7 +43,7 @@ public class Suppliterator<V> implements Spliterator<V> {
 			boolean next = !ending.get();
 			if (!next) est = 0;
 			else if (!infinite()) est--;
-			next = next && est > 0;
+			next = next && est >= 0;
 			if (next) {
 				V v = get.get();
 				next = v != null;
