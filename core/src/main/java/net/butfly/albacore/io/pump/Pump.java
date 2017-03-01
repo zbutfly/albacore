@@ -43,5 +43,4 @@ public interface Pump<V> extends Statistical<Pump<V>>, Openable {
 	public static <V> Pump<V> pump(Input<V> input, int parallelism, List<? extends Output<V>> dests) {
 		return new BasicPump<>(input, parallelism, new FanOutput<V>(dests));
 	}
-
 }

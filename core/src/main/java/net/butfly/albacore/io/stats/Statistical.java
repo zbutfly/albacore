@@ -44,6 +44,11 @@ public interface Statistical<T extends Statistical<T>> {
 		if (null != s) s.stats(v);
 	}
 
+	default void traceForce(String curr) {
+		Statistic s = Instances.fetch(() -> null, Statistic.class, this);
+		if (null != s) s.trace(curr);
+	}
+
 	default <V> void stats(Iterable<V> vv) {
 		Statistic s = Instances.fetch(() -> null, Statistic.class, this);
 		if (null != s) Streams.of(vv).forEach(v -> s.stats(v));
