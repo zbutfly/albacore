@@ -20,7 +20,11 @@ public class Logger implements Serializable {
 		if (async) {
 			tn = new AtomicInteger();
 			g = new ThreadGroup("AlbacoreLoggerThread");
-			logex = Executors.newCachedThreadPool(r -> new Thread(g, r, "AlbacoreLoggerThread#" + tn.getAndIncrement()));
+			logex = Executors.newCachedThreadPool(r -> {
+				Thread t = new Thread(g, r, "AlbacoreLoggerThread#" + tn.getAndIncrement());
+				t.setDaemon(true);
+				return t;
+			});
 		} else {
 			tn = null;
 			g = null;
