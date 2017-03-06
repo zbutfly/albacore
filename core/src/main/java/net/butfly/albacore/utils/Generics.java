@@ -7,9 +7,10 @@ import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import com.google.common.reflect.TypeToken;
 
@@ -32,20 +33,19 @@ public final class Generics extends OldGeneric {
 	}
 
 	public static Map<String, Class<?>> resolveGenericParameters(final Type implType, final Class<?> declareClass) {
-		return Instances.fetch(() -> {
-			Map<String, Class<?>> types = new HashMap<>();
+		ConcurrentMap<String, Class<?>> map = Instances.fetch(() -> {
+			ConcurrentMap<String, Class<?>> types = new ConcurrentHashMap<>();
 			TypeVariable<?>[] vv = declareClass.getTypeParameters();
-			for (TypeVariable<?> v : vv) {
+			for (TypeVariable<?> v : vv)
 				types.put(v.getName(), (Class<?>) TypeToken.of(implType).resolveType(v).getRawType());
-			} 
 			return types;
-		}, Map.class, implType, declareClass);
+		}, ConcurrentMap.class, implType, declareClass);
+		return map;
 	}
 
 	public static <E> Class<E> resolveGenericParameter(final Type implType, final Class<?> declareClass, final String genericParamName) {
 		return (Class<E>) resolveGenericParameters(implType, declareClass).get(genericParamName);
 	}
-
 
 	public static <E> E[] toArray(Collection<E> list) {
 		if (null == list) throw new IllegalArgumentException("Could not determine class of element for null list argument.");
