@@ -28,6 +28,7 @@ public final class Streams extends Utils {
 	};
 
 	public static <V> Map<Integer, Spliterator<V>> spatial(Spliterator<V> it, int parallelism) {
+		if (parallelism <= 1) return Maps.of(0, it);
 		Map<Integer, Spliterator<V>> b = new ConcurrentHashMap<>();
 		for (int i = 0; i < parallelism; i++)
 			b.put(i, Its.wrap(it));
@@ -35,12 +36,12 @@ public final class Streams extends Utils {
 	}
 
 	public static <V> Map<Integer, Spliterator<V>> spatial(Stream<V> s, int parallelism) {
-		return parallelism == 1 ? Maps.of(0, s.spliterator()) : spatial(s.spliterator(), parallelism);
+		return spatial(s.spliterator(), parallelism);
 	}
 
 	public static <V, V1> Stream<Stream<V1>> spatialMap(Stream<V> s, int parallelism, Function<Spliterator<V>, Spliterator<V1>> convs) {
-		return parallelism == 1 ? Stream.of(StreamSupport.stream(convs.apply(s.spliterator()), s.isParallel()))
-				: of(spatial(s, parallelism).values()).map(e -> StreamSupport.stream(convs.apply(e), s.isParallel()));
+		//XXX: bug? on 1, StreamSupport.stream(s.spliterator(), s.isParallel()) not work? 
+		return of(spatial(s, parallelism).values()).map(e -> StreamSupport.stream(convs.apply(e), s.isParallel()));
 	}
 
 	public static <V> Stream<V> of(Supplier<V> get, long size, Supplier<Boolean> ending) {

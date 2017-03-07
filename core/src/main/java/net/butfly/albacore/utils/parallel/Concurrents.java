@@ -94,6 +94,7 @@ public final class Concurrents extends Utils {
 	}
 
 	public static boolean waitSleep(long millis, Logger logger, CharSequence cause) {
+		if (millis < 0) return true;
 		try {
 			if (null != logger && logger.isTraceEnabled()) logger.trace("Thread [" + Thread.currentThread().getName() + "] sleep for ["
 					+ millis + "ms], cause [" + cause + "].");
