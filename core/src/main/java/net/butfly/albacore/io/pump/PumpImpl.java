@@ -8,6 +8,8 @@ import com.google.common.base.Supplier;
 
 import net.butfly.albacore.base.Namedly;
 import net.butfly.albacore.io.IO;
+import net.butfly.albacore.io.Openable;
+import net.butfly.albacore.io.OpenableThread;
 import net.butfly.albacore.lambda.Runnable;
 
 abstract class PumpImpl<V, P extends PumpImpl<V, P>> extends Namedly implements Pump<V> {
@@ -17,10 +19,10 @@ abstract class PumpImpl<V, P extends PumpImpl<V, P>> extends Namedly implements 
 
 	protected final String name;
 	private final int parallelism;
-	private final List<Thread> tasks = new ArrayList<>();
+	private final List<OpenableThread> tasks = new ArrayList<>();
 
 	protected long batchSize = 1000;
-	private final List<AutoCloseable> dependencies;
+	protected final List<AutoCloseable> dependencies;
 
 	protected PumpImpl(String name, int parallelism) {
 		super(name);
@@ -52,7 +54,7 @@ abstract class PumpImpl<V, P extends PumpImpl<V, P>> extends Namedly implements 
 			return !opened() || sourceEmpty.get();
 		});
 		for (int i = 0; i < parallelism; i++)
-			tasks.add(new Thread(rr, name() + "PumpThread#" + i));
+			tasks.add(new OpenableThread(rr, name() + "PumpThread#" + i));
 	}
 
 	@Override
@@ -64,23 +66,42 @@ abstract class PumpImpl<V, P extends PumpImpl<V, P>> extends Namedly implements 
 	@Override
 	public void open() {
 		Pump.super.open();
-		for (Thread t : tasks)
-			t.start();
-		for (Thread t : tasks)
-			try {
-				t.join();
-			} catch (InterruptedException e1) {}
+		for (OpenableThread t : tasks)
+			t.open();
+		try {
+			for (OpenableThread t : tasks)
+				try {
+					t.join();
+				} catch (InterruptedException e) {
+					t.close();
+				}
+		} finally {
+			close();
+		}
 		logger().info(name() + " finished.");
-		for (AutoCloseable dep : dependencies)
-			try {
-				dep.close();
-			} catch (Exception e) {
-				logger().error(dep.getClass().getName() + " close failed");
-			}
 	}
 
 	@Override
 	public void close() {
-		Pump.super.close();
+		Pump.super.close(() -> {
+			for (AutoCloseable dep : dependencies)
+				try {
+					dep.close();
+				} catch (Exception e) {
+					logger().error(dep.getClass().getName() + " close failed");
+				}
+		});
+	}
+
+	protected boolean isAllDependsOpen() {
+		return dependencies.stream().map(c -> {
+			if (c instanceof Openable) return ((Openable) c).opened();
+			else return true;
+		}).reduce((o1, o2) -> o1 && o2).orElse(true);
+	}
+
+	@Override
+	public boolean opened() {
+		return Pump.super.opened() && isAllDependsOpen();
 	}
 }

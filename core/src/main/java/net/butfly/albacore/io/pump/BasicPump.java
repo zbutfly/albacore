@@ -1,5 +1,7 @@
 package net.butfly.albacore.io.pump;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 import net.butfly.albacore.io.Input;
 import net.butfly.albacore.io.Output;
 import net.butfly.albacore.utils.Reflections;
@@ -11,10 +13,11 @@ public class BasicPump<V> extends PumpImpl<V, BasicPump<V>> {
 		depend(input, output);
 		long forceTrace = batchSize / parallelism;
 		pumping(() -> input.empty(), () -> {
-			if (opened() && input.opened() && output.opened()) input.dequeue(s -> {
-				long c = output.enqueue(stats(s));
-				if (c > 0 && c < forceTrace) traceForce("Current process: [" + c + "]");
+			AtomicLong c = new AtomicLong();
+			if (opened()) input.dequeue(s -> {
+				c.set(output.enqueue(stats(s)));
 			}, batchSize);
+			if (c.get() > 0 && c.get() < forceTrace) traceForce("Processing scattered: [" + c + "] to " + output.name());
 		});
 	}
 }
