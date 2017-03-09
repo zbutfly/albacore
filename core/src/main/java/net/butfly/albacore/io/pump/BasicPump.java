@@ -18,11 +18,10 @@ public class BasicPump<V> extends PumpImpl<V, BasicPump<V>> {
 			if (opened()) input.dequeue(s -> {
 				c.set(output.enqueue(stats(s)));
 			}, batchSize);
-			if (c.get() > 0 && c.get() < forceTrace) traceForce("Processing scattered: [" + c + "] to " + output.name());
-			if (c.get() == 0) {
-				logger().debug("No data, waiting....");
-				Concurrents.waitSleep(500);
-			}
+			long cc = c.get();
+			if (cc <= 0) Concurrents.waitSleep();
+			else if (cc < forceTrace) traceForce(name() + " processing: [" + c + " odd for less than " + forceTrace + "] from [" + input
+					.name() + "] to [" + output.name() + "].");
 		});
 	}
 }
