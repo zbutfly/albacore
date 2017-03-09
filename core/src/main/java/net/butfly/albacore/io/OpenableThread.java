@@ -49,9 +49,9 @@ public class OpenableThread extends Thread implements Openable {
 	}
 
 	@Override
-	public void open(Runnable run) {
+	public void open() {
 		setUncaughtExceptionHandler((t, e) -> logger().error(getName() + " failure", e));
-		Openable.super.open(run);
+		Openable.super.open();
 		super.start();
 		while (!started.get())
 			Concurrents.waitSleep(100);

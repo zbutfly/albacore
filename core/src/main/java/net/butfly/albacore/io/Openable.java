@@ -13,15 +13,34 @@ public interface Openable extends AutoCloseable, Loggable, Named {
 		CLOSED, OPENING, OPENED, CLOSING
 	}
 
-	default void open() {
-		open(null);
+	default boolean opened() {
+		return Opened.status(this).get() == Status.OPENED;
 	}
 
-	default void open(Runnable opening) {
+	default boolean closed() {
+		return Opened.status(this).get() == Status.CLOSED;
+	}
+
+	default void opening(Runnable handler) {
+		Opened.OPENING.computeIfPresent(this, (self, orig) -> () -> {
+			orig.run();
+			handler.run();
+		});
+	}
+
+	default void closing(Runnable handler) {
+		Opened.CLOSING.computeIfPresent(this, (self, orig) -> () -> {
+			orig.run();
+			handler.run();
+		});
+	}
+
+	default void open() {
 		AtomicReference<Status> s = Opened.STATUS.computeIfAbsent(this, o -> new AtomicReference<Status>(Status.CLOSED));
 		if (s.compareAndSet(Status.CLOSED, Status.OPENING)) {
 			logger().trace(name() + " opening...");
-			if (null != opening) opening.run();
+			Runnable h = Opened.OPENING.get(this);
+			if (null != h) h.run();
 			if (!s.compareAndSet(Status.OPENING, Status.OPENED)) //
 				throw new RuntimeException("Opened failure since status [" + s.get() + "] not OPENING.");
 		}
@@ -32,14 +51,11 @@ public interface Openable extends AutoCloseable, Loggable, Named {
 
 	@Override
 	default void close() {
-		close(null);
-	}
-
-	default void close(Runnable closing) {
 		AtomicReference<Status> s = Opened.status(this);
 		if (s.compareAndSet(Status.OPENED, Status.CLOSING)) {
 			logger().trace(name() + " closing...");
-			if (null != closing) closing.run();
+			Runnable h = Opened.CLOSING.get(this);
+			if (null != h) h.run();
 			s.compareAndSet(Status.CLOSING, Status.CLOSED);
 		} // else logger().warn(name() + " closing again?");
 		while (!closed())
@@ -48,19 +64,14 @@ public interface Openable extends AutoCloseable, Loggable, Named {
 		logger().trace(name() + " closed.");
 	}
 
-	default boolean opened() {
-		return Opened.status(this).get() == Status.OPENED;
-	}
-
-	default boolean closed() {
-		return Opened.status(this).get() == Status.CLOSED;
-	}
-
 	class Opened {
 		private final static Map<Openable, AtomicReference<Status>> STATUS = new ConcurrentHashMap<>();
+		private final static Map<Openable, Runnable> OPENING = new ConcurrentHashMap<>(), CLOSING = new ConcurrentHashMap<>();
+
+		private Opened() {}
 
 		private static AtomicReference<Status> status(Openable inst) {
-			return Opened.STATUS.getOrDefault(inst, new AtomicReference<>(Status.CLOSED));
+			return STATUS.getOrDefault(inst, new AtomicReference<>(Status.CLOSED));
 		}
 	}
 }

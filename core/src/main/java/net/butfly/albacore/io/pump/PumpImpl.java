@@ -32,6 +32,15 @@ abstract class PumpImpl<V, P extends PumpImpl<V, P>> extends Namedly implements 
 		else this.parallelism = parallelism;
 		dependencies = new ArrayList<>();
 		logger().info("Pump [" + name + "] created with parallelism: " + parallelism);
+
+		closing(() -> {
+			for (AutoCloseable dep : dependencies)
+				try {
+					dep.close();
+				} catch (Exception e) {
+					logger().error(dep.getClass().getName() + " close failed");
+				}
+		});
 	}
 
 	protected final void depend(List<? extends AutoCloseable> dependencies) {
@@ -79,18 +88,6 @@ abstract class PumpImpl<V, P extends PumpImpl<V, P>> extends Namedly implements 
 			close();
 		}
 		logger().info(name() + " finished.");
-	}
-
-	@Override
-	public void close() {
-		Pump.super.close(() -> {
-			for (AutoCloseable dep : dependencies)
-				try {
-					dep.close();
-				} catch (Exception e) {
-					logger().error(dep.getClass().getName() + " close failed");
-				}
-		});
 	}
 
 	protected boolean isAllDependsOpen() {

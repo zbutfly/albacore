@@ -15,20 +15,15 @@ public interface Pump<V> extends Statistical<Pump<V>>, Openable {
 	Pump<V> batch(long batchSize);
 
 	@Override
-	default void open(Runnable run) {
-		Openable.super.open(() -> {
-			// handle kill -15, CTRL-C, kill -9
-			Systems.handleSignal(sig -> {
-				close();
-				System.err.println("Maybe you need to kill me manually: kill -9 " + Systems.pid() + ", \n" + Systems.threadsRunning()
-						.count() + " threads remain: ");
-				System.err.println("\t" + Systems.threadsRunning().map(t -> t.getId() + "[" + t.getName() + "]").collect(Collectors.joining(
-						", ")));
-			}, "TERM", "INT");
-			/* , "KILL" */
-			// kill -9 catched by system/os
-			if (null != run) run.run();
-		});
+	default void open() {
+		Openable.super.open();
+		Systems.handleSignal(sig -> {
+			close();
+			System.err.println("Maybe you need to kill me manually: kill -9 " + Systems.pid() + ", \n" + Systems.threadsRunning().count()
+					+ " threads remain: ");
+			System.err.println("\t" + Systems.threadsRunning().map(t -> t.getId() + "[" + t.getName() + "]").collect(Collectors.joining(
+					", ")));
+		}, "TERM", "INT");
 	}
 
 	public static <V> Pump<V> pump(Input<V> input, int parallelism, Output<V> dest) {
