@@ -40,7 +40,8 @@ public final class Streams extends Utils {
 	}
 
 	public static <V, V1> Stream<Stream<V1>> spatialMap(Stream<V> s, int parallelism, Function<Spliterator<V>, Spliterator<V1>> convs) {
-		//XXX: bug? on 1, StreamSupport.stream(s.spliterator(), s.isParallel()) not work? 
+		// XXX: bug? on 1, StreamSupport.stream(s.spliterator(), s.isParallel())
+		// not work?
 		return of(spatial(s, parallelism).values()).map(e -> StreamSupport.stream(convs.apply(e), s.isParallel()));
 	}
 
@@ -70,6 +71,7 @@ public final class Streams extends Utils {
 	}
 
 	public static <V> Stream<V> of(Iterable<V> col, boolean parallel) {
+		if (null == col) return Stream.empty();
 		Stream<V> s;
 		if (Collection.class.isAssignableFrom(col.getClass())) {
 			Collection<V> c = (Collection<V>) col;
