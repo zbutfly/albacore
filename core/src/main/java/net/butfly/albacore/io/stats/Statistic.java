@@ -81,7 +81,7 @@ class Statistic implements Serializable {
 	}
 
 	void trace(String info) {
-		logger.info(info);
+		logger.debug(info);
 	}
 
 	static class Result {

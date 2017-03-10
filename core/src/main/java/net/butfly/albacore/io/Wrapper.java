@@ -57,7 +57,7 @@ interface Wrapper {
 
 		@Override
 		public String name() {
-			return base.name() + "Wrapper";
+			return base.name();
 		}
 
 		@Override
@@ -95,7 +95,7 @@ interface Wrapper {
 
 		@Override
 		public String name() {
-			return origin.name() + "Wrapper";
+			return origin.name();
 		}
 
 		@Override

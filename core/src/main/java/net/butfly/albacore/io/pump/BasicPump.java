@@ -20,8 +20,7 @@ public class BasicPump<V> extends PumpImpl<V, BasicPump<V>> {
 			}, batchSize);
 			long cc = c.get();
 			if (cc <= 0) Concurrents.waitSleep();
-			else if (cc < forceTrace) traceForce(name() + " processing: [" + c + " odd for less than " + forceTrace + "] from [" + input
-					.name() + "] to [" + output.name() + "].");
+			else if (cc < forceTrace) traceForce(name() + " processing: [" + c + " odds].");
 		});
 	}
 }
