@@ -22,16 +22,22 @@ public interface Openable extends AutoCloseable, Loggable, Named {
 	}
 
 	default void opening(Runnable handler) {
-		Opened.OPENING.computeIfPresent(this, (self, orig) -> () -> {
-			orig.run();
-			handler.run();
+		Opened.OPENING.compute(this, (self, orig) -> {
+			if (orig == null) return handler;
+			else return () -> {
+				orig.run();
+				handler.run();
+			};
 		});
 	}
 
 	default void closing(Runnable handler) {
-		Opened.CLOSING.computeIfPresent(this, (self, orig) -> () -> {
-			orig.run();
-			handler.run();
+		Opened.CLOSING.compute(this, (self, orig) -> {
+			if (orig == null) return handler;
+			else return () -> {
+				orig.run();
+				handler.run();
+			};
 		});
 	}
 
