@@ -18,7 +18,7 @@
 		<module>utils</module>
 		<module>valid</module>
 		<!--<module>extra</module> -->
-		<module>cache</module>
+		<!--<module>cache</module>-->
 		<module>test</module>
 		<!-- <module>demo</module> -->
 	</modules>

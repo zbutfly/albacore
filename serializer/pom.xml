@@ -18,7 +18,7 @@
 		<module>kryo</module>
 		<module>hbase</module>
 		<!-- <module>avro</module> -->
-		<module>protobuf</module>
+		<!--<module>protobuf</module>-->
 	</modules>
 	<properties>
 		<version.jackson>2.7.3</version.jackson>
