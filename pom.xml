@@ -17,6 +17,7 @@
 		<module>frame</module>
 		<module>utils</module>
 		<module>valid</module>
+		<module>scala</module>
 		<!--<module>extra</module> -->
 		<!--<module>cache</module>-->
 		<module>test</module>

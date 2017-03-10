@@ -60,5 +60,5 @@ public class SplitTest {
 		for (int j = 0; j < tabs; j++)
 			s = "\t" + s;
 		System.out.println(s);
-	};
+	}
 }

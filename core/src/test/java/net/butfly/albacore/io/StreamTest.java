@@ -59,5 +59,5 @@ public class StreamTest {
 		for (int j = 0; j < tabs; j++)
 			s = "\t" + s;
 		System.out.println(s);
-	};
+	}
 }

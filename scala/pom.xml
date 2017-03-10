@@ -9,19 +9,20 @@
 	<artifactId>albacore-core</artifactId>
 	<name>albacore-core</name>
 	<properties>
-		<deps.version.scala>2.11</deps.version.scala>
-		<deps.version.scala.lib>2.12.0-M3-dc9effe</deps.version.scala.lib>
+		<version.scala.main>2.10</version.scala.main>
+		<version.scala.suffix>_${version.scala.main}</version.scala.suffix>
+		<version.scala>${version.scala.main}.6</version.scala>
 	</properties>
 	<dependencies>
 		<dependency>
 			<groupId>org.scala-lang</groupId>
 			<artifactId>scala-library</artifactId>
-			<version>${deps.version.scala.lib}</version>
+			<version>${version.scala}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.scala-lang</groupId>
 			<artifactId>scala-reflect</artifactId>
-			<version>${deps.version.scala.lib}</version>
+			<version>${version.scala}</version>
 		</dependency>
 	</dependencies>
 </project>

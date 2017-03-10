@@ -1,5 +1,7 @@
 package net.butfly.albacore.lambda;
 
+import java.util.function.Consumer;
+
 import scala.Tuple3;
 
 @FunctionalInterface

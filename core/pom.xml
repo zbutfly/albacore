@@ -31,16 +31,6 @@
 			<artifactId>slf4j-log4j12</artifactId>
 			<scope>runtime</scope>
 		</dependency>
-		<dependency>
-			<groupId>org.scala-lang</groupId>
-			<artifactId>scala-library</artifactId>
-			<version>${version.scala}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.scala-lang</groupId>
-			<artifactId>scala-reflect</artifactId>
-			<version>${version.scala}</version>
-		</dependency>
 		<!-- https://mvnrepository.com/artifact/one.util/streamex
 		<dependency>
 			<groupId>one.util</groupId>

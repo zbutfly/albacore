@@ -1,6 +1,7 @@
 package net.butfly.albacore.utils;
 
 import static net.butfly.albacore.io.Streams.of;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -16,7 +17,6 @@ import java.util.stream.Stream;
 
 import net.butfly.albacore.io.Streams;
 import net.butfly.albacore.lambda.Converter;
-import scala.Tuple2;
 
 public final class Collections extends Utils {
 	public static <T> BinaryOperator<List<T>> merging() {
@@ -113,8 +113,8 @@ public final class Collections extends Utils {
 	}
 
 	@Deprecated
-	public static <T, K, V> Map<K, List<V>> mapMap(Collection<T> list, Converter<T, Tuple2<K, V>> mapping) {
-		return of(list).map(mapping).collect(Collectors.groupingByConcurrent(t -> t._1, Collectors.mapping(t -> t._2, Collectors
+	public static <T, K, V> Map<K, List<V>> mapMap(Collection<T> list, Converter<T, Pair<K, V>> mapping) {
+		return of(list).map(mapping).collect(Collectors.groupingByConcurrent(t -> t.v1(), Collectors.mapping(t -> t.v2(), Collectors
 				.toList())));
 	}
 
