@@ -3,8 +3,7 @@ package net.butfly.bus.test;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.apache.commons.lang3.RandomStringUtils;
+import java.util.Random;
 
 import net.butfly.albacore.serder.BsonSerder;
 import net.butfly.albacore.serder.JsonSerder;
@@ -52,9 +51,11 @@ public class JacksonTest {
 		System.out.println();
 	}
 
+	static Random r = new Random();
+
 	private static Map<String, Object> map() {
 		Map<String, Object> map = new HashMap<>();
-		map.put("name", RandomStringUtils.randomAlphabetic(8));
+		map.put("name", Double.toHexString(r.nextGaussian()));
 		map.put("count", (int) (Math.random() * 10));
 		map.put("object", new Bean());
 		return map;

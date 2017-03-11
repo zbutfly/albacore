@@ -16,7 +16,7 @@ public class Logger implements Serializable {
 	private static final ThreadGroup g;
 	private static final ExecutorService logex;
 	static {
-		async = Boolean.parseBoolean(Configs.MAIN_CONF.getOrDefault("albacore.logger.async.enable", "true"));
+		async = Boolean.parseBoolean(Configs.MAIN.get("albacore.logger.async.enable", "true"));
 		if (async) {
 			tn = new AtomicInteger();
 			g = new ThreadGroup("AlbacoreLoggerThread");

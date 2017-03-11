@@ -2,6 +2,7 @@ package net.butfly.albacore.utils;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -15,30 +16,8 @@ import net.butfly.albacore.utils.logger.Logger;
 
 public class Configs extends Utils {
 	private static final Logger logger = Logger.getLogger(Configs.class);
-	private static final String MAIN_CONF_PROP_NAME = "albacore.config";
 	private static final String DEFAULT_PROP_EXT = "." + System.getProperty("albacore.config.ext", "properties");
-	public static final Map<String, String> MAIN_CONF = load();
-
-	public static void setConfig(String config) {
-		if (null != config) System.setProperty(MAIN_CONF_PROP_NAME, config);
-		else System.clearProperty(MAIN_CONF_PROP_NAME);
-	}
-
-	private static Map<String, String> load() {
-		String configFile = System.getProperty(MAIN_CONF_PROP_NAME);
-		if (null == configFile) {
-			Class<?> c = Systems.getMainClass();
-			logger.info("Load configs for class: " + c.getName());
-			return load(c);
-		} else {
-			logger.info("Load configs for -D" + MAIN_CONF_PROP_NAME + "=" + configFile);
-			return loadAll(Systems.getMainClass(), configFile);
-		}
-	}
-
-	public static Map<String, String> load(Class<?> configed) {
-		return loadAll(configed, CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_HYPHEN, configed.getSimpleName()));
-	}
+	public static final Conf MAIN = init(Systems.getMainClass());
 
 	/**
 	 * Config definition priorities:
@@ -46,7 +25,7 @@ public class Configs extends Utils {
 	 * <li>Systme Properties.
 	 * <li>First found of: {@code filename}.properties
 	 * <ol>
-	 * <li>In runnable path.
+	 * <li>In executing path.
 	 * <li>In classpath (based on classpath root).
 	 * </ol>
 	 * <li>System Variables.
@@ -54,27 +33,47 @@ public class Configs extends Utils {
 	 * {@code loader}.
 	 * <ol>
 	 * 
+	 * @param prefix
+	 * 
 	 * @return
 	 */
-	public static Map<String, String> loadAll(Class<?> loader, String filename) {
-		logger.info("Load configs from file: " + filename + DEFAULT_PROP_EXT);
-		if (filename.endsWith(DEFAULT_PROP_EXT)) filename = filename.substring(0, filename.length() - DEFAULT_PROP_EXT.length());
+	public static Conf init(Class<?> cl) {
+		if (cl == null) cl = Systems.getMainClass();
+		Config c = cl.getAnnotation(Config.class);
+		return null == c ? init(cl, calcClassConfigFile(cl), null) : init(cl, c.value(), c.prefix());
+	}
+
+	/**
+	 * @param configPrefix
+	 * @param cl
+	 * @param conf
+	 * @return
+	 * @deprecated use {@code @Config} to define config file and prefix.
+	 */
+	@Deprecated
+	public static Conf init(Class<?> cl, String filename, String prefix) {
+		String fullname;
+		if (filename.endsWith(DEFAULT_PROP_EXT)) {
+			fullname = filename;
+			filename = fullname.substring(0, fullname.length() - DEFAULT_PROP_EXT.length());
+		} else fullname = filename + DEFAULT_PROP_EXT;
+
+		logger.info("Load configs for class: [" + cl.getName() + "], from [" + fullname + "]");
 		Map<String, String> settings = new ConcurrentHashMap<>();
 		fill(settings, null, Configs::filterSystemAndInvalidPrefix, mapProps(System.getProperties()));
-		try (InputStream in = IOs.openFile(filename + DEFAULT_PROP_EXT);) {
-			if (!fill(settings, null, null, in) && null != loader) try (InputStream in2 = IOs.openClasspath(loader, filename
-					+ DEFAULT_PROP_EXT);) {
+		try (InputStream in = IOs.openFile(fullname);) {
+			if (!fill(settings, null, null, in) && null != cl) try (InputStream in2 = IOs.openClasspath(cl, fullname);) {
 				fill(settings, null, null, in2);
 			} catch (IOException e) {}
 		} catch (IOException e) {}
 		fill(settings, s -> CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_DOT, s), Configs::filterSystemAndInvalidPrefix, System
 				.getenv());
-		String defaultFile = loader.getPackage().getName().replaceAll("\\.", "/") + "/" + filename + "-default" + DEFAULT_PROP_EXT;
+		String defaultFile = cl.getPackage().getName().replaceAll("\\.", "/") + "/" + filename + "-default" + DEFAULT_PROP_EXT;
 		logger.info("Load configs from default classpath file: " + defaultFile);
-		if (null != loader) try (InputStream in = IOs.openClasspath(loader, defaultFile);) {
+		try (InputStream in = IOs.openClasspath(cl, defaultFile);) {
 			fill(settings, null, null, in);
 		} catch (IOException e) {}
-		return settings;
+		return new Conf(prefix, settings);
 	}
 
 	private static boolean fill(Map<String, String> origin, Function<String, String> mapping, Predicate<String> filter, InputStream next) {
@@ -108,6 +107,49 @@ public class Configs extends Utils {
 		return false;
 	}
 
+	private static String calcClassConfigFile(Class<?> configed) {
+		return CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_HYPHEN, configed.getSimpleName()) + DEFAULT_PROP_EXT;
+	}
+
+	public @interface Config {
+		String value()
+
+		default "";
+
+		String prefix() default "";
+	}
+
+	public static final class Conf {
+		protected final Path file; // TODO: hot reloading
+		private final String prefix;
+		private final Map<String, String> entries;
+
+		public Conf(String prefix, Map<String, String> entries) {
+			super();
+			if (null == prefix || prefix.length() == 0) this.prefix = null;
+			else {
+				if (!prefix.endsWith(".")) prefix = prefix + ".";
+				this.prefix = prefix;
+			}
+			this.file = null;
+			this.entries = entries;
+		}
+
+		public final String get(String key) {
+			return entries.get(null == prefix ? key : prefix + key);
+		}
+
+		public final String get(String key, String def) {
+			return entries.getOrDefault(null == prefix ? key : prefix + key, def);
+		}
+
+		public boolean contains(String key) {
+			return entries.containsKey(key);
+		}
+	}
+
+	// other utils
+
 	public static Map<String, String> mapProps(Properties props) {
 		return props.entrySet().stream().filter(e -> e.getKey() != null && CharSequence.class.isAssignableFrom(e.getKey().getClass()) && e
 				.getValue() != null && CharSequence.class.isAssignableFrom(e.getValue().getClass())).collect(Collectors.toConcurrentMap(
@@ -121,4 +163,5 @@ public class Configs extends Utils {
 		});
 		return props;
 	}
+
 }

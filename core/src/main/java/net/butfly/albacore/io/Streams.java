@@ -49,8 +49,8 @@ public final class Streams extends Utils {
 		return Streams.of(new Suppliterator<>(get, size, ending));
 	}
 
-	private static final boolean DEFAULT_PARALLEL_ENABLE = Boolean.parseBoolean(Configs.MAIN_CONF.getOrDefault(
-			"albacore.parallel.stream.enable", "false"));
+	private static final boolean DEFAULT_PARALLEL_ENABLE = Boolean.parseBoolean(Configs.MAIN.get("albacore.parallel.stream.enable",
+			"false"));
 
 	public static <V> Stream<V> of(Stream<V> s) {
 		if (DEFAULT_PARALLEL_ENABLE) s = s.parallel();
