@@ -19,6 +19,10 @@ public class Configs extends Utils {
 	private static final String DEFAULT_PROP_EXT = "." + System.getProperty("albacore.config.ext", "properties");
 	public static final Conf MAIN = init(Systems.getMainClass());
 
+	public static Conf init() {
+		return init(Systems.getMainClass());
+	}
+
 	/**
 	 * Config definition priorities:
 	 * <ol>
@@ -38,7 +42,6 @@ public class Configs extends Utils {
 	 * @return
 	 */
 	public static Conf init(Class<?> cl) {
-		if (cl == null) cl = Systems.getMainClass();
 		Config c = cl.getAnnotation(Config.class);
 		return null == c ? init(cl, calcClassConfigFile(cl), null) : init(cl, c.value(), c.prefix());
 	}
@@ -145,6 +148,10 @@ public class Configs extends Utils {
 
 		public boolean contains(String key) {
 			return entries.containsKey(key);
+		}
+
+		public Conf prefix(String prefix) {
+			return new Conf(prefix, entries);
 		}
 	}
 
