@@ -13,6 +13,11 @@
 			<artifactId>albacore-serder-core</artifactId>
 			<version>1.0.0-SNAPSHOT</version>
 		</dependency>
+<!-- 		<dependency> -->
+<!-- 			<groupId>net.butfly.albacore</groupId> -->
+<!-- 			<artifactId>albacore-scala</artifactId> -->
+<!-- 			<version>3.0.0-SNAPSHOT</version> -->
+<!-- 		</dependency> -->
 		<!-- jackson dependencies -->
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>

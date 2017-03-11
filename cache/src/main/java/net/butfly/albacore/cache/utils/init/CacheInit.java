@@ -12,8 +12,9 @@ import net.butfly.albacore.cache.utils.control.CacheContant;
 import net.butfly.albacore.cache.utils.control.CacheControl;
 import net.butfly.albacore.exception.BusinessException;
 import net.butfly.albacore.exception.SystemException;
-import net.butfly.albacore.utils.async.Concurrents;
 import net.butfly.albacore.utils.logger.Logger;
+import net.butfly.albacore.utils.parallel.Concurrents;
+
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 

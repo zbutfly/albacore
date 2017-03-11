@@ -6,7 +6,6 @@
 		<artifactId>albacore</artifactId>
 		<version>3.0.0-SNAPSHOT</version>
 	</parent>
-	<groupId>net.butfly.albacore</groupId>
 	<artifactId>albacore-serder</artifactId>
 	<version>1.0.0-SNAPSHOT</version>
 	<packaging>pom</packaging>

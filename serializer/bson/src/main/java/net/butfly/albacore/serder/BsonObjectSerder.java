@@ -15,14 +15,14 @@ import net.butfly.albacore.serder.support.ContentTypeSerder;
 import net.butfly.albacore.serder.support.ContentTypeSerderBase;
 import net.butfly.albacore.serder.support.ContentTypes;
 import net.butfly.albacore.utils.Configs;
-import scala.Tuple2;
+import net.butfly.albacore.utils.Pair;
 
 public final class BsonObjectSerder extends ContentTypeSerderBase implements Serder<BSONObject, byte[]>, ContentTypeSerder {
 	private static final long serialVersionUID = 6664350391207228363L;
 	public static final BsonObjectSerder DEFAULT = new BsonObjectSerder();
 
-	private final LinkedBlockingQueue<Tuple2<BSONEncoder, BasicBSONObject>> encoders;
-	private final LinkedBlockingQueue<Tuple2<BSONDecoder, BSONCallback>> decoders;
+	private final LinkedBlockingQueue<Pair<BSONEncoder, BasicBSONObject>> encoders;
+	private final LinkedBlockingQueue<Pair<BSONDecoder, BSONCallback>> decoders;
 
 	public BsonObjectSerder() {
 		this(Integer.parseInt(Configs.MAIN_CONF.getOrDefault("albacore.serder.bson.parallelism", "100")));
@@ -34,23 +34,23 @@ public final class BsonObjectSerder extends ContentTypeSerderBase implements Ser
 		encoders = new LinkedBlockingQueue<>(parallelism);
 		decoders = new LinkedBlockingQueue<>(parallelism);
 		for (int i = 0; i < parallelism; i++) {
-			encoders.offer(new Tuple2<>(new BasicBSONEncoder(), new BasicBSONObject()));
-			decoders.offer(new Tuple2<>(new BasicBSONDecoder(), new BasicBSONCallback()));
+			encoders.offer(new Pair<>(new BasicBSONEncoder(), new BasicBSONObject()));
+			decoders.offer(new Pair<>(new BasicBSONDecoder(), new BasicBSONCallback()));
 		}
 	}
 
 	@Override
 	public byte[] ser(BSONObject from) {
-		Tuple2<BSONEncoder, BasicBSONObject> t;
+		Pair<BSONEncoder, BasicBSONObject> t;
 		try {
 			t = encoders.take();
 		} catch (InterruptedException e) {
 			throw new RuntimeException(e);
 		}
-		BasicBSONObject b = t._2;
+		BasicBSONObject b = t.v2();
 		b.putAll(from);
 		try {
-			return t._1.encode(b);
+			return t.v1().encode(b);
 		} finally {
 			b.clear();
 			try {
@@ -64,15 +64,15 @@ public final class BsonObjectSerder extends ContentTypeSerderBase implements Ser
 	@SuppressWarnings("unchecked")
 	@Override
 	public <T extends BSONObject> T der(byte[] from, Class<T> to) {
-		Tuple2<BSONDecoder, BSONCallback> t;
+		Pair<BSONDecoder, BSONCallback> t;
 		try {
 			t = decoders.take();
 		} catch (InterruptedException e) {
 			throw new RuntimeException(e);
 		}
 		try {
-			t._1.decode(from, t._2);
-			return ((T) t._2.get());
+			t.v1().decode(from, t.v2());
+			return ((T) t.v2().get());
 		} finally {
 			try {
 				decoders.put(t);

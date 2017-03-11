@@ -14,13 +14,13 @@ import net.butfly.albacore.serder.support.ContentTypeSerder;
 import net.butfly.albacore.serder.support.ContentTypes;
 import net.butfly.albacore.utils.CaseFormat;
 import net.butfly.albacore.utils.Instances;
+import net.butfly.albacore.utils.Pair;
 import net.butfly.albacore.utils.Reflections;
 import net.butfly.albacore.utils.Utils;
-import scala.Tuple2;
 
 @SuppressWarnings("rawtypes")
 public final class Serders extends Utils {
-	static final Tuple2<CaseFormat, CaseFormat> DEFAULT_MAPPING = new Tuple2<>(CaseFormat.LOWER_CAMEL, CaseFormat.UPPER_UNDERSCORE);
+	static final Pair<CaseFormat, CaseFormat> DEFAULT_MAPPING = new Pair<>(CaseFormat.LOWER_CAMEL, CaseFormat.UPPER_UNDERSCORE);
 	public static final CaseFormat DEFAULT_SRC_FORMAT = CaseFormat.LOWER_CAMEL;
 	public static final CaseFormat DEFAULT_DST_FORMAT = CaseFormat.UPPER_UNDERSCORE;
 	public static final ContentType DEFAULT_CONTENT_TYPE = ContentType.WILDCARD.withCharset(Charsets.UTF_8);

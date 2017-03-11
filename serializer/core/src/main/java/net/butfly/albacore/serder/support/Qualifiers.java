@@ -11,21 +11,21 @@ import java.util.Map;
 import net.butfly.albacore.serder.modifier.Ignore;
 import net.butfly.albacore.serder.modifier.Key;
 import net.butfly.albacore.serder.modifier.PrimaryKey;
+import net.butfly.albacore.utils.Pair;
 import net.butfly.albacore.utils.Reflections;
 import net.butfly.albacore.utils.Utils;
-import scala.Tuple2;
 
 public final class Qualifiers extends Utils {
 	@SafeVarargs
-	public static <V> Tuple2<Field, ? extends Annotation> parseFirstOfAny(Class<V> c, Class<? extends Annotation>... annotation) {
+	public static <V> Pair<Field, ? extends Annotation> parseFirstOfAny(Class<V> c, Class<? extends Annotation>... annotation) {
 		for (Field f : Reflections.getDeclaredFields(c))
 			for (Class<? extends Annotation> a : annotation)
-				if (f.isAnnotationPresent(a)) return new Tuple2<>(f, f.getAnnotation(a));
-		return new Tuple2<>(null, null);
+				if (f.isAnnotationPresent(a)) return new Pair<>(f, f.getAnnotation(a));
+		return new Pair<>(null, null);
 	}
 
 	public static <V> Field keyField(Class<V> c) {
-		return parseFirstOfAny(c, Key.class)._1;
+		return parseFirstOfAny(c, Key.class).v1();
 	}
 
 	public static <V> Field[] keyFields(Class<V> c) {
@@ -33,7 +33,7 @@ public final class Qualifiers extends Utils {
 	}
 
 	public static <V> Field idField(Class<V> c) {
-		return parseFirstOfAny(c, PrimaryKey.class)._1;
+		return parseFirstOfAny(c, PrimaryKey.class).v1();
 	}
 
 	@SafeVarargs
@@ -61,7 +61,7 @@ public final class Qualifiers extends Utils {
 	@SuppressWarnings("unchecked")
 	public static <K, V> K key(V v) {
 		try {
-			return null == v ? null : (K) parseFirstOfAny(v.getClass(), Key.class)._1.get(v);
+			return null == v ? null : (K) parseFirstOfAny(v.getClass(), Key.class).v1().get(v);
 		} catch (IllegalArgumentException | IllegalAccessException e) {
 			return null;
 		}
