@@ -13,7 +13,8 @@ import net.butfly.albacore.utils.Texts;
  * 
  * @author butfly
  */
-public class ObjectIdGenerator extends IdGenerator<String> {
+public class ObjectIdGenerator implements IdGenerator<String> {
+	public static final ObjectIdGenerator GEN = new ObjectIdGenerator();
 	private static final AtomicInteger _nextInc = new AtomicInteger((new java.util.Random()).nextInt());
 	private static int _genmachine;
 
@@ -22,7 +23,7 @@ public class ObjectIdGenerator extends IdGenerator<String> {
 	}
 
 	@Override
-	public String generate() {
+	public byte[] bytes() {
 		final int _time;
 		final int _inc;
 		_time = (int) (System.currentTimeMillis() / 1000);
@@ -34,12 +35,21 @@ public class ObjectIdGenerator extends IdGenerator<String> {
 		buf.putInt(_time);
 		buf.putInt(_genmachine);
 		buf.putInt(_inc);
-
-		return Texts.byte2hex(bytes);
+		return bytes;
 	}
 
 	@Override
-	protected long machine() {
+	public String generate() {
+		return Texts.byte2hex(bytes());
+	}
+
+	@Override
+	public String gen0() {
+		return new String(encode(ObjectIdGenerator.GEN.bytes(), 16));
+	}
+
+	@Override
+	public final long machine() {
 		try {
 			// build a 2-byte machine piece based on NICs info
 			int machinePiece;
@@ -54,10 +64,10 @@ public class ObjectIdGenerator extends IdGenerator<String> {
 					machinePiece = sb.toString().hashCode() << 16;
 				} catch (Throwable e) {
 					// exception sometimes happens with IBM JVM, use random
-					logger.warn(e.getMessage(), e);
+					logger().warn(e.getMessage(), e);
 					machinePiece = (new Random().nextInt()) << 16;
 				}
-				logger.trace("machine piece post: " + Integer.toHexString(machinePiece));
+				logger().trace("machine piece post: " + Integer.toHexString(machinePiece));
 			}
 
 			// add a 2 byte process piece. It must represent not only the JVM
@@ -78,11 +88,11 @@ public class ObjectIdGenerator extends IdGenerator<String> {
 				sb.append(Integer.toHexString(processId));
 				sb.append(Integer.toHexString(loaderId));
 				processPiece = sb.toString().hashCode() & 0xFFFF;
-				logger.trace("process piece: " + Integer.toHexString(processPiece));
+				logger().trace("process piece: " + Integer.toHexString(processPiece));
 			}
 
 			int result = machinePiece | processPiece;
-			logger.trace("machine : " + Integer.toHexString(_genmachine));
+			logger().trace("machine : " + Integer.toHexString(_genmachine));
 			return result;
 		} catch (Exception e) {
 			throw new GetHardwareIdFailed(e);

@@ -9,6 +9,8 @@ import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.Set;
 
+import net.butfly.albacore.utils.Keys;
+
 /**
  * SnowflakeIdGenerator
  *
@@ -22,9 +24,9 @@ import java.util.Set;
  *          <br />
  *          sequence number - 12 bits - rolls over every 4096 per machine (with
  *          protection to avoid rollover in the same ms)
- *
  */
-public class SnowflakeIdGenerator extends IdGenerator<Long> {
+public class SnowflakeIdGenerator implements IdGenerator<Long> {
+	public static final SnowflakeIdGenerator GEN = new SnowflakeIdGenerator();
 	private final long datacenterIdBits = 10L;
 	private final long maxDatacenterId = -1L ^ (-1L << datacenterIdBits);
 	private final long timestampBits = 41L;
@@ -42,39 +44,35 @@ public class SnowflakeIdGenerator extends IdGenerator<Long> {
 	}
 
 	@Override
+	public byte[] bytes() {
+		return Keys.bytes(generate());
+	}
+
+	@Override
 	public synchronized Long generate() {
 		long timestamp = System.currentTimeMillis();
 		if (timestamp < lastTimestamp) throw new InvalidSystemClock("Clock moved backwards. Refusing to generate id for " + (lastTimestamp
 				- timestamp) + " milliseconds.");
-		if (lastTimestamp == timestamp) {
-			sequence = (sequence + 1) % sequenceMax;
-			if (sequence == 0) {
-				timestamp = tilNextMillis(lastTimestamp);
-			}
-		} else {
-			sequence = 0;
-		}
+		if (lastTimestamp != timestamp) sequence = 0;
+		else if ((sequence = (sequence + 1) % sequenceMax) == 0) timestamp = tilNextMillis(lastTimestamp);
 		lastTimestamp = timestamp;
 		return ((timestamp - twepoch) << timestampLeftShift) | (datacenterId << datacenterIdShift) | sequence;
 	}
 
 	protected long tilNextMillis(long lastTimestamp) {
 		long timestamp = System.currentTimeMillis();
-		while (timestamp <= lastTimestamp) {
+		while (timestamp <= lastTimestamp)
 			timestamp = System.currentTimeMillis();
-		}
 		return timestamp;
 	}
 
 	@Override
-	protected long machine() throws GetHardwareIdFailed {
+	public long machine() throws GetHardwareIdFailed {
 		try {
 			InetAddress ip = InetAddress.getLocalHost();
 			NetworkInterface network = NetworkInterface.getByInetAddress(ip);
 			byte[] mac = network.getHardwareAddress();
-			// System.out.println(DatatypeConverter.printHexBinary(mac));
 			long id = ((0x000000FF & (long) mac[mac.length - 1]) | (0x0000FF00 & (((long) mac[mac.length - 2]) << 8))) >> 6;
-			// System.out.println(id);
 			return id;
 		} catch (SocketException e) {
 			throw new GetHardwareIdFailed(e);
@@ -85,17 +83,22 @@ public class SnowflakeIdGenerator extends IdGenerator<Long> {
 
 	public static void main(String[] args) throws GetHardwareIdFailed, InvalidSystemClock {
 		SnowflakeIdGenerator generator = new SnowflakeIdGenerator();
-		int n = Integer.parseInt(args[0]);
+		int n = 99999;
 		Set<Long> ids = new HashSet<Long>();
 		for (int i = 0; i < n; i++) {
 			long id = generator.generate();
 			if (ids.contains(id)) {
-				System.out.println("Duplicate id:" + id);
+				System.out.println("Duplicate id:" + id + " in: " + i);
 				exit(1);
 			}
 			ids.add(id);
 			System.out.println(id);
 		}
+	}
+
+	@Override
+	public String gen0() {
+		return new String(encode(bytes(), 12));
 	}
 
 }

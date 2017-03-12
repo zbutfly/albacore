@@ -36,7 +36,6 @@ import net.butfly.albacore.lambda.Converter;
  * </ul>
  * 
  * @author butfly
- *
  */
 public interface Queue0<I, O> extends Input<O>, Output<I> {
 	static final long INFINITE_SIZE = -1;

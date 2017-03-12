@@ -3,7 +3,6 @@ package net.butfly.albacore.utils;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 import net.butfly.albacore.exception.SystemException;
 import net.butfly.albacore.utils.key.IdGenerator;
@@ -34,45 +33,20 @@ public class Keys extends Utils {
 		return Instances.construct(ObjectIdGenerator.class).generate();
 	}
 
-	private static final byte[] BYTES_32 = new byte[32];
-	static {
-		char[] CHARS_32 = new char[] { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
-				'u', 'v', 'w', 'x', 'y', 'z', '1', '2', '3', '4', '5', '6' };
-		for (int i = 0; i < CHARS_32.length; i++)
-			BYTES_32[i] = (byte) CHARS_32[i];
-	}
-
-	/**
-	 * convert from {@code UUID} to String[16] use a-z, 1-6
-	 * 
-	 * @param uuid
-	 * @return
-	 */
-	public static byte[] shortBytes(UUID uuid) {
-		byte[] buf = new byte[16];
-		long l = uuid.getLeastSignificantBits();
-		Long.toBinaryString(31);
-		long vvl = uuid.getLeastSignificantBits() & 127L;
-		for (int i = 0; i < 8; i++) {
-			buf[i] = BYTES_32[(int) (l & 31)];
-			l = l >> 8;
+	public static byte[] bytes(long v0, long... vs) {
+		byte[] buf = new byte[8 * (vs.length + 1)];
+		for (int i = 7; i >= 0; i--) {
+			buf[i] = (byte) (v0 & 255);
+			v0 >>= 8;
 		}
-		l = uuid.getMostSignificantBits();
-		for (int i = 8; i < 16; i++) {
-			buf[i] = BYTES_32[(int) (l & 31)];
-			l = l >> 8;
+		for (int j = 8, j0 = 0; j < buf.length; j += 8, j0++) {
+			long v = vs[j0];
+			for (int i = 7; i >= 0; i--) {
+				buf[j + i] = (byte) (v & 255);
+				v >>= 8;
+			}
 		}
 		return buf;
-	}
 
-	public static String shortString(UUID uuid) {
-		return new String(shortBytes(uuid));
-	}
-
-	public static void main(String... args) {
-		UUID uuid = UUID.randomUUID();
-		System.out.println(uuid.toString().replaceAll("-", ""));
-		System.out.println(" ==> ");
-		System.out.println(shortString(uuid));
 	}
 }
