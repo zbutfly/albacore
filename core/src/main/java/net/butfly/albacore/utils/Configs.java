@@ -2,6 +2,10 @@ package net.butfly.albacore.utils;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
@@ -15,9 +19,11 @@ import java.util.stream.Collectors;
 import net.butfly.albacore.utils.logger.Logger;
 
 public class Configs extends Utils {
-	private static final Logger logger = Logger.getLogger(Configs.class);
-	private static final String DEFAULT_PROP_EXT = "." + System.getProperty("albacore.config.ext", "properties");
 	public static final Conf MAIN = init(Systems.getMainClass());
+
+	private static final String DEFAULT_PROP_EXT() {
+		return "." + System.getProperty("albacore.config.ext", "properties");
+	}
 
 	public static Conf init() {
 		return init(Systems.getMainClass());
@@ -40,6 +46,7 @@ public class Configs extends Utils {
 	 * @param prefix
 	 * 
 	 * @return
+	 * @throws ClassNotFoundException
 	 */
 	public static Conf init(Class<?> cl) {
 		Config c = cl.getAnnotation(Config.class);
@@ -55,25 +62,25 @@ public class Configs extends Utils {
 	 */
 	@Deprecated
 	public static Conf init(Class<?> cl, String filename, String prefix) {
-		String fullname;
-		if (filename.endsWith(DEFAULT_PROP_EXT)) {
-			fullname = filename;
-			filename = fullname.substring(0, fullname.length() - DEFAULT_PROP_EXT.length());
-		} else fullname = filename + DEFAULT_PROP_EXT;
-
-		logger.info("Load configs for class: [" + cl.getName() + "], from [" + fullname + "]");
+		String ext = DEFAULT_PROP_EXT();
+		String defname = cl.getPackage().getName().replaceAll("\\.", "/") + "/" + calcClassConfigFile(cl) + "-default" + ext;
+		if (!filename.endsWith(ext)) filename = filename + ext;
+		Logger logger = Logger.getLogger(cl);
+		logger.info("Config class"//
+				+ ((prefix != null && prefix.length() > 0) ? " with prefix [" + prefix + "]:" : ":")//
+				+ "\n\tcustomized: [executable:/" + filename + "]"//
+				+ "\n\tcustomized: [classpath:/" + filename + "]" //
+				+ "\n\tdefault: [classpath:/" + defname + "]");
 		Map<String, String> settings = new ConcurrentHashMap<>();
 		fill(settings, null, Configs::filterSystemAndInvalidPrefix, mapProps(System.getProperties()));
-		try (InputStream in = IOs.openFile(fullname);) {
-			if (!fill(settings, null, null, in) && null != cl) try (InputStream in2 = IOs.openClasspath(cl, fullname);) {
+		try (InputStream in = IOs.openFile(filename);) {
+			if (!fill(settings, null, null, in) && null != cl) try (InputStream in2 = IOs.openClasspath(cl, filename);) {
 				fill(settings, null, null, in2);
 			} catch (IOException e) {}
 		} catch (IOException e) {}
 		fill(settings, s -> CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_DOT, s), Configs::filterSystemAndInvalidPrefix, System
 				.getenv());
-		String defaultFile = cl.getPackage().getName().replaceAll("\\.", "/") + "/" + filename + "-default" + DEFAULT_PROP_EXT;
-		logger.info("Load configs from default classpath file: " + defaultFile);
-		try (InputStream in = IOs.openClasspath(cl, defaultFile);) {
+		try (InputStream in = IOs.openClasspath(cl, defname);) {
 			fill(settings, null, null, in);
 		} catch (IOException e) {}
 		return new Conf(prefix, settings);
@@ -111,9 +118,11 @@ public class Configs extends Utils {
 	}
 
 	private static String calcClassConfigFile(Class<?> configed) {
-		return CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_HYPHEN, configed.getSimpleName()) + DEFAULT_PROP_EXT;
+		return CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_HYPHEN, configed.getSimpleName());
 	}
 
+	@Retention(RetentionPolicy.RUNTIME)
+	@Target(ElementType.TYPE)
 	public @interface Config {
 		String value()
 

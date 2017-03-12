@@ -7,7 +7,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.butfly.albacore.lambda.Supplier;
-import net.butfly.albacore.utils.Configs;
 
 public class Logger implements Serializable {
 	private static final long serialVersionUID = -1940330974751419775L;
@@ -16,7 +15,7 @@ public class Logger implements Serializable {
 	private static final ThreadGroup g;
 	private static final ExecutorService logex;
 	static {
-		async = Boolean.parseBoolean(Configs.MAIN.get("albacore.logger.async.enable", "true"));
+		async = Boolean.parseBoolean(System.getProperty("albacore.logger.async.enable", "true"));
 		if (async) {
 			tn = new AtomicInteger();
 			g = new ThreadGroup("AlbacoreLoggerThread");
