@@ -32,8 +32,8 @@ public interface IO extends Sizable, Openable {
 
 		private static int calcParallelism() {
 			Logger logger = Logger.getLogger(Context.class);
-			if (Configs.MAIN.contains(PARALLELISM_RATIO_KEY)) {
-				double r = Double.parseDouble(Configs.MAIN.get(PARALLELISM_RATIO_KEY));
+			if (Configs.has(PARALLELISM_RATIO_KEY)) {
+				double r = Double.parseDouble(Configs.gets(PARALLELISM_RATIO_KEY));
 				int p = 16 + (int) Math.round((ForkJoinPool.getCommonPoolParallelism() - 16) * (r - 1));
 				if (p < 2) p = 2;
 				logger.info("AlbacoreIO parallelism calced as: " + p + " [from: (((-D" + PARALLELISM_RATIO_KEY + "(" + r

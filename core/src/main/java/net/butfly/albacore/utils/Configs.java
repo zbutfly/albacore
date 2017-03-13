@@ -19,10 +19,69 @@ import java.util.stream.Collectors;
 import net.butfly.albacore.utils.logger.Logger;
 
 public class Configs extends Utils {
-	public static final Conf MAIN = init(Systems.getMainClass());
+	private static final Conf MAIN_CONF = init(Systems.getMainClass());
 
-	private static final String DEFAULT_PROP_EXT() {
-		return "." + System.getProperty("albacore.config.ext", "properties");
+	@Retention(RetentionPolicy.RUNTIME)
+	@Target(ElementType.TYPE)
+	public @interface Config {
+		String value()
+
+		default "";
+
+		String prefix() default "";
+	}
+
+	public static final class Conf {
+		protected final Path file; // TODO: hot reloading
+		private final String prefix;
+		private final Map<String, String> entries;
+
+		public boolean prefixed() {
+			return !unprefixed(prefix);
+		}
+
+		private static boolean unprefixed(String p) {
+			return null == p || p.length() == 0;
+		}
+
+		public Conf(String prefix, Map<String, String> entries) {
+			super();
+			if (unprefixed(prefix)) this.prefix = null;
+			else {
+				if (!prefix.endsWith(".")) prefix = prefix + ".";
+				this.prefix = prefix;
+			}
+			this.file = null;
+			this.entries = entries;
+		}
+
+		public String keyp(String key) {
+			return prefixed() ? prefix + key : key;
+		}
+
+		public String get(String key) {
+			return gets(keyp(key));
+		}
+
+		public String get(String key, String def) {
+			return gets(keyp(key), def);
+		}
+
+		public String gets(String key) {
+			return entries.get(key);
+		}
+
+		public String gets(String key, String def) {
+			return entries.getOrDefault(key, def);
+		}
+
+		public boolean has(String key) {
+			return entries.containsKey(key);
+		}
+
+		public Conf prefix(String prefix) {
+			return new Conf(prefixed() ? this.prefix + prefix : prefix, entries);
+		}
 	}
 
 	public static Conf init() {
@@ -54,11 +113,8 @@ public class Configs extends Utils {
 	}
 
 	/**
-	 * @param configPrefix
-	 * @param cl
-	 * @param conf
-	 * @return
-	 * @deprecated use {@code @Config} to define config file and prefix.
+	 * @deprecated use annotation {@code @Config} to define config file and
+	 *             prefix.
 	 */
 	@Deprecated
 	public static Conf init(Class<?> cl, String filename, String prefix) {
@@ -121,49 +177,30 @@ public class Configs extends Utils {
 		return CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_HYPHEN, configed.getSimpleName());
 	}
 
-	@Retention(RetentionPolicy.RUNTIME)
-	@Target(ElementType.TYPE)
-	public @interface Config {
-		String value()
-
-		default "";
-
-		String prefix() default "";
+	public static String get(String key) {
+		return MAIN_CONF.get(key);
 	}
 
-	public static final class Conf {
-		protected final Path file; // TODO: hot reloading
-		private final String prefix;
-		private final Map<String, String> entries;
-
-		public Conf(String prefix, Map<String, String> entries) {
-			super();
-			if (null == prefix || prefix.length() == 0) this.prefix = null;
-			else {
-				if (!prefix.endsWith(".")) prefix = prefix + ".";
-				this.prefix = prefix;
-			}
-			this.file = null;
-			this.entries = entries;
-		}
-
-		public final String get(String key) {
-			return entries.get(null == prefix ? key : prefix + key);
-		}
-
-		public final String get(String key, String def) {
-			return entries.getOrDefault(null == prefix ? key : prefix + key, def);
-		}
-
-		public boolean contains(String key) {
-			return entries.containsKey(key);
-		}
-
-		public Conf prefix(String prefix) {
-			return new Conf(prefix, entries);
-		}
+	public static String get(String key, String def) {
+		return MAIN_CONF.get(key, def);
 	}
 
+	public static String gets(String key) {
+		return null;
+	}
+
+	public static String gets(String key, String def) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static boolean has(String key) {
+		return MAIN_CONF.has(key);
+	}
+
+	public static Conf prefix(String prefix) {
+		return new Conf(prefix, MAIN_CONF.entries);
+	}
 	// other utils
 
 	public static Map<String, String> mapProps(Properties props) {
@@ -180,4 +217,7 @@ public class Configs extends Utils {
 		return props;
 	}
 
+	private static final String DEFAULT_PROP_EXT() {
+		return "." + System.getProperty("albacore.config.ext", "properties");
+	}
 }

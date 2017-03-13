@@ -25,7 +25,7 @@ public final class BsonObjectSerder extends ContentTypeSerderBase implements Ser
 	private final LinkedBlockingQueue<Pair<BSONDecoder, BSONCallback>> decoders;
 
 	public BsonObjectSerder() {
-		this(Integer.parseInt(Configs.MAIN.get("albacore.serder.bson.parallelism", "100")));
+		this(Integer.parseInt(Configs.gets("albacore.serder.bson.parallelism", "100")));
 	}
 
 	@Deprecated
