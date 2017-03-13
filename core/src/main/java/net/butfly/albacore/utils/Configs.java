@@ -63,7 +63,7 @@ public class Configs extends Utils {
 			return gets(keyp(key));
 		}
 
-		public String get(String key, String def) {
+		public String get(String key, String... def) {
 			return gets(keyp(key), def);
 		}
 
@@ -71,8 +71,14 @@ public class Configs extends Utils {
 			return entries.get(key);
 		}
 
-		public String gets(String key, String def) {
-			return entries.getOrDefault(key, def);
+		public String gets(String key, String... def) {
+			return entries.getOrDefault(key, first(def));
+		}
+
+		private String first(String... def) {
+			for (String s : def)
+				if (null != s) return s;
+			return null;
 		}
 
 		public boolean has(String key) {
@@ -181,7 +187,7 @@ public class Configs extends Utils {
 		return MAIN_CONF.get(key);
 	}
 
-	public static String get(String key, String def) {
+	public static String get(String key, String... def) {
 		return MAIN_CONF.get(key, def);
 	}
 
@@ -189,7 +195,7 @@ public class Configs extends Utils {
 		return null;
 	}
 
-	public static String gets(String key, String def) {
+	public static String gets(String key, String... def) {
 		// TODO Auto-generated method stub
 		return null;
 	}
