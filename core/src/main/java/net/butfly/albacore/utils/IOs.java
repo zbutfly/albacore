@@ -42,10 +42,12 @@ public final class IOs extends Utils {
 	}
 
 	public static <S extends OutputStream> S writeBytes(S out, byte[]... bytes) throws IOException {
+		logger.trace(() -> bytes.length > 1 ? "Write bytes: " + bytes.length : null);
 		for (byte[] b : bytes) {
 			if (null == b) writeInt(out, -1);
 			else {
 				writeInt(out, b.length);
+				logger.trace(() -> "\tIO write bytes: " + b.length);
 				if (b.length > 0) out.write(b);
 			}
 		}
@@ -61,17 +63,22 @@ public final class IOs extends Utils {
 		while ((r = in.read(bytes)) < l && l > 0)
 			// not full read but no data remained.
 			if (r == -1) throw new IOException();
+		logger.trace(() -> "Read bytes: " + bytes.length);
 		return bytes;
 	}
 
 	public static <T> List<T> readBytes(InputStream in, int count, Function<byte[], T> der) throws IOException {
 		List<T> r = new ArrayList<>();
-		for (int i = 0; i < count; i++)
-			r.add(der.apply(readBytes(in)));
+		for (int i = 0; i < count; i++) {
+			byte[] b = readBytes(in);
+			r.add(der.apply(b));
+			logger.trace(() -> "Read bytes as obj: " + b.length);
+		}
 		return r;
 	}
 
 	public static <S extends OutputStream> S writeInt(S out, int i) throws IOException {
+		logger.trace("Write int: " + i);
 		out.write(i & 0x000000FF);
 		i >>= 8;
 		out.write(i & 0x000000FF);
@@ -88,10 +95,12 @@ public final class IOs extends Utils {
 		if ((b = in.read()) >= 0) i |= b << (offset += 8);
 		if ((b = in.read()) >= 0) i |= b << (offset += 8);
 		if ((b = in.read()) >= 0) i |= b << (offset += 8);
+		logger.trace("Read int: " + i);
 		return i;
 	}
 
 	public static <S extends OutputStream> S writeObj(S out, Object obj) throws IOException {
+		logger.trace(() -> "Write object: " + (null == obj ? null : obj.getClass().getName()));
 		try (ObjectOutputStream os = new ObjectOutputStream(out)) {
 			os.writeObject(obj);
 		}
@@ -102,7 +111,9 @@ public final class IOs extends Utils {
 	public static <T> T readObj(InputStream in) throws IOException {
 		try (ObjectInputStream is = new ObjectInputStream(in)) {
 			try {
-				return (T) is.readObject();
+				T obj = (T) is.readObject();
+				logger.trace(() -> "Read object: " + (null == obj ? null : obj.getClass().getName()));
+				return obj;
 			} catch (ClassNotFoundException e) {
 				throw new IOException(e);
 			}
@@ -116,7 +127,9 @@ public final class IOs extends Utils {
 			int n;
 			while (-1 != (n = is.read(buffer)))
 				os.write(buffer, 0, n);
-			return os.toByteArray();
+			byte[] b = os.toByteArray();
+			logger.trace(() -> "Read all: " + b.length);
+			return b;
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
