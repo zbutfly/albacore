@@ -9,6 +9,11 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
 
 import net.butfly.albacore.utils.logger.Logger;
 
@@ -59,7 +64,14 @@ public final class IOs extends Utils {
 		return bytes;
 	}
 
-	public static void writeInt(OutputStream out, int i) throws IOException {
+	public static <T> List<T> readBytes(InputStream in, int count, Function<byte[], T> der) throws IOException {
+		List<T> r = new ArrayList<>();
+		for (int i = 0; i < count; i++)
+			r.add(der.apply(readBytes(in)));
+		return r;
+	}
+
+	public static <S extends OutputStream> S writeInt(S out, int i) throws IOException {
 		out.write(i & 0x000000FF);
 		i >>= 8;
 		out.write(i & 0x000000FF);
@@ -67,6 +79,7 @@ public final class IOs extends Utils {
 		out.write(i & 0x000000FF);
 		i >>= 8;
 		out.write(i & 0x000000FF);
+		return out;
 	}
 
 	public static int readInt(InputStream in) throws IOException {
@@ -76,6 +89,24 @@ public final class IOs extends Utils {
 		if ((b = in.read()) >= 0) i |= b << (offset += 8);
 		if ((b = in.read()) >= 0) i |= b << (offset += 8);
 		return i;
+	}
+
+	public static <S extends OutputStream> S writeObj(S out, Object obj) throws IOException {
+		try (ObjectOutputStream os = new ObjectOutputStream(out)) {
+			os.writeObject(obj);
+		}
+		return out;
+	}
+
+	@SuppressWarnings("unchecked")
+	public static <T> T readObj(InputStream in) throws IOException {
+		try (ObjectInputStream is = new ObjectInputStream(in)) {
+			try {
+				return (T) is.readObject();
+			} catch (ClassNotFoundException e) {
+				throw new IOException(e);
+			}
+		}
 	}
 
 	public static byte[] readAll(final InputStream is) {
@@ -95,6 +126,15 @@ public final class IOs extends Utils {
 		File dir = new File(path + "/");
 		if (!dir.exists() || !dir.isDirectory()) dir.mkdirs();
 		return dir.getCanonicalPath();
+	}
+
+	public static Path mkdirs(Path path) {
+		if (Files.exists(path) && Files.isDirectory(path)) return path;
+		try {
+			return Files.createDirectories(path);
+		} catch (IOException e) {
+			throw new IllegalArgumentException("Non-existed directory [" + path + "] could not be created.");
+		}
 	}
 
 	public static byte[] toByte(Object obj) {
