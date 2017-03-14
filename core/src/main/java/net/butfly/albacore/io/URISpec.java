@@ -1,92 +1,135 @@
 package net.butfly.albacore.io;
 
+import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import net.butfly.albacore.utils.Pair;
 
-public class URISpec {
-	protected final List<String> schemes;
-	protected final String username;
-	protected final String password;
-	protected final List<Pair<String, Integer>> hosts;
-	protected final List<String> paths;
-	protected final Map<String, String> query;
-	protected final String fragment;
+/**
+ * Parse URI string like:
+ * <ul>
+ * <li>schema1:schema2:schema3://hello:world@host1:80,host2:81,host3:82/p1/p2/p3/file.ext?q1=v1&q2=v2#ref</li>
+ * <li>schema1:schema2:schema3:host1,host2,host3/p1/p2/p3/file.ext?q1=v1&q2=v2#ref</li>
+ * </ul>
+ * 
+ * @author zx
+ */
+public final class URISpec implements Serializable {
+	private static final long serialVersionUID = -2912181622902556535L;
+	private final List<String> schemes;
+	private final boolean opaque;
+	private final String username;
+	private final String password;
+	private final List<Pair<String, Integer>> hosts;
+	private final List<String> paths;
+	private final String file;
+
+	private final Map<String, String> query;
+	private final String frag;
+	private final int defPort;
 
 	public URISpec(String str) {
 		this(str, -1);
 	}
 
-	public URISpec(String str, int defaultPort) {
+	private URISpec(String schemes, boolean opaque, String username, String password, String host, int defPort, String pathfile,
+			String frag, String query) {
 		super();
-		schemes = new ArrayList<>();
-		URI uri = parseURI(str, schemes);
-		hosts = new ArrayList<>();
-		if (uri.getHost() != null) {
-			if (null != uri.getUserInfo()) {
-				String[] u = uri.getUserInfo().split(":", 2);
-				username = u[0];
-				password = u.length == 1 ? null : u[1];
-			} else {
-				username = null;
-				password = null;
-			}
-			hosts.add(new Pair<>(uri.getHost(), uri.getPort()));
+		this.opaque = opaque;
+		this.schemes = Arrays.stream(schemes.split(":")).collect(Collectors.toList());
+		this.username = username;
+		this.password = password;
+		this.hosts = parseHostPort(host, defPort);
+		Pair<String, String> divs = split2last(pathfile, '/');
+		this.paths = Arrays.asList(divs.v1().split("/"));
+		this.file = divs.v2();
+		this.query = parseQueryMap(query);
+		this.frag = frag;
+		this.defPort = defPort;
+	}
+
+	public URISpec(String spec, int defaultPort) {
+		super();
+
+		String remain = spec;
+		String[] segs;
+		Pair<String, String> divs;
+
+		frag = (divs = split2last(remain, '#')).v2();
+		remain = divs.v1();
+
+		query = parseQueryMap((divs = split2last(remain, '?')).v2());
+		remain = divs.v1();
+
+		if ((segs = remain.split("://", 2)).length == 2) {
+			opaque = false;
+			schemes = Arrays.asList(segs[0].split(":"));
+			remain = segs[1];
 		} else {
-			String[] a = uri.getAuthority().split("@", 2);
-			if (a.length == 1) {
-				username = null;
-				password = null;
-				fillHostPort(a[0], defaultPort);
-			} else {
-				String[] up = a[0].split(":", 2);
-				username = up[0];
-				password = up.length == 1 ? null : up[1];
-				fillHostPort(a[1], defaultPort);
+			opaque = true;
+			remain = (divs = split2last(remain, ':')).v1();
+			if (divs.v2() != null) {
+				schemes = Arrays.asList(remain.split(":"));
+				remain = divs.v2();
+			} else schemes = new ArrayList<>();
+		}
+
+		if ((segs = remain.split("/", 2)).length == 2) {
+			file = ornull((divs = split2last(segs[1], '/')).v2());
+			paths = Arrays.asList(divs.v1().split("/"));
+		} else {
+			file = null;
+			paths = new ArrayList<>();
+		}
+
+		if ((segs = segs[0].split("@", 2)).length == 2) {
+			remain = segs[1];
+			password = (segs = segs[0].split(":", 2)).length == 2 ? segs[1] : null;
+			username = ornull(segs[0]);
+		} else {
+			remain = segs[0];
+			password = null;
+			username = null;
+		}
+		hosts = parseHostPort(remain, defaultPort);
+		defPort = defaultPort;
+	}
+
+	private Map<String, String> parseQueryMap(String query) {
+		if (query == null) return new ConcurrentHashMap<>();
+		return Arrays.stream(query.split("&")).parallel().map(q -> q.split("=", 2)).collect(Collectors.toConcurrentMap(kv -> kv[0],
+				kv -> kv[1]));
+	}
+
+	private List<Pair<String, Integer>> parseHostPort(String remain, int defaultPort) {
+		return Arrays.stream(remain.split(",")).map(s -> {
+			String[] hp = s.split(":", 2);
+			String h;
+			int p;
+			try {
+				p = hp.length == 2 ? Integer.parseInt(hp[1]) : defaultPort;
+				h = hp[0];
+			} catch (NumberFormatException e) {
+				p = defaultPort;
+				h = s;
 			}
-		}
-		String p = uri.getPath();
-		paths = null == p ? new ArrayList<>()
-				: Stream.of(uri.getPath().split("/")).filter(seg -> seg.trim().length() > 0).collect(Collectors.toList());
-		query = new ConcurrentHashMap<>();
-		if (null != uri.getQuery()) for (String q : uri.getQuery().split("&")) {
-			String[] kv = q.split("=", 2);
-			query.put(kv[0], kv.length == 1 ? "" : kv[1]);
-		}
-		fragment = uri.getFragment();
-	}
-
-	private void fillHostPort(String hostPorts, int defaultPort) {
-		for (String hostPort : hostPorts.split(",")) {
-			String[] hp = hostPort.split(":", 2);
-			hosts.add(new Pair<>(hp[0], hp.length == 1 ? defaultPort : Integer.parseInt(hp[1])));
-		}
-	}
-
-	private static URI parseURI(String spec, List<String> schemes) {
-		URI uri;
-		try {
-			uri = new URI(spec);
-		} catch (URISyntaxException e) {
-			throw new RuntimeException(e);
-		}
-		schemes.add(uri.getScheme());
-		if (uri.getAuthority() != null) return uri;
-		return parseURI(uri.getSchemeSpecificPart(), schemes);
+			return new Pair<>(h, p < 0 ? null : p);
+		}).collect(Collectors.toList());
 	}
 
 	public String getScheme() {
-		return schemes.isEmpty() ? null : new StringBuilder().append(Joiner.on(':').join(schemes)).toString();
+		return schemes.isEmpty() ? null : schemes.stream().collect(Collectors.joining(":"));
 	}
 
 	public String getUsername() {
@@ -102,7 +145,8 @@ public class URISpec {
 	}
 
 	public String getHost() {
-		return Joiner.on(',').join(Streams.of(hosts).map(p -> p.v1() + (p.v2() <= 0 ? "" : (":" + p.v2()))).iterator());
+		return hosts.stream().map(p -> p.v2() == null || p.v2() < 0 ? p.v1()
+				: new StringBuilder(p.v1()).append(":").append(p.v2()).toString()).collect(Collectors.joining(","));
 	}
 
 	public String[] getPaths() {
@@ -137,14 +181,20 @@ public class URISpec {
 		return paths.isEmpty() ? null : "/" + join(paths.toArray(new String[paths.size()]));
 	}
 
+	public String getPathFile() {
+		String p = getPath();
+		if (p == null) return null;
+		return null == file ? p : p + "/" + file;
+	}
+
 	public String getQuery() {
 		return query.isEmpty() ? null
-				: new StringBuilder().append(Joiner.on('&').join(Streams.of(query.entrySet()).map(e -> e.getKey().toString() + "=" + e
-						.getValue().toString()).iterator())).toString();
+				: query.entrySet().parallelStream().map(e -> e.getKey().toString() + "=" + e.getValue().toString()).collect(Collectors
+						.joining("&"));
 	}
 
 	public Map<String, String> getParameters() {
-		return query;
+		return ImmutableMap.copyOf(query);
 	}
 
 	public String getParameter(String name) {
@@ -156,7 +206,15 @@ public class URISpec {
 	}
 
 	public String getFragment() {
-		return fragment;
+		return frag;
+	}
+
+	public boolean isOpaque() {
+		return opaque;
+	}
+
+	public String getFile() {
+		return file;
 	}
 
 	public String getAuthority() {
@@ -170,6 +228,10 @@ public class URISpec {
 		return sb.toString();
 	}
 
+	public int getDefaultPort() {
+		return defPort;
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
@@ -178,7 +240,7 @@ public class URISpec {
 		sb.append(getAuthority());
 		if (!paths.isEmpty()) sb.append(getPath());
 		if (!query.isEmpty()) sb.append('?').append(getQuery());
-		if (fragment != null) sb.append('#').append(fragment);
+		if (frag != null) sb.append('#').append(frag);
 		return sb.toString();
 	}
 
@@ -188,5 +250,43 @@ public class URISpec {
 		} catch (URISyntaxException e) {
 			return null;
 		}
+	}
+
+	@Override
+	public URISpec clone() {
+		return new URISpec(getScheme(), opaque, username, password, getHost(), defPort, getPathFile(), frag, getQuery());
+	}
+
+	public URISpec redirect(String host, int port) {
+		String h = host;
+		if (port >= 0) h += ":" + port;
+		return new URISpec(getScheme(), opaque, username, password, h, defPort, getPathFile(), frag, getQuery());
+	}
+
+	public URISpec redirect(String host) {
+		return new URISpec(getScheme(), opaque, username, password, host, defPort, getPathFile(), frag, getQuery());
+	}
+
+	public URISpec reauth(String username, String password) {
+		return new URISpec(getScheme(), opaque, username, password, getHost(), defPort, getPathFile(), frag, getQuery());
+	}
+
+	private Pair<String, String> split2last(String spec, char split) {
+		int pos = spec.lastIndexOf(split);
+		return pos > 0 ? new Pair<>(spec.substring(0, pos), spec.substring(pos + 1)) : new Pair<>(spec, null);
+	}
+
+	private String ornull(String spec) {
+		return "".equals(spec) ? null : spec;
+	}
+
+	public static void main(String... args) throws URISyntaxException {
+		URISpec u = new URISpec("s1:s2:s3://hello:world@host1:80,host2:81,host3:82/p1/p2/p3/file.ext?q=v#ref");
+		u.getAuthority();
+		URISpec u1 = u.redirect("localhost");
+		System.out.println(u + "\n" + u1);
+		u = new URISpec("file:///./hello.txt");
+		u1 = new URISpec("file://C:/hello.txt");
+		System.out.println(u + "\n" + u1);
 	}
 }
