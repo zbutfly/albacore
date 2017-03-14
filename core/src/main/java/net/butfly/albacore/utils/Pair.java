@@ -40,7 +40,7 @@ public final class Pair<T1, T2> implements Serializable, Entry<T1, T2> {
 
 	@Override
 	public String toString() {
-		return "[" + v1 + "," + v2 + "]";
+		return "<" + v1 + "," + v2 + ">";
 	}
 
 	@Deprecated

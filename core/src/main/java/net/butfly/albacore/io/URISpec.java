@@ -20,13 +20,15 @@ import net.butfly.albacore.utils.Pair;
  * Parse URI string like:
  * <ul>
  * <li>schema1:schema2:schema3://hello:world@host1:80,host2:81,host3:82/p1/p2/p3/file.ext?q1=v1&q2=v2#ref</li>
- * <li>schema1:schema2:schema3:host1,host2,host3/p1/p2/p3/file.ext?q1=v1&q2=v2#ref</li>
+ * <li>schema1:schema2:schema3:username@host1,host2,host3/p1/p2/p3/file.ext?q1=v1&q2=v2#ref</li>
  * </ul>
  * 
  * @author zx
  */
 public final class URISpec implements Serializable {
 	private static final long serialVersionUID = -2912181622902556535L;
+	private static final char SLASH = '/';
+	private static final String SLASHS = "/";
 	private final List<String> schemes;
 	private final boolean opaque;
 	private final String username;
@@ -51,9 +53,14 @@ public final class URISpec implements Serializable {
 		this.username = username;
 		this.password = password;
 		this.hosts = parseHostPort(host, defPort);
-		Pair<String, String> divs = split2last(pathfile, '/');
-		this.paths = Arrays.asList(divs.v1().split("/"));
-		this.file = divs.v2();
+		if (pathfile == null) {
+			this.paths = new ArrayList<>();
+			this.file = null;
+		} else {
+			Pair<String, String> divs = split2last(pathfile, SLASH);
+			this.paths = Arrays.asList(divs.v1().split(SLASHS));
+			this.file = divs.v2();
+		}
 		this.query = parseQueryMap(query);
 		this.frag = frag;
 		this.defPort = defPort;
@@ -85,9 +92,9 @@ public final class URISpec implements Serializable {
 			} else schemes = new ArrayList<>();
 		}
 
-		if ((segs = remain.split("/", 2)).length == 2) {
-			file = ornull((divs = split2last(segs[1], '/')).v2());
-			paths = Arrays.asList(divs.v1().split("/"));
+		if ((segs = remain.split(SLASHS, 2)).length == 2) {
+			file = ornull((divs = split2last(segs[1], SLASH)).v2());
+			paths = Arrays.asList(divs.v1().split(SLASHS));
 		} else {
 			file = null;
 			paths = new ArrayList<>();
@@ -119,10 +126,10 @@ public final class URISpec implements Serializable {
 			int p;
 			try {
 				p = hp.length == 2 ? Integer.parseInt(hp[1]) : defaultPort;
-				h = hp[0];
+				h = ornull(hp[0]);
 			} catch (NumberFormatException e) {
 				p = defaultPort;
-				h = s;
+				h = ornull(s);
 			}
 			return new Pair<>(h, p < 0 ? null : p);
 		}).collect(Collectors.toList());
@@ -145,8 +152,13 @@ public final class URISpec implements Serializable {
 	}
 
 	public String getHost() {
-		return hosts.stream().map(p -> p.v2() == null || p.v2() < 0 ? p.v1()
-				: new StringBuilder(p.v1()).append(":").append(p.v2()).toString()).collect(Collectors.joining(","));
+		return hosts.stream().map(p -> {
+			boolean nop = p.v2() == null || p.v2() < 0;
+			if (p.v1() == null && nop) return null;
+			if (p.v1() == null) return ":" + p.v2();
+			if (nop) return p.v1();
+			return p.v1() + ":" + p.v2();
+		}).filter(Streams.NOT_NULL).collect(Collectors.joining(","));
 	}
 
 	public String[] getPaths() {
@@ -178,13 +190,18 @@ public final class URISpec implements Serializable {
 	}
 
 	public String getPath() {
-		return paths.isEmpty() ? null : "/" + join(paths.toArray(new String[paths.size()]));
+		return paths.isEmpty() ? null : SLASHS + join(paths.toArray(new String[paths.size()]));
+	}
+
+	private String getRowPathFile() {
+		if (paths.isEmpty()) return null;
+		String p = paths.isEmpty() ? null : join(paths.toArray(new String[paths.size()]));
+		return null == file ? p : p + SLASHS + file;
 	}
 
 	public String getPathFile() {
-		String p = getPath();
-		if (p == null) return null;
-		return null == file ? p : p + "/" + file;
+		if (paths.isEmpty()) return null;
+		return null == file ? getPath() : getPath() + SLASHS + file;
 	}
 
 	public String getQuery() {
@@ -238,7 +255,8 @@ public final class URISpec implements Serializable {
 		if (!schemes.isEmpty()) sb.append(getScheme()).append(':');
 		sb.append("//");
 		sb.append(getAuthority());
-		if (!paths.isEmpty()) sb.append(getPath());
+		String pf = getPathFile();
+		if (null != pf) sb.append(pf);
 		if (!query.isEmpty()) sb.append('?').append(getQuery());
 		if (frag != null) sb.append('#').append(frag);
 		return sb.toString();
@@ -254,21 +272,22 @@ public final class URISpec implements Serializable {
 
 	@Override
 	public URISpec clone() {
-		return new URISpec(getScheme(), opaque, username, password, getHost(), defPort, getPathFile(), frag, getQuery());
+		return new URISpec(getScheme(), opaque, username, password, getHost(), defPort, getRowPathFile(), frag, getQuery());
 	}
 
 	public URISpec redirect(String host, int port) {
 		String h = host;
 		if (port >= 0) h += ":" + port;
-		return new URISpec(getScheme(), opaque, username, password, h, defPort, getPathFile(), frag, getQuery());
+		return new URISpec(getScheme(), opaque, username, password, h, defPort, getRowPathFile(), frag, getQuery());
 	}
 
 	public URISpec redirect(String host) {
-		return new URISpec(getScheme(), opaque, username, password, host, defPort, getPathFile(), frag, getQuery());
+		return new URISpec(getScheme(), opaque, username, password, host, defPort, getRowPathFile(), frag, getQuery());
 	}
 
 	public URISpec reauth(String username, String password) {
-		return new URISpec(getScheme(), opaque, username, password, getHost(), defPort, getPathFile(), frag, getQuery());
+		if (opaque) throw new IllegalArgumentException("opaque uri could not be reauth since no recoganizable password segment.");
+		return new URISpec(getScheme(), opaque, username, password, getHost(), defPort, getRowPathFile(), frag, getQuery());
 	}
 
 	private Pair<String, String> split2last(String spec, char split) {
@@ -281,12 +300,18 @@ public final class URISpec implements Serializable {
 	}
 
 	public static void main(String... args) throws URISyntaxException {
-		URISpec u = new URISpec("s1:s2:s3://hello:world@host1:80,host2:81,host3:82/p1/p2/p3/file.ext?q=v#ref");
-		u.getAuthority();
-		URISpec u1 = u.redirect("localhost");
-		System.out.println(u + "\n" + u1);
-		u = new URISpec("file:///./hello.txt");
-		u1 = new URISpec("file://C:/hello.txt");
-		System.out.println(u + "\n" + u1);
+		URISpec u;
+		u = new URISpec("mailto:zbutfly@gmail.com");
+		System.out.println(u);
+		u = new URISpec("s1:s2:s3://hello:world@host1:80,host2:81,host3:82/p1/p2/p3/file.ext?q=v#ref");
+		System.out.println(u);
+		u = u.redirect("redirected");
+		u = new URISpec("file://./hello.txt");
+		System.out.println(u);
+		u = new URISpec("file:///C:/hello.txt");
+		System.out.println(u);
+		u = u.redirect("redirected");
+		System.out.println(u);
 	}
+
 }
