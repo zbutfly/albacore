@@ -17,7 +17,15 @@ import java.util.stream.Stream;
 
 public final class Texts extends Utils {
 	public static boolean isEmpty(String str) {
-		return null == str || str.trim().length() > 0;
+		return null == str || str.trim().length() == 0;
+	}
+
+	public static boolean notEmpty(String str) {
+		return null != str && str.trim().length() > 0;
+	}
+
+	public static String orNull(String str) {
+		return notEmpty(str) ? str : null;
 	}
 
 	public static String byte2hex(byte[] data) {

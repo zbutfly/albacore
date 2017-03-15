@@ -3,7 +3,6 @@ package net.butfly.albacore.io;
 import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +14,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import net.butfly.albacore.utils.Pair;
+import net.butfly.albacore.utils.Texts;
 
 /**
  * Parse URI string like:
@@ -29,12 +29,12 @@ public final class URISpec implements Serializable {
 	private static final long serialVersionUID = -2912181622902556535L;
 	private static final char SLASH = '/';
 	private static final String SLASHS = "/";
-	private final List<String> schemes;
+	private final String[] schemes;
 	private final boolean opaque;
 	private final String username;
 	private final String password;
 	private final List<Pair<String, Integer>> hosts;
-	private final List<String> paths;
+	private final String[] paths;
 	private final String file;
 
 	private final Map<String, String> query;
@@ -49,21 +49,25 @@ public final class URISpec implements Serializable {
 			String queryString) {
 		super();
 		this.opaque = opaque;
-		schemes = Arrays.stream(scheme.split(":")).collect(Collectors.toList());
+		schemes = parseScheme(scheme);
 		this.username = username;
 		this.password = password;
 		hosts = parseHostPort(host, defPort);
 		if (pathfile == null) {
-			paths = new ArrayList<>();
+			paths = new String[0];
 			file = null;
 		} else {
-			Pair<List<String>, String> pf = parsePathFile(pathfile);
+			Pair<String[], String> pf = parsePathFile(pathfile);
 			paths = pf.v1();
 			file = pf.v2();
 		}
 		query = parseQueryMap(queryString);
 		this.frag = frag;
 		this.defPort = defPort;
+	}
+
+	private String[] parseScheme(String scheme) {
+		return Arrays.stream(scheme.split(":")).filter(Texts::notEmpty).toArray(i -> new String[i]);
 	}
 
 	public URISpec(String spec, int defaultPort) {
@@ -81,30 +85,30 @@ public final class URISpec implements Serializable {
 
 		if ((segs = remain.split("://", 2)).length == 2) {
 			opaque = false;
-			schemes = Arrays.asList(segs[0].split(":"));
+			schemes = parseScheme(segs[0]);
 			remain = segs[1];
 		} else {
 			opaque = true;
 			remain = (divs = split2last(remain, ':')).v1();
 			if (divs.v2() != null) {
-				schemes = Arrays.asList(remain.split(":"));
+				schemes = parseScheme(remain);
 				remain = divs.v2();
-			} else schemes = new ArrayList<>();
+			} else schemes = new String[0];
 		}
 
 		if ((segs = remain.split(SLASHS, 2)).length == 2) {
-			Pair<List<String>, String> pf = parsePathFile(segs[1]);
+			Pair<String[], String> pf = parsePathFile(segs[1]);
 			paths = pf.v1();
 			file = pf.v2();
 		} else {
 			file = null;
-			paths = new ArrayList<>();
+			paths = new String[0];
 		}
 
 		if ((segs = segs[0].split("@", 2)).length == 2) {
 			remain = segs[1];
 			password = (segs = segs[0].split(":", 2)).length == 2 ? segs[1] : null;
-			username = ornull(segs[0]);
+			username = Texts.orNull(segs[0]);
 		} else {
 			remain = segs[0];
 			password = null;
@@ -114,10 +118,10 @@ public final class URISpec implements Serializable {
 		defPort = defaultPort;
 	}
 
-	private Pair<List<String>, String> parsePathFile(String pathfile) {
+	private Pair<String[], String> parsePathFile(String pathfile) {
 		Pair<String, String> divs = split2last(pathfile, SLASH);
-		String f = ornull(divs.v2() == null ? divs.v1() : divs.v2());
-		List<String> ps = divs.v2() == null ? new ArrayList<>() : Arrays.asList(divs.v1().split(SLASHS));
+		String f = Texts.orNull(divs.v2() == null ? divs.v1() : divs.v2());
+		String[] ps = divs.v2() == null ? new String[0] : divs.v1().split(SLASHS);
 		return new Pair<>(ps, f);
 	}
 
@@ -134,17 +138,17 @@ public final class URISpec implements Serializable {
 			int p;
 			try {
 				p = hp.length == 2 ? Integer.parseInt(hp[1]) : defaultPort;
-				h = ornull(hp[0]);
+				h = Texts.orNull(hp[0]);
 			} catch (NumberFormatException e) {
 				p = defaultPort;
-				h = ornull(s);
+				h = Texts.orNull(s);
 			}
 			return new Pair<>(h, p < 0 ? null : p);
 		}).collect(Collectors.toList());
 	}
 
 	public String getScheme() {
-		return schemes.isEmpty() ? null : schemes.stream().collect(Collectors.joining(":"));
+		return schemes.length == 0 ? null : Arrays.stream(schemes).collect(Collectors.joining(":"));
 	}
 
 	public String getUsername() {
@@ -170,7 +174,7 @@ public final class URISpec implements Serializable {
 	}
 
 	public String[] getPaths() {
-		return paths.toArray(new String[paths.size()]);
+		return Arrays.copyOf(paths, paths.length);
 	}
 
 	private String join(String[] segs) {
@@ -178,28 +182,28 @@ public final class URISpec implements Serializable {
 	}
 
 	public String getPathAt(int index, String... defaults) {
-		return index >= paths.size() || index < 0 ? join(defaults) : paths.get(index);
+		return index >= paths.length || index < 0 ? join(defaults) : paths[index];
 	}
 
 	public String getPathAtLast(int index, String... defaults) {
-		return getPathAt(paths.size() - index - 1, defaults);
+		return getPathAt(paths.length - index - 1, defaults);
 	}
 
 	public String getPath(int segs) {
-		return join((segs > paths.size() ? paths : paths.subList(0, segs)).toArray(new String[paths.size()]));
+		return join(segs > paths.length ? paths : Arrays.copyOf(paths, segs));
 	}
 
 	public String getPathSkip(int segs) {
-		return join((segs >= paths.size() ? null : paths.subList(segs, paths.size())).toArray(new String[paths.size()]));
+		return join(segs >= paths.length ? null : Arrays.copyOfRange(paths, segs, paths.length));
 	}
 
 	private String paths() {
-		return join(paths.toArray(new String[paths.size()])) + SLASHS;
+		return join(paths) + SLASHS;
 	}
 
 	private String pathfile() {
-		if (paths.isEmpty() && file == null) return null;
-		if (paths.isEmpty()) return file;
+		if (paths.length == 0 && file == null) return null;
+		if (paths.length == 0) return file;
 		if (file == null) return paths();
 		return paths() + file;
 	}
@@ -257,8 +261,9 @@ public final class URISpec implements Serializable {
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
-		if (!schemes.isEmpty()) sb.append(getScheme()).append(':');
-		sb.append("//");
+		String s = getScheme();
+		if (s != null) sb.append(s).append(':');
+		if (!opaque) sb.append("//");
 		sb.append(getAuthority());
 		String pf = getPath();
 		sb.append(null == pf ? SLASHS : pf);
@@ -298,10 +303,6 @@ public final class URISpec implements Serializable {
 	private Pair<String, String> split2last(String spec, char split) {
 		int pos = spec.lastIndexOf(split);
 		return pos > 0 ? new Pair<>(spec.substring(0, pos), spec.substring(pos + 1)) : new Pair<>(spec, null);
-	}
-
-	private String ornull(String spec) {
-		return "".equals(spec) ? null : spec;
 	}
 
 	public static void main(String... args) throws URISyntaxException {
