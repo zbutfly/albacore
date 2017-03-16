@@ -192,12 +192,11 @@ public class Configs extends Utils {
 	}
 
 	public static String gets(String key) {
-		return null;
+		return MAIN_CONF.gets(key);
 	}
 
 	public static String gets(String key, String... def) {
-		// TODO Auto-generated method stub
-		return null;
+		return MAIN_CONF.gets(key, def);
 	}
 
 	public static boolean has(String key) {
