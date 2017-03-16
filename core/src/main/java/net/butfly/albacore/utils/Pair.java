@@ -86,4 +86,9 @@ public final class Pair<T1, T2> implements Serializable, Entry<T1, T2> {
 		if (null == v2 && p.v2 != v2) return false;
 		return v1.equals(p.v1()) && v2.equals(p.v2);
 	}
+
+	@Override
+	public int hashCode() {
+		return super.hashCode();
+	}
 }

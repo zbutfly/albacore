@@ -109,4 +109,9 @@ public final class Options implements Serializable {
 		return mode == ops.mode && timeout == ops.timeout && unblock == ops.unblock && repeat == ops.repeat && retry == ops.retry
 				&& concurrence == ops.concurrence && interval == ops.interval;
 	}
+
+	@Override
+	public int hashCode() {
+		return super.hashCode();
+	}
 }

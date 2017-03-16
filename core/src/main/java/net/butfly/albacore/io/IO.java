@@ -121,7 +121,7 @@ public interface IO extends Sizable, Openable {
 	 * @param accumulator
 	 * @return
 	 */
-	default <V> void eachs(Iterable<V> src, Consumer<V> doing) {
+	default <V> long eachs(Iterable<V> src, Consumer<V> doing) {
 		List<ListenableFuture<?>> fs = new ArrayList<>();
 		src.forEach(v -> fs.add(IO.listenRun(() -> doing.accept(v))));
 		for (ListenableFuture<?> f : fs)
@@ -130,6 +130,7 @@ public interface IO extends Sizable, Openable {
 			} catch (InterruptedException e) {} catch (ExecutionException e) {
 				logger().error("Subtask error", unwrap(e));
 			}
+		return fs.size();
 	}
 
 	// mapping
@@ -152,6 +153,10 @@ public interface IO extends Sizable, Openable {
 
 	static <V> List<V> list(Stream<V> stream) {
 		return Context.io.list(stream);
+	}
+
+	static <V, R> List<R> list(Stream<V> stream, Function<V, R> mapper) {
+		return Context.io.list(stream, mapper);
 	}
 
 	static <V, R> List<R> list(Iterable<V> col, Function<V, R> mapper) {

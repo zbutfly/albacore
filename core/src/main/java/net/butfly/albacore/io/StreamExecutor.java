@@ -126,6 +126,10 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 		return collect(Streams.of(stream), Collectors.toList());
 	}
 
+	public <V, R> List<R> list(Stream<V> stream, Function<V, R> mapper) {
+		return collect(Streams.of(stream).map(mapper), Collectors.toList());
+	}
+
 	public <V, R> List<R> list(Iterable<V> col, Function<V, R> mapper) {
 		return collect(col, mapper, Collectors.toList());
 	}
@@ -168,4 +172,5 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 		}
 		return null;
 	}
+
 }

@@ -1,6 +1,6 @@
 package net.butfly.albacore.io;
 
-import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import net.butfly.albacore.utils.logger.Logger;
@@ -9,8 +9,8 @@ interface Wrapper {
 	static <T> WrapInput<T> wrap(Input<?> base, Dequeue<T> d) {
 		WrapInput<T> i = new WrapInput<T>(base) {
 			@Override
-			public void dequeue(Consumer<Stream<T>> using, long batchSize) {
-				d.dequeue(using, batchSize);
+			public long dequeue(Function<Stream<T>, Long> using, long batchSize) {
+				return d.dequeue(using, batchSize);
 			}
 		};
 		i.open();
@@ -29,6 +29,9 @@ interface Wrapper {
 	}
 
 	abstract class WrapInput<V> implements Input<V> {
+		@Override
+		public abstract long dequeue(Function<Stream<V>, Long> using, long batchSize);
+
 		protected final Input<?> base;
 
 		protected WrapInput(Input<?> origin) {
@@ -64,43 +67,116 @@ interface Wrapper {
 		public long size() {
 			return base.size();
 		}
+
+		@Override
+		public String toString() {
+			return base.toString() + "WrapIn";
+		}
+
+		@Override
+		public boolean opened() {
+			return base.opened();
+		}
+
+		@Override
+		public boolean closed() {
+			return base.closed();
+		}
+
+		@Override
+		public void opening(Runnable handler) {
+			base.opening(handler);
+		}
+
+		@Override
+		public void closing(Runnable handler) {
+			base.closing(handler);
+		}
+
+		@Override
+		public void open() {
+			base.open();
+		}
+
+		@Override
+		public void close() {
+			base.close();
+		}
 	}
 
 	abstract class WrapOutput<V> implements Output<V> {
-		private final Output<?> origin;
+		@Override
+		public abstract long enqueue(Stream<V> items);
+
+		private final Output<?> base;
 
 		private WrapOutput(Output<?> origin) {
-			this.origin = origin;
+			this.base = origin;
 		}
 
 		@Override
 		public long capacity() {
-			return origin.capacity();
+			return base.capacity();
 		}
 
 		@Override
 		public boolean empty() {
-			return origin.empty();
+			return base.empty();
 		}
 
 		@Override
 		public boolean full() {
-			return origin.full();
+			return base.full();
 		}
 
 		@Override
 		public Logger logger() {
-			return origin.logger();
+			return base.logger();
 		}
 
 		@Override
 		public String name() {
-			return origin.name();
+			return base.name();
 		}
 
 		@Override
 		public long size() {
-			return origin.size();
+			return base.size();
+		}
+
+		@Override
+		public String toString() {
+			return base.toString() + "WrapOut";
+		}
+
+		@Override
+		public boolean opened() {
+			return base.opened();
+		}
+
+		@Override
+		public boolean closed() {
+			return base.closed();
+		}
+
+		@Override
+		public void opening(Runnable handler) {
+			base.opening(handler);
+		}
+
+		@Override
+		public void closing(Runnable handler) {
+			base.closing(handler);
+		}
+
+		@Override
+		public void open() {
+			base.open();
+		}
+
+		@Override
+		public void close() {
+			base.close();
 		}
 	}
 }

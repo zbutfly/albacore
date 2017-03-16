@@ -23,6 +23,7 @@ abstract class PumpImpl<V, P extends PumpImpl<V, P>> extends Namedly implements 
 
 	protected long batchSize = 1000;
 	protected final List<AutoCloseable> dependencies;
+	protected long forceTrace;
 
 	protected PumpImpl(String name, int parallelism) {
 		super(name);
@@ -30,6 +31,7 @@ abstract class PumpImpl<V, P extends PumpImpl<V, P>> extends Namedly implements 
 		if (parallelism < 0) this.parallelism = (int) Math.floor(Math.sqrt(IO.parallelism())) - parallelism;
 		else if (parallelism == 0) this.parallelism = 16;
 		else this.parallelism = parallelism;
+		forceTrace = batchSize / parallelism;
 		dependencies = new ArrayList<>();
 		logger().info("Pump [" + name + "] created with parallelism: " + parallelism);
 
@@ -69,6 +71,7 @@ abstract class PumpImpl<V, P extends PumpImpl<V, P>> extends Namedly implements 
 	@Override
 	public final PumpImpl<V, P> batch(long batchSize) {
 		this.batchSize = batchSize;
+		this.forceTrace = batchSize / parallelism;
 		return this;
 	}
 

@@ -1,6 +1,6 @@
 package net.butfly.albacore.io.queue;
 
-import java.util.function.Consumer;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -49,8 +49,8 @@ public interface Queue0<I, O> extends Input<O>, Output<I> {
 	default <O1> Queue0<I, O1> then(Function<O, O1> conv) {
 		Queue0<I, O1> i = new Queue0<I, O1>() {
 			@Override
-			public void dequeue(Consumer<Stream<O1>> using, long batchSize) {
-				Queue0.this.dequeue(s -> using.accept(s.map(conv)), batchSize);
+			public long dequeue(Function<Stream<O1>, Long> using, long batchSize) {
+				return Queue0.this.dequeue(s -> using.apply(s.map(conv)), batchSize);
 			}
 
 			@Override
@@ -71,9 +71,13 @@ public interface Queue0<I, O> extends Input<O>, Output<I> {
 	default <O1> Queue0<I, O1> thens(Function<Iterable<O>, Iterable<O1>> conv, int parallelism) {
 		Queue0<I, O1> i = new Queue0<I, O1>() {
 			@Override
-			public void dequeue(Consumer<Stream<O1>> using, long batchSize) {
-				Queue0.this.dequeue(s -> Streams.spatialMap(s, parallelism, t -> conv.apply(() -> Its.it(t)).spliterator()).forEach(
-						s1 -> using.accept(s1)), batchSize);
+			public long dequeue(Function<Stream<O1>, Long> using, long batchSize) {
+				return Queue0.this.dequeue(s -> {
+					AtomicLong c = new AtomicLong();
+					Streams.spatialMap(s, parallelism, t -> conv.apply(() -> Its.it(t)).spliterator()).forEach(s1 -> c.addAndGet(using
+							.apply(s1)));
+					return c.get();
+				}, batchSize);
 			}
 
 			@Override
@@ -94,8 +98,8 @@ public interface Queue0<I, O> extends Input<O>, Output<I> {
 	default <I0> Queue0<I0, O> prior(Converter<I0, I> conv) {
 		Queue0<I0, O> o = new Queue0<I0, O>() {
 			@Override
-			public void dequeue(Consumer<Stream<O>> using, long batchSize) {
-				Queue0.this.dequeue(using, batchSize);
+			public long dequeue(Function<Stream<O>, Long> using, long batchSize) {
+				return Queue0.this.dequeue(using, batchSize);
 			}
 
 			@Override
@@ -116,8 +120,8 @@ public interface Queue0<I, O> extends Input<O>, Output<I> {
 	default <I0> Queue0<I0, O> priors(Converter<Iterable<I0>, Iterable<I>> conv, int parallelism) {
 		Queue0<I0, O> o = new Queue0<I0, O>() {
 			@Override
-			public void dequeue(Consumer<Stream<O>> using, long batchSize) {
-				Queue0.this.dequeue(using, batchSize);
+			public long dequeue(Function<Stream<O>, Long> using, long batchSize) {
+				return Queue0.this.dequeue(using, batchSize);
 			}
 
 			@Override

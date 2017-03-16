@@ -1,6 +1,6 @@
 package net.butfly.albacore.io;
 
-import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import net.butfly.albacore.io.Wrapper.WrapInput;
@@ -20,8 +20,8 @@ class PrefetchInput<V> extends WrapInput<V> {
 	}
 
 	@Override
-	public void dequeue(Consumer<Stream<V>> using, long batchSize) {
-		pool.dequeue(using, batchSize);
+	public long dequeue(Function<Stream<V>, Long> using, long batchSize) {
+		return pool.dequeue(using, batchSize);
 	}
 
 	@Override

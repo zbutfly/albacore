@@ -33,4 +33,9 @@ public abstract class Bean<T extends Beans<T>> implements Beans<T> {
 			return this;
 		}
 	}
+
+	@Override
+	public int hashCode() {
+		return super.hashCode();
+	}
 }

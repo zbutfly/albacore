@@ -2,7 +2,7 @@ package net.butfly.albacore.io.queue;
 
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import net.butfly.albacore.io.Streams;
@@ -38,13 +38,16 @@ public abstract class QueueImpl<V> implements Queue<V> {
 
 	protected V dequeue() {
 		AtomicReference<V> ref = new AtomicReference<>();
-		dequeue(s -> ref.lazySet(s.findFirst().orElse(null)), 1);
+		dequeue(s -> {
+			ref.lazySet(s.findFirst().orElse(null));
+			return 1L;
+		}, 1);
 		return ref.get();
 	}
 
 	@Override
-	public void dequeue(Consumer<Stream<V>> using, long batchSize) {
-		using.accept(Streams.of(() -> dequeue(), batchSize, () -> empty() && opened()));
+	public long dequeue(Function<Stream<V>, Long> using, long batchSize) {
+		return using.apply(Streams.of(() -> dequeue(), batchSize, () -> empty() && opened()));
 	}
 
 	@Override

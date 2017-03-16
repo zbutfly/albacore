@@ -182,7 +182,7 @@ public final class URISpec implements Serializable {
 	}
 
 	public String getPathAt(int index, String... defaults) {
-		return index >= paths.length || index < 0 ? join(defaults) : paths[index];
+		return index >= 0 && index < paths.length ? paths[index] : defaults == null || defaults.length <= 0 ? null : join(defaults);
 	}
 
 	public String getPathAtLast(int index, String... defaults) {
