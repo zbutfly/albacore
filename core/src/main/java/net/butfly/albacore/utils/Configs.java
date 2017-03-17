@@ -75,6 +75,14 @@ public class Configs extends Utils {
 			return entries.getOrDefault(key, first(def));
 		}
 
+		public String getn(String priority, String key) {
+			return Texts.isEmpty(priority) ? get(key) : priority;
+		}
+
+		public String getn(String priority, String key, String... def) {
+			return Texts.isEmpty(priority) ? get(key, def) : priority;
+		}
+
 		private String first(String... def) {
 			for (String s : def)
 				if (null != s) return s;
@@ -197,6 +205,14 @@ public class Configs extends Utils {
 
 	public static String gets(String key, String... def) {
 		return MAIN_CONF.gets(key, def);
+	}
+
+	public static String getn(String priority, String key) {
+		return MAIN_CONF.getn(priority, key);
+	}
+
+	public static String getn(String priority, String key, String... def) {
+		return MAIN_CONF.getn(priority, key, def);
 	}
 
 	public static boolean has(String key) {
