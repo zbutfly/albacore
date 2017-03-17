@@ -9,7 +9,7 @@ import com.google.common.base.Supplier;
 import net.butfly.albacore.base.Namedly;
 import net.butfly.albacore.io.IO;
 import net.butfly.albacore.io.Openable;
-import net.butfly.albacore.io.OpenableThread;
+import net.butfly.albacore.io.ext.OpenableThread;
 import net.butfly.albacore.lambda.Runnable;
 
 abstract class PumpImpl<V, P extends PumpImpl<V, P>> extends Namedly implements Pump<V> {

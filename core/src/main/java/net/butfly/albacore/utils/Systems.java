@@ -12,8 +12,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
-import net.butfly.albacore.io.OpenableThread;
-import net.butfly.albacore.io.Streams;
+import net.butfly.albacore.io.ext.OpenableThread;
+import net.butfly.albacore.io.utils.Streams;
 import net.butfly.albacore.lambda.Consumer;
 import net.butfly.albacore.utils.logger.Logger;
 import sun.management.VMManagement;

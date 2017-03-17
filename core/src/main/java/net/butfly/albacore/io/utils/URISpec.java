@@ -1,4 +1,4 @@
-package net.butfly.albacore.io;
+package net.butfly.albacore.io.utils;
 
 import java.io.Serializable;
 import java.net.URI;

@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import net.butfly.albacore.io.Streams;
+import net.butfly.albacore.io.utils.Streams;
 import net.butfly.albacore.utils.parallel.Concurrents;
 
 public abstract class QueueImpl<V> implements Queue<V> {
@@ -38,11 +38,10 @@ public abstract class QueueImpl<V> implements Queue<V> {
 
 	protected V dequeue() {
 		AtomicReference<V> ref = new AtomicReference<>();
-		dequeue(s -> {
-			ref.lazySet(s.findFirst().orElse(null));
+		return 0 == dequeue(s -> {
+			ref.set(s.findFirst().orElse(null));
 			return 1L;
-		}, 1);
-		return ref.get();
+		}, 1) ? null : ref.get();
 	}
 
 	@Override

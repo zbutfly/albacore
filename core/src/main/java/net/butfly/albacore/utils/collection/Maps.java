@@ -6,7 +6,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import net.butfly.albacore.io.Streams;
+import net.butfly.albacore.io.utils.Streams;
 import net.butfly.albacore.utils.Pair;
 
 public class Maps {

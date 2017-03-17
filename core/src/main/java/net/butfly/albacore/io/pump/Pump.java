@@ -4,10 +4,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import net.butfly.albacore.io.FanOutput;
 import net.butfly.albacore.io.Input;
 import net.butfly.albacore.io.Openable;
 import net.butfly.albacore.io.Output;
+import net.butfly.albacore.io.ext.FanOutput;
 import net.butfly.albacore.io.stats.Statistical;
 import net.butfly.albacore.utils.Systems;
 

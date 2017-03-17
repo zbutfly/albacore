@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import net.butfly.albacore.io.utils.Streams;
 import net.butfly.albacore.utils.parallel.Suppliterator;
 
 public class StreamTest {

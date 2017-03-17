@@ -6,6 +6,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import net.butfly.albacore.base.Namedly;
+import net.butfly.albacore.io.utils.Streams;
 
 public abstract class InputImpl<V> extends Namedly implements Input<V>, Supplier<V>, Iterator<V> {
 	protected InputImpl() {

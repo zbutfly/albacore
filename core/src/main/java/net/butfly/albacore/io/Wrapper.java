@@ -5,7 +5,7 @@ import java.util.stream.Stream;
 
 import net.butfly.albacore.utils.logger.Logger;
 
-interface Wrapper {
+public interface Wrapper {
 	static <T> WrapInput<T> wrap(Input<?> base, Dequeue<T> d) {
 		WrapInput<T> i = new WrapInput<T>(base) {
 			@Override

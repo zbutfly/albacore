@@ -2,7 +2,7 @@ package net.butfly.albacore.io.stats;
 
 import java.util.stream.Stream;
 
-import net.butfly.albacore.io.Streams;
+import net.butfly.albacore.io.utils.Streams;
 import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.lambda.Supplier;
 import net.butfly.albacore.utils.Instances;

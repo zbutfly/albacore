@@ -1,7 +1,8 @@
-package net.butfly.albacore.io;
+package net.butfly.albacore.io.ext;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import net.butfly.albacore.io.Openable;
 import net.butfly.albacore.utils.parallel.Concurrents;
 
 public class OpenableThread extends Thread implements Openable {

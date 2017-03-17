@@ -1,8 +1,9 @@
-package net.butfly.albacore.io;
+package net.butfly.albacore.io.ext;
 
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import net.butfly.albacore.io.Input;
 import net.butfly.albacore.io.Wrapper.WrapInput;
 import net.butfly.albacore.io.queue.Queue;
 

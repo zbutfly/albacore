@@ -1,4 +1,4 @@
-package net.butfly.albacore.io;
+package net.butfly.albacore.io.utils;
 
 import static net.butfly.albacore.utils.Exceptions.unwrap;
 import static net.butfly.albacore.utils.Exceptions.wrap;

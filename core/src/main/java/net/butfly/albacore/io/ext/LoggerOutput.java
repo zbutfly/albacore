@@ -1,4 +1,4 @@
-package net.butfly.albacore.io.std;
+package net.butfly.albacore.io.ext;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -8,6 +8,8 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import net.butfly.albacore.io.queue.Queue0;
+import net.butfly.albacore.io.utils.Its;
+import net.butfly.albacore.io.utils.Streams;
 
 public interface Input<V> extends IO, Dequeue<V>, Supplier<V>, Iterator<V> {
 	static Input<?> NULL = (using, batchSize) -> 0;

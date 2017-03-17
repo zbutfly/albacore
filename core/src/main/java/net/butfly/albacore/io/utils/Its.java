@@ -1,4 +1,4 @@
-package net.butfly.albacore.io;
+package net.butfly.albacore.io.utils;
 
 import static net.butfly.albacore.utils.Exceptions.unwrap;
 
@@ -16,6 +16,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import net.butfly.albacore.io.IO;
 import net.butfly.albacore.utils.Utils;
 
 public final class Its extends Utils {

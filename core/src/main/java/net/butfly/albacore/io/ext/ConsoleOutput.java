@@ -1,4 +1,4 @@
-package net.butfly.albacore.io.std;
+package net.butfly.albacore.io.ext;
 
 import net.butfly.albacore.io.OutputImpl;
 

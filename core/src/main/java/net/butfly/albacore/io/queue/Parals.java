@@ -1,4 +1,4 @@
-package net.butfly.albacore.io;
+package net.butfly.albacore.io.queue;
 
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;

@@ -1,4 +1,4 @@
-package net.butfly.albacore.io;
+package net.butfly.albacore.io.ext;
 
 import static net.butfly.albacore.utils.Exceptions.unwrap;
 import static net.butfly.albacore.utils.Exceptions.wrap;
@@ -10,6 +10,9 @@ import java.util.stream.Stream;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import net.butfly.albacore.base.Namedly;
+import net.butfly.albacore.io.IO;
+import net.butfly.albacore.io.Output;
+import net.butfly.albacore.io.utils.Streams;
 
 public class FanOutput<V> extends Namedly implements Output<V> {
 	private final Iterable<? extends Output<V>> outputs;

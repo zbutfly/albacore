@@ -1,6 +1,6 @@
 package net.butfly.albacore.utils;
 
-import static net.butfly.albacore.io.Streams.of;
+import static net.butfly.albacore.io.utils.Streams.of;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,7 +15,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import net.butfly.albacore.io.Streams;
+import net.butfly.albacore.io.utils.Streams;
 import net.butfly.albacore.lambda.Converter;
 
 public final class Collections extends Utils {

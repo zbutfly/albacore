@@ -5,6 +5,8 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import net.butfly.albacore.io.queue.Queue0;
+import net.butfly.albacore.io.utils.Its;
+import net.butfly.albacore.io.utils.Streams;
 import net.butfly.albacore.lambda.Converter;
 
 public interface Output<V> extends IO, Consumer<Stream<V>>, Enqueue<V> {

@@ -4,6 +4,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
 import net.butfly.albacore.base.Namedly;
+import net.butfly.albacore.io.utils.Streams;
 import net.butfly.albacore.utils.parallel.Concurrents;
 
 public abstract class OutputImpl<V> extends Namedly implements Output<V> {

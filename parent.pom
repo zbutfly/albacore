@@ -156,14 +156,26 @@
 			<name>Sean Zhang</name>
 			<email>zbutfly@gmail.com</email>
 			<url>http://www.butfly.com</url>
-			<roles><role>master</role></roles>
+			<roles>
+				<role>master</role>
+			</roles>
 			<timezone>+8</timezone>
 			<properties>
 				<picUrl>http://tinyurl.com/zbutfly</picUrl>
 			</properties>
 		</developer>
 	</developers>
-	<prerequisites><maven>3.3</maven></prerequisites>
+	<prerequisites>
+		<maven>3.3</maven>
+	</prerequisites>
+	<dependencies>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.12</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
 	<dependencyManagement>
 		<dependencies>
 			<dependency>
