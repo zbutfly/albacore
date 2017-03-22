@@ -37,7 +37,7 @@ public interface IO extends Sizable, Openable {
 				double r = Double.parseDouble(Configs.gets(PARALLELISM_RATIO_KEY));
 				int p = 16 + (int) Math.round((ForkJoinPool.getCommonPoolParallelism() - 16) * (r - 1));
 				if (p < 2) p = 2;
-				logger.info("AlbacoreIO parallelism calced as: " + p + " [from: (((-D" + PARALLELISM_RATIO_KEY + "(" + r
+				logger.info("AlbacoreIO parallelism calced as: " + p + "\n\t[from: (((-D" + PARALLELISM_RATIO_KEY + "(" + r
 						+ ")) - 1) * (JVM_DEFAULT_PARALLELISM(" + ForkJoinPool.getCommonPoolParallelism()
 						+ ") - IO_DEFAULT_PARALLELISM(16))) + IO_DEFAULT_PARALLELISM(16), Max=JVM_DEFAULT_PARALLELISM, Min=2]");
 				return p;
