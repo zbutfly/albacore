@@ -25,6 +25,11 @@ public final class Reflections extends Utils {
 	private static final Logger logger = Logger.getLogger(Reflections.class);
 	private static final Joiner j = Joiner.on(";");
 
+	public static String packageName(Class<?> cl) {
+		Package pkg = cl.getPackage();
+		return null == pkg ? "" : cl.getPackage().getName();
+	}
+
 	public static boolean anyEmpty(Object... value) {
 		for (Object v : value) {
 			if (null == v) return true;

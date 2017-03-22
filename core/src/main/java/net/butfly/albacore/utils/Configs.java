@@ -133,7 +133,7 @@ public class Configs extends Utils {
 	@Deprecated
 	public static Conf init(Class<?> cl, String filename, String prefix) {
 		String ext = DEFAULT_PROP_EXT();
-		String defname = cl.getPackage().getName().replaceAll("\\.", "/") + "/" + calcClassConfigFile(cl) + "-default" + ext;
+		String defname = Reflections.packageName(cl).replaceAll("\\.", "/") + "/" + calcClassConfigFile(cl) + "-default" + ext;
 		if (!filename.endsWith(ext)) filename = filename + ext;
 		Logger logger = Logger.getLogger(cl);
 		logger.info("Config class"//
