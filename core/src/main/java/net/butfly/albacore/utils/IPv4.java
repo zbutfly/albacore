@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.stream.Collectors;
 
 public class IPv4 extends IPAddr {
-	private final int[] segs;;
+	private final int[] segs;
 
 	public IPv4(String spec) {
 		this(Arrays.stream(spec.split(".", 4)).mapToInt(i -> Integer.parseInt(i)).toArray());
