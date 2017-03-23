@@ -1,19 +1,19 @@
 package net.butfly.albacore.io.utils;
 
 import java.io.Serializable;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.UnknownHostException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import net.butfly.albacore.utils.Pair;
@@ -36,7 +36,7 @@ public final class URISpec implements Serializable {
 	private final boolean opaque;
 	private final String username;
 	private final String password;
-	private final List<Pair<String, Integer>> hosts;
+	private final InetSocketAddress[] hosts;
 	private final String[] paths;
 	private final String file;
 
@@ -134,7 +134,7 @@ public final class URISpec implements Serializable {
 				kv -> kv[1]));
 	}
 
-	private List<Pair<String, Integer>> parseHostPort(String remain, int defaultPort) {
+	private InetSocketAddress[] parseHostPort(String remain, int defaultPort) {
 		return Arrays.stream(remain.split(",")).map(s -> {
 			String[] hp = s.split(":", 2);
 			String h;
@@ -146,8 +146,8 @@ public final class URISpec implements Serializable {
 				p = defaultPort;
 				h = Texts.orNull(s);
 			}
-			return new Pair<>(h, p < 0 ? null : p);
-		}).collect(Collectors.toList());
+			return new InetSocketAddress(h, p < 0 ? 0 : p);
+		}).toArray(i -> new InetSocketAddress[i]);
 	}
 
 	public String getScheme() {
@@ -162,30 +162,18 @@ public final class URISpec implements Serializable {
 		return password;
 	}
 
+	@Deprecated
 	public List<Pair<String, Integer>> getHosts() {
-		return ImmutableList.copyOf(hosts);
+		return Arrays.stream(hosts).map(a -> new Pair<>(a.getHostName(), a.getPort())).collect(Collectors.toList());
 	}
 
 	public InetSocketAddress[] getInetAddrs() {
-		return hosts.stream().map(p -> {
-			InetAddress a;
-			try {
-				a = InetAddress.getByName(p.v1());
-			} catch (UnknownHostException e) {
-				return null;
-			}
-			return new InetSocketAddress(a, p.v2());
-		}).filter(Streams.NOT_NULL).toArray(i -> new InetSocketAddress[i]);
+		return Arrays.copyOf(hosts, hosts.length);
 	}
 
 	public String getHost() {
-		return hosts.stream().map(p -> {
-			boolean nop = p.v2() == null || p.v2() < 0;
-			if (p.v1() == null && nop) return null;
-			if (p.v1() == null) return ":" + p.v2();
-			if (nop) return p.v1();
-			return p.v1() + ":" + p.v2();
-		}).filter(Streams.NOT_NULL).collect(Collectors.joining(","));
+		return Arrays.stream(hosts).map(a -> a.getHostName() + (a.getPort() >= 0 ? ":" + a.getPort() : "")).collect(Collectors.joining(
+				","));
 	}
 
 	public String[] getPaths() {
@@ -193,7 +181,7 @@ public final class URISpec implements Serializable {
 	}
 
 	private String join(String[] segs) {
-		return segs == null || segs.length == 0 ? null : Joiner.on('/').join(segs);
+		return segs == null || segs.length == 0 ? null : Joiner.on(SLASH).join(segs);
 	}
 
 	public String getPathAt(int index, String... defaults) {
@@ -213,7 +201,8 @@ public final class URISpec implements Serializable {
 	}
 
 	private String paths() {
-		return join(paths) + SLASHS;
+		String ps = join(paths);
+		return null == ps ? SLASHS : ps + SLASHS;
 	}
 
 	private String pathfile() {
@@ -319,6 +308,22 @@ public final class URISpec implements Serializable {
 		return new URISpec(getScheme(), opaque, username, password, getHost(), defPort, pathfile(), frag, getQuery());
 	}
 
+	public URISpec resolve(String rel) {
+		if (rel == null) return this;
+		Path p = Paths.get(rel);
+		Path f = null;
+		if (!rel.endsWith(SLASHS) && !rel.endsWith("..") && !rel.endsWith(".")) {
+			f = p.getFileName();
+			p = p.getParent();
+		}
+		Path np = Paths.get(paths());
+		if (null != p) np = np.resolve(p);
+		if (null != f) np = np.resolve(f);
+		else if (null != file) np = np.resolve(file);
+		return new URISpec(getScheme(), opaque, username, password, getHost(), defPort, join(StreamSupport.stream(np.normalize()
+				.spliterator(), false).map(s -> s.toString()).toArray(i -> new String[i])), frag, getQuery());
+	}
+
 	private Pair<String, String> split2last(String spec, char split) {
 		int pos = spec.lastIndexOf(split);
 		return pos > 0 ? new Pair<>(spec.substring(0, pos), spec.substring(pos + 1)) : new Pair<>(spec, null);
@@ -326,19 +331,16 @@ public final class URISpec implements Serializable {
 
 	public static void main(String... args) throws URISyntaxException {
 		URISpec u;
-		// u = new URISpec("mailto:zbutfly@gmail.com");
-		// System.out.println(u);
-		// u = new
-		// URISpec("s1:s2:s3://hello:world@host1:80,host2:81,host3:82/p1/p2/p3/file.ext?q=v#ref");
-		// System.out.println(u);
 		u = new URISpec("s1:s2:s3://hello:world@host1:80,host2:81,host3:82");
 		System.out.println(u + "\n\tAuthority: " + u.getAuthority() + "\n\tPath: " + u.getPath());
 		u = new URISpec("s1:s2:s3://hello:world@host1:80,host2:81,host3:82/");
 		System.out.println(u + "\n\tAuthority: " + u.getAuthority() + "\n\tPath: " + u.getPath());
 		u = new URISpec("s1:s2:s3://hello:world@host1:80,host2:81,host3:82/p1/");
 		System.out.println(u + "\n\tAuthority: " + u.getAuthority() + "\n\tPath: " + u.getPath());
+		System.out.println(u.resolve("/h/a/b/c/d/text.cmd").resolve("../").resolve("../"));
 		u = new URISpec("s1:s2:s3://hello:world@host1:80,host2:81,host3:82/file.ext?q=v#ref");
 		System.out.println(u + "\n\tAuthority: " + u.getAuthority() + "\n\tPath: " + u.getPath());
+		System.out.println(u.resolve("/h/a/b/c/d/text.cmd").resolve("../").resolve("../"));
 		u = u.redirect("redirected");
 		System.out.println(u + "\n\tAuthority: " + u.getAuthority() + "\n\tPath: " + u.getPath());
 		u = new URISpec("file://./hello.txt");
@@ -348,4 +350,5 @@ public final class URISpec implements Serializable {
 		u = u.redirect("redirected");
 		System.out.println(u + "\n\tAuthority: " + u.getAuthority() + "\n\tPath: " + u.getPath());
 	}
+
 }

@@ -11,7 +11,7 @@ public class BasicPump<V> extends PumpImpl<V, BasicPump<V>> {
 		super(input.name() + ">" + output.name(), parallelism);
 		Reflections.noneNull("Pump source/destination should not be null", input, output);
 		depend(input, output);
-		logger().debug("Will trace force on batch less than [" + forceTrace + "].");
+		logger().debug("Trace force on batch less than [" + forceTrace + "].");
 		pumping(() -> input.empty(), () -> {
 			if (opened()) {
 				long cc;
