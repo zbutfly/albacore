@@ -6,37 +6,48 @@ import net.butfly.albacore.io.Openable;
 import net.butfly.albacore.utils.parallel.Concurrents;
 
 public class OpenableThread extends Thread implements Openable {
-	private final AtomicBoolean started = new AtomicBoolean(false);
+	private final AtomicBoolean runned = new AtomicBoolean(false);
 
 	private static final ThreadGroup g = new ThreadGroup("OpenableThreads");
 
 	public OpenableThread(String name) {
 		super(g, name);
+		init();
+	}
+
+	private void init() {
+		setUncaughtExceptionHandler((t, e) -> logger().error(getName() + " failure", e));
+		opening(super::start);
 	}
 
 	public OpenableThread(Runnable target) {
 		super(g, target);
+		init();
 	}
 
 	public OpenableThread(Runnable target, String name) {
 		super(g, target, name);
+		init();
 	}
 
 	public OpenableThread(ThreadGroup group, Runnable target, String name) {
 		super(group, target, name);
+		init();
 	}
 
 	public OpenableThread(ThreadGroup group, Runnable target) {
 		super(group, target);
+		init();
 	}
 
 	public OpenableThread(ThreadGroup group, String name) {
 		super(group, name);
+		init();
 	}
 
 	@Override
 	public final void run() {
-		started.set(true);
+		runned.set(true);
 		exec();
 	}
 
@@ -51,11 +62,9 @@ public class OpenableThread extends Thread implements Openable {
 
 	@Override
 	public void open() {
-		setUncaughtExceptionHandler((t, e) -> logger().error(getName() + " failure", e));
 		Openable.super.open();
-		super.start();
-		while (!started.get())
-			Concurrents.waitSleep(100);
+		while (!runned.get())
+			Concurrents.waitSleep(10);
 	}
 
 	@Override

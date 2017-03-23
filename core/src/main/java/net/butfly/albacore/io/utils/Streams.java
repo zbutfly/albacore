@@ -22,9 +22,9 @@ public final class Streams extends Utils {
 	public static final Predicate<Object> NOT_NULL = t -> null != t;
 	public static final BinaryOperator<Long> LONG_SUM = (r1, r2) -> {
 		if (null == r1 && null == r2) return 0L;
-		if (null == r1) return r2;
-		if (null == r2) return r1;
-		return r1 + r2;
+		if (null == r1) return r2.longValue();
+		if (null == r2) return r1.longValue();
+		return r1.longValue() + r2.longValue();
 	};
 
 	public static <V> Map<Integer, Spliterator<V>> spatial(Spliterator<V> it, int parallelism) {
@@ -49,8 +49,7 @@ public final class Streams extends Utils {
 		return Streams.of(new Suppliterator<>(get, size, ending));
 	}
 
-	private static final boolean DEFAULT_PARALLEL_ENABLE = Boolean.parseBoolean(Configs.gets("albacore.parallel.stream.enable",
-			"false"));
+	private static final boolean DEFAULT_PARALLEL_ENABLE = Boolean.parseBoolean(Configs.gets("albacore.parallel.stream.enable", "false"));
 
 	public static <V> Stream<V> of(Stream<V> s) {
 		if (DEFAULT_PARALLEL_ENABLE) s = s.parallel();
