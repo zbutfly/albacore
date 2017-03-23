@@ -1,8 +1,11 @@
 package net.butfly.albacore.io.utils;
 
 import java.io.Serializable;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +42,7 @@ public final class URISpec implements Serializable {
 
 	private final Map<String, String> query;
 	private final String frag;
-	private final int defPort;
+	private int defPort;
 
 	public URISpec(String str) {
 		this(str, -1);
@@ -163,6 +166,18 @@ public final class URISpec implements Serializable {
 		return ImmutableList.copyOf(hosts);
 	}
 
+	public InetSocketAddress[] getInetAddrs() {
+		return hosts.stream().map(p -> {
+			InetAddress a;
+			try {
+				a = InetAddress.getByName(p.v1());
+			} catch (UnknownHostException e) {
+				return null;
+			}
+			return new InetSocketAddress(a, p.v2());
+		}).filter(Streams.NOT_NULL).toArray(i -> new InetSocketAddress[i]);
+	}
+
 	public String getHost() {
 		return hosts.stream().map(p -> {
 			boolean nop = p.v2() == null || p.v2() < 0;
@@ -256,6 +271,10 @@ public final class URISpec implements Serializable {
 
 	public int getDefaultPort() {
 		return defPort;
+	}
+
+	public void setDefaultPort(int port) {
+		defPort = port;
 	}
 
 	@Override
