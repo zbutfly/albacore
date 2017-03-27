@@ -5,7 +5,7 @@
 		<groupId>net.butfly</groupId>
 		<artifactId>parent</artifactId>
 		<version>3.0.0-SNAPSHOT</version>
-		<relativePath>parent.pom</relativePath>
+		<relativePath>butfly.pom</relativePath>
 	</parent>
 	<groupId>net.butfly.albacore</groupId>
 	<artifactId>albacore</artifactId>
