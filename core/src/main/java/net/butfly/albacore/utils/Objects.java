@@ -29,6 +29,14 @@ public class Objects extends Utils {
 	public static final int HASH_SEED = 17;
 	public static final int HASH_OFFSET = 37;
 
+	@SafeVarargs
+	public static <T> T or(T one, T... ts) {
+		if (ts == null || ts.length == 0) return one;
+		for (T t : ts)
+			if (null != t) return t;
+		return null;
+	}
+
 	public static Beans clone(Beans src, Class<? extends Beans> dstClass) {
 		return clone(src, dstClass, true);
 	}
@@ -428,7 +436,8 @@ public class Objects extends Utils {
 	public static void noneNull(Object... target) {
 		if (null == target) throw new NullPointerException();
 		if (target.length == 0) return;
-		for (Object o : target) if (null == o) throw new NullPointerException();
+		for (Object o : target)
+			if (null == o) throw new NullPointerException();
 	}
 
 	public static boolean isEmpty(Object target) {

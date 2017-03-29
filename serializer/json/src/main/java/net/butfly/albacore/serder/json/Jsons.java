@@ -51,7 +51,6 @@ public final class Jsons extends Utils {
 	}
 
 	private static ObjectMapper defaultJsonMapper() {
-		// TODO Auto-generated method stub
 		return new ObjectMapper()//
 				.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true)//
 				.configure(JsonParser.Feature.IGNORE_UNDEFINED, true)//

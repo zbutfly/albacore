@@ -7,15 +7,20 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 
+import net.butfly.albacore.utils.Objects;
 import net.butfly.albacore.utils.Pair;
 import net.butfly.albacore.utils.Texts;
 
@@ -223,8 +228,13 @@ public final class URISpec implements Serializable {
 						.joining("&"));
 	}
 
-	public Map<String, String> getParameters() {
-		return ImmutableMap.copyOf(query);
+	public Map<String, String> getParameters(String... excludeKey) {
+		Stream<Entry<String, String>> s = query.entrySet().parallelStream();
+		if (null != excludeKey && excludeKey.length > 0) {
+			Set<String> ks = new HashSet<>(Arrays.asList(excludeKey));
+			s = s.filter(e -> !ks.contains(e.getKey()));
+		}
+		return ImmutableMap.copyOf(s.collect(Collectors.toList()));
 	}
 
 	public String getParameter(String name) {
@@ -233,6 +243,14 @@ public final class URISpec implements Serializable {
 
 	public String getParameter(String name, String defaultValue) {
 		return query.getOrDefault(name, defaultValue);
+	}
+
+	public String getParameter(String name, String defaultValue, String other) {
+		return Objects.or(query.getOrDefault(name, defaultValue), other);
+	}
+
+	public String fetchParameter(String name, String... defaultValue) {
+		return Objects.or(query.remove(name), defaultValue);
 	}
 
 	public String getFragment() {
