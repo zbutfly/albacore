@@ -1,12 +1,13 @@
 package net.butfly.albacore.io.ext;
 
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import net.butfly.albacore.io.Openable;
 import net.butfly.albacore.utils.parallel.Concurrents;
 
 public class OpenableThread extends Thread implements Openable {
-	private final AtomicBoolean runned = new AtomicBoolean(false);
+	// Thread status: 0: not started, 1: running, 2: stopped
+	private final AtomicInteger runned = new AtomicInteger(0);
 
 	private static final ThreadGroup g = new ThreadGroup("OpenableThreads");
 
@@ -47,8 +48,12 @@ public class OpenableThread extends Thread implements Openable {
 
 	@Override
 	public final void run() {
-		runned.set(true);
-		exec();
+		runned.set(1);
+		try {
+			exec();
+		} finally {
+			runned.set(2);
+		}
 	}
 
 	protected void exec() {
@@ -63,7 +68,7 @@ public class OpenableThread extends Thread implements Openable {
 	@Override
 	public void open() {
 		Openable.super.open();
-		while (!runned.get())
+		while (runned.get() <= 0)
 			Concurrents.waitSleep(10);
 	}
 
@@ -75,7 +80,7 @@ public class OpenableThread extends Thread implements Openable {
 	@Override
 	public void close() {
 		Openable.super.close();
-		while (isAlive() && !isInterrupted())
+		while (runned.get() <= 1 && runned.get() >= 0)
 			Concurrents.waitSleep(100);
 	}
 }

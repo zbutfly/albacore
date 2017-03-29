@@ -115,11 +115,12 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 	}
 
 	public <V, R> R collect(Stream<? extends V> s, Collector<? super V, ?, R> collector) {
-		if (!logger.isTraceEnabled()) return Streams.of(s).collect(collector);
-		AtomicLong c = new AtomicLong();
-		R r = Streams.of(s).peek(e -> c.incrementAndGet()).collect(collector);
-		logger.debug("One stream collected [" + c.get() + "] elements, performance issue?");
-		return r;
+		if (logger.isTraceEnabled()) {
+			AtomicLong c = new AtomicLong();
+			R r = Streams.of(s).peek(e -> c.incrementAndGet()).collect(collector);
+			logger.debug("One stream collected [" + c.get() + "] elements, performance issue?");
+			return r;
+		} else return Streams.of(s).collect(collector);
 	}
 
 	public <V> List<V> list(Stream<? extends V> stream) {
