@@ -71,13 +71,15 @@ class Statistic implements Serializable {
 		Statistic.Result step, total;
 		step = new Statistic.Result(packsInStep.getAndSet(0), bytesInStep.getAndSet(0), now - statsed.getAndSet(now));
 		total = new Statistic.Result(packsInTotal.get(), bytesInTotal.get(), new Date().getTime() - begin);
-		logger.debug(() -> {
-			String ss = null == detailing ? "" : detailing.get();
-			ss = null == ss ? "" : ", [" + ss + "]";
-			return MessageFormat.format("Statistic: [Step: {0}/objs,{1},{2}], [Total: {3}/objs,{4},{5}]{6}.", step.packs, Texts.formatKilo(
-					step.bytes, "B"), Texts.formatMillis(step.millis), total.packs, Texts.formatKilo(total.bytes, "B"), Texts.formatMillis(
-							total.millis), ss);
-		});
+		logger.debug(() -> this.traceDetail(step, total));
+	}
+
+	private String traceDetail(Statistic.Result step, Statistic.Result total) {
+		String ss = null == detailing ? "" : detailing.get();
+		ss = null == ss ? "" : ", [" + ss + "]";
+		return MessageFormat.format("Statistic: [Step: {0}/objs,{1},{2}], [Total: {3}/objs,{4},{5}]{6}.", step.packs, Texts.formatKilo(
+				step.bytes, "B"), Texts.formatMillis(step.millis), total.packs, Texts.formatKilo(total.bytes, "B"), Texts.formatMillis(
+						total.millis), ss);
 	}
 
 	void trace(String info) {

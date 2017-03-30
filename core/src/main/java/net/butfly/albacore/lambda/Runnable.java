@@ -39,7 +39,7 @@ public interface Runnable extends java.lang.Runnable {
 	static Runnable merge(java.lang.Runnable... run) {
 		return () -> {
 			for (java.lang.Runnable t : run)
-				t.run();
+				if (null != t) t.run();
 		};
 	}
 

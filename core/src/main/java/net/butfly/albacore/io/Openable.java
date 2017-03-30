@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import net.butfly.albacore.base.Named;
 import net.butfly.albacore.utils.logger.Loggable;
 import net.butfly.albacore.utils.parallel.Concurrents;
+import net.butfly.albacore.lambda.Runnable;
 
 public interface Openable extends AutoCloseable, Loggable, Named {
 	enum Status {
@@ -23,21 +24,13 @@ public interface Openable extends AutoCloseable, Loggable, Named {
 
 	default void opening(Runnable handler) {
 		Opened.OPENING.compute(this, (self, orig) -> {
-			if (orig == null) return handler;
-			else return () -> {
-				orig.run();
-				handler.run();
-			};
+			return orig == null ? handler : Runnable.merge(orig, handler);
 		});
 	}
 
 	default void closing(Runnable handler) {
 		Opened.CLOSING.compute(this, (self, orig) -> {
-			if (orig == null) return handler;
-			else return () -> {
-				orig.run();
-				handler.run();
-			};
+			return orig == null ? handler : Runnable.merge(orig, handler);
 		});
 	}
 

@@ -55,18 +55,11 @@ abstract class PumpImpl<V, P extends PumpImpl<V, P>> extends Namedly implements 
 	}
 
 	protected final void pumping(Supplier<Boolean> sourceEmpty, Runnable pumping) {
-		Runnable r = () -> {
-			try {
-				pumping.run();
-			} catch (Throwable th) {
-				logger().error("Pump processing failure", th);
-			}
-		};
-		Runnable rr = r.until(() -> {
+		Runnable r = Runnable.exception(pumping::run, ex -> logger().error("Pump processing failure", ex)).until(() -> {
 			return !opened() || sourceEmpty.get();
 		});
 		for (int i = 0; i < parallelism; i++)
-			tasks.add(new OpenableThread(rr, name() + "PumpThread#" + i));
+			tasks.add(new OpenableThread(r, name() + "PumpThread#" + i));
 	}
 
 	@Override
