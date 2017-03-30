@@ -2,12 +2,12 @@ package net.butfly.albacore.io;
 
 import java.util.Collection;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import net.butfly.albacore.io.queue.Queue0;
 import net.butfly.albacore.io.utils.Its;
 import net.butfly.albacore.io.utils.Streams;
-import net.butfly.albacore.lambda.Converter;
 
 public interface Output<V> extends IO, Consumer<Stream<V>>, Enqueue<V> {
 	static Output<?> NULL = items -> 0;
@@ -22,11 +22,11 @@ public interface Output<V> extends IO, Consumer<Stream<V>>, Enqueue<V> {
 		enqueue(items);
 	}
 
-	default <V0> Output<V0> prior(Converter<V0, V> conv) {
+	default <V0> Output<V0> prior(Function<V0, V> conv) {
 		return Wrapper.wrap(this, items -> enqueue(Streams.of(items.map(conv))));
 	}
 
-	default <V0> Output<V0> priors(Converter<Iterable<V0>, Iterable<V>> conv, int parallelism) {
+	default <V0> Output<V0> priors(Function<Iterable<V0>, Iterable<V>> conv, int parallelism) {
 		return Wrapper.wrap(this, items -> eachs(Streams.spatial(items, parallelism).values(), s0 -> enqueue(Streams.of(conv.apply(
 				(Iterable<V0>) () -> Its.it(s0)))), Streams.LONG_SUM));
 	}

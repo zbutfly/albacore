@@ -1,10 +1,10 @@
 package net.butfly.albacore.io.stats;
 
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import net.butfly.albacore.io.utils.Streams;
-import net.butfly.albacore.lambda.Converter;
-import net.butfly.albacore.lambda.Supplier;
 import net.butfly.albacore.utils.Instances;
 import net.butfly.albacore.utils.Systems;
 import net.butfly.albacore.utils.logger.Logger;
@@ -18,7 +18,7 @@ public interface Statistical<T extends Statistical<T>> {
 		return trace(step, () -> null);
 	}
 
-	default T trace(long step, Converter<Object, Long> sizing) {
+	default T trace(long step, Function<Object, Long> sizing) {
 		return trace(step, sizing, () -> null);
 	}
 
@@ -26,11 +26,11 @@ public interface Statistical<T extends Statistical<T>> {
 		return trace(step, Systems::sizeOf, detailing);
 	}
 
-	default T trace(long step, Converter<Object, Long> sizing, Supplier<String> detailing) {
+	default T trace(long step, Function<Object, Long> sizing, Supplier<String> detailing) {
 		return trace(null, step, sizing, detailing);
 	}
 
-	default T trace(String prefix, long step, Converter<Object, Long> sizing, Supplier<String> detailing) {
+	default T trace(String prefix, long step, Function<Object, Long> sizing, Supplier<String> detailing) {
 		String logname = null == prefix ? LOG_PREFIX : LOG_PREFIX + "." + prefix;
 		slogger.info("Staticstic register as [" + logname + "] on step [" + step + "]");
 		@SuppressWarnings("unchecked")

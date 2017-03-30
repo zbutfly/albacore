@@ -1,8 +1,8 @@
 package net.butfly.albacore.serder;
 
 import java.io.Serializable;
+import java.util.function.Function;
 
-import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.utils.CaseFormat;
 import net.butfly.albacore.utils.Objects;
 
@@ -15,11 +15,11 @@ public interface Serder<PRESENT, DATA> extends Serializable {
 		throw new UnsupportedOperationException();
 	}
 
-	default Converter<PRESENT, DATA> converter() {
+	default Function<PRESENT, DATA> converter() {
 		return this::ser;
 	}
 
-	default <T extends PRESENT> Converter<DATA, T> unconverter(Class<T> present) {
+	default <T extends PRESENT> Function<DATA, T> unconverter(Class<T> present) {
 		return d -> der(d, present);
 	}
 

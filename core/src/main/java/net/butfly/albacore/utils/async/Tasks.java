@@ -10,10 +10,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 
 import net.butfly.albacore.exception.AggregaedException;
 import net.butfly.albacore.lambda.Callable;
-import net.butfly.albacore.lambda.Consumer;
 import net.butfly.albacore.utils.Instances;
 import net.butfly.albacore.utils.Utils;
 import net.butfly.albacore.utils.logger.Logger;

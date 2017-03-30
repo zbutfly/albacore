@@ -2,9 +2,9 @@ package net.butfly.albacore.utils.async;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
-import net.butfly.albacore.lambda.Consumer;
-import net.butfly.albacore.lambda.Supplier;
 import net.butfly.albacore.utils.parallel.Concurrents;
 
 public class Task<T> {

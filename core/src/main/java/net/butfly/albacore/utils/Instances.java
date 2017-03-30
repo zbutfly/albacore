@@ -2,10 +2,9 @@ package net.butfly.albacore.utils;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 import com.google.common.reflect.TypeToken;
-
-import net.butfly.albacore.lambda.Supplier;
 
 /**
  * Replacement of "private static final ..."

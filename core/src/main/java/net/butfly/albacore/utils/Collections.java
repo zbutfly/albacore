@@ -11,12 +11,12 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.BinaryOperator;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import net.butfly.albacore.io.utils.Streams;
-import net.butfly.albacore.lambda.Converter;
 
 public final class Collections extends Utils {
 	public static <T> BinaryOperator<List<T>> merging() {
@@ -29,13 +29,13 @@ public final class Collections extends Utils {
 	}
 
 	@Deprecated
-	public static <T, R> List<R> map(Collection<T> original, Converter<T, R> mapping) {
+	public static <T, R> List<R> map(Collection<T> original, Function<T, R> mapping) {
 		if (original == null) return null;
 		return of(original).map(mapping).collect(Collectors.toList());
 	}
 
 	@Deprecated
-	public static <T, R> List<R> transform(Collection<T> original, Converter<T, R> trans) {
+	public static <T, R> List<R> transform(Collection<T> original, Function<T, R> trans) {
 		return map(original, trans);
 	}
 
@@ -48,7 +48,7 @@ public final class Collections extends Utils {
 	 * @return
 	 */
 	@Deprecated
-	public static <T, R> List<R> mapNoNull(Collection<T> original, Converter<T, R> mapping) {
+	public static <T, R> List<R> mapNoNull(Collection<T> original, Function<T, R> mapping) {
 		if (original == null) return null;
 		return of(of(original).map(mapping)).collect(Collectors.toList());
 	}
@@ -62,7 +62,7 @@ public final class Collections extends Utils {
 	 * @return
 	 */
 	@Deprecated
-	public static <T, R> List<R> mapNoNullIn(Collection<T> original, Converter<T, R> mapping) {
+	public static <T, R> List<R> mapNoNullIn(Collection<T> original, Function<T, R> mapping) {
 		if (original == null) return null;
 		return of(original).map(mapping).collect(Collectors.toList());
 	}
@@ -76,7 +76,7 @@ public final class Collections extends Utils {
 	 * @return
 	 */
 	@Deprecated
-	public static <T, R> List<R> mapNoNullOut(Collection<T> original, Converter<T, R> mapping) {
+	public static <T, R> List<R> mapNoNullOut(Collection<T> original, Function<T, R> mapping) {
 		if (original == null) return null;
 		return of(of(original).map(mapping)).collect(Collectors.toList());
 	}
@@ -89,7 +89,7 @@ public final class Collections extends Utils {
 
 	@SafeVarargs
 	@Deprecated
-	public static <T, R> List<R> transform(Converter<T, R> trans, T... original) {
+	public static <T, R> List<R> transform(Function<T, R> trans, T... original) {
 		if (original == null) return null;
 		List<R> r = new ArrayList<>(original.length);
 		for (T t : original)
@@ -98,13 +98,13 @@ public final class Collections extends Utils {
 	}
 
 	@Deprecated
-	public static <T, R> List<R> transform(Iterable<T> original, Converter<T, R> trans) {
+	public static <T, R> List<R> transform(Iterable<T> original, Function<T, R> trans) {
 		if (original == null) return null;
 		return transform(original.iterator(), trans);
 	}
 
 	@Deprecated
-	public static <T, R> List<R> transform(Iterator<T> original, Converter<T, R> trans) {
+	public static <T, R> List<R> transform(Iterator<T> original, Function<T, R> trans) {
 		if (original == null) return null;
 		List<R> r = new ArrayList<>();
 		while (original.hasNext())
@@ -113,7 +113,7 @@ public final class Collections extends Utils {
 	}
 
 	@Deprecated
-	public static <T, K, V> Map<K, List<V>> mapMap(Collection<T> list, Converter<T, Pair<K, V>> mapping) {
+	public static <T, K, V> Map<K, List<V>> mapMap(Collection<T> list, Function<T, Pair<K, V>> mapping) {
 		return of(list).map(mapping).collect(Collectors.groupingByConcurrent(t -> t.v1(), Collectors.mapping(t -> t.v2(), Collectors
 				.toList())));
 	}

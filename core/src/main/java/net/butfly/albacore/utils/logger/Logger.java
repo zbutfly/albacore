@@ -5,8 +5,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
-import net.butfly.albacore.lambda.Supplier;
 
 public class Logger implements Serializable {
 	private static final long serialVersionUID = -1940330974751419775L;

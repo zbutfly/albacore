@@ -2,11 +2,11 @@ package net.butfly.albacore.io.ext;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import org.slf4j.event.Level;
 
 import net.butfly.albacore.io.OutputImpl;
-import net.butfly.albacore.lambda.Consumer;
 import net.butfly.albacore.utils.Instances;
 import net.butfly.albacore.utils.logger.Logger;
 

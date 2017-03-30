@@ -8,7 +8,6 @@ import net.butfly.albacore.io.Input;
 import net.butfly.albacore.io.Output;
 import net.butfly.albacore.io.utils.Its;
 import net.butfly.albacore.io.utils.Streams;
-import net.butfly.albacore.lambda.Converter;
 
 /**
  * Rich feature queue for big data processing, supporting:
@@ -95,7 +94,7 @@ public interface Queue0<I, O> extends Input<O>, Output<I> {
 	}
 
 	@Override
-	default <I0> Queue0<I0, O> prior(Converter<I0, I> conv) {
+	default <I0> Queue0<I0, O> prior(Function<I0, I> conv) {
 		Queue0<I0, O> o = new Queue0<I0, O>() {
 			@Override
 			public long dequeue(Function<Stream<O>, Long> using, long batchSize) {
@@ -117,7 +116,7 @@ public interface Queue0<I, O> extends Input<O>, Output<I> {
 	}
 
 	@Override
-	default <I0> Queue0<I0, O> priors(Converter<Iterable<I0>, Iterable<I>> conv, int parallelism) {
+	default <I0> Queue0<I0, O> priors(Function<Iterable<I0>, Iterable<I>> conv, int parallelism) {
 		Queue0<I0, O> o = new Queue0<I0, O>() {
 			@Override
 			public long dequeue(Function<Stream<O>, Long> using, long batchSize) {

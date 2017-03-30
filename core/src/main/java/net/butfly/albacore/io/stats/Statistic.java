@@ -6,9 +6,9 @@ import java.util.Date;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
-import net.butfly.albacore.lambda.Converter;
-import net.butfly.albacore.lambda.Supplier;
 import net.butfly.albacore.utils.Reflections;
 import net.butfly.albacore.utils.Texts;
 import net.butfly.albacore.utils.logger.Logger;
@@ -28,9 +28,9 @@ class Statistic implements Serializable {
 	final AtomicLong packsInTotal;
 	final AtomicLong bytesInTotal;
 	final Supplier<String> detailing;
-	final Converter<Object, Long> sizing;
+	final Function<Object, Long> sizing;
 
-	<T extends Statistical<T>> Statistic(Statistical<T> owner, String logname, long step, Converter<Object, Long> sizing,
+	<T extends Statistical<T>> Statistic(Statistical<T> owner, String logname, long step, Function<Object, Long> sizing,
 			Supplier<String> detailing) {
 		Reflections.noneNull("", owner, logname);
 		lock = new ReentrantLock();

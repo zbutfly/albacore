@@ -7,10 +7,10 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.function.Function;
 
 import com.google.common.primitives.Primitives;
 
-import net.butfly.albacore.lambda.Converter;
 import net.butfly.albacore.utils.Reflections;
 import net.butfly.albacore.utils.Utils;
 
@@ -115,7 +115,7 @@ public final class Values extends Utils {
 			/** null **/
 			Void.class };
 
-	private static Map<Class<?>, Converter<String, Object>> FROM_STRING_METHOD = new HashMap<>();
+	private static Map<Class<?>, Function<String, Object>> FROM_STRING_METHOD = new HashMap<>();
 
 	static {
 		FROM_STRING_METHOD.put(Void.class, s -> NULL_STR);
