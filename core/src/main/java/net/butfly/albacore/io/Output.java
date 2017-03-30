@@ -40,6 +40,10 @@ public interface Output<V> extends IO, Consumer<Stream<V>>, Enqueue<V> {
 		return null;
 	}
 
+	default Output<V> batch(long batchSize) {
+		return null;
+	}
+
 	// constructor
 	public static <T> Output<T> of(Collection<? super T> underly) {
 		return items -> {

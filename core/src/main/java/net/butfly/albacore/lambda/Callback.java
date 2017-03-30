@@ -15,7 +15,6 @@ public interface Callback<V> extends Consumer<V>, Serializable {
 
 	@Override
 	default void accept(V v) {
-		RunnableEx r = () -> call(v);
-		r.runEx();
+		call(v);
 	}
 }

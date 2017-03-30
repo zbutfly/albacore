@@ -1,20 +1,18 @@
 package net.butfly.albacore.lambda;
 
-import java.io.Serializable;
-
 @FunctionalInterface
-public interface Runnable extends java.lang.Runnable, RunnableEx, Serializable {
+public interface Runnable extends java.lang.Runnable {
 	@Override
 	void run();
 
-	default Runnable prior(Runnable prior) {
+	default Runnable prior(java.lang.Runnable prior) {
 		return () -> {
 			prior.run();
 			run();
 		};
 	}
 
-	default Runnable then(Runnable then) {
+	default Runnable then(java.lang.Runnable then) {
 		return () -> {
 			run();
 			then.run();
@@ -28,15 +26,37 @@ public interface Runnable extends java.lang.Runnable, RunnableEx, Serializable {
 		};
 	}
 
-	static Runnable until(Supplier<Boolean> stopping, Runnable... then) {
+	default Runnable exception(Consumer<Exception> handler) {
 		return () -> {
-			while (!stopping.get())
-				for (Runnable t : then)
-					t.run();
+			try {
+				run();
+			} catch (Exception ex) {
+				handler.accept(ex);
+			}
 		};
 	}
 
-	public static void r(RunnableEx r) {
-		r.runEx();
+	static Runnable merge(java.lang.Runnable... run) {
+		return () -> {
+			for (java.lang.Runnable t : run)
+				t.run();
+		};
+	}
+
+	static Runnable until(java.lang.Runnable run, Supplier<Boolean> stopping) {
+		return () -> {
+			while (!stopping.get())
+				run.run();
+		};
+	}
+
+	public static Runnable exception(java.lang.Runnable run, Consumer<Exception> handler) {
+		return () -> {
+			try {
+				run.run();
+			} catch (Exception ex) {
+				handler.accept(ex);
+			}
+		};
 	}
 }

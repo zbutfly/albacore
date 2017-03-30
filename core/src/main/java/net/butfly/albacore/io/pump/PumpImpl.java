@@ -33,16 +33,17 @@ abstract class PumpImpl<V, P extends PumpImpl<V, P>> extends Namedly implements 
 		else this.parallelism = parallelism;
 		forceTrace = batchSize / parallelism;
 		dependencies = new ArrayList<>();
+		closing(this::closeDeps);
 		logger().info("Pump [" + name + "] created with parallelism: " + parallelism);
+	}
 
-		closing(() -> {
-			for (AutoCloseable dep : dependencies)
-				try {
-					dep.close();
-				} catch (Exception e) {
-					logger().error(dep.getClass().getName() + " close failed");
-				}
-		});
+	private void closeDeps() {
+		for (AutoCloseable dep : dependencies)
+			try {
+				dep.close();
+			} catch (Exception e) {
+				logger().error(dep.getClass().getName() + " close failed");
+			}
 	}
 
 	protected final void depend(List<? extends AutoCloseable> dependencies) {

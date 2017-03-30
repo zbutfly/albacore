@@ -14,20 +14,17 @@ class PrefetchInput<V> extends WrapInput<V> {
 	PrefetchInput(Input<V> base, Queue<V> pool, long fetchSize) {
 		super(base);
 		this.pool = pool;
-		fetcher = new OpenableThread(() -> {
-			while (opened() && !base.empty())
-				base.dequeue(pool::enqueue, fetchSize);
-		}, base.name() + "PrefetcherThread");
+		fetcher = new OpenableThread(() -> fetch(base, fetchSize), base.name() + "PrefetcherThread");
+		closing(fetcher::close);
+	}
+
+	private void fetch(Input<V> base, long fetchSize) {
+		while (opened() && !base.empty())
+			base.dequeue(pool::enqueue, fetchSize);
 	}
 
 	@Override
 	public long dequeue(Function<Stream<V>, Long> using, long batchSize) {
 		return pool.dequeue(using, batchSize);
-	}
-
-	@Override
-	public void close() {
-		fetcher.close();
-		super.close();
 	}
 }
