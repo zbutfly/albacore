@@ -32,7 +32,7 @@ public interface Statistical<T extends Statistical<T>> {
 
 	default T trace(String prefix, long step, Function<Object, Long> sizing, Supplier<String> detailing) {
 		String logname = null == prefix ? LOG_PREFIX : LOG_PREFIX + "." + prefix;
-		slogger.info("Staticstic register as [" + logname + "] on step [" + step + "]");
+		slogger.debug(() -> "Staticstic register as [" + logname + "] on step [" + step + "]");
 		@SuppressWarnings("unchecked")
 		T t = (T) this;
 		Instances.fetch(() -> new Statistic(t, logname, step, sizing, detailing), Statistic.class, this);
