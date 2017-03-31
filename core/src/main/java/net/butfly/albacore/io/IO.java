@@ -26,19 +26,19 @@ import net.butfly.albacore.utils.logger.Loggable;
 import net.butfly.albacore.utils.logger.Logger;
 
 public interface IO extends Sizable, Openable {
-	static final String PARALLELISM_RATIO_KEY = "albacore.io.parallelism.ratio";
 
 	class Context implements Loggable {
-		final static String EXECUTOR_NAME = "Albacore-IO-Streaming";
+		private final static String EXECUTOR_NAME = "AlbacoreIOStream";
+		private static final String PARALLELISM_FACTOR_KEY = "albacore.io.stream.parallelism.factor";
 
 		private static int calcParallelism() {
 			Logger logger = Logger.getLogger(Context.class);
-			if (Configs.has(PARALLELISM_RATIO_KEY)) {
-				double r = Double.parseDouble(Configs.gets(PARALLELISM_RATIO_KEY));
+			if (Configs.has(PARALLELISM_FACTOR_KEY)) {
+				double r = Double.parseDouble(Configs.gets(PARALLELISM_FACTOR_KEY));
 				int p = 16 + (int) Math.round((ForkJoinPool.getCommonPoolParallelism() - 16) * (r - 1));
 				if (p < 2) p = 2;
 				int pa = p;
-				logger.debug(() -> "AlbacoreIO parallelism calced as: [" + pa + "]\n\t[from: (((-D" + PARALLELISM_RATIO_KEY + "(" + r
+				logger.debug(() -> "AlbacoreIO parallelism calced as: [" + pa + "]\n\t[from: (((-D" + PARALLELISM_FACTOR_KEY + "(" + r
 						+ ")) - 1) * (JVM_DEFAULT_PARALLELISM(" + ForkJoinPool.getCommonPoolParallelism()
 						+ ") - IO_DEFAULT_PARALLELISM(16))) + IO_DEFAULT_PARALLELISM(16), Max=JVM_DEFAULT_PARALLELISM, Min=2]");
 				return p;

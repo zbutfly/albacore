@@ -42,7 +42,7 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 
 	public StreamExecutor(String name, int parallelism, boolean throwException) {
 		executor = parallelism < 1 ? Executors.newCachedThreadPool(r -> new Thread(g.computeIfAbsent(name, n -> new ThreadGroup(name
-				+ "-ThreadGroup")), r, name + "@" + Texts.formatDate(new Date())))
+				+ "ThreadGroup")), r, name + "@" + Texts.formatDate(new Date())))
 				: Concurrents.executorForkJoin(parallelism, name, (t, e) -> {
 					logger.error("Migrater pool task failure @" + t.getName(), e);
 					if (throwException) throw wrap(unwrap(e));
@@ -114,8 +114,10 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 		return collect(Streams.of(col), collector);
 	}
 
+	private static final boolean STREAM_DEBUGGING = Boolean.parseBoolean(System.getProperty("albacore.io.stream.debug", "false"));
+
 	public <V, R> R collect(Stream<? extends V> s, Collector<? super V, ?, R> collector) {
-		if (logger.isTraceEnabled()) {
+		if (STREAM_DEBUGGING && logger.isTraceEnabled()) {
 			AtomicLong c = new AtomicLong();
 			R r = Streams.of(s).peek(e -> c.incrementAndGet()).collect(collector);
 			logger.debug("One stream collected [" + c.get() + "] elements, performance issue?");

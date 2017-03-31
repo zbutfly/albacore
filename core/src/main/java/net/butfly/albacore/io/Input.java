@@ -19,6 +19,11 @@ public interface Input<V> extends IO, Dequeue<V>, Supplier<V>, Iterator<V> {
 		return Long.MAX_VALUE;
 	}
 
+	@Override
+	default long capacity() {
+		return 0;
+	}
+
 	default <V1> Input<V1> then(Function<V, V1> conv) {
 		return Wrapper.wrap(this, (using, batchSize) -> dequeue(s -> using.apply(s.map(conv)), batchSize));
 	}
