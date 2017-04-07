@@ -190,7 +190,10 @@ public final class URISpec implements Serializable {
 	}
 
 	public String getPathAt(int index, String... defaults) {
-		return index >= 0 && index < paths.length ? paths[index] : defaults == null || defaults.length <= 0 ? null : join(defaults);
+		if (index < 0 || index > paths.length) throw new IllegalArgumentException();
+		if (index < paths.length) return paths[index];
+		String v = getFile();
+		return null == v ? v : defaults == null || defaults.length <= 0 ? null : join(defaults);
 	}
 
 	public String getPathAtLast(int index, String... defaults) {
