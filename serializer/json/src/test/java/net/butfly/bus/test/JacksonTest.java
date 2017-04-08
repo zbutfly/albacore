@@ -11,7 +11,7 @@ import net.butfly.albacore.serder.JsonSerder;
 public class JacksonTest {
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static void main(String... arg) throws IOException {
-		final JsonSerder jsonSerder = JsonSerder.JSON_OBJECT;
+		final JsonSerder jsonSerder = JsonSerder.SERDER(Object.class);
 
 		Bean obj = new Bean();
 		String json = jsonSerder.ser(obj);

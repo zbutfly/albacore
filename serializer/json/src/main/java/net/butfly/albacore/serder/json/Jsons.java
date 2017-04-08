@@ -45,9 +45,11 @@ public final class Jsons extends Utils {
 				.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)//
 				.disable(MapperFeature.USE_GETTERS_AS_SETTERS)//
 				.disable(SerializationFeature.WRITE_NULL_MAP_VALUES)//
+				.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)//
 				.setSerializationInclusion(Include.NON_NULL)//
 				.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true)//
-				.configure(JsonParser.Feature.IGNORE_UNDEFINED, true);
+				.configure(JsonParser.Feature.IGNORE_UNDEFINED, true)//
+		;
 	}
 
 	private static ObjectMapper defaultJsonMapper() {
@@ -59,6 +61,7 @@ public final class Jsons extends Utils {
 				.enable(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS)//
 				.enable(SerializationFeature.WRITE_ENUMS_USING_INDEX)//
 				.enable(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL)//
+				.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)//
 		;
 	}
 

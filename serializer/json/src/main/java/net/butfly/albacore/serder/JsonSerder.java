@@ -20,8 +20,11 @@ import net.butfly.albacore.serder.support.TextSerder;
 
 public class JsonSerder<E> extends ContentTypeSerderBase implements TextSerder<E>, BeanSerder<E, CharSequence> {
 	private static final long serialVersionUID = -4394900785541475884L;
-	public static final JsonSerder<Object> JSON_OBJECT = new JsonSerder<Object>();
 	public static final JsonMapSerder JSON_MAPPER = new JsonMapSerder();
+
+	public static <T> JsonSerder<T> SERDER(Class<T> cl) {
+		return new JsonSerder<T>();
+	};
 
 	public JsonSerder() {
 		this.contentType = ContentType.APPLICATION_JSON;
