@@ -14,7 +14,6 @@ public interface Wrapper {
 				return d.dequeue(using, batchSize);
 			}
 		};
-		i.open();
 		return i;
 	}
 
@@ -25,7 +24,6 @@ public interface Wrapper {
 				return d.enqueue(items);
 			}
 		};
-		i.open();
 		return i;
 	}
 
