@@ -24,7 +24,7 @@ public class JsonSerder<E> extends ContentTypeSerderBase implements TextSerder<E
 
 	public static <T> JsonSerder<T> SERDER(Class<T> cl) {
 		return new JsonSerder<T>();
-	};
+	}
 
 	public JsonSerder() {
 		this.contentType = ContentType.APPLICATION_JSON;
