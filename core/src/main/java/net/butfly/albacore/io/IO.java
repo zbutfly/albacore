@@ -26,7 +26,6 @@ import net.butfly.albacore.utils.logger.Loggable;
 import net.butfly.albacore.utils.logger.Logger;
 
 public interface IO extends Sizable, Openable {
-
 	class Context implements Loggable {
 		private final static String EXECUTOR_NAME = "AlbacoreIOStream";
 		private static final String PARALLELISM_FACTOR_KEY = "albacore.io.stream.parallelism.factor";
