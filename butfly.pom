@@ -20,6 +20,13 @@
 		<version.jackson>2.8.7</version.jackson>
 	</properties>
 	<build>
+		<resources>
+			<resource>
+				<directory>src/main/scripts</directory>
+				<filtering>true</filtering>
+				<targetPath>${project.build.directory}</targetPath>
+			</resource>
+		</resources>
 		<finalName>${project.artifactId}</finalName>
 		<pluginManagement>
 			<plugins>
@@ -124,15 +131,6 @@
 							<goal>testResources</goal>
 						</goals>
 						<phase>compile</phase>
-						<configuration>
-							<outputDirectory>${project.build.directory}</outputDirectory>
-							<resources>
-								<resource>
-									<directory>src/main/scripts</directory>
-									<filtering></filtering>
-								</resource>
-							</resources>
-						</configuration>
 					</execution>
 				</executions>
 			</plugin>
