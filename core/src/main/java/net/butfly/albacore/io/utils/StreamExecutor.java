@@ -52,6 +52,23 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 		lex = MoreExecutors.listeningDecorator(executor);
 	}
 
+	@SuppressWarnings("rawtypes")
+	@FunctionalInterface
+	private interface FutureCallback extends com.google.common.util.concurrent.FutureCallback {
+		@Override
+		default void onFailure(Throwable t) {
+			logger.error("Run sequential fail", t);
+		}
+	}
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public void runs(Runnable... firstAndThens) {
+		if (null == firstAndThens || firstAndThens.length == 0) return;
+		ListenableFuture f = lex.submit(firstAndThens[0]);
+		if (firstAndThens.length > 1) f.addListener(() -> runs(Arrays.copyOfRange(firstAndThens, 1, firstAndThens.length)), executor);
+		get(f);
+	}
+
 	public void run(Runnable... tasks) {
 		get(listenRun(tasks));
 	}
@@ -175,5 +192,4 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 		}
 		return null;
 	}
-
 }

@@ -68,6 +68,10 @@ public interface IO extends Sizable, Openable {
 		Context.io.run(tasks);
 	}
 
+	static void runs(Runnable... tasks) {
+		Context.io.runs(tasks);
+	}
+
 	static <T> List<T> run(List<Callable<T>> tasks) {
 		return Context.io.run(tasks);
 	}
