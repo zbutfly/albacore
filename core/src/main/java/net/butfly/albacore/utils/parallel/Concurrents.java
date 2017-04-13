@@ -7,8 +7,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.ForkJoinPool.ForkJoinWorkerThreadFactory;
+import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -66,7 +66,7 @@ public final class Concurrents extends Utils {
 	public static boolean waitShutdown(ExecutorService executor, long seconds, Logger logger) {
 		while (true)
 			try {
-				logger.trace("Waiting for executor terminate...");
+				logger.trace("Waiting for exor terminate...");
 				if (executor.awaitTermination(seconds, TimeUnit.SECONDS)) return true;
 			} catch (InterruptedException e) {
 				logger.warn("Not all processing thread finished correctly, waiting interrupted.");

@@ -3,8 +3,8 @@ package net.butfly.albacore.io;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import net.butfly.albacore.utils.logger.Logger;
 import net.butfly.albacore.lambda.Runnable;
+import net.butfly.albacore.utils.logger.Logger;
 
 public interface Wrapper {
 	static <T> WrapInput<T> wrap(Input<?> base, Dequeue<T> d) {

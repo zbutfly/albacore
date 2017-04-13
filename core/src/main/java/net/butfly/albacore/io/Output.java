@@ -7,6 +7,7 @@ import java.util.stream.Stream;
 
 import net.butfly.albacore.io.queue.Queue0;
 import net.butfly.albacore.io.utils.Its;
+import net.butfly.albacore.io.utils.Parals;
 import net.butfly.albacore.io.utils.Streams;
 
 public interface Output<V> extends IO, Consumer<Stream<V>>, Enqueue<V> {
@@ -27,7 +28,7 @@ public interface Output<V> extends IO, Consumer<Stream<V>>, Enqueue<V> {
 	}
 
 	default <V0> Output<V0> priors(Function<Iterable<V0>, Iterable<V>> conv, int parallelism) {
-		return Wrapper.wrap(this, items -> eachs(Streams.spatial(items, parallelism).values(), s0 -> enqueue(Streams.of(conv.apply(
+		return Wrapper.wrap(this, items -> Parals.eachs(Streams.spatial(items, parallelism).values(), s0 -> enqueue(Streams.of(conv.apply(
 				(Iterable<V0>) () -> Its.it(s0)))), Streams.LONG_SUM));
 	}
 

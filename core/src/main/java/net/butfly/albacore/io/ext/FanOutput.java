@@ -10,15 +10,15 @@ import java.util.stream.Stream;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import net.butfly.albacore.base.Namedly;
-import net.butfly.albacore.io.IO;
 import net.butfly.albacore.io.Output;
+import net.butfly.albacore.io.utils.Parals;
 import net.butfly.albacore.io.utils.Streams;
 
 public class FanOutput<V> extends Namedly implements Output<V> {
 	private final Iterable<? extends Output<V>> outputs;
 
 	public FanOutput(Iterable<? extends Output<V>> outputs) {
-		this("FanOutTo" + ":" + IO.collect(Streams.of(outputs).map(o -> o.name()), Collectors.joining("&")), outputs);
+		this("FanOutTo" + ":" + Parals.collect(Streams.of(outputs).map(o -> o.name()), Collectors.joining("&")), outputs);
 		open();
 	}
 
@@ -29,8 +29,8 @@ public class FanOutput<V> extends Namedly implements Output<V> {
 
 	@Override
 	public long enqueue(Stream<V> items) {
-		List<V> values = IO.list(items);
-		ListenableFuture<List<Long>> fs = IO.listen(IO.list(outputs, o -> () -> o.enqueue(Streams.of(values))));
+		List<V> values = Parals.list(items);
+		ListenableFuture<List<Long>> fs = Parals.listen(Parals.list(outputs, o -> () -> o.enqueue(Streams.of(values))));
 		List<Long> rs;
 		try {
 			rs = fs.get();
@@ -39,6 +39,6 @@ public class FanOutput<V> extends Namedly implements Output<V> {
 		} catch (Exception e) {
 			throw wrap(unwrap(e));
 		}
-		return IO.collect(rs, Collectors.summingLong(Long::longValue));
+		return Parals.collect(rs, Collectors.summingLong(Long::longValue));
 	}
 }

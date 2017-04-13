@@ -7,6 +7,7 @@ import java.util.stream.Stream;
 import net.butfly.albacore.io.Input;
 import net.butfly.albacore.io.Output;
 import net.butfly.albacore.io.utils.Its;
+import net.butfly.albacore.io.utils.Parals;
 import net.butfly.albacore.io.utils.Streams;
 
 /**
@@ -125,7 +126,7 @@ public interface Queue0<I, O> extends Input<O>, Output<I> {
 
 			@Override
 			public long enqueue(Stream<I0> items) {
-				return eachs(Streams.spatial(items, parallelism).values(), s0 -> Queue0.this.enqueue(Streams.of(conv.apply(
+				return Parals.eachs(Streams.spatial(items, parallelism).values(), s0 -> Queue0.this.enqueue(Streams.of(conv.apply(
 						(Iterable<I0>) () -> Its.it(s0)))), Streams.LONG_SUM);
 			}
 
