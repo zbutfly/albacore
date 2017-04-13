@@ -76,6 +76,10 @@ public interface IO extends Sizable, Openable {
 		return Context.io.run(tasks);
 	}
 
+	static <T> void runs(Callable<T> first, Consumer<T> then) {
+		Context.io.runs(first, then);
+	}
+
 	static <T> ListenableFuture<List<T>> listen(List<Callable<T>> tasks) {
 		return Context.io.listen(tasks);
 	}

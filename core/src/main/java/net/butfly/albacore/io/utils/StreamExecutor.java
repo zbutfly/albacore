@@ -77,6 +77,19 @@ public final class StreamExecutor extends Namedly implements AutoCloseable {
 		get(listenRun(task));
 	}
 
+	public <T> void runs(Callable<T> first, Consumer<T> then) {
+		if (null == first) return;
+		ListenableFuture<T> f = lex.submit(first);
+		if (then != null) f.addListener(() -> {
+			try {
+				then.accept(f.get());
+			} catch (InterruptedException e) {} catch (ExecutionException e) {
+				logger.error("Subtask error", unwrap(e));
+			}
+		}, executor);
+		get(f);
+	}
+
 	public <T> T run(Callable<T> task) {
 		return get(listen(task));
 	}
