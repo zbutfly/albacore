@@ -3,6 +3,7 @@ package net.butfly.albacore.io.utils;
 import static net.butfly.albacore.utils.Exceptions.unwrap;
 import static net.butfly.albacore.utils.Exceptions.wrap;
 
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,6 +19,7 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BinaryOperator;
@@ -41,55 +43,43 @@ import net.butfly.albacore.utils.Utils;
 import net.butfly.albacore.utils.logger.Logger;
 import net.butfly.albacore.utils.parallel.Concurrents;
 
+/**
+ * <b>Auto detection of thread executor type and parallelism based on
+ * <code>-Dalbacore.io.stream.parallelism.factor=factor(double)</code>, default
+ * 0.</b> <blockquote>Default <code>factor<code> value without
+ * <code>albacore.io.stream.parallelism.factor</code> setting causes traditional
+ * unlimited <code>CachedThreadPool</code> implementation.</blockquote>
+ * 
+ * <ul>
+ * <li>Positives double values: ForkJoinPool</li>
+ * <blockquote><code>(factor - 1) * (JVM_PARALLELISM - IO_PARALLELISM) + IO_PARALLELISM</code></blockquote>
+ * <ul>
+ * <li>Minimum: 2</li>
+ * <li>IO_PARALLELISM: 16</li>
+ * <li>JVM_PARALLELISM:
+ * <code>ForkJoinPool.getCommonPoolParallelism()</code></li>
+ * </ul>
+ * Which means:
+ * <ul>
+ * <li>1: IO_PARALLELISM</li>
+ * <li>(0, 1): less than IO_PARALLELISM</li>
+ * <li>(1, 2): (IO_PARALLELISM, JVM_PARALLELISM)</li>
+ * <li>2: JVM_PARALLELISM</li>
+ * <li>(2, ): more than JVM_PARALLELISM</li>
+ * </ul>
+ * <li>0: CachedThreadPool</li>
+ * <li>Negatives values: FixedThreadPool with parallelism =
+ * <code>abs((int)facor)</code></li>
+ * </ul>
+ * 
+ * @author zx
+ */
 public final class Parals extends Utils {
 	private static final Logger logger = Logger.getLogger(Parals.class);
-
-	public static final class Pool<V> {
-		private final LinkedBlockingQueue<V> pool;
-		final Supplier<V> constuctor;
-		final Consumer<V> destroyer;
-
-		public Pool(int size, Supplier<V> constuctor) {
-			this(size, constuctor, v -> {});
-		}
-
-		public Pool(int size, Supplier<V> constuctor, Consumer<V> destroyer) {
-			pool = new LinkedBlockingQueue<>(size);
-			this.constuctor = constuctor;
-			this.destroyer = destroyer;
-		}
-
-		public void use(Consumer<V> using) {
-			V v = pool.poll();
-			if (null == v) v = constuctor.get();
-			try {
-				using.accept(v);
-			} finally {
-				if (!pool.offer(v) && v instanceof AutoCloseable) try {
-					((AutoCloseable) v).close();
-				} catch (Exception e) {}
-			}
-		}
-	}
-
 	private final static String EXECUTOR_NAME = "AlbacoreIOStream";
 	private static final String PARALLELISM_FACTOR_KEY = "albacore.io.stream.parallelism.factor";
-
-	private static int calcParallelism() {
-		int p = 0;
-		if (Configs.has(PARALLELISM_FACTOR_KEY)) {
-			double r = Double.parseDouble(Configs.gets(PARALLELISM_FACTOR_KEY));
-			p = 16 + (int) Math.round((ForkJoinPool.getCommonPoolParallelism() - 16) * (r - 1));
-			if (p < 2) p = 2;
-			int pa = p;
-			logger.debug(() -> "AlbacoreIO parallelism calced as: [" + pa + "]\n\t[from: (((-D" + PARALLELISM_FACTOR_KEY + "(" + r
-					+ ")) - 1) * (JVM_DEFAULT_PARALLELISM(" + ForkJoinPool.getCommonPoolParallelism()
-					+ ") - IO_DEFAULT_PARALLELISM(16))) + IO_DEFAULT_PARALLELISM(16), Max=JVM_DEFAULT_PARALLELISM, Min=2]");
-		} else logger.info("AlbacoreIO use traditional cached thread pool.");
-		return p;
-	}
-
-	final private static Exor io = new Exor();
+	private static final boolean STREAM_DEBUGGING = Boolean.parseBoolean(System.getProperty("albacore.io.stream.debug", "false"));
+	private final static int SYS_PARALLELISM = Exers.detectParallelism();
 
 	public static int calcBatchParal(long total, long batch) {
 		return total == 0 ? 0 : (int) (((total - 1) / batch) + 1);
@@ -99,216 +89,122 @@ public final class Parals extends Utils {
 		return total == 0 ? 0 : (((total - 1) / parallelism) + 1);
 	}
 
-	private final static class Exor extends Namedly implements AutoCloseable {
-		public static final Logger logger = Logger.getLogger(Exor.class);
-		final ExecutorService exor;
-		final ListeningExecutorService lexor;
-		private final static Map<String, ThreadGroup> g = new ConcurrentHashMap<>();
-
-		public Exor() {
-			this(EXECUTOR_NAME, calcParallelism(), false);
-		}
-
-		public Exor(String name, int parallelism, boolean throwException) {
-			exor = parallelism < 1 ? Executors.newCachedThreadPool(r -> new Thread(g.computeIfAbsent(name, n -> new ThreadGroup(name
-					+ "ThreadGroup")), r, name + "@" + Texts.formatDate(new Date())))
-					: Concurrents.executorForkJoin(parallelism, name, (t, e) -> {
-						logger.error("Migrater pool task failure @" + t.getName(), e);
-						if (throwException) throw wrap(unwrap(e));
-					});
-			if (exor instanceof ThreadPoolExecutor) ((ThreadPoolExecutor) exor).setRejectedExecutionHandler((r, ex) -> logger.error(
-					tracePool("Task rejected by the exor")));
-			lexor = MoreExecutors.listeningDecorator(exor);
-			Systems.handleSignal(sig -> close(), "TERM", "INT");
-		}
-
-		@SuppressWarnings("rawtypes")
-		@FunctionalInterface
-		private interface FutureCallback extends com.google.common.util.concurrent.FutureCallback {
-			@Override
-			default void onFailure(Throwable t) {
-				logger.error("Run sequential fail", t);
-			}
-		}
-
-		@SuppressWarnings({ "rawtypes", "unchecked" })
-		public void runs(Runnable... firstAndThens) {
-			if (null == firstAndThens || firstAndThens.length == 0) return;
-			ListenableFuture f = lexor.submit(firstAndThens[0]);
-			if (firstAndThens.length > 1) f.addListener(() -> runs(Arrays.copyOfRange(firstAndThens, 1, firstAndThens.length)), exor);
-			get(f);
-		}
-
-		public void run(Runnable... tasks) {
-			get(listenRun(tasks));
-		}
-
-		public void run(Runnable task) {
-			get(listenRun(task));
-		}
-
-		public <T> void runs(Callable<T> first, Consumer<T> then) {
-			if (null == first) return;
-			ListenableFuture<T> f = lexor.submit(first);
-			if (then != null) f.addListener(() -> {
-				try {
-					then.accept(f.get());
-				} catch (InterruptedException e) {} catch (ExecutionException e) {
-					logger.error("Subtask error", unwrap(e));
-				}
-			}, exor);
-			get(f);
-		}
-
-		public <T> T run(Callable<T> task) {
-			return get(listen(task));
-		}
-
-		public <T> List<T> run(List<Callable<T>> tasks) {
-			return get(listen(tasks));
-		}
-
-		public <T> ListenableFuture<List<T>> listen(List<? extends Callable<T>> tasks) {
-			return Futures.successfulAsList(list(tasks, this::listen));
-		}
-
-		public <T> ListenableFuture<T> listen(Callable<T> task) {
-			try {
-				return lexor.submit(task);
-			} catch (RejectedExecutionException e) {
-				logger.error("Rejected");
-				throw e;
-			}
-		}
-
-		public ListenableFuture<List<Object>> listenRun(Runnable... tasks) {
-			return Futures.successfulAsList(list(Arrays.asList(tasks), this::listenRun));
-		}
-
-		public ListenableFuture<?> listenRun(Runnable task) {
-			try {
-				return lexor.submit(task);
-			} catch (RejectedExecutionException e) {
-				logger.error("Rejected");
-				throw e;
-			}
-		}
-
-		public <V, A, R> R collect(Iterable<V> col, Function<V, A> mapper, Collector<? super A, ?, R> collector) {
-			return collect(Streams.of(col).map(mapper), collector);
-		}
-
-		public <T, T1, K, V> Map<K, V> map(Stream<T> col, Function<T, T1> mapper, Function<T1, K> keying, Function<T1, V> valuing) {
-			return collect(col.map(mapper), Collectors.toMap(keying, valuing));
-		}
-
-		public <T, K, V> Map<K, V> map(Stream<T> col, Function<T, K> keying, Function<T, V> valuing) {
-			return collect(col, Collectors.toMap(keying, valuing));
-		}
-
-		public <V, A, R> R mapping(Iterable<V> col, Function<Stream<V>, Stream<A>> mapping, Collector<? super A, ?, R> collector) {
-			return collect(mapping.apply(Streams.of(col)), collector);
-		}
-
-		public <V, R> R collect(Iterable<? extends V> col, Collector<? super V, ?, R> collector) {
-			return collect(Streams.of(col), collector);
-		}
-
-		private static final boolean STREAM_DEBUGGING = Boolean.parseBoolean(System.getProperty("albacore.io.stream.debug", "false"));
-
-		public <V, R> R collect(Stream<? extends V> s, Collector<? super V, ?, R> collector) {
-			if (STREAM_DEBUGGING && logger.isTraceEnabled()) {
-				AtomicLong c = new AtomicLong();
-				R r = Streams.of(s).peek(e -> c.incrementAndGet()).collect(collector);
-				logger.debug("One stream collected [" + c.get() + "] elements, performance issue?");
-				return r;
-			} else return Streams.of(s).collect(collector);
-		}
-
-		public <V> List<V> list(Stream<? extends V> stream) {
-			return collect(Streams.of(stream), Collectors.toList());
-		}
-
-		public <V, R> List<R> list(Stream<V> stream, Function<V, R> mapper) {
-			return collect(Streams.of(stream).map(mapper), Collectors.toList());
-		}
-
-		public <V, R> List<R> list(Iterable<V> col, Function<V, R> mapper) {
-			return collect(col, mapper, Collectors.toList());
-		}
-
-		public <V> void each(Iterable<V> col, Consumer<? super V> consumer) {
-			each(Streams.of(col), consumer);
-		}
-
-		private <V> void each(Stream<V> s, Consumer<? super V> consumer) {
-			get(Futures.successfulAsList(list(Streams.of(s).map(v -> listenRun(() -> consumer.accept(v))))));
-		}
-
-		public String tracePool(String prefix) {
-			if (exor instanceof ForkJoinPool) {
-				ForkJoinPool ex = (ForkJoinPool) exor;
-				return MessageFormat.format("{5}, Fork/Join: tasks={4}, threads(active/running)={1}/{2}, steals={3}, pool size={0}", ex
-						.getPoolSize(), ex.getActiveThreadCount(), ex.getRunningThreadCount(), ex.getStealCount(), ex.getQueuedTaskCount(),
-						prefix);
-			} else if (exor instanceof ThreadPoolExecutor) {
-				ThreadPoolExecutor ex = (ThreadPoolExecutor) exor;
-				return MessageFormat.format("{3}, ThreadPool: tasks={2}, threads(active)={1}, pool size={0}", ex.getPoolSize(), ex
-						.getActiveCount(), ex.getTaskCount(), prefix);
-			} else return prefix + ": " + exor.toString();
-		}
-
+	@SuppressWarnings("rawtypes")
+	@FunctionalInterface
+	private static interface FutureCallback extends com.google.common.util.concurrent.FutureCallback {
 		@Override
-		public void close() {}
-
-		public int parallelism() {
-			return exor instanceof ForkJoinPool ? ((ForkJoinPool) exor).getParallelism() : 0;
+		default void onFailure(Throwable t) {
+			logger.error("Run sequential fail", t);
 		}
-
 	}
 
-	// parallel
-	public static <T> T run(Callable<T> task) {
-		return io.run(task);
-	}
-
-	public static void run(Runnable task) {
-		io.run(task);
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public static void runs(Runnable... firstAndThens) {
+		if (null == firstAndThens || firstAndThens.length == 0) return;
+		ListenableFuture f = EXERS.lexor.submit(firstAndThens[0]);
+		if (firstAndThens.length > 1) f.addListener(() -> runs(Arrays.copyOfRange(firstAndThens, 1, firstAndThens.length)), EXERS.exor);
+		get(f);
 	}
 
 	public static void run(Runnable... tasks) {
-		io.run(tasks);
+		get(listenRun(tasks));
 	}
 
-	public static void runs(Runnable... tasks) {
-		io.runs(tasks);
-	}
-
-	public static <T> List<T> run(List<Callable<T>> tasks) {
-		return io.run(tasks);
+	public static void run(Runnable task) {
+		get(listenRun(task));
 	}
 
 	public static <T> void runs(Callable<T> first, Consumer<T> then) {
-		io.runs(first, then);
+		if (null == first) return;
+		ListenableFuture<T> f = EXERS.lexor.submit(first);
+		if (then != null) f.addListener(() -> {
+			try {
+				then.accept(f.get());
+			} catch (InterruptedException e) {} catch (ExecutionException e) {
+				logger.error("Subtask error", unwrap(e));
+			}
+		}, EXERS.exor);
+		get(f);
 	}
 
-	public static <T> ListenableFuture<List<T>> listen(List<Callable<T>> tasks) {
-		return io.listen(tasks);
+	public static <T> T run(Callable<T> task) {
+		return get(listen(task));
+	}
+
+	public static <T> List<T> run(List<Callable<T>> tasks) {
+		return get(listen(tasks));
+	}
+
+	public static <T> ListenableFuture<List<T>> listen(List<? extends Callable<T>> tasks) {
+		return Futures.successfulAsList(list(tasks, Parals::listen));
 	}
 
 	public static <T> ListenableFuture<T> listen(Callable<T> task) {
-		return io.listen(task);
+		try {
+			return EXERS.lexor.submit(task);
+		} catch (RejectedExecutionException e) {
+			logger.error("Rejected");
+			throw e;
+		}
 	}
 
 	public static ListenableFuture<List<Object>> listenRun(Runnable... tasks) {
-		return io.listenRun(tasks);
+		return Futures.successfulAsList(list(Arrays.asList(tasks), Parals::listenRun));
 	}
 
 	public static ListenableFuture<?> listenRun(Runnable task) {
-		return io.listenRun(task);
+		try {
+			return EXERS.lexor.submit(task);
+		} catch (RejectedExecutionException e) {
+			logger.error("Rejected");
+			throw e;
+		}
 	}
 
-	// ex parallel
+	public static <V, A, R> R collect(Iterable<V> col, Function<V, A> mapper, Collector<? super A, ?, R> collector) {
+		return collect(Streams.of(col).map(mapper), collector);
+	}
+
+	public static <T, T1, K, V> Map<K, V> map(Stream<T> col, Function<T, T1> mapper, Function<T1, K> keying, Function<T1, V> valuing) {
+		return collect(col.map(mapper), Collectors.toMap(keying, valuing));
+	}
+
+	public static <T, K, V> Map<K, V> map(Stream<T> col, Function<T, K> keying, Function<T, V> valuing) {
+		return collect(col, Collectors.toMap(keying, valuing));
+	}
+
+	public static <V, A, R> R mapping(Iterable<V> col, Function<Stream<V>, Stream<A>> mapping, Collector<? super A, ?, R> collector) {
+		return collect(mapping.apply(Streams.of(col)), collector);
+	}
+
+	public static <V, R> R collect(Iterable<? extends V> col, Collector<? super V, ?, R> collector) {
+		return collect(Streams.of(col), collector);
+	}
+
+	public static <V, R> R collect(Stream<? extends V> s, Collector<? super V, ?, R> collector) {
+		if (STREAM_DEBUGGING && logger.isTraceEnabled()) {
+			AtomicLong c = new AtomicLong();
+			R r = Streams.of(s).peek(e -> c.incrementAndGet()).collect(collector);
+			logger.debug("One stream collected [" + c.get() + "] elements, performance issue?");
+			return r;
+		} else return Streams.of(s).collect(collector);
+	}
+
+	public static <V> List<V> list(Stream<? extends V> stream) {
+		return collect(Streams.of(stream), Collectors.toList());
+	}
+
+	public static <V, R> List<R> list(Stream<V> stream, Function<V, R> mapper) {
+		return collect(Streams.of(stream).map(mapper), Collectors.toList());
+	}
+
+	public static <V, R> List<R> list(Iterable<V> col, Function<V, R> mapper) {
+		return collect(col, mapper, Collectors.toList());
+	}
+
+	public static <V> void each(Iterable<V> col, Consumer<? super V> consumer) {
+		each(Streams.of(col), consumer);
+	}
 
 	/**
 	 * Strict Parallel traversing.
@@ -354,74 +250,27 @@ public final class Parals extends Utils {
 		return fs.size();
 	}
 
-	// mapping
-	public static <V, A, R> R collect(Iterable<V> col, Function<V, A> mapper, Collector<? super A, ?, R> collector) {
-		return io.collect(col, mapper, collector);
-	}
-
-	@Deprecated
-	public static <V, A, R> R mapping(Iterable<V> col, Function<Stream<V>, Stream<A>> mapping, Collector<? super A, ?, R> collector) {
-		return io.mapping(col, mapping, collector);
-	}
-
-	public static <V, R> R collect(Iterable<? extends V> col, Collector<V, ?, R> collector) {
-		return io.collect(col, collector);
-	}
-
-	public static <V, R> R collect(Stream<? extends V> stream, Collector<V, ?, R> collector) {
-		return io.collect(stream, collector);
-	}
-
-	public static <V> List<V> list(Stream<V> stream) {
-		return io.list(stream);
-	}
-
-	public static <V, R> List<R> list(Stream<V> stream, Function<V, R> mapper) {
-		return io.list(stream, mapper);
-	}
-
-	public static <V, R> List<R> list(Iterable<V> col, Function<V, R> mapper) {
-		return io.list(col, mapper);
-	}
-
-	public static <V> void each(Iterable<V> col, Consumer<? super V> consumer) {
-		io.each(col, consumer);
-	}
-
-	public static <T, T1, K, V> Map<K, V> map(Stream<T> col, Function<T, T1> mapper, Function<T1, K> keying, Function<T1, V> valuing) {
-		return io.map(col, mapper, keying, valuing);
-	}
-
-	public static <T, K, V> Map<K, V> map(Stream<T> col, Function<T, K> keying, Function<T, V> valuing) {
-		return io.map(col, keying, valuing);
-	}
-
-	public static long sum(Iterable<? extends Future<? extends Number>> futures, Logger errorLogger) {
-		long count = 0;
-		for (Future<? extends Number> f : futures) {
-			Number n;
-			try {
-				n = f.get();
-			} catch (InterruptedException e) {
-				errorLogger.error("Batch interrupted");
-				continue;
-			} catch (ExecutionException e) {
-				errorLogger.error("Batch fail", unwrap(e));
-				continue;
-			}
-			if (null != n) count += n.longValue();
-		}
-		return count;
-
-	}
-
-	// status
-	public static int parallelism() {
-		return io.parallelism();
+	private static <V> void each(Stream<V> s, Consumer<? super V> consumer) {
+		get(Futures.successfulAsList(list(Streams.of(s).map(v -> listenRun(() -> consumer.accept(v))))));
 	}
 
 	public static String tracePool(String prefix) {
-		return io.tracePool(prefix);
+		if (EXERS.exor instanceof ForkJoinPool) {
+			ForkJoinPool ex = (ForkJoinPool) EXERS.exor;
+			return MessageFormat.format("{5}, Fork/Join: tasks={4}, threads(active/running)={1}/{2}, steals={3}, pool size={0}", ex
+					.getPoolSize(), ex.getActiveThreadCount(), ex.getRunningThreadCount(), ex.getStealCount(), ex.getQueuedTaskCount(),
+					prefix);
+		} else if (EXERS.exor instanceof ThreadPoolExecutor) {
+			ThreadPoolExecutor ex = (ThreadPoolExecutor) EXERS.exor;
+			return MessageFormat.format("{3}, ThreadPool: tasks={2}, threads(active)={1}, pool size={0}", ex.getPoolSize(), ex
+					.getActiveCount(), ex.getTaskCount(), prefix);
+		} else return prefix + ": " + EXERS.exor.toString();
+	}
+
+	public static int parallelism() {
+		if (EXERS.exor instanceof ForkJoinPool) return ((ForkJoinPool) EXERS.exor).getParallelism();
+		if (SYS_PARALLELISM < 0) return -SYS_PARALLELISM;
+		return Integer.MAX_VALUE;
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
@@ -443,5 +292,79 @@ public final class Parals extends Utils {
 			logger.error("Subtask error", unwrap(e));
 		}
 		return null;
+	}
+
+	private final static Exers EXERS = new Exers(EXECUTOR_NAME, SYS_PARALLELISM, false);
+
+	private final static class Exers extends Namedly implements AutoCloseable {
+		public static final Logger logger = Logger.getLogger(Exers.class);
+		final ExecutorService exor;
+		final ListeningExecutorService lexor;
+		private final static Map<String, ThreadGroup> g = new ConcurrentHashMap<>();
+
+		public Exers(String name, int parallelism, boolean throwException) {
+			UncaughtExceptionHandler handler = (t, e) -> {
+				logger.error("Migrater pool task failure @" + t.getName(), e);
+				if (throwException) throw wrap(unwrap(e));
+			};
+			if (parallelism > 0) exor = new ForkJoinPool(parallelism, Concurrents.forkjoinFactory(name), handler, false);
+			else {
+				ThreadFactory factory = r -> {
+					Thread t = new Thread(g.computeIfAbsent(name, n -> new ThreadGroup(name + "ThreadGroup")), r, name + "@" + Texts
+							.formatDate(new Date()));
+					t.setUncaughtExceptionHandler(handler);
+					return t;
+				};
+				exor = parallelism == 0 ? Executors.newCachedThreadPool(factory) : Executors.newFixedThreadPool(-parallelism, factory);
+			}
+			if (exor instanceof ThreadPoolExecutor) ((ThreadPoolExecutor) exor).setRejectedExecutionHandler((r, ex) -> logger.error(
+					tracePool("Task rejected by the exor")));
+			lexor = MoreExecutors.listeningDecorator(exor);
+			Systems.handleSignal(sig -> close(), "TERM", "INT");
+		}
+
+		@Override
+		public void close() {
+			logger.debug(name + " is closing...");
+		}
+
+		private static int detectParallelism() {
+			double f = Double.parseDouble(Configs.gets(PARALLELISM_FACTOR_KEY, "0"));
+			if (f <= 0) return (int) f;
+			int p = 16 + (int) Math.round((ForkJoinPool.getCommonPoolParallelism() - 16) * (f - 1));
+			if (p < 2) p = 2;
+			logger.debug("AlbacoreIO parallelism calced as: [" + p + "]\n\t[from: (((-D" + PARALLELISM_FACTOR_KEY + "[" + f
+					+ "]) - 1) * (JVM_DEFAULT_PARALLELISM[" + ForkJoinPool.getCommonPoolParallelism()
+					+ "] - IO_DEFAULT_PARALLELISM[16])) + IO_DEFAULT_PARALLELISM[16], Max=JVM_DEFAULT_PARALLELISM, Min=2]");
+			return p;
+		}
+	}
+
+	public final static class Pool<V> {
+		private final LinkedBlockingQueue<V> pool;
+		final Supplier<V> constuctor;
+		final Consumer<V> destroyer;
+
+		public Pool(int size, Supplier<V> constuctor) {
+			this(size, constuctor, v -> {});
+		}
+
+		public Pool(int size, Supplier<V> constuctor, Consumer<V> destroyer) {
+			pool = new LinkedBlockingQueue<>(size);
+			this.constuctor = constuctor;
+			this.destroyer = destroyer;
+		}
+
+		public void use(Consumer<V> using) {
+			V v = pool.poll();
+			if (null == v) v = constuctor.get();
+			try {
+				using.accept(v);
+			} finally {
+				if (!pool.offer(v) && v instanceof AutoCloseable) try {
+					((AutoCloseable) v).close();
+				} catch (Exception e) {}
+			}
+		}
 	}
 }

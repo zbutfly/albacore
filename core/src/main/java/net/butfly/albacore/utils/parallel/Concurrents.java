@@ -116,16 +116,16 @@ public final class Concurrents extends Utils {
 		return CORE_EXECUTOR.submit(thread);
 	}
 
+	public static ForkJoinWorkerThreadFactory forkjoinFactory(String threadNamePrefix) {
+		return null == threadNamePrefix ? ForkJoinPool.defaultForkJoinWorkerThreadFactory : pool -> {
+			ForkJoinWorkerThread worker = ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread(pool);
+			if (null != threadNamePrefix) worker.setName(threadNamePrefix + "#" + worker.getPoolIndex());
+			return worker;
+		};
+	}
+
 	public static ForkJoinPool executorForkJoin(int parallelism, String threadNamePrefix, UncaughtExceptionHandler handler) {
-		return new ForkJoinPool(parallelism, threadNamePrefix != null || handler != null ? new ForkJoinWorkerThreadFactory() {
-			@Override
-			public ForkJoinWorkerThread newThread(ForkJoinPool pool) {
-				ForkJoinWorkerThread worker = ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread(pool);
-				if (null != threadNamePrefix) worker.setName(threadNamePrefix + "#" + worker.getPoolIndex());
-				if (null != handler) worker.setUncaughtExceptionHandler(handler);
-				return worker;
-			}
-		} : ForkJoinPool.defaultForkJoinWorkerThreadFactory, handler, false);
+		return new ForkJoinPool(parallelism, forkjoinFactory(threadNamePrefix), handler, false);
 	}
 
 	public static boolean shutdown(ExecutorService executor) {
