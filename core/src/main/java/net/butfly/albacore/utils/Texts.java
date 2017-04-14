@@ -20,8 +20,10 @@ public final class Texts extends Utils {
 		return null == str || str.trim().length() == 0;
 	}
 
-	public static boolean notEmpty(String str) {
-		return null != str && str.trim().length() > 0;
+	public static boolean notEmpty(String... str) {
+		for (String s : str)
+			if (isEmpty(s)) return false;
+		return true;
 	}
 
 	public static String orNull(String str) {
