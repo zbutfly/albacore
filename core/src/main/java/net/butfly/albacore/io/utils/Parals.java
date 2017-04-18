@@ -131,6 +131,11 @@ public final class Parals extends Utils {
 		return get(listen(task));
 	}
 
+	@SafeVarargs
+	public static <T> List<T> run(Callable<T>... tasks) {
+		return get(listen(Arrays.asList(tasks)));
+	}
+
 	public static <T> List<T> run(List<Callable<T>> tasks) {
 		return get(listen(tasks));
 	}
