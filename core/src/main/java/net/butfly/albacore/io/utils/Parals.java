@@ -114,16 +114,18 @@ public final class Parals extends Utils {
 		get(listenRun(task));
 	}
 
-	public static <T> void runs(Callable<T> first, Consumer<T> then) {
+	@SafeVarargs
+	public static <T> void runs(Callable<T> first, Consumer<T>... then) {
 		if (null == first) return;
 		ListenableFuture<T> f = EXERS.lexor.submit(first);
-		if (then != null) f.addListener(() -> {
-			try {
-				then.accept(f.get());
-			} catch (InterruptedException e) {} catch (ExecutionException e) {
-				logger.error("Subtask error", unwrap(e));
-			}
-		}, EXERS.exor);
+		for (Consumer<T> t : then)
+			if (t != null) f.addListener(() -> {
+				try {
+					t.accept(f.get());
+				} catch (InterruptedException e) {} catch (ExecutionException e) {
+					logger.error("Subtask error", unwrap(e));
+				}
+			}, EXERS.exor);
 		get(f);
 	}
 
