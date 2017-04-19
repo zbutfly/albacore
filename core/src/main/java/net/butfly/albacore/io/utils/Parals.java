@@ -115,7 +115,7 @@ public final class Parals extends Utils {
 	}
 
 	@SafeVarargs
-	public static <T> void runss(Callable<T> first, Consumer<T>... then) {
+	public static <T> void runs(Callable<T> first, Consumer<T>... then) {
 		if (null == first) return;
 		ListenableFuture<T> f = EXERS.lexor.submit(first);
 		for (Consumer<T> t : then)
