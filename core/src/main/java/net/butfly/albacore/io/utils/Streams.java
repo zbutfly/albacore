@@ -2,23 +2,30 @@ package net.butfly.albacore.io.utils;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Spliterator;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import net.butfly.albacore.utils.Configs;
 import net.butfly.albacore.utils.Utils;
 import net.butfly.albacore.utils.collection.Maps;
+import net.butfly.albacore.utils.logger.Logger;
 import net.butfly.albacore.utils.parallel.Suppliterator;
 
 public final class Streams extends Utils {
+	private static final Logger logger = Logger.getLogger(Streams.class);
+	private static final boolean STREAM_DEBUGGING = Boolean.parseBoolean(System.getProperty("albacore.io.stream.debug", "false"));
 	public static final Predicate<Object> NOT_NULL = t -> null != t;
 	public static final BinaryOperator<Long> LONG_SUM = (r1, r2) -> {
 		if (null == r1 && null == r2) return 0L;
@@ -86,5 +93,48 @@ public final class Streams extends Utils {
 	@SafeVarargs
 	public static <V> Stream<V> of(V... values) {
 		return of(Stream.of(values));
+	}
+
+	// map reduce ops
+
+	public static <V, A, R> R collect(Iterable<V> col, Function<V, A> mapper, Collector<? super A, ?, R> collector) {
+		return collect(Streams.of(col).map(mapper), collector);
+	}
+
+	public static <T, T1, K, V> Map<K, V> map(Stream<T> col, Function<T, T1> mapper, Function<T1, K> keying, Function<T1, V> valuing) {
+		return collect(col.map(mapper), Collectors.toMap(keying, valuing));
+	}
+
+	public static <T, K, V> Map<K, V> map(Stream<T> col, Function<T, K> keying, Function<T, V> valuing) {
+		return collect(col, Collectors.toMap(keying, valuing));
+	}
+
+	public static <V, A, R> R mapping(Iterable<V> col, Function<Stream<V>, Stream<A>> mapping, Collector<? super A, ?, R> collector) {
+		return collect(mapping.apply(Streams.of(col)), collector);
+	}
+
+	public static <V, R> R collect(Iterable<? extends V> col, Collector<? super V, ?, R> collector) {
+		return collect(Streams.of(col), collector);
+	}
+
+	public static <V, R> R collect(Stream<? extends V> s, Collector<? super V, ?, R> collector) {
+		if (STREAM_DEBUGGING && logger.isTraceEnabled()) {
+			AtomicLong c = new AtomicLong();
+			R r = Streams.of(s).peek(e -> c.incrementAndGet()).collect(collector);
+			logger.debug("One stream collected [" + c.get() + "] elements, performance issue?");
+			return r;
+		} else return Streams.of(s).collect(collector);
+	}
+
+	public static <V> List<V> list(Stream<? extends V> stream) {
+		return collect(Streams.of(stream), Collectors.toList());
+	}
+
+	public static <V, R> List<R> list(Stream<V> stream, Function<V, R> mapper) {
+		return collect(Streams.of(stream).map(mapper), Collectors.toList());
+	}
+
+	public static <V, R> List<R> list(Iterable<V> col, Function<V, R> mapper) {
+		return collect(col, mapper, Collectors.toList());
 	}
 }

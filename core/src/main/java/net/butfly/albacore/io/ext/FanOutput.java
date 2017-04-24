@@ -1,7 +1,11 @@
 package net.butfly.albacore.io.ext;
 
+import static net.butfly.albacore.io.utils.Streams.collect;
+import static net.butfly.albacore.io.utils.Streams.list;
+import static net.butfly.albacore.io.utils.Streams.of;
 import static net.butfly.albacore.utils.Exceptions.unwrap;
 import static net.butfly.albacore.utils.Exceptions.wrap;
+import static net.butfly.albacore.utils.parallel.Parals.listen;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -11,14 +15,12 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import net.butfly.albacore.base.Namedly;
 import net.butfly.albacore.io.Output;
-import net.butfly.albacore.io.utils.Parals;
-import net.butfly.albacore.io.utils.Streams;
 
 public class FanOutput<V> extends Namedly implements Output<V> {
 	private final Iterable<? extends Output<V>> outputs;
 
 	public FanOutput(Iterable<? extends Output<V>> outputs) {
-		this("FanOutTo" + ":" + Parals.collect(Streams.of(outputs).map(o -> o.name()), Collectors.joining("&")), outputs);
+		this("FanOutTo" + ":" + collect(of(outputs).map(o -> o.name()), Collectors.joining("&")), outputs);
 		open();
 	}
 
@@ -29,8 +31,8 @@ public class FanOutput<V> extends Namedly implements Output<V> {
 
 	@Override
 	public long enqueue(Stream<V> items) {
-		List<V> values = Parals.list(items);
-		ListenableFuture<List<Long>> fs = Parals.listen(Parals.list(outputs, o -> () -> o.enqueue(Streams.of(values))));
+		List<V> values = list(items);
+		ListenableFuture<List<Long>> fs = listen(list(outputs, o -> () -> o.enqueue(of(values))));
 		List<Long> rs;
 		try {
 			rs = fs.get();
@@ -39,6 +41,6 @@ public class FanOutput<V> extends Namedly implements Output<V> {
 		} catch (Exception e) {
 			throw wrap(unwrap(e));
 		}
-		return Parals.collect(rs, Collectors.summingLong(Long::longValue));
+		return collect(rs, Collectors.summingLong(Long::longValue));
 	}
 }

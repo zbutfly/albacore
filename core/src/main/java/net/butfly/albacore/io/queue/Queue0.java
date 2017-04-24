@@ -7,8 +7,8 @@ import java.util.stream.Stream;
 import net.butfly.albacore.io.Input;
 import net.butfly.albacore.io.Output;
 import net.butfly.albacore.io.utils.Its;
-import net.butfly.albacore.io.utils.Parals;
 import net.butfly.albacore.io.utils.Streams;
+import net.butfly.albacore.utils.parallel.Parals;
 
 /**
  * Rich feature queue for big data processing, supporting:

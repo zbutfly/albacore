@@ -7,8 +7,8 @@ import java.util.stream.Stream;
 
 import net.butfly.albacore.io.queue.Queue0;
 import net.butfly.albacore.io.utils.Its;
-import net.butfly.albacore.io.utils.Parals;
 import net.butfly.albacore.io.utils.Streams;
+import net.butfly.albacore.utils.parallel.Parals;
 
 public interface Output<V> extends IO, Consumer<Stream<V>>, Enqueue<V> {
 	static Output<?> NULL = items -> 0;

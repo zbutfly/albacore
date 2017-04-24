@@ -1,4 +1,4 @@
-package net.butfly.albacore.io.utils;
+package net.butfly.albacore.utils.parallel;
 
 import static net.butfly.albacore.utils.Exceptions.unwrap;
 import static net.butfly.albacore.utils.Exceptions.wrap;
@@ -21,12 +21,10 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -36,12 +34,12 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 
 import net.butfly.albacore.base.Namedly;
+import net.butfly.albacore.io.utils.Streams;
 import net.butfly.albacore.utils.Configs;
 import net.butfly.albacore.utils.Systems;
 import net.butfly.albacore.utils.Texts;
 import net.butfly.albacore.utils.Utils;
 import net.butfly.albacore.utils.logger.Logger;
-import net.butfly.albacore.utils.parallel.Concurrents;
 
 /**
  * <b>Auto detection of thread executor type and parallelism based on
@@ -78,7 +76,6 @@ public final class Parals extends Utils {
 	private static final Logger logger = Logger.getLogger(Parals.class);
 	private final static String EXECUTOR_NAME = "AlbacoreIOStream";
 	private static final String PARALLELISM_FACTOR_KEY = "albacore.io.stream.parallelism.factor";
-	private static final boolean STREAM_DEBUGGING = Boolean.parseBoolean(System.getProperty("albacore.io.stream.debug", "false"));
 	private final static int SYS_PARALLELISM = Exers.detectParallelism();
 
 	public static int calcBatchParal(long total, long batch) {
@@ -143,7 +140,7 @@ public final class Parals extends Utils {
 	}
 
 	public static <T> ListenableFuture<List<T>> listen(List<? extends Callable<T>> tasks) {
-		return Futures.successfulAsList(list(tasks, Parals::listen));
+		return Futures.successfulAsList(Streams.list(tasks, Parals::listen));
 	}
 
 	public static <T> ListenableFuture<T> listen(Callable<T> task) {
@@ -156,7 +153,7 @@ public final class Parals extends Utils {
 	}
 
 	public static ListenableFuture<List<Object>> listenRun(Runnable... tasks) {
-		return Futures.successfulAsList(list(Arrays.asList(tasks), Parals::listenRun));
+		return Futures.successfulAsList(Streams.list(Arrays.asList(tasks), Parals::listenRun));
 	}
 
 	public static ListenableFuture<?> listenRun(Runnable task) {
@@ -166,51 +163,6 @@ public final class Parals extends Utils {
 			logger.error("Rejected");
 			throw e;
 		}
-	}
-
-	public static <V, A, R> R collect(Iterable<V> col, Function<V, A> mapper, Collector<? super A, ?, R> collector) {
-		return collect(Streams.of(col).map(mapper), collector);
-	}
-
-	public static <T, T1, K, V> Map<K, V> map(Stream<T> col, Function<T, T1> mapper, Function<T1, K> keying, Function<T1, V> valuing) {
-		return collect(col.map(mapper), Collectors.toMap(keying, valuing));
-	}
-
-	public static <T, K, V> Map<K, V> map(Stream<T> col, Function<T, K> keying, Function<T, V> valuing) {
-		return collect(col, Collectors.toMap(keying, valuing));
-	}
-
-	public static <V, A, R> R mapping(Iterable<V> col, Function<Stream<V>, Stream<A>> mapping, Collector<? super A, ?, R> collector) {
-		return collect(mapping.apply(Streams.of(col)), collector);
-	}
-
-	public static <V, R> R collect(Iterable<? extends V> col, Collector<? super V, ?, R> collector) {
-		return collect(Streams.of(col), collector);
-	}
-
-	public static <V, R> R collect(Stream<? extends V> s, Collector<? super V, ?, R> collector) {
-		if (STREAM_DEBUGGING && logger.isTraceEnabled()) {
-			AtomicLong c = new AtomicLong();
-			R r = Streams.of(s).peek(e -> c.incrementAndGet()).collect(collector);
-			logger.debug("One stream collected [" + c.get() + "] elements, performance issue?");
-			return r;
-		} else return Streams.of(s).collect(collector);
-	}
-
-	public static <V> List<V> list(Stream<? extends V> stream) {
-		return collect(Streams.of(stream), Collectors.toList());
-	}
-
-	public static <V, R> List<R> list(Stream<V> stream, Function<V, R> mapper) {
-		return collect(Streams.of(stream).map(mapper), Collectors.toList());
-	}
-
-	public static <V, R> List<R> list(Iterable<V> col, Function<V, R> mapper) {
-		return collect(col, mapper, Collectors.toList());
-	}
-
-	public static <V> void each(Iterable<V> col, Consumer<? super V> consumer) {
-		each(Streams.of(col), consumer);
 	}
 
 	/**
@@ -257,8 +209,12 @@ public final class Parals extends Utils {
 		return fs.size();
 	}
 
+	public static <V> void each(Iterable<V> col, Consumer<? super V> consumer) {
+		each(Streams.of(col), consumer);
+	}
+
 	private static <V> void each(Stream<V> s, Consumer<? super V> consumer) {
-		get(Futures.successfulAsList(list(Streams.of(s).map(v -> listenRun(() -> consumer.accept(v))))));
+		get(Futures.successfulAsList(Streams.list(Streams.of(s).map(v -> listenRun(() -> consumer.accept(v))))));
 	}
 
 	public static String tracePool(String prefix) {

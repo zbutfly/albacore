@@ -1,5 +1,10 @@
 package net.butfly.albacore.io.utils;
 
+import static net.butfly.albacore.io.utils.Streams.list;
+import static net.butfly.albacore.utils.parallel.Parals.join;
+import static net.butfly.albacore.utils.parallel.Parals.listen;
+import static net.butfly.albacore.utils.parallel.Parals.listenRun;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -116,20 +121,20 @@ public final class Its extends Utils {
 		List<Future<?>> fs = new ArrayList<>();
 		while (origin.estimateSize() > max) {
 			Spliterator<V> split = origin.trySplit();
-			if (null != split) fs.add(Parals.listenRun(() -> splitRun(split, max, using)));
+			if (null != split) fs.add(listenRun(() -> splitRun(split, max, using)));
 		}
 		if (origin.estimateSize() > 0) using.accept(origin);
-		Parals.join(fs);
+		join(fs);
 	}
 
 	public static <V, R> Spliterator<R> splitMap(Spliterator<V> origin, long maxSize, Function<Spliterator<V>, Spliterator<R>> using) {
 		List<Future<Spliterator<R>>> fs = new ArrayList<>();
 		while (origin.estimateSize() > maxSize) {
 			Spliterator<V> split = origin.trySplit();
-			if (null != split) fs.add(Parals.listen(() -> splitMap(split, maxSize, using)));
+			if (null != split) fs.add(listen(() -> splitMap(split, maxSize, using)));
 		}
 		Spliterator<R> v = origin.estimateSize() > 0 ? using.apply(origin) : null;
-		List<Spliterator<R>> rs = Parals.list(fs, f -> {
+		List<Spliterator<R>> rs = list(fs, f -> {
 			try {
 				return f.get();
 			} catch (InterruptedException | ExecutionException e) {

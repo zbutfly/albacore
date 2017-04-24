@@ -9,8 +9,8 @@ import com.google.common.base.Supplier;
 import net.butfly.albacore.base.Namedly;
 import net.butfly.albacore.io.Openable;
 import net.butfly.albacore.io.ext.OpenableThread;
-import net.butfly.albacore.io.utils.Parals;
 import net.butfly.albacore.lambda.Runnable;
+import net.butfly.albacore.utils.parallel.Parals;
 
 abstract class PumpImpl<V, P extends PumpImpl<V, P>> extends Namedly implements Pump<V> {
 	protected static final int STATUS_OTHER = 0;
