@@ -1,37 +1,22 @@
 package net.butfly.albacore.utils.parallel.task;
 
-import net.butfly.albacore.utils.parallel.Parals;
-
 public interface Task extends Runnable {
-	@Override
-	default void run() {
-		if (this instanceof SinTask) ((SinTask) this).running.run();
-		else if (this instanceof ListTask) {
-			if (((ListTask) this).concurrent) Parals.run(((ListTask) this).subs.toArray(new Task[0]));
-			else for (Runnable t : ((ListTask) this).subs)
-				t.run();
-		}
+	static Task task(Runnable r) {
+		return r instanceof Task ? (Task) r : r::run;
 	}
 
 	default Task concat(Runnable then) {
-		if (this instanceof SinTask || ((ListTask) this).concurrent) return new ListTask(false, this, then);
-		else {
-			((ListTask) this).subs.add(then);
-			return this;
-		}
+		return new TaskList(this, then);
 	}
 
 	default Task multiple(Runnable other) {
-		if (this instanceof ListTask && ((ListTask) this).concurrent) {
-			((ListTask) this).subs.add(other);
-			return this;
-		} else return new ListTask(true, this, other);
+		return new TaskList(true, this, other);
 	}
 
 	public static void main(String... args) {
-		new SinTask(() -> test("select * from edw_gazhk_czrk limit 10"))//
+		task(() -> test("select * from edw_gazhk_czrk limit 10"))//
 				.multiple(//
-						new SinTask(() -> test("select * from sfqh where code='11'"))//
+						task(() -> test("select * from sfqh where code='11'"))//
 								.concat(() -> test("select * from sfqh where code='14'"))//
 								.concat(() -> test("select * from sfqh where code='52'"))//
 				)//
