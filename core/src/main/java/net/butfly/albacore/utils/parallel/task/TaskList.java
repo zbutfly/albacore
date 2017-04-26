@@ -4,26 +4,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import net.butfly.albacore.utils.parallel.Parals;
+abstract class TaskList implements Task {
+	protected final List<Runnable> subs;
 
-public class TaskList implements Task {
-	final boolean concurrent;
-	final List<Runnable> subs;
+	protected abstract boolean concurrent();
 
-	/**
-	 * Default sequantial task list.
-	 * 
-	 * @param first
-	 * @param others
-	 */
 	public TaskList(Runnable first, Runnable then, Runnable... others) {
-		this(false, first, then, others);
-	}
-
-	public TaskList(boolean concurrent, Runnable first, Runnable then, Runnable... others) {
 		super();
 		if (null == first || null == then) throw new NullPointerException("TaskList need at least 2 task to run");
-		this.concurrent = concurrent;
 		subs = new ArrayList<>();
 		subs.add(first);
 		subs.add(then);
@@ -31,42 +19,24 @@ public class TaskList implements Task {
 	}
 
 	@Override
-	public void run() {
-		if (concurrent) Parals.run(((TaskList) this).subs.toArray(new Task[0]));
-		else for (Runnable t : subs)
-			t.run();
-	}
-
-	private TaskList compact() {
-		int i = 0;
-		while (i < subs.size()) {
-			Runnable s = subs.get(i);
+	public final TaskList clone() {
+		List<Runnable> nsubs = new ArrayList<>();
+		for (Runnable s : subs) {
 			if (s instanceof TaskList) {
-				TaskList ss = ((TaskList) s).compact();
-				if (ss.concurrent == concurrent) {
-					subs.remove(i);
-					subs.addAll(i, ss.subs);
-					i += ss.subs.size();
+				TaskList ss = ((TaskList) s).clone();
+				if (ss.concurrent() == concurrent()) {
+					nsubs.addAll(ss.subs);
 					continue;
-				} else subs.set(i, ss);
+				}
 			}
-			i++;
+			nsubs.add(s);
 		}
-		return this;
+		return concurrent() ? new TaskConcurrent(nsubs.remove(0), nsubs.remove(0), nsubs.toArray(new Runnable[nsubs.size()]))
+				: new TaskConsecutive(nsubs.remove(0), nsubs.remove(0), nsubs.toArray(new Runnable[nsubs.size()]));
 	}
 
-	private TaskList append(Runnable run) {
+	protected final TaskList append(Runnable run) {
 		subs.add(run);
 		return this;
-	}
-
-	@Override
-	public Task concat(Runnable then) {
-		return (concurrent ? new TaskList(false, this, then) : append(then)).compact();
-	}
-
-	@Override
-	public Task multiple(Runnable other) {
-		return (concurrent ? append(other) : new TaskList(true, this, other)).compact();
 	}
 }
