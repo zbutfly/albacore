@@ -33,7 +33,6 @@ abstract class PumpImpl<V, P extends PumpImpl<V, P>> extends Namedly implements 
 		else this.parallelism = parallelism;
 		forceTrace = batchSize / parallelism;
 		dependencies = new ArrayList<>();
-		closing(this::closeDeps);
 		logger().info("Pump [" + name + "] created with parallelism: " + parallelism);
 	}
 
@@ -97,5 +96,11 @@ abstract class PumpImpl<V, P extends PumpImpl<V, P>> extends Namedly implements 
 	@Override
 	public boolean opened() {
 		return Pump.super.opened() && isAllDependsOpen();
+	}
+
+	@Override
+	public void close() {
+		Pump.super.close();
+		closeDeps();
 	}
 }

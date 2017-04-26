@@ -2,6 +2,7 @@ package net.butfly.albacore.utils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -41,39 +42,50 @@ public final class IOs extends Utils {
 		return null;
 	}
 
-	public static <S extends OutputStream> S writeBytes(S out, byte[]... bytes) throws IOException {
-		logger.trace(() -> bytes.length > 1 ? "Write bytes: " + bytes.length : null);
-		for (byte[] b : bytes) {
-			if (null == b) writeInt(out, -1);
-			else {
-				writeInt(out, b.length);
-				logger.trace(() -> "\tIO write bytes: " + b.length);
-				if (b.length > 0) out.write(b);
+	public static <S extends OutputStream> S writeBytes(S out, byte[] b) throws IOException {
+		if (null == b) {
+			writeInt(out, -1);
+			logger.trace(() -> "writeBytes: length[-1]");
+		} else {
+			writeInt(out, b.length);
+			logger.trace(() -> "writeBytes: length[" + b.length + "]");
+			if (b.length > 0) {
+				out.write(b);
+				logger.trace(() -> "writeBytes: data[" + b.length + "]");
 			}
 		}
 		return out;
 	}
 
+	public static <S extends OutputStream> S writeBytes(S out, byte[]... bytes) throws IOException {
+		logger.trace(() -> bytes.length > 1 ? "Write bytes list: " + bytes.length : null);
+		writeInt(out, bytes.length);
+		for (byte[] b : bytes)
+			writeBytes(out, b);
+		return out;
+	}
+
 	public static byte[] readBytes(InputStream in) throws IOException {
 		int l = readInt(in);
+		logger.trace(() -> "readBytes: length[" + l + "]");
 		if (l < 0) return null;
 		if (l == 0) return new byte[0];
 		byte[] bytes = new byte[l];
-		int r;
-		while ((r = in.read(bytes)) < l && l > 0)
-			// not full read but no data remained.
-			if (r == -1) throw new IOException();
-		logger.trace(() -> "Read bytes: " + bytes.length);
+		for (int i = 0; i < l; i++) {
+			int b;
+			if ((b = in.read()) < 0)//
+				throw new EOFException("not full read but no data remained, need [" + l + ", now [" + i + "]]");
+			else bytes[i] = (byte) b;
+		}
+		logger.trace(() -> "readBytes: data[" + l + "]");
 		return bytes;
 	}
 
 	public static <T> List<T> readBytes(InputStream in, int count, Function<byte[], T> der) throws IOException {
+		logger.trace(() -> count > 1 ? "Read bytes list: " + count : null);
 		List<T> r = new ArrayList<>();
-		for (int i = 0; i < count; i++) {
-			byte[] b = readBytes(in);
-			r.add(der.apply(b));
-			logger.trace(() -> "Read bytes as obj: " + b.length);
-		}
+		for (int i = 0; i < count; i++)
+			r.add(der.apply(readBytes(in)));
 		return r;
 	}
 
@@ -101,15 +113,18 @@ public final class IOs extends Utils {
 
 	public static <S extends OutputStream> S writeObj(S out, Object obj) throws IOException {
 		logger.trace(() -> "Write object: " + (null == obj ? null : obj.getClass().getName()));
-		try (ObjectOutputStream os = new ObjectOutputStream(out)) {
-			os.writeObject(obj);
+		try (ByteArrayOutputStream baos = new ByteArrayOutputStream(); ObjectOutputStream is = new ObjectOutputStream(baos)) {
+			is.writeObject(obj);
+			writeBytes(out, baos.toByteArray());
 		}
 		return out;
 	}
 
 	@SuppressWarnings("unchecked")
 	public static <T> T readObj(InputStream in) throws IOException {
-		try (ObjectInputStream is = new ObjectInputStream(in)) {
+		byte[] bytes = readBytes(in);
+		if (null == bytes || bytes.length == 0) return null;
+		try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes); ObjectInputStream is = new ObjectInputStream(bais)) {
 			try {
 				T obj = (T) is.readObject();
 				logger.trace(() -> "Read object: " + (null == obj ? null : obj.getClass().getName()));
