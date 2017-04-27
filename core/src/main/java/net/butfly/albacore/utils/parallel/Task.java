@@ -5,10 +5,6 @@ import java.util.Arrays;
 import java.util.List;
 
 public interface Task extends Runnable, Cloneable {
-	static Task task(Runnable r) {
-		return r instanceof Task ? (Task) r : r::run;
-	}
-
 	default Task concat(Runnable then) {
 		return new Tasks.TaskConsecutive(this, then).clone();
 	}
