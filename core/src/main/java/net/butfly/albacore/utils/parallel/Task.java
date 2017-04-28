@@ -4,17 +4,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public interface Task extends Runnable, Cloneable {
+public interface Task extends Runnable {
 	default Task concat(Runnable then) {
-		return new Tasks.TaskConsecutive(this, then).clone();
+		return new Tasks.TaskConsecutive(this, then).compact();
 	}
 
 	default Task multiple(Runnable other) {
-		return new Tasks.TaskConcurrent(this, other).clone();
-	}
-
-	default Task clone() {
-		return this::run;
+		return new Tasks.TaskConcurrent(this, other).compact();
 	}
 
 	final class Tasks {
@@ -32,12 +28,11 @@ public interface Task extends Runnable, Cloneable {
 				if (null != others && others.length > 0) subs.addAll(Arrays.asList(others));
 			}
 
-			@Override
-			public final TaskList clone() {
+			public final TaskList compact() {
 				List<Runnable> nsubs = new ArrayList<>();
 				for (Runnable s : subs) {
 					if (s instanceof TaskList) {
-						TaskList ss = ((TaskList) s).clone();
+						TaskList ss = ((TaskList) s).compact();
 						if (ss.concurrent() == concurrent()) {
 							nsubs.addAll(ss.subs);
 							continue;
@@ -68,7 +63,7 @@ public interface Task extends Runnable, Cloneable {
 
 			@Override
 			public Task concat(Runnable then) {
-				return append(then).clone();
+				return append(then).compact();
 			}
 
 			@Override
@@ -89,7 +84,7 @@ public interface Task extends Runnable, Cloneable {
 
 			@Override
 			public Task multiple(Runnable other) {
-				return append(other).clone();
+				return append(other).compact();
 			}
 
 			@Override
