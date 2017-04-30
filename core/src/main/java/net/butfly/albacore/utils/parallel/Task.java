@@ -5,12 +5,20 @@ import java.util.Arrays;
 import java.util.List;
 
 public interface Task extends Runnable {
+	static Task task(Runnable task) {
+		return task::run;
+	}
+
 	default Task concat(Runnable then) {
 		return new Tasks.TaskConsecutive(this, then).compact();
 	}
 
 	default Task multiple(Runnable other) {
 		return new Tasks.TaskConcurrent(this, other).compact();
+	}
+
+	default Task unconcurrent() {
+		return this;
 	}
 
 	final class Tasks {
@@ -26,6 +34,14 @@ public interface Task extends Runnable {
 				subs.add(first);
 				subs.add(then);
 				if (null != others && others.length > 0) subs.addAll(Arrays.asList(others));
+			}
+
+			@Override
+			public Task unconcurrent() {
+				Runnable[] nsubs = subs.toArray(new Runnable[subs.size()]);
+				for (int i = 0; i < nsubs.length; i++)
+					if (nsubs[i] instanceof TaskList) nsubs[i] = ((TaskList) nsubs[i]).unconcurrent();
+				return new TaskConsecutive(nsubs[0], nsubs[1], Arrays.copyOfRange(nsubs, 2, nsubs.length));
 			}
 
 			public final TaskList compact() {
@@ -79,7 +95,7 @@ public interface Task extends Runnable {
 
 			@Override
 			public void run() {
-				Parals.run(((TaskConcurrent) this).subs.toArray(new Task[subs.size()]));
+				Parals.run(subs.toArray(new Task[subs.size()]));
 			}
 
 			@Override
