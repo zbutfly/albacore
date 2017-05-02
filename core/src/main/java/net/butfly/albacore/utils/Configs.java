@@ -1,5 +1,6 @@
 package net.butfly.albacore.utils;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.ElementType;
@@ -7,6 +8,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -138,9 +140,9 @@ public class Configs extends Utils {
 		Logger logger = Logger.getLogger(cl);
 		logger.info("Config class"//
 				+ ((prefix != null && prefix.length() > 0) ? " with prefix [" + prefix + "]:" : ":")//
-				+ "\n\tcustomized: [executable:/" + filename + "]"//
+				+ "\n\tcustomized: [" + Paths.get("").toAbsolutePath().toString() + File.separator + filename + "]"//
 				+ "\n\tcustomized: [classpath:/" + filename + "]" //
-				+ "\n\tdefault: [classpath:/" + defname + "]");
+				+ "\n\t   default: [classpath:/" + defname + "]");
 		Map<String, String> settings = new ConcurrentHashMap<>();
 		fill(settings, null, Configs::filterSystemAndInvalidPrefix, mapProps(System.getProperties()));
 		try (InputStream in = IOs.openFile(filename);) {
