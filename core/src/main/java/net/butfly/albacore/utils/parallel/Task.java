@@ -21,6 +21,10 @@ public interface Task extends Runnable {
 		return this;
 	}
 
+	default Task async() {
+		return () -> Parals.listenRun(this::run);
+	}
+
 	final class Tasks {
 		private static abstract class TaskList implements Task {
 			protected final List<Runnable> subs;
