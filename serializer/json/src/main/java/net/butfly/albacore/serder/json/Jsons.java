@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser.Feature;
@@ -39,31 +40,38 @@ public final class Jsons extends Utils {
 	}
 
 	private static ObjectMapper defaultBsonMapper() {
-		return new ObjectMapper(DEFAULT_BSON_FACTORY) //
+		return standard(new ObjectMapper(DEFAULT_BSON_FACTORY)) //
 				// .setPropertyNamingStrategy(//
 				// new UpperCaseWithUnderscoresStrategy())
-				.enable(Feature.ALLOW_SINGLE_QUOTES)//
-				.enable(Feature.IGNORE_UNDEFINED)//
-				.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)//
-				.disable(MapperFeature.USE_GETTERS_AS_SETTERS)//
-				.disable(SerializationFeature.WRITE_NULL_MAP_VALUES)//
-				.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)//
 				.setSerializationInclusion(Include.NON_NULL)//
 		;
 	}
 
 	private static ObjectMapper defaultJsonMapper() {
-		return new ObjectMapper()//
-				.enable(Feature.ALLOW_SINGLE_QUOTES)//
-				.enable(Feature.IGNORE_UNDEFINED)//
+		return standard(new ObjectMapper())//
+				.setSerializationInclusion(Include.NON_NULL)//
 				.enable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)//
 				.enable(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS)//
 				.enable(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS)//
 				.enable(SerializationFeature.WRITE_ENUMS_USING_INDEX)//
 				.enable(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL)//
+		;
+	}
+
+	private static ObjectMapper standard(ObjectMapper mapper) {
+		ObjectMapper m = mapper.enable(Feature.ALLOW_SINGLE_QUOTES)//
+				.enable(Feature.IGNORE_UNDEFINED)//
 				.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)//
+				.disable(MapperFeature.USE_GETTERS_AS_SETTERS)//
+				.disable(SerializationFeature.WRITE_NULL_MAP_VALUES)//
 				.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)//
 		;
+		return m.setVisibility(m.getSerializationConfig().getDefaultVisibilityChecker()//
+				.withFieldVisibility(Visibility.ANY)//
+				.withGetterVisibility(Visibility.NONE)//
+				.withSetterVisibility(Visibility.NONE)//
+				.withCreatorVisibility(Visibility.NONE)//
+		);
 	}
 
 	public static JsonNode[] array(JsonNode node) throws JsonProcessingException, IOException {
