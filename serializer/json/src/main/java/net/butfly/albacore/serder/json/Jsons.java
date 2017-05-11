@@ -9,7 +9,7 @@ import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonParser.Feature;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -40,27 +40,28 @@ public final class Jsons extends Utils {
 
 	private static ObjectMapper defaultBsonMapper() {
 		return new ObjectMapper(DEFAULT_BSON_FACTORY) //
-				// .setPropertyNamingStrategy(new
-				// UpperCaseWithUnderscoresStrategy())//
+				// .setPropertyNamingStrategy(//
+				// new UpperCaseWithUnderscoresStrategy())
+				.enable(Feature.ALLOW_SINGLE_QUOTES)//
+				.enable(Feature.IGNORE_UNDEFINED)//
 				.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)//
 				.disable(MapperFeature.USE_GETTERS_AS_SETTERS)//
 				.disable(SerializationFeature.WRITE_NULL_MAP_VALUES)//
 				.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)//
 				.setSerializationInclusion(Include.NON_NULL)//
-				.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true)//
-				.configure(JsonParser.Feature.IGNORE_UNDEFINED, true)//
 		;
 	}
 
 	private static ObjectMapper defaultJsonMapper() {
 		return new ObjectMapper()//
-				.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true)//
-				.configure(JsonParser.Feature.IGNORE_UNDEFINED, true)//
+				.enable(Feature.ALLOW_SINGLE_QUOTES)//
+				.enable(Feature.IGNORE_UNDEFINED)//
 				.enable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)//
 				.enable(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS)//
 				.enable(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS)//
 				.enable(SerializationFeature.WRITE_ENUMS_USING_INDEX)//
 				.enable(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL)//
+				.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)//
 				.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)//
 		;
 	}

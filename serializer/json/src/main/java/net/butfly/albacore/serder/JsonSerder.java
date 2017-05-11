@@ -17,9 +17,11 @@ import net.butfly.albacore.serder.support.BeanSerder;
 import net.butfly.albacore.serder.support.ClassInfoSerder;
 import net.butfly.albacore.serder.support.ContentTypeSerderBase;
 import net.butfly.albacore.serder.support.TextSerder;
+import net.butfly.albacore.utils.logger.Logger;
 
 public class JsonSerder<E> extends ContentTypeSerderBase implements TextSerder<E>, BeanSerder<E, CharSequence> {
 	private static final long serialVersionUID = -4394900785541475884L;
+	private static final Logger logger = Logger.getLogger(JsonSerder.class);
 	public static final JsonMapSerder JSON_MAPPER = new JsonMapSerder();
 
 	public static <T> JsonSerder<T> SERDER(Class<T> cl) {
@@ -67,7 +69,7 @@ public class JsonSerder<E> extends ContentTypeSerderBase implements TextSerder<E
 		try {
 			return Jsons.mapper.readValue(from.toString(), to);
 		} catch (IOException e) {
-			return null;
+			throw new RuntimeException("JSON der fail", e);
 		}
 	}
 
