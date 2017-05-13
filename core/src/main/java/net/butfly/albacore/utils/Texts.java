@@ -10,8 +10,10 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -171,5 +173,38 @@ public final class Texts extends Utils {
 	public static List<String> split(String origin, String split) {
 		if (origin == null) return new ArrayList<>();
 		return Stream.of(origin.split(split)).map(s -> s.trim()).filter(s -> !"".equals(s)).collect(Collectors.toList());
+	}
+
+	private static final Map<String, BlockingQueue<CloseDateFormat>> DATA_FORMATS = new ConcurrentHashMap<>();
+
+	private static final class CloseDateFormat extends SimpleDateFormat implements AutoCloseable {
+		private static final long serialVersionUID = 6278552096977426484L;
+
+		public CloseDateFormat(String pattern) {
+			super(pattern);
+		}
+
+		@Override
+		public synchronized void close() {
+			pool(toPattern()).offer(this);
+		}
+	}
+
+	private static BlockingQueue<CloseDateFormat> pool(String format) {
+		return DATA_FORMATS.compute(format, (k, q) -> null == q ? new LinkedBlockingQueue<CloseDateFormat>() : q);
+	}
+
+	private static CloseDateFormat fdate(String format) {
+		BlockingQueue<CloseDateFormat> pool = pool(format);
+		CloseDateFormat f;
+		while (null == (f = pool.poll()))
+			pool.offer(new CloseDateFormat(format));
+		return f;
+	}
+
+	public static void format(Date date, String format, Consumer<String> using) {
+		try (CloseDateFormat f = Texts.fdate(format);) {
+			using.accept(f.format(date));
+		}
 	}
 }
