@@ -10,10 +10,8 @@
 		<maven.test.skip.exec>true</maven.test.skip.exec>
 		<deps.version.spring>4.2.5.RELEASE</deps.version.spring>
 		<deps.version.albacore>2.0.4-SNAPSHOT</deps.version.albacore>
-		<deps.version.albus>2.0.4-SNAPSHOT</deps.version.albus>
 	</properties>
 	<build>
-		<finalName>${project.artifactId}</finalName>
 		<pluginManagement>
 			<plugins>
 				<!--to remove eclipse m2e plugin error. -->
@@ -31,19 +29,6 @@
 										<versionRange>[0.0,)</versionRange>
 										<goals>
 											<goal>read-project-properties</goal>
-										</goals>
-									</pluginExecutionFilter>
-									<action>
-										<ignore />
-									</action>
-								</pluginExecution>
-								<pluginExecution>
-									<pluginExecutionFilter>
-										<groupId>io.kilimty</groupId>
-										<artifactId>kilim-maven-plugin</artifactId>
-										<versionRange>[0.0,)</versionRange>
-										<goals>
-											<goal>weave</goal>
 										</goals>
 									</pluginExecutionFilter>
 									<action>
@@ -93,9 +78,7 @@
 					<execution>
 						<id>attach-sources</id>
 						<phase>package</phase>
-						<goals>
-							<goal>jar-no-fork</goal>
-						</goals>
+						<goals><goal>jar-no-fork</goal></goals>
 					</execution>
 				</executions>
 			</plugin>
