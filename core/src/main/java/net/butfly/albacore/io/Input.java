@@ -36,8 +36,9 @@ public interface Input<V> extends IO, Dequeue<V>, Supplier<V>, Iterator<V> {
 	}
 
 	default <V1> Input<V1> thens(Function<Iterable<V>, Iterable<V1>> conv, int parallelism) {
-		return Wrapper.wrap(this, (using, batchSize) -> dequeue(s -> eachs(list(spatialMap(s, parallelism, t -> conv.apply(
-				() -> Its.it(t)).spliterator())), s1 -> using.apply(s1)), batchSize));
+		return Wrapper.wrap(this, (using, batchSize) -> dequeue(//
+				s -> eachs(list(spatialMap(s, parallelism, t -> conv.apply(() -> Its.it(t)).spliterator())), s1 -> using.apply(s1)),
+				batchSize));
 	}
 
 	// more extends
@@ -51,7 +52,6 @@ public interface Input<V> extends IO, Dequeue<V>, Supplier<V>, Iterator<V> {
 	}
 
 	// constructor
-
 	public static <T> Input<T> of(Iterator<? extends T> it) {
 		return (using, batchSize) -> {
 			Stream.Builder<T> b = Stream.builder();

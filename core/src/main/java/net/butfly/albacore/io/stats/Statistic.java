@@ -55,7 +55,6 @@ class Statistic implements Serializable {
 		} finally {
 			lock.unlock();
 		}
-
 	}
 
 	<T> T stats(T v) {
