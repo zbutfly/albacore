@@ -14,8 +14,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import net.butfly.albacore.utils.collection.Maps;
+import net.butfly.albacore.utils.logger.Logger;
 
 public class Exceptions extends Utils {
+	static final Logger logger = Logger.getLogger(Exceptions.class);
+
 	public interface Code {
 		// code for system exceptions.
 		String ENCRYPT_CODE = "SYS_500";
@@ -138,5 +141,18 @@ public class Exceptions extends Utils {
 	public static void printStackTrace(Throwable t, String code, PrintStream s) {
 		s.print(null == code || "".equals(code) ? "" : "[" + code + "] ");
 		t.printStackTrace(s);
+	}
+
+	public static interface ExceptAsDefault<T> {
+		T get() throws Exception;
+	}
+
+	public static <T> T def(ExceptAsDefault<T> getting, T def) {
+		try {
+			return getting.get();
+		} catch (Exception e) {
+			logger.warn("Value fetch failure, use default value.", e);
+			return def;
+		}
 	}
 }
