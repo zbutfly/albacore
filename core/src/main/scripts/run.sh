@@ -23,15 +23,14 @@ JAVA_OPTS="${JAVA_OPTS} -d64 -server"
 # TODO: Application configuration processing...
 
 echo JAVA_OPTS:			${JAVA_OPTS}
-_CURR_JAR=
+#_CURR_JAR=
 _CURR_CLSP="./test-classes:./${_CURR_JAR}.jar:./dependency/*"
 echo Java Classpath:	${_CURR_CLSP}
 
 # TODO: Application command line args processing... 
 
 echo Command Line Args: $*
-_CURR_MAIN=
+#_CURR_MAIN=
 _CURR_CMDL="java ${JAVA_OPTS} -cp ${_CURR_CLSP} ${CURR_MAIN}"
-
 echo Command to be Run: ${_CURR_CMDL}
 ${_CURR_CMDL}
