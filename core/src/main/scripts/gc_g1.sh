@@ -1,0 +1,20 @@
+JAVA_OPTS="${JAVA_OPTS} -XX:+UnlockExperimentalVMOptions \
+-XX:+DisableExplicitGC \
+-XX:+UseG1GC \
+-XX:+AggressiveOpts \
+-XX:MaxGCPauseMillis=200 \
+-XX:G1HeapRegionSize=16M \
+-XX:InitiatingHeapOccupancyPercent=35 \
+-XX:G1NewSizePercent=20 \
+-XX:G1MaxNewSizePercent=30 \
+-XX:CompileThreshold=8000 \
+-XX:+TieredCompilation \
+-XX:ParallelGCThreads=20 \
+-XX:ConcGCThreads=10 \
+-XX:+UseFastAccessorMethods \
+-XX:+UseFastEmptyMethods \
+-XX:+UseFastJNIAccessors \
+-XX:+UseStringDeduplication \
+-XX:+OptimizeStringConcat \
+-XX:NewRatio=10 \
+-Djdk.map.althashing.threshold=0"
