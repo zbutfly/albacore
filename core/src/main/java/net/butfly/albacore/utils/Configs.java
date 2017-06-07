@@ -26,9 +26,7 @@ public class Configs extends Utils {
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target(ElementType.TYPE)
 	public @interface Config {
-		String value()
-
-		default "";
+		String value() default "";
 
 		String prefix() default "";
 	}
