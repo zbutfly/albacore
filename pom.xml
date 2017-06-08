@@ -12,7 +12,7 @@
 	<packaging>pom</packaging>
 	<modules>
 		<module>core</module>
-		<!--<module>serializer</module>-->
+		<module>serializer</module>
 		<module>async</module>
 		<module>frame</module>
 		<module>utils</module>
