@@ -57,14 +57,6 @@ public final class IOs extends Utils {
 		return out;
 	}
 
-	public static <S extends OutputStream> S writeBytes(S out, byte[]... bytes) throws IOException {
-		logger.trace(() -> bytes.length > 1 ? "Write bytes list: " + bytes.length : null);
-		writeInt(out, bytes.length);
-		for (byte[] b : bytes)
-			writeBytes(out, b);
-		return out;
-	}
-
 	public static byte[] readBytes(InputStream in) throws IOException {
 		int l = readInt(in);
 		logger.trace(() -> "readBytes: length[" + l + "]");
@@ -81,7 +73,34 @@ public final class IOs extends Utils {
 		return bytes;
 	}
 
-	public static <T> List<T> readBytes(InputStream in, int count, Function<byte[], T> der) throws IOException {
+	public static <S extends OutputStream> S writeBytes(S out, byte[]... bytes) throws IOException {
+		logger.trace(() -> bytes.length > 1 ? "Write bytes list: " + bytes.length : null);
+		writeInt(out, bytes.length);
+		for (byte[] b : bytes)
+			writeBytes(out, b);
+		return out;
+	}
+
+	@SafeVarargs
+	public static <T, S extends OutputStream> S writeBytes(S out, Function<T, byte[]> ser, T... bytes) throws IOException {
+		logger.trace(() -> bytes.length > 1 ? "Write bytes list: " + bytes.length : null);
+		writeInt(out, bytes.length);
+		for (T b : bytes)
+			writeBytes(out, ser.apply(b));
+		return out;
+	}
+
+	public static byte[][] readBytesList(InputStream in) throws IOException {
+		int count = readInt(in);
+		logger.trace(() -> count > 1 ? "Read bytes list: " + count : null);
+		byte[][] r = new byte[count][];
+		for (int i = 0; i < count; i++)
+			r[i] = readBytes(in);
+		return r;
+	}
+
+	public static <T> List<T> readBytes(InputStream in, Function<byte[], T> der) throws IOException {
+		int count = readInt(in);
 		logger.trace(() -> count > 1 ? "Read bytes list: " + count : null);
 		List<T> r = new ArrayList<>();
 		for (int i = 0; i < count; i++)
