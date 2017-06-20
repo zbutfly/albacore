@@ -82,7 +82,7 @@ public final class Texts extends Utils {
 			.getRuntime().availableProcessors() - 1)));
 
 	private static final Map<String, LinkedBlockingQueue<DateFormat>> DATE_FORMATS = new ConcurrentHashMap<>();
-	public static final String SEGUST_DATE_FORMAT = "yyyy-MM-dd'T'hh:mm:ss.SSSZ";
+	public static final String SEGUST_DATE_FORMAT = "yyyy-MM-dd'T'hh:mm:ss.SSS'Z'";
 	public static final String DEFAULT_DATE_FORMAT = Configs.gets("albacore.text.date.format", SEGUST_DATE_FORMAT);
 
 	public static String formatDate(Date date) {
