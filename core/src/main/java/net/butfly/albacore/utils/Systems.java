@@ -89,7 +89,7 @@ public final class Systems extends Utils {
 			SIGNAL_HANDLERS.computeIfAbsent(sig, s -> {
 				Signal.handle(new Signal(s), ss -> {
 					List<Consumer<Signal>> handlers = SIGNAL_HANDLERS.get(ss.getName());
-					synchronized (handlers) {
+					synchronized (SIGNAL_HANDLERS) {
 						logger.error(MessageFormat.format("Signal [{0}][{1}] caught, [{2}] handlers registered and will be invoking.", //
 								ss.getName(), ss.getNumber(), handlers.size()));
 						if (null != handlers) for (Consumer<Signal> h : handlers)
