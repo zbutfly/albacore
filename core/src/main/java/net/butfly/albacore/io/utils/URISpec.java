@@ -113,15 +113,21 @@ public final class URISpec implements Serializable {
 			paths = new String[0];
 		}
 
-		if ((segs = segs[0].split("@", 2)).length == 2) {
+		String temp = segs[0];
+		int position = temp.lastIndexOf("@");
+		if (position == -1) {
+			remain = temp;
+			password = null;
+			username = null;
+		} else {
+			segs = new String[2];
+			segs[1] = temp.substring(position + 1, temp.length());
+			segs[0] = temp.substring(0, position);
 			remain = segs[1];
 			password = (segs = segs[0].split(":", 2)).length == 2 ? segs[1] : null;
 			username = Texts.orNull(segs[0]);
-		} else {
-			remain = segs[0];
-			password = null;
-			username = null;
 		}
+
 		hosts = parseHostPort(remain, defaultPort);
 		defPort = defaultPort;
 	}
@@ -358,6 +364,8 @@ public final class URISpec implements Serializable {
 
 	public static void main(String... args) throws URISyntaxException {
 		URISpec u;
+		u = new URISpec("mongodb://root:r@@t001!@172.30.10.101:22001/admin");
+		System.out.println(u + "\n\tAuthority: " + u.getAuthority() + "\n\tPath: " + u.getPath());
 		u = new URISpec("s1:s2:s3://hello:world@host1:80,host2:81,host3:82");
 		System.out.println(u + "\n\tAuthority: " + u.getAuthority() + "\n\tPath: " + u.getPath());
 		u = new URISpec("s1:s2:s3://hello:world@host1:80,host2:81,host3:82/");
