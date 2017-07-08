@@ -32,15 +32,19 @@ public final class Generics extends OldGeneric {
 		return (Class<E>) TypeToken.of(entity.getClass()).getType();
 	}
 
+	static final Map<Type, Map<Class<?>, Map<String, Class<?>>>> pools = new ConcurrentHashMap<>();
+
 	public static Map<String, Class<?>> resolveGenericParameters(final Type implType, final Class<?> declareClass) {
-		ConcurrentMap<String, Class<?>> map = Instances.fetch(() -> {
-			ConcurrentMap<String, Class<?>> types = new ConcurrentHashMap<>();
-			TypeVariable<?>[] vv = declareClass.getTypeParameters();
-			for (TypeVariable<?> v : vv)
-				types.put(v.getName(), (Class<?>) TypeToken.of(implType).resolveType(v).getRawType());
-			return types;
-		}, ConcurrentMap.class, implType, declareClass);
-		return map;
+		return pools.computeIfAbsent(implType, tt -> new ConcurrentHashMap<>()).computeIfAbsent(declareClass, cc -> compute(implType,
+				declareClass));
+	}
+
+	private static final Map<String, Class<?>> compute(final Type implType, final Class<?> declareClass) {
+		ConcurrentMap<String, Class<?>> types = new ConcurrentHashMap<>();
+		TypeVariable<?>[] vv = declareClass.getTypeParameters();
+		for (TypeVariable<?> v : vv)
+			types.put(v.getName(), (Class<?>) TypeToken.of(implType).resolveType(v).getRawType());
+		return types;
 	}
 
 	public static <E> Class<E> resolveGenericParameter(final Type implType, final Class<?> declareClass, final String genericParamName) {
