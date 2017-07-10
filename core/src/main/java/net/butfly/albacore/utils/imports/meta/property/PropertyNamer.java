@@ -19,11 +19,7 @@ import java.util.Locale;
 
 import net.butfly.albacore.exception.ReflectionException;
 
-/**
- * @author Clinton Begin
- */
 public class PropertyNamer {
-
 	public static String methodToProperty(String name) {
 		if (name.startsWith("is")) {
 			name = name.substring(2);

@@ -11,7 +11,6 @@ import net.butfly.albacore.io.utils.Streams;
 import net.butfly.albacore.utils.parallel.Parals;
 
 public class SpatialTest {
-
 	public static void main(String[] args) {
 		Stream<Integer> s;
 		int MAX = 10000;

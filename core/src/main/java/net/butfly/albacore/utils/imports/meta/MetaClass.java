@@ -27,11 +27,7 @@ import net.butfly.albacore.utils.imports.meta.invoker.Invoker;
 import net.butfly.albacore.utils.imports.meta.invoker.MethodInvoker;
 import net.butfly.albacore.utils.imports.meta.property.PropertyTokenizer;
 
-/**
- * @author Clinton Begin
- */
 public class MetaClass {
-
 	private Reflector reflector;
 
 	private MetaClass(Class<?> type) {

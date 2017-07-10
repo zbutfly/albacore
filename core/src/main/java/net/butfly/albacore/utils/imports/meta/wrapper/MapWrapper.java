@@ -24,11 +24,7 @@ import net.butfly.albacore.utils.imports.meta.SystemMetaObject;
 import net.butfly.albacore.utils.imports.meta.factory.ObjectFactory;
 import net.butfly.albacore.utils.imports.meta.property.PropertyTokenizer;
 
-/**
- * @author Clinton Begin
- */
 public class MapWrapper extends BaseWrapper {
-
 	private Map<String, Object> map;
 
 	public MapWrapper(MetaObject metaObject, Map<String, Object> map) {

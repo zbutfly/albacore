@@ -17,9 +17,6 @@ package net.butfly.albacore.utils.imports.meta.wrapper;
 
 import net.butfly.albacore.utils.imports.meta.MetaObject;
 
-/**
- * @author Clinton Begin
- */
 public interface ObjectWrapperFactory {
 	boolean hasWrapperFor(Object object);
 

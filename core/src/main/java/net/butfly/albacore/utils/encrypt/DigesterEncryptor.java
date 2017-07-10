@@ -7,7 +7,6 @@ import net.butfly.albacore.exception.EncryptException;
 import net.butfly.albacore.utils.encrypt.Algorithm.DigesterAlgorithm;
 
 public class DigesterEncryptor extends Encryptor {
-
 	private MessageDigest digester;
 
 	public DigesterEncryptor(DigesterAlgorithm algorithm) {

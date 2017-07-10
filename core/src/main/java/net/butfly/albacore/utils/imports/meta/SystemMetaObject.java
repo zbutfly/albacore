@@ -21,11 +21,7 @@ import net.butfly.albacore.utils.imports.meta.factory.ObjectFactory;
 import net.butfly.albacore.utils.imports.meta.wrapper.DefaultObjectWrapperFactory;
 import net.butfly.albacore.utils.imports.meta.wrapper.ObjectWrapperFactory;
 
-/**
- * @author Clinton Begin
- */
 public class SystemMetaObject {
-
 	public static final ObjectFactory DEFAULT_OBJECT_FACTORY = new DefaultObjectFactory();
 	public static final ObjectWrapperFactory DEFAULT_OBJECT_WRAPPER_FACTORY = new DefaultObjectWrapperFactory();
 	public static final MetaObject NULL_META_OBJECT = MetaObject.forObject(NullObject.class, DEFAULT_OBJECT_FACTORY,

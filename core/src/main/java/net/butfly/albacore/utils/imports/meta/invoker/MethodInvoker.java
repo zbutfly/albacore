@@ -18,9 +18,6 @@ package net.butfly.albacore.utils.imports.meta.invoker;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-/**
- * @author Clinton Begin
- */
 public class MethodInvoker implements Invoker {
 	private Class<?> type;
 	private Method method;

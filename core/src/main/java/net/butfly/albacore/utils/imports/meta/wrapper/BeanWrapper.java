@@ -27,11 +27,7 @@ import net.butfly.albacore.utils.imports.meta.factory.ObjectFactory;
 import net.butfly.albacore.utils.imports.meta.invoker.Invoker;
 import net.butfly.albacore.utils.imports.meta.property.PropertyTokenizer;
 
-/**
- * @author Clinton Begin
- */
 public class BeanWrapper extends BaseWrapper {
-
 	private Object object;
 	private MetaClass metaClass;
 

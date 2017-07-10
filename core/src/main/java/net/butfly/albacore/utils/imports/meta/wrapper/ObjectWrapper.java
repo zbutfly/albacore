@@ -21,9 +21,6 @@ import net.butfly.albacore.utils.imports.meta.MetaObject;
 import net.butfly.albacore.utils.imports.meta.factory.ObjectFactory;
 import net.butfly.albacore.utils.imports.meta.property.PropertyTokenizer;
 
-/**
- * @author Clinton Begin
- */
 public interface ObjectWrapper {
 	Object get(PropertyTokenizer prop);
 

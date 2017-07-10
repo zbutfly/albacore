@@ -22,9 +22,6 @@ import net.butfly.albacore.utils.imports.meta.MetaObject;
 import net.butfly.albacore.utils.imports.meta.factory.ObjectFactory;
 import net.butfly.albacore.utils.imports.meta.property.PropertyTokenizer;
 
-/**
- * @author Clinton Begin
- */
 public class CollectionWrapper implements ObjectWrapper {
 	private final Collection<Object> object;
 

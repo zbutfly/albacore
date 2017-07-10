@@ -28,11 +28,7 @@ import net.butfly.albacore.utils.imports.meta.wrapper.MapWrapper;
 import net.butfly.albacore.utils.imports.meta.wrapper.ObjectWrapper;
 import net.butfly.albacore.utils.imports.meta.wrapper.ObjectWrapperFactory;
 
-/**
- * @author Clinton Begin
- */
 public class MetaObject {
-
 	private Object originalObject;
 	private ObjectWrapper objectWrapper;
 	private ObjectFactory objectFactory;

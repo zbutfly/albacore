@@ -18,9 +18,6 @@ package net.butfly.albacore.utils.imports.meta.invoker;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 
-/**
- * @author Clinton Begin
- */
 public class GetFieldInvoker implements Invoker {
 	private Field field;
 
