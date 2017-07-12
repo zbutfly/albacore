@@ -9,7 +9,9 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -82,21 +84,19 @@ public final class Systems extends Utils {
 		else run.run();
 	}
 
-	private static final Map<String, List<Consumer<Signal>>> SIGNAL_HANDLERS = new ConcurrentHashMap<>();
+	private static final Map<String, BlockingQueue<Consumer<Signal>>> SIGNAL_HANDLERS = new ConcurrentHashMap<>();
 
 	public static void handleSignal(Consumer<Signal> handler, String... signal) {
 		for (String sig : signal)
 			SIGNAL_HANDLERS.computeIfAbsent(sig, s -> {
 				Signal.handle(new Signal(s), ss -> {
-					List<Consumer<Signal>> handlers = SIGNAL_HANDLERS.get(ss.getName());
-					synchronized (SIGNAL_HANDLERS) {
-						logger.error(MessageFormat.format("Signal [{0}][{1}] caught, [{2}] handlers registered and will be invoking.", //
-								ss.getName(), ss.getNumber(), handlers.size()));
-						if (null != handlers) for (Consumer<Signal> h : handlers)
-							h.accept(ss);
-					}
+					BlockingQueue<Consumer<Signal>> handlers = SIGNAL_HANDLERS.get(ss.getName());
+					logger.error(MessageFormat.format("Signal [{0}][{1}] caught, [{2}] handlers registered and will be invoking.", //
+							ss.getName(), ss.getNumber(), handlers.size()));
+					if (null != handlers) for (Consumer<Signal> h : handlers)
+						h.accept(ss);
 				});
-				return new ArrayList<>();
+				return new LinkedBlockingQueue<>();
 			}).add(handler);
 	}
 
