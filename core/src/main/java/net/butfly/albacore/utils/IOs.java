@@ -1,5 +1,6 @@
 package net.butfly.albacore.utils;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
@@ -7,6 +8,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
@@ -164,6 +166,20 @@ public final class IOs extends Utils {
 			byte[] b = os.toByteArray();
 			logger.trace(() -> "Read all: " + b.length);
 			return b;
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	public static String[] readLines(final InputStream is) {
+		Reflections.noneNull("null byte array not allow", is);
+		List<String> lines = new ArrayList<>();
+		String l = null;
+		try (BufferedReader r = new BufferedReader(new InputStreamReader(is));) {
+			while ((l = r.readLine()) != null)
+				lines.add(l);
+			logger.trace(() -> "Read all: " + lines.size());
+			return lines.toArray(new String[lines.size()]);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
