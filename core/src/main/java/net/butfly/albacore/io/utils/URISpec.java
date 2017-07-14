@@ -157,8 +157,8 @@ public final class URISpec implements Serializable {
 				p = defaultPort;
 				h = Texts.orNull(s);
 			}
-			return new InetSocketAddress(h, p < 0 ? 0 : p);
-		}).toArray(i -> new InetSocketAddress[i]);
+			return null == h ? null : new InetSocketAddress(h, p < 0 ? 0 : p);
+		}).filter(o -> null != o).toArray(i -> new InetSocketAddress[i]);
 	}
 
 	public String getScheme() {
