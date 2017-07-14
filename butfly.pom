@@ -29,6 +29,7 @@
 			<resource>
 				<directory>src/main/resources</directory>
 				<filtering>true</filtering>
+				<targetPath>${project.build.directory}/classes</targetPath>
 			</resource>
 		</resources>
 		<finalName>${project.artifactId}</finalName>
