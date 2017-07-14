@@ -71,7 +71,7 @@ public final class Systems extends Utils {
 
 	public static String suffixDebug(String origin, Logger logger) {
 		if (Systems.isDebug()) {
-			String suffix = "_DEBUG" + new SimpleDateFormat("yyyyMMdd").format(new Date());
+			String suffix = System.getProperty("albacore.debug.suffix", "_DEBUG_" + new SimpleDateFormat("yyyyMMdd").format(new Date()));
 			logger.warn("Debug mode, suffix [" + suffix + "] append to origin: [" + origin + "], now: [" + origin + suffix + "].");
 			return origin + suffix;
 		} else return origin;
