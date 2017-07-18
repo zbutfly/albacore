@@ -17,6 +17,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import net.butfly.albacore.utils.logger.Logger;
 
@@ -172,12 +173,16 @@ public final class IOs extends Utils {
 	}
 
 	public static String[] readLines(final InputStream is) {
+		return readLines(is, l -> false);
+	}
+
+	public static String[] readLines(final InputStream is, Predicate<String> ignore) {
 		Reflections.noneNull("null byte array not allow", is);
 		List<String> lines = new ArrayList<>();
 		String l = null;
 		try (BufferedReader r = new BufferedReader(new InputStreamReader(is));) {
 			while ((l = r.readLine()) != null)
-				lines.add(l);
+				if (!ignore.test(l)) lines.add(l);
 			logger.trace(() -> "Read all: " + lines.size());
 			return lines.toArray(new String[lines.size()]);
 		} catch (IOException e) {
