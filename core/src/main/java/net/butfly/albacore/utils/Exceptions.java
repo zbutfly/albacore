@@ -151,7 +151,7 @@ public class Exceptions extends Utils {
 		try {
 			return getting.get();
 		} catch (Exception e) {
-			logger.warn("Value fetch failure, use default value: [" + e.getMessage() + "].");
+			logger.debug("Value fetch failure, use default value: [" + e.getMessage() + "].");
 			return def;
 		}
 	}
