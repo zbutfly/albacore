@@ -254,4 +254,11 @@
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
+	<repositories>
+		<repository>
+			<id>_m2e_lifecycle-mapping_repos_</id>
+			<name>_m2e_lifecycle-mapping_repos_</name>
+			<url>http://simulation.tudelft.nl/maven/</url>
+		</repository>
+	</repositories>
 </project>
