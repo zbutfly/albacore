@@ -19,7 +19,7 @@ import net.butfly.albacore.utils.logger.Logger;
 import sun.management.VMManagement;
 import sun.misc.Signal;
 
-@SuppressWarnings({ "restriction" })
+@SuppressWarnings( "restriction" )
 public final class Systems extends Utils {
 	final static Logger logger = Logger.getLogger(Systems.class);
 
@@ -54,7 +54,7 @@ public final class Systems extends Utils {
 
 	public static Class<?> getMainClass() {
 		try {
-			return Class.forName(System.getProperty("sun.java.command"));
+			return Class.forName(System.getProperty("sun.java.command", ""));
 		} catch (ClassNotFoundException e) {
 			StackTraceElement[] s = Thread.currentThread().getStackTrace();
 			try {
