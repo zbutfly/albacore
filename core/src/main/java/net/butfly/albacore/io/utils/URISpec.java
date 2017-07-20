@@ -196,7 +196,7 @@ public final class URISpec implements Serializable {
 	}
 
 	public String getPathAt(int index, String... defaults) {
-		if (index < 0 || index > paths.length) throw new IllegalArgumentException();
+		if (index < 0 || index > paths.length) return null;
 		if (index < paths.length) return paths[index];
 		String v = getFile();
 		if (null != v) return v;
