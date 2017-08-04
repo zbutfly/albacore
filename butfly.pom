@@ -1,27 +1,38 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>net.butfly</groupId>
+	<parent>
+		<groupId>net.butfly</groupId>
+		<artifactId>parent-exec</artifactId>
+		<version>1.0.0-SNAPSHOT</version>
+		<relativePath>./butfly-exec.pom</relativePath>
+	</parent>
 	<artifactId>parent</artifactId>
 	<version>3.0.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.build.finalName>${project.artifactId}</project.build.finalName>
+		<project.build.directory>target</project.build.directory>
 		<maven.test.skip.exec>true</maven.test.skip.exec>
+		<maven.props.skip>false</maven.props.skip>
+		<!-- -->
+		<version.jackson>2.9.0</version.jackson>
+		<version.slf4j>1.7.25</version.slf4j>
+		<version.log4j2>2.8.1</version.log4j2>
+		<!-- -->
 		<version.scala.main>2.10</version.scala.main>
 		<version.scala.suffix>_${version.scala.main}</version.scala.suffix>
 		<version.scala>${version.scala.main}.6</version.scala>
 		<version.spring>4.3.9.RELEASE</version.spring>
-		<version.slf4j>1.7.25</version.slf4j>
-		<version.log4j2>2.8.1</version.log4j2>
 		<version.ning>1.9.40</version.ning>
 		<version.netty4>4.1.13.Final</version.netty4>
 		<version.netty3>3.10.6.Final</version.netty3>
-		<version.jackson>2.9.0</version.jackson>
 		<version.jna>4.4.0</version.jna>
 	</properties>
 	<build>
-		<finalName>${project.artifactId}</finalName>
+		<finalName>${project.build.finalName}</finalName>
+		<directory>${project.build.directory}</directory>
 		<pluginManagement>
 			<plugins>
 				<!--to remove eclipse m2e plugin error. -->
@@ -51,7 +62,7 @@
 				</plugin>
 				<plugin>
 					<artifactId>maven-dependency-plugin</artifactId>
-					<version>3.0.0</version>
+					<version>3.0.1</version>
 				</plugin>
 				<plugin>
 					<artifactId>maven-compiler-plugin</artifactId>
@@ -61,13 +72,16 @@
 						<target>1.8</target>
 						<encoding>${project.build.sourceEncoding}</encoding>
 					</configuration>
-					<dependencies>
-						<dependency>
-							<groupId>org.codehaus.plexus</groupId>
-							<artifactId>plexus-compiler-javac</artifactId>
-							<version>2.8.1</version>
-						</dependency>
-					</dependencies>
+				</plugin>
+				<plugin>
+					<groupId>org.codehaus.plexus</groupId>
+					<artifactId>plexus-compiler-javac</artifactId>
+					<version>2.8.2</version>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-surefire-plugin</artifactId>
+					<version>2.20</version>
 				</plugin>
 				<plugin>
 					<artifactId>maven-resources-plugin</artifactId>
@@ -87,7 +101,7 @@
 				<plugin>
 					<groupId>org.codehaus.mojo</groupId>
 					<artifactId>versions-maven-plugin</artifactId>
-					<version>2.3</version>
+					<version>2.4</version>
 				</plugin>
 			</plugins>
 		</pluginManagement>
@@ -128,6 +142,7 @@
 				<artifactId>maven-jar-plugin</artifactId>
 				<inherited>true</inherited>
 				<configuration>
+					<skipIfEmpty>true</skipIfEmpty>
 					<archive>
 						<manifest>
 							<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
@@ -135,6 +150,36 @@
 						</manifest>
 					</archive>
 				</configuration>
+				<executions>
+					<execution>
+						<id>config-jar</id>
+						<goals>
+							<goal>test-jar</goal>
+						</goals>
+						<phase>package</phase>
+						<configuration>
+							<classifier>configs</classifier>
+							<skipIfEmpty>true</skipIfEmpty>
+							<excludes>
+								<exclude>
+									**/*.class
+								</exclude>
+							</excludes>
+						</configuration>
+					</execution>
+					<execution>
+						<id>script-zip</id>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+						<phase>package</phase>
+						<configuration>
+							<classifier>scripts</classifier>
+							<classesDirectory>${project.basedir}/src/main/scripts</classesDirectory>
+							<skipIfEmpty>true</skipIfEmpty>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 			<plugin>
 				<artifactId>maven-resources-plugin</artifactId>
@@ -166,37 +211,9 @@
 			</plugin>
 		</plugins>
 	</build>
-	<organization>
-		<name>Glazy Maze</name>
-		<url>http://www.butfly.com</url>
-	</organization>
-	<developers>
-		<developer>
-			<id>butfly</id>
-			<name>Sean Zhang</name>
-			<email>zbutfly@gmail.com</email>
-			<url>http://www.butfly.com</url>
-			<roles>
-				<role>master</role>
-			</roles>
-			<timezone>+8</timezone>
-			<properties>
-				<picUrl>http://tinyurl.com/zbutfly</picUrl>
-			</properties>
-		</developer>
-	</developers>
 	<dependencyManagement>
 		<dependencies>
-			<dependency>
-				<groupId>com.google.guava</groupId>
-				<artifactId>guava</artifactId>
-				<version>23.0-rc1</version>
-			</dependency>
-			<dependency>
-				<groupId>junit</groupId>
-				<artifactId>junit</artifactId>
-				<version>4.12</version>
-			</dependency>
+			<!-- logging dependencies -->
 			<dependency>
 				<groupId>log4j</groupId>
 				<artifactId>log4j</artifactId>
@@ -262,6 +279,74 @@
 				<artifactId>log4j-to-slf4j</artifactId>
 				<version>${version.log4j2}</version>
 			</dependency>
+			<!-- jackson dependencies -->
+			<dependency>
+				<groupId>com.fasterxml.jackson.core</groupId>
+				<artifactId>jackson-core</artifactId>
+				<version>${version.jackson}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.fasterxml.jackson.dataformat</groupId>
+				<artifactId>jackson-dataformat-cbor</artifactId>
+				<version>${version.jackson}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.fasterxml.jackson.dataformat</groupId>
+				<artifactId>jackson-dataformat-yaml</artifactId>
+				<version>${version.jackson}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.fasterxml.jackson.dataformat</groupId>
+				<artifactId>jackson-dataformat-smile</artifactId>
+				<version>${version.jackson}</version>
+			</dependency>
+			<!-- apache httpcomponents dependencies -->
+			<dependency>
+				<groupId>org.apache.httpcomponents</groupId>
+				<artifactId>httpcore</artifactId>
+				<version>4.4.6</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.httpcomponents</groupId>
+				<artifactId>httpcore-nio</artifactId>
+				<version>4.4.6</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.httpcomponents</groupId>
+				<artifactId>httpclient</artifactId>
+				<version>4.5.3</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.httpcomponents</groupId>
+				<artifactId>httpmime</artifactId>
+				<version>4.5.3</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.httpcomponents</groupId>
+				<artifactId>httpclient-cache</artifactId>
+				<version>4.5.3</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.httpcomponents</groupId>
+				<artifactId>httpasyncclient</artifactId>
+				<version>4.1.3</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.httpcomponents</groupId>
+				<artifactId>httpasyncclient-cache</artifactId>
+				<version>4.1.3</version>
+			</dependency>
+			<!-- other dependencies -->
+			<dependency>
+				<groupId>com.google.guava</groupId>
+				<artifactId>guava</artifactId>
+				<version>23.0-rc1</version>
+			</dependency>
+			<dependency>
+				<groupId>junit</groupId>
+				<artifactId>junit</artifactId>
+				<version>4.12</version>
+			</dependency>
 			<dependency>
 				<groupId>io.netty</groupId>
 				<artifactId>netty-all</artifactId>
@@ -285,6 +370,67 @@
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
+	<profiles>
+		<!-- props loading -->
+		<profile>
+			<id>load-porps</id>
+			<activation>
+				<property>
+					<name>maven.props.skip</name>
+					<value>!true</value>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.codehaus.mojo</groupId>
+						<artifactId>properties-maven-plugin</artifactId>
+						<version>1.0.0</version>
+						<executions>
+							<execution>
+								<phase>initialize</phase>
+								<goals>
+									<goal>read-project-properties</goal>
+								</goals>
+								<configuration>
+									<skip>${maven.props.skip}</skip>
+									<quiet>true</quiet>
+									<urls>
+										<url>classpath:/${project.runtime.configDirectory}/pom.properties</url>
+										<url>file://${project.basedir}/pom.properties</url>
+										<url>classpath:/${project.runtime.configDirectory}/maven.properties</url>
+										<url>file://${project.basedir}/maven.properties</url>
+										<url>classpath:/${project.runtime.configDirectory}/${project.artifactId}.properties</url>
+										<url>file://${project.basedir}/${project.artifactId}.properties</url>
+									</urls>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+	<!-- extra information -->
+	<organization>
+		<name>Glazy Maze</name>
+		<url>http://www.butfly.com</url>
+	</organization>
+	<developers>
+		<developer>
+			<id>butfly</id>
+			<name>Sean Zhang</name>
+			<email>zbutfly@gmail.com</email>
+			<url>http://www.butfly.com</url>
+			<roles>
+				<role>master</role>
+			</roles>
+			<timezone>+8</timezone>
+			<properties>
+				<picUrl>http://tinyurl.com/zbutfly</picUrl>
+			</properties>
+		</developer>
+	</developers>
 	<repositories>
 		<repository>
 			<id>_m2e_lifecycle-mapping_repos_</id>

@@ -1,5 +1,6 @@
 package net.butfly.albacore.utils;
 
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -7,11 +8,16 @@ import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
+
+import com.sun.akuma.Daemon;
+import com.sun.akuma.JavaVMArguments;
 
 import net.butfly.albacore.io.ext.OpenableThread;
 import net.butfly.albacore.io.utils.Streams;
@@ -19,12 +25,44 @@ import net.butfly.albacore.utils.logger.Logger;
 import sun.management.VMManagement;
 import sun.misc.Signal;
 
-@SuppressWarnings( "restriction" )
+@SuppressWarnings("restriction")
 public final class Systems extends Utils {
 	final static Logger logger = Logger.getLogger(Systems.class);
 
-	public static void main(String... args) {
-		System.err.println(threadsRunning());
+	/**
+	 * For testing local methods
+	 */
+	public static void main(String... args) throws IOException {
+		adjustJVMArgs();
+	}
+
+	public static void adjustJVMArgs(String... jvmArgs) throws IOException {
+		JavaVMArguments originalArgs;
+		try {
+			originalArgs = JavaVMArguments.current();
+			logger.info("JVM args original: " + originalArgs);
+		} catch (UnsupportedOperationException ex) {
+			logger.error("JVM args original fetching fail", ex);
+			return;
+		}
+		NavigableSet<String> args = new ConcurrentSkipListSet<>(originalArgs);
+		for (String a : jvmArgs)
+			if (args.add(a)) logger.info("JVM args append: " + a);
+		logger.info("JVM arguments to apply: " + args.toString());
+		try {
+			Daemon.selfExec(new JavaVMArguments(args));
+		} catch (UnsatisfiedLinkError ex) {
+			logger.error("JVM arguments apply fail", ex);
+		}
+	}
+
+	public static void makeDaemon(Runnable exec) throws Exception {
+		Daemon d = new Daemon();
+		if (d.isDaemonized()) d.init();
+		else {
+			d.daemonize(JavaVMArguments.current());
+			System.exit(0);
+		}
 	}
 
 	public static Stream<Thread> threadsRunning() {
