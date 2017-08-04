@@ -1,12 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<parent>
-		<groupId>net.butfly</groupId>
-		<artifactId>parent-exec</artifactId>
-		<version>1.0.0-SNAPSHOT</version>
-		<relativePath>./butfly-exec.pom</relativePath>
-	</parent>
+	<groupId>net.butfly</groupId>
 	<artifactId>parent</artifactId>
 	<version>3.0.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
@@ -16,6 +11,13 @@
 		<project.build.directory>target</project.build.directory>
 		<maven.test.skip.exec>true</maven.test.skip.exec>
 		<maven.props.skip>false</maven.props.skip>
+		<mdep.unpack.configDirectory>${project.build.testOutputDirectory}</mdep.unpack.configDirectory>
+		<mdep.unpack.excludes>META-INF/**</mdep.unpack.excludes>
+		<exec.logFile>${exec.logFileNull}</exec.logFile>
+		<exec.xms>256m</exec.xms>
+		<exec.xmx>2g</exec.xmx>
+		<exec.xss>1m</exec.xss>
+		<exec.gcInfoLog>gc-${project.artifactId}-${exec.mainClass}.log</exec.gcInfoLog>
 		<!-- -->
 		<version.jackson>2.9.0</version.jackson>
 		<version.slf4j>1.7.25</version.slf4j>
@@ -36,29 +38,34 @@
 		<pluginManagement>
 			<plugins>
 				<!--to remove eclipse m2e plugin error. -->
+				<!-- <plugin> -->
+				<!-- <groupId>org.eclipse.m2e</groupId> -->
+				<!-- <artifactId>lifecycle-mapping</artifactId> -->
+				<!-- <version>1.0.0</version> -->
+				<!-- <configuration> -->
+				<!-- <lifecycleMappingMetadata> -->
+				<!-- <pluginExecutions> -->
+				<!-- <pluginExecution> -->
+				<!-- <pluginExecutionFilter> -->
+				<!-- <groupId>org.codehaus.mojo</groupId> -->
+				<!-- <artifactId>properties-maven-plugin</artifactId> -->
+				<!-- <versionRange>[0.0,)</versionRange> -->
+				<!-- <goals> -->
+				<!-- <goal>read-project-properties</goal> -->
+				<!-- </goals> -->
+				<!-- </pluginExecutionFilter> -->
+				<!-- <action> -->
+				<!-- <ignore /> -->
+				<!-- </action> -->
+				<!-- </pluginExecution> -->
+				<!-- </pluginExecutions> -->
+				<!-- </lifecycleMappingMetadata> -->
+				<!-- </configuration> -->
+				<!-- </plugin> -->
 				<plugin>
-					<groupId>org.eclipse.m2e</groupId>
-					<artifactId>lifecycle-mapping</artifactId>
-					<version>1.0.0</version>
-					<configuration>
-						<lifecycleMappingMetadata>
-							<pluginExecutions>
-								<pluginExecution>
-									<pluginExecutionFilter>
-										<groupId>org.codehaus.mojo</groupId>
-										<artifactId>properties-maven-plugin</artifactId>
-										<versionRange>[0.0,)</versionRange>
-										<goals>
-											<goal>read-project-properties</goal>
-										</goals>
-									</pluginExecutionFilter>
-									<action>
-										<ignore />
-									</action>
-								</pluginExecution>
-							</pluginExecutions>
-						</lifecycleMappingMetadata>
-					</configuration>
+					<groupId>org.codehaus.mojo</groupId>
+					<artifactId>exec-maven-plugin</artifactId>
+					<version>1.6.0</version>
 				</plugin>
 				<plugin>
 					<artifactId>maven-dependency-plugin</artifactId>
@@ -79,7 +86,6 @@
 					<version>2.8.2</version>
 				</plugin>
 				<plugin>
-					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-surefire-plugin</artifactId>
 					<version>2.20</version>
 				</plugin>
@@ -186,13 +192,14 @@
 				<executions>
 					<execution>
 						<id>test-res-on-main-res</id>
+						<phase>generate-resources</phase>
 						<goals>
 							<goal>testResources</goal>
 						</goals>
-						<phase>generate-resources</phase>
 					</execution>
 					<execution>
 						<id>scripts-on-main-res</id>
+						<phase>generate-resources</phase>
 						<goals>
 							<goal>copy-resources</goal>
 						</goals>
@@ -205,7 +212,36 @@
 								</resource>
 							</resources>
 						</configuration>
-						<phase>generate-resources</phase>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>depend-scripts</id><!-- download/unpack scripts of dependencies -->
+						<goals>
+							<goal>unpack-dependencies</goal>
+						</goals>
+						<phase>generate-sources</phase>
+						<configuration>
+							<classifier>scripts</classifier>
+							<includeGroupIds>${project.groupId}</includeGroupIds>
+							<outputDirectory>${project.build.directory}</outputDirectory>
+						</configuration>
+					</execution>
+					<execution>
+						<id>depend-configs</id><!-- download/unpack configs of dependencies -->
+						<goals>
+							<goal>unpack-dependencies</goal>
+						</goals>
+						<phase>generate-sources</phase>
+						<configuration>
+							<classifier>configs</classifier>
+							<includeGroupIds>${project.groupId}</includeGroupIds>
+							<outputDirectory>${mdep.unpack.configDirectory}</outputDirectory>
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>
@@ -371,8 +407,7 @@
 		</dependencies>
 	</dependencyManagement>
 	<profiles>
-		<!-- props loading -->
-		<profile>
+		<profile><!-- props loading -->
 			<id>load-porps</id>
 			<activation>
 				<property>
@@ -403,6 +438,275 @@
 										<url>classpath:/${project.runtime.configDirectory}/${project.artifactId}.properties</url>
 										<url>file://${project.basedir}/${project.artifactId}.properties</url>
 									</urls>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin><!-- exec in multiple modes -->
+						<groupId>org.codehaus.mojo</groupId>
+						<artifactId>exec-maven-plugin</artifactId>
+						<executions>
+							<execution><!-- default -->
+								<id>default-cli</id>
+								<goals>
+									<goal>exec</goal>
+								</goals>
+								<phase>none</phase>
+								<configuration>
+									<executable>java</executable>
+									<!-- <outputFile>${exec.logFile}</outputFile> -->
+									<arguments>
+										<argument>-Xms${exec.xms}</argument>
+										<argument>-Xmx${exec.xmx}</argument>
+										<argument>-Xss${exec.xss}</argument>
+										<argument>-classpath</argument>
+										<classpath />
+										<argument>${exec.mainClass}</argument>
+										<argument>${exec.mainArgs}</argument>
+									</arguments>
+								</configuration>
+							</execution>
+							<execution><!-- g1gc -->
+								<id>g1gc</id>
+								<goals>
+									<goal>exec</goal>
+								</goals>
+								<phase>none</phase>
+								<configuration>
+									<executable>java</executable>
+									<!-- <outputFile>${exec.logFile}</outputFile> -->
+									<arguments>
+										<argument>-Xms${exec.xms}</argument>
+										<argument>-Xmx${exec.xmx}</argument>
+										<argument>-Xss${exec.xss}</argument>
+										<!-- -->
+										<argument>-XX:+UnlockExperimentalVMOptions</argument>
+										<argument>-XX:+DisableExplicitGC</argument>
+										<argument>-XX:+UseG1GC</argument>
+										<argument>-XX:+AggressiveOpts</argument>
+										<argument>-XX:MaxGCPauseMillis=200</argument>
+										<argument>-XX:G1HeapRegionSize=16M</argument>
+										<argument>-XX:InitiatingHeapOccupancyPercent=35</argument>
+										<argument>-XX:G1NewSizePercent=20</argument>
+										<argument>-XX:G1MaxNewSizePercent=30</argument>
+										<argument>-XX:CompileThreshold=8000</argument>
+										<argument>-XX:+TieredCompilation</argument>
+										<argument>-XX:ParallelGCThreads=20</argument>
+										<argument>-XX:ConcGCThreads=10</argument>
+										<argument>-XX:+UseFastAccessorMethods</argument>
+										<argument>-XX:+UseFastEmptyMethods</argument>
+										<argument>-XX:+UseFastJNIAccessors</argument>
+										<argument>-XX:+UseStringDeduplication</argument>
+										<argument>-XX:+OptimizeStringConcat</argument>
+										<argument>-XX:NewRatio=10</argument>
+										<argument>-Djdk.map.althashing.threshold=0</argument>
+										<argument>-classpath</argument>
+										<classpath />
+										<argument>${exec.mainClass}</argument>
+										<argument>${exec.mainArgs}</argument>
+									</arguments>
+								</configuration>
+							</execution>
+							<execution><!-- g1gc with info -->
+								<id>g1gc-info</id>
+								<goals>
+									<goal>exec</goal>
+								</goals>
+								<phase>none</phase>
+								<configuration>
+									<executable>java</executable>
+									<!-- <outputFile>${project.runtime.logFile}</outputFile> -->
+									<arguments>
+										<argument>-Xms${exec.xms}</argument>
+										<argument>-Xmx${exec.xmx}</argument>
+										<argument>-Xss${exec.xss}</argument>
+										<!-- -->
+										<argument>-XX:+UnlockExperimentalVMOptions</argument>
+										<argument>-XX:+DisableExplicitGC</argument>
+										<argument>-XX:+UseG1GC</argument>
+										<argument>-XX:+AggressiveOpts</argument>
+										<argument>-XX:MaxGCPauseMillis=200</argument>
+										<argument>-XX:G1HeapRegionSize=16M</argument>
+										<argument>-XX:InitiatingHeapOccupancyPercent=35</argument>
+										<argument>-XX:G1NewSizePercent=20</argument>
+										<argument>-XX:G1MaxNewSizePercent=30</argument>
+										<argument>-XX:CompileThreshold=8000</argument>
+										<argument>-XX:+TieredCompilation</argument>
+										<argument>-XX:ParallelGCThreads=20</argument>
+										<argument>-XX:ConcGCThreads=10</argument>
+										<argument>-XX:+UseFastAccessorMethods</argument>
+										<argument>-XX:+UseFastEmptyMethods</argument>
+										<argument>-XX:+UseFastJNIAccessors</argument>
+										<argument>-XX:+UseStringDeduplication</argument>
+										<argument>-XX:+OptimizeStringConcat</argument>
+										<argument>-XX:NewRatio=10</argument>
+										<argument>-Djdk.map.althashing.threshold=0</argument>
+										<!-- -->
+										<argument>-XX:+PrintGC</argument>
+										<argument>-XX:+PrintGCDetails</argument>
+										<argument>-XX:+PrintGCTimeStamps</argument>
+										<argument>-XX:+PrintGCApplicationStoppedTime</argument>
+										<argument>-Xloggc:${exec.gcInfoLog}</argument>
+										<argument>-XX:+PrintStringDeduplicationStatistics</argument>
+										<argument>-XX:+HeapDumpOnOutOfMemoryError</argument>
+										<argument>-XX:HeapDumpPath=.</argument>
+										<argument>-classpath</argument>
+										<classpath />
+										<argument>${exec.mainClass}</argument>
+										<argument>${exec.mainArgs}</argument>
+									</arguments>
+								</configuration>
+							</execution>
+							<execution><!-- cms -->
+								<id>cms</id>
+								<goals>
+									<goal>exec</goal>
+								</goals>
+								<phase>none</phase>
+								<configuration>
+									<executable>java</executable>
+									<!-- <outputFile>${project.runtime.logFile}</outputFile> -->
+									<arguments>
+										<argument>-Xms${exec.xms}</argument>
+										<argument>-Xmx${exec.xmx}</argument>
+										<argument>-Xss${exec.xss}</argument>
+										<!-- -->
+										<argument>-XX:SurvivorRatio=4</argument>
+										<argument>-XX:TargetSurvivorRatio=90</argument>
+										<argument>-XX:MaxTenuringThreshold=8</argument>
+										<argument>-XX:+UseConcMarkSweepGC</argument>
+										<argument>-XX:+UseParNewGC</argument>
+										<argument>-XX:ConcGCThreads=4</argument>
+										<argument>-XX:ParallelGCThreads=4</argument>
+										<argument>-XX:+CMSScavengeBeforeRemark</argument>
+										<argument>-XX:PretenureSizeThreshold=64m</argument>
+										<argument>-XX:+UseCMSInitiatingOccupancyOnly</argument>
+										<argument>-XX:CMSInitiatingOccupancyFraction=50</argument>
+										<argument>-XX:CMSMaxAbortablePrecleanTime=6000</argument>
+										<argument>-XX:+CMSParallelRemarkEnabled</argument>
+										<argument>-XX:+ParallelRefProcEnabled</argument>
+										<argument>-classpath</argument>
+										<classpath />
+										<argument>${exec.mainClass}</argument>
+										<argument>${exec.mainArgs}</argument>
+									</arguments>
+								</configuration>
+							</execution>
+							<execution><!-- cms with info -->
+								<id>cms-info</id>
+								<goals>
+									<goal>exec</goal>
+								</goals>
+								<phase>none</phase>
+								<configuration>
+									<executable>java</executable>
+									<!-- <outputFile>${project.runtime.logFile}</outputFile> -->
+									<arguments>
+										<argument>-Xms${exec.xms}</argument>
+										<argument>-Xmx${exec.xmx}</argument>
+										<argument>-Xss${exec.xss}</argument>
+										<!-- -->
+										<argument>-XX:SurvivorRatio=4</argument>
+										<argument>-XX:TargetSurvivorRatio=90</argument>
+										<argument>-XX:MaxTenuringThreshold=8</argument>
+										<argument>-XX:+UseConcMarkSweepGC</argument>
+										<argument>-XX:+UseParNewGC</argument>
+										<argument>-XX:ConcGCThreads=4</argument>
+										<argument>-XX:ParallelGCThreads=4</argument>
+										<argument>-XX:+CMSScavengeBeforeRemark</argument>
+										<argument>-XX:PretenureSizeThreshold=64m</argument>
+										<argument>-XX:+UseCMSInitiatingOccupancyOnly</argument>
+										<argument>-XX:CMSInitiatingOccupancyFraction=50</argument>
+										<argument>-XX:CMSMaxAbortablePrecleanTime=6000</argument>
+										<argument>-XX:+CMSParallelRemarkEnabled</argument>
+										<argument>-XX:+ParallelRefProcEnabled</argument>
+										<!-- -->
+										<argument>-XX:+PrintGC</argument>
+										<argument>-XX:+PrintGCDetails</argument>
+										<argument>-XX:+PrintGCTimeStamps</argument>
+										<argument>-XX:+PrintGCApplicationStoppedTime</argument>
+										<argument>-Xloggc:${exec.gcInfoLog}</argument>
+										<argument>-XX:+PrintStringDeduplicationStatistics</argument>
+										<argument>-XX:+HeapDumpOnOutOfMemoryError</argument>
+										<argument>-XX:HeapDumpPath=.</argument>
+										<argument>-classpath</argument>
+										<classpath />
+										<argument>${exec.mainClass}</argument>
+										<argument>${exec.mainArgs}</argument>
+									</arguments>
+								</configuration>
+							</execution>
+							<execution><!-- debug -->
+								<id>debug</id>
+								<goals>
+									<goal>exec</goal>
+								</goals>
+								<phase>none</phase>
+								<configuration>
+									<executable>java</executable>
+									<!-- <outputFile>${project.runtime.logFile}</outputFile> -->
+									<arguments>
+										<argument>-Xms${exec.xms}</argument>
+										<argument>-Xmx${exec.xmx}</argument>
+										<argument>-Xss${exec.xss}</argument>
+										<!-- -->
+										<argument>-Xdebug</argument>
+										<argument>-Xnoagent</argument>
+										<argument>-Xrunjdwp:transport=dt_socket,server=y,suspend=${exec.debugSuspend},address=${exec.debugPort}</argument>
+										<argument>-classpath</argument>
+										<classpath />
+										<argument>${exec.mainClass}</argument>
+										<argument>${exec.mainArgs}</argument>
+									</arguments>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile><!-- fetch/unpack jar/configs/scripts for prod -->
+			<id>prod</id>
+			<properties>
+				<mdep.unpack.configDirectory>${project.build.outputDirectory}</mdep.unpack.configDirectory>
+			</properties>
+			<build>
+				<plugins>
+					<plugin>
+						<artifactId>maven-dependency-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>default-cli</id>
+								<goals>
+									<goal>unpack</goal>
+								</goals>
+								<phase>none</phase>
+								<configuration>
+									<artifactItems>
+										<artifactItem><!-- download/unpack main jar -->
+											<groupId>${project.groupId}</groupId>
+											<artifactId>${project.artifactId}</artifactId>
+											<version>${project.version}</version>
+											<type>jar</type>
+											<outputDirectory>${project.build.outputDirectory}</outputDirectory>
+										</artifactItem>
+										<artifactItem><!-- download/unpack main configs -->
+											<groupId>${project.groupId}</groupId>
+											<artifactId>${project.artifactId}</artifactId>
+											<version>${project.version}</version>
+											<type>jar</type>
+											<classifier>configs</classifier>
+											<outputDirectory>${project.build.outputDirectory}</outputDirectory>
+										</artifactItem>
+										<artifactItem><!-- download/unpack main script -->
+											<groupId>${project.groupId}</groupId>
+											<artifactId>${project.artifactId}</artifactId>
+											<version>${project.version}</version>
+											<type>jar</type>
+											<classifier>scripts</classifier>
+											<outputDirectory>${project.build.directory}</outputDirectory>
+										</artifactItem>
+									</artifactItems>
 								</configuration>
 							</execution>
 						</executions>
