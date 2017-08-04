@@ -9,9 +9,9 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.build.finalName>${project.artifactId}</project.build.finalName>
 		<project.build.directory>target</project.build.directory>
+		<project.build.configOutputDirectory>${project.build.testOutputDirectory}</project.build.configOutputDirectory>
 		<maven.test.skip.exec>true</maven.test.skip.exec>
 		<maven.props.skip>false</maven.props.skip>
-		<mdep.unpack.configDirectory>${project.build.testOutputDirectory}</mdep.unpack.configDirectory>
 		<mdep.unpack.excludes>META-INF/**</mdep.unpack.excludes>
 		<exec.logFile>${exec.logFileNull}</exec.logFile>
 		<exec.xms>256m</exec.xms>
@@ -240,7 +240,7 @@
 						<configuration>
 							<classifier>configs</classifier>
 							<includeGroupIds>${project.groupId}</includeGroupIds>
-							<outputDirectory>${mdep.unpack.configDirectory}</outputDirectory>
+							<outputDirectory>${project.build.configOutputDirectory}</outputDirectory>
 						</configuration>
 					</execution>
 				</executions>
@@ -431,11 +431,11 @@
 									<skip>${maven.props.skip}</skip>
 									<quiet>true</quiet>
 									<urls>
-										<url>classpath:/${project.runtime.configDirectory}/pom.properties</url>
+										<url>classpath:/${project.build.configOutputDirectory}/pom.properties</url>
 										<url>file://${project.basedir}/pom.properties</url>
-										<url>classpath:/${project.runtime.configDirectory}/maven.properties</url>
+										<url>classpath:/${project.build.configOutputDirectory}/maven.properties</url>
 										<url>file://${project.basedir}/maven.properties</url>
-										<url>classpath:/${project.runtime.configDirectory}/${project.artifactId}.properties</url>
+										<url>classpath:/${project.build.configOutputDirectory}/${project.artifactId}.properties</url>
 										<url>file://${project.basedir}/${project.artifactId}.properties</url>
 									</urls>
 								</configuration>
@@ -668,7 +668,7 @@
 		<profile><!-- fetch/unpack jar/configs/scripts for prod -->
 			<id>prod</id>
 			<properties>
-				<mdep.unpack.configDirectory>${project.build.outputDirectory}</mdep.unpack.configDirectory>
+				<project.build.configOutputDirectory>${project.build.outputDirectory}</project.build.configOutputDirectory>
 			</properties>
 			<build>
 				<plugins>
