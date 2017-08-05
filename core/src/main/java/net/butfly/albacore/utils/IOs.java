@@ -24,6 +24,13 @@ import net.butfly.albacore.utils.logger.Logger;
 public final class IOs extends Utils {
 	private static final Logger logger = Logger.getLogger(IOs.class);
 
+	public static InputStream open(String... file) {
+		if (file == null || file.length == 0) return null;
+		InputStream is = openFile(file);
+		if (null != is) return is;
+		return openClasspath(file);
+	}
+
 	public static InputStream openFile(String... file) {
 		if (file == null || file.length == 0) return null;
 		for (String f : file)
@@ -39,6 +46,17 @@ public final class IOs extends Utils {
 		for (String f : file) {
 			try {
 				InputStream s = loader.getClassLoader().getResourceAsStream(f);
+				if (null != s) return s;
+			} catch (Exception e) {}
+		}
+		return null;
+	}
+
+	public static InputStream openClasspath(String... file) {
+		if (file == null || file.length == 0) return null;
+		for (String f : file) {
+			try {
+				InputStream s = Thread.currentThread().getContextClassLoader().getResourceAsStream(f);
 				if (null != s) return s;
 			} catch (Exception e) {}
 		}

@@ -13,7 +13,7 @@
 		<!-- </layout> -->
 	</appender>
 	<logger name="net.butfly" additivity="false">
-		<level value="info" />
+		<level value="debug" />
 		<appender-ref ref="log-console-stdout" />
 	</logger>
 	<logger name="Queue.Statistic" additivity="false">
