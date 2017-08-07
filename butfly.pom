@@ -13,7 +13,6 @@
 		<maven.test.skip.exec>true</maven.test.skip.exec>
 		<maven.props.skip>false</maven.props.skip>
 		<mdep.unpack.excludes>META-INF/**</mdep.unpack.excludes>
-		<!-- <exec.mainArgs></exec.mainArgs> -->
 		<exec.debugSuspend>y</exec.debugSuspend>
 		<exec.debugPort>18089</exec.debugPort>
 		<exec.logFile>${exec.logFileNull}</exec.logFile>
@@ -488,7 +487,8 @@
 						</goals>
 						<phase>none</phase>
 						<configuration>
-							<commandlineArgs>${exec.mainArgs}</commandlineArgs>
+							<mainClass>alpp</mainClass>
+							<commandlineArgs>${exec.mainClass} ${exec.mainArgs}</commandlineArgs>
 							<additionalClasspathElements>
 								<additionalClasspathElement>${project.build.configOutputDirectory}</additionalClasspathElement>
 							</additionalClasspathElements>
