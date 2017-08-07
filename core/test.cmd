@@ -1,0 +1,1 @@
+mvn exec:java -Dexec.mainClass=alpp -Dexec.mainArgs="net.butfly.albacore.utils.Systems 123 '456 sdd'" -Dalbacore.app.daemon=true

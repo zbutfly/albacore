@@ -3,6 +3,7 @@ package net.butfly.albacore.utils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -10,6 +11,7 @@ import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Set;
@@ -107,6 +109,15 @@ public final class Systems extends Utils {
 		}
 	}
 
+	public static List<String> currentVmArgs() {
+		try {
+			return JavaVMArguments.current();
+		} catch (UnsupportedOperationException | IOException e) {
+			RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
+			return runtimeMXBean.getInputArguments();
+		}
+	}
+
 	private static JavaVMArguments vmargs() {
 		String vmargConf = System.getProperty("albacore.app.vmconfig");
 		if (null == vmargConf) vmargConf = "vmargs.config";
@@ -121,35 +132,32 @@ public final class Systems extends Utils {
 			return null;
 		}
 		if (confArgs.length == 0) return null;
-		// XXX: if return null, debug port duplicate between original and
-		// forked.
+		// XXX: if return null, debug port duplicate between original and forked.
 		logger.debug("JVM args config file read: " + Joiner.on(" ").join(confArgs));
-		JavaVMArguments origArgs;
-		try {
-			origArgs = JavaVMArguments.current();
-			logger.info("JVM args original: " + origArgs);
-		} catch (UnsupportedOperationException | IOException e) {
-			logger.warn("JVM args fetching fail [" + e.getMessage() + "], continue running normally");
-			return null;
-		}
+		List<String> origArgs = currentVmArgs();
+		logger.info("JVM args original: " + origArgs);
 		NavigableSet<String> args = new ConcurrentSkipListSet<>(origArgs);
 		for (String a : confArgs)
 			if (args.add(a)) logger.info("JVM args append: " + a);
+		stripeVmArgs(args);
+		return args.isEmpty() ? null : new JavaVMArguments(args);
+	}
+
+	private static void stripeVmArgs(NavigableSet<String> args) {
 		Set<String> stripArgs = new HashSet<>();
 		for (String a : args) {
 			if (a.startsWith("-Dalbacore.app.")) stripArgs.add(a);
-			else if (a.matches("^-Xrunjdwp:.*")) {
-				Pattern p = Pattern.compile("address=(\\d+)");
+			else if (a.startsWith("-Xrunjdwp:") || a.startsWith("-agentlib:jdwp=")) {
+				Pattern p = Pattern.compile("address=([^:]+:)?(\\d+)");
 				Matcher m = p.matcher(a);
-				int port = Integer.parseInt(m.group(1));
+				int port = Integer.parseInt(m.group(2));
 				logger.info("Original debug port: " + port + ", fork in debug port: " + (++port) + ".");
-				args.add(m.replaceAll("address=" + port));
+				args.add(m.replaceAll("address=" + m.group(1) + port));
 				stripArgs.add(a);
 			}
 		}
 		args.removeAll(stripArgs);
 		logger.info("JVM args to apply: " + args.toString());
-		return args.isEmpty() ? null : new JavaVMArguments(args);
 	}
 
 	public static Stream<Thread> threadsRunning() {
