@@ -317,34 +317,6 @@
 					</execution>
 				</executions>
 			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-shade-plugin</artifactId>
-				<executions>
-					<execution>
-						<id>runnable</id>
-						<goals>
-							<goal>shade</goal>
-						</goals>
-						<phase>package</phase>
-						<configuration>
-							<outputFile>${project.basedir}/${project.build.finalName}-run.jar</outputFile>
-							<transformers>
-								<transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
-									<file>${project.build.configOutputDirectory}/**/*.*</file>
-									<resource />
-								</transformer>
-								<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-									<mainClass>alpp</mainClass>
-									<!-- <manifestEntries> -->
-									<!-- <Class-Path>./test-classes</Class-Path> -->
-									<!-- </manifestEntries> -->
-								</transformer>
-							</transformers>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
 		</plugins>
 	</build>
 	<dependencyManagement>
