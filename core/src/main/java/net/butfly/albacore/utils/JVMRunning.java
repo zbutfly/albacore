@@ -69,13 +69,20 @@ public class JVMRunning {
 		if (args.isEmpty()) throw new RuntimeException(
 				"JVM main method wrapping need at list 1 argument: actually main class being wrapped.");
 		List<String> argl = new ArrayList<>(args);
-		Class<?> mc = Class.forName(argl.remove(0));
+		String mname = argl.remove(0);
+		Class<?> mc;
+		String mn = "main";
+		if (mname.endsWith("(")) {
+			int p = mname.lastIndexOf('.');
+			mc = Class.forName(mname.substring(0, p));
+			mn = mname.substring(p + 1, mname.length() - 2);
+		} else mc = Class.forName(mname);
 		String[] ma = argl.toArray(new String[0]);
 
-		Method mm = findMain(new LinkedBlockingQueue<>(Arrays.asList(mc)));
+		Method mm = findMain(mn, new LinkedBlockingQueue<>(Arrays.asList(mc)));
 		if (null == mm) throw new RuntimeException("No main method found in class [" + mc.getName() + "] and its parents.");
 		if (!mm.isAccessible()) mm.setAccessible(true);
-		logger.info("Wrapped main method found and to be invoked: " + mm.toString());
+		logger.debug("Wrapped main method found and to be invoked: " + mm.toString());
 		try {
 			mm.invoke(null, (Object) ma);
 		} catch (IllegalAccessException e) {
@@ -85,11 +92,11 @@ public class JVMRunning {
 		}
 	}
 
-	private static Method findMain(BlockingQueue<Class<?>> cls) {
+	private static Method findMain(String methodName, BlockingQueue<Class<?>> cls) {
 		Class<?> c;
 		while (null != (c = cls.poll())) {
 			try {
-				Method m = c.getDeclaredMethod("main", String[].class);
+				Method m = c.getDeclaredMethod(methodName, String[].class);
 				if (Modifier.isStatic(m.getModifiers()) && Void.TYPE.equals(m.getReturnType())) return m;
 			} catch (NoSuchMethodException | SecurityException e) {}
 			Class<?> cc = c.getSuperclass();
@@ -150,24 +157,30 @@ public class JVMRunning {
 	}
 
 	private List<String> loadVmArgsConfig() {
-		String vmargConf = System.getProperty("albacore.app.vmconfig");
-		if (null == vmargConf) vmargConf = "vmargs.config";
-		else vmargConf = "vmargs-" + vmargConf + ".config";
-		logger.debug("JVM args config file: [" + vmargConf
+		List<String> configed = new ArrayList<>();
+		for (String conf : System.getProperty("albacore.app.vmconfig", "").split(","))
+			configed.addAll(loadVmArgs(conf));
+		List<String> jvmArgs = new ArrayList<>(vmArgs);
+		if (configed.isEmpty()) return jvmArgs;
+		logger.debug("JVM args original: " + jvmArgs + ", \n\tappending config loaded: " + Joiner.on(" ").join(configed));
+		jvmArgs.addAll(configed);
+		return jvmArgs.stream().filter(a -> !a.startsWith("-Dalbacore.app.")).collect(Collectors.toList());
+	}
+
+	private List<String> loadVmArgs(String conf) {
+		String confFile;
+		if (conf.isEmpty()) confFile = "vmargs.config";
+		else confFile = "vmargs-" + conf + ".config";
+		logger.debug("JVM args config file: [" + confFile
 				+ "] reading...\n\t(default: vmargs.config, customized by -Dalbacore.app.vmconfig)");
-		String[] configed;
-		try (InputStream is = IOs.openFile(vmargConf);) {
+		try (InputStream is = IOs.openFile(confFile);) {
 			if (null == is) return new ArrayList<>();
-			configed = IOs.readLines(is, l -> l.matches("^\\s*(//|#).*"));
+			return Arrays.asList(IOs.readLines(is, l -> l.matches("^\\s*(//|#).*")));
 		} catch (IOException e) {
-			logger.error("JVM args config file: [" + vmargConf + "] read failed.", e);
+			logger.error("JVM args config file: [" + confFile + "] read failed.", e);
 			return new ArrayList<>();
 		}
-		List<String> jvmArgs = new ArrayList<>(vmArgs);
-		if (configed.length == 0) return jvmArgs;
-		logger.debug("JVM args original: " + jvmArgs + ", \n\tappending config loaded: " + Joiner.on(" ").join(configed));
-		jvmArgs.addAll(Arrays.asList(configed));
-		return jvmArgs.stream().filter(a -> !a.startsWith("-Dalbacore.app.")).collect(Collectors.toList());
+
 	}
 
 	public Class<?> mainClass() {
