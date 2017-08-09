@@ -34,24 +34,29 @@ public class JVMRunning {
 		vmArgs = mx.getInputArguments();
 		isDebug = isDebug();
 
-		String cmd = System.getProperty("sun.java.command");
-		if (null == cmd) {
+		List<String> as = null;
+		Class<?> mc = null;
+		try {
+			String cmd = System.getProperty("sun.java.command");
+			if (null != cmd) {
+				String[] cmds = cmd.split(" ", 2);
+				as = cmds.length > 1 ? Arrays.asList(cmds[1].split(" ")) : Arrays.asList();
+				try {
+					mc = Class.forName(cmds[0]);
+					return;
+				} catch (ClassNotFoundException e) {}
+			}
 			logger.warn("No sun.java.command property, try to parse call stack, but args could not be fetched.");
-			args = null;
+			as = null;
 			StackTraceElement[] s = Thread.currentThread().getStackTrace();
 			try {
-				mainClass = Class.forName(s[s.length - 1].getClassName());
+				mc = Class.forName(s[s.length - 1].getClassName());
 			} catch (ClassNotFoundException e) {
 				throw new RuntimeException(e);
 			}
-		} else {
-			String[] cmds = cmd.split(" ", 2);
-			args = cmds.length > 1 ? Arrays.asList(cmds[1].split(" ")) : Arrays.asList();
-			try {
-				mainClass = Class.forName(cmds[0]);
-			} catch (ClassNotFoundException e) {
-				throw new RuntimeException(e);
-			}
+		} finally {
+			args = as;
+			mainClass = mc;
 		}
 	}
 
