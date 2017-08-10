@@ -25,6 +25,7 @@ public class JVMRunning {
 	private final static Logger logger = Logger.getLogger(JVMRunning.class);
 	private static JVMRunning current = null;
 	private final List<String> vmArgs;
+	public final Thread mainThread;
 	public final Class<?> mainClass;
 	private List<String> args;
 	public final boolean isDebug;
@@ -46,18 +47,35 @@ public class JVMRunning {
 		RuntimeMXBean mx = ManagementFactory.getRuntimeMXBean();
 		vmArgs = mx.getInputArguments();
 		isDebug = isDebug();
+		mainThread = getMainThread();
 		mainClass = parseMainClass();
 
-		String cmd = System.getProperty("sun.java.command");
-		if (null == cmd) logger.warn("No sun.java.command property, main args could not be fetched.");
-		else {
+		String cmd = System.getProperty("exec.arguments");
+		if (null != cmd) {
+			args = new ArrayList<>(Arrays.asList(cmd.split(" ")));
+			return;
+		}
+		cmd = System.getProperty("sun.java.command");
+		if (null != cmd) {
 			args = new ArrayList<>(Arrays.asList(cmd.split(" ")));
 			args.remove(0);
+			return;
 		}
+		logger.warn("No sun.java.command property, main args could not be fetched.");
+	}
+
+	private Thread getMainThread() {
+		for (Thread t : Thread.getAllStackTraces().keySet())
+			if (t.getId() == 1) return t;
+		return null;
 	}
 
 	private Class<?> parseMainClass() {
-		StackTraceElement[] s = Thread.currentThread().getStackTrace();
+		String n = System.getProperty("exec.mainClass");
+		if (n != null) try {
+			return Class.forName(n);
+		} catch (ClassNotFoundException e1) {}
+		StackTraceElement[] s = (mainThread == null ? Thread.currentThread() : mainThread).getStackTrace();
 		try {
 			return Class.forName(s[s.length - 1].getClassName());
 		} catch (ClassNotFoundException e) {

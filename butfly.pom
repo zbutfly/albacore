@@ -307,7 +307,7 @@
 						<phase>none</phase>
 						<configuration>
 							<mainClass>alpp</mainClass>
-							<commandlineArgs>${exec.mainClass} ${exec.mainArgs}</commandlineArgs>
+							<commandlineArgs>${exec.mainClass} ${exec.arguments}</commandlineArgs>
 							<additionalClasspathElements>
 								<additionalClasspathElement>${project.build.configOutputDirectory}</additionalClasspathElement>
 							</additionalClasspathElements>
