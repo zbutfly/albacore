@@ -25,7 +25,6 @@
 		<version.ning>1.9.40</version.ning>
 		<version.netty4>4.1.13.Final</version.netty4>
 		<version.netty3>3.10.6.Final</version.netty3>
-		<version.jna>4.4.0</version.jna>
 	</properties>
 	<build>
 		<finalName>${project.build.finalName}</finalName>
@@ -468,12 +467,12 @@
 			<dependency>
 				<groupId>net.java.dev.jna</groupId>
 				<artifactId>jna</artifactId>
-				<version>${version.jna}</version>
+				<version>4.4.0</version>
 			</dependency>
 			<dependency>
 				<groupId>net.java.dev.jna</groupId>
 				<artifactId>jna-platform</artifactId>
-				<version>${version.jna}</version>
+				<version>4.4.0-RC1</version><!-- fix classpath bug for spring-boot -->
 				<scope>runtime</scope>
 			</dependency>
 		</dependencies>
@@ -544,11 +543,4 @@
 			</properties>
 		</developer>
 	</developers>
-	<repositories>
-		<repository>
-			<id>_m2e_lifecycle-mapping_repos_</id>
-			<name>_m2e_lifecycle-mapping_repos_</name>
-			<url>http://simulation.tudelft.nl/maven/</url>
-		</repository>
-	</repositories>
 </project>
