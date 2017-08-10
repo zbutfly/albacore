@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 import net.butfly.albacore.utils.logger.Logger;
 
 public class Configs extends Utils {
-	private static final Conf MAIN_CONF = init(Systems.getMainClass());
+	private static final Conf MAIN_CONF = init(Systems.JVM.current().mainClass);
 
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target(ElementType.TYPE)
@@ -99,7 +99,7 @@ public class Configs extends Utils {
 	}
 
 	public static Conf init() {
-		return init(Systems.getMainClass());
+		return init(Systems.JVM.current().mainClass);
 	}
 
 	/**
@@ -112,8 +112,7 @@ public class Configs extends Utils {
 	 * <li>In classpath (based on classpath root).
 	 * </ol>
 	 * <li>System Variables.
-	 * <li>{@code filename}-default.properties file in classpath of
-	 * {@code loader}.
+	 * <li>{@code filename}-default.properties file in classpath of {@code loader}.
 	 * <ol>
 	 * 
 	 * @param prefix
@@ -127,8 +126,7 @@ public class Configs extends Utils {
 	}
 
 	/**
-	 * @deprecated use annotation {@code @Config} to define config file and
-	 *             prefix.
+	 * @deprecated use annotation {@code @Config} to define config file and prefix.
 	 */
 	@Deprecated
 	public static Conf init(Class<?> cl, String filename, String prefix) {
