@@ -57,7 +57,7 @@ public final class Systems extends Utils {
 
 	@Deprecated
 	public static Class<?> getMainClass() {
-		return new JVMRunning().mainClass();
+		return JVMRunning.current().mainClass;
 	}
 
 	public static boolean isDebug() {

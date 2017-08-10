@@ -22,54 +22,57 @@ import com.sun.akuma.JavaVMArguments;
 import net.butfly.albacore.utils.logger.Logger;
 
 public class JVMRunning {
-	final static Logger logger = Logger.getLogger(JVMRunning.class);
+	private final static Logger logger = Logger.getLogger(JVMRunning.class);
+	private static JVMRunning current = null;
 	private final List<String> vmArgs;
 	public final Class<?> mainClass;
-	private final List<String> args;
+	private List<String> args;
 	public final boolean isDebug;
 
-	public JVMRunning() {
+	public static JVMRunning current(String... mainArgs) {
+		if (current == null) current = new JVMRunning();
+		current.args.clear();
+		current.args.addAll(Arrays.asList(mainArgs));
+		return current;
+	}
+
+	public static synchronized JVMRunning current() {
+		if (null == current) current = new JVMRunning();
+		return current;
+	}
+
+	private JVMRunning() {
 		super();
 		RuntimeMXBean mx = ManagementFactory.getRuntimeMXBean();
 		vmArgs = mx.getInputArguments();
 		isDebug = isDebug();
+		mainClass = parseMainClass();
 
-		List<String> as = null;
-		Class<?> mc = null;
-		try {
-			String cmd = System.getProperty("sun.java.command");
-			if (null != cmd) {
-				String[] cmds = cmd.split(" ", 2);
-				as = cmds.length > 1 ? Arrays.asList(cmds[1].split(" ")) : Arrays.asList();
-				try {
-					mc = Class.forName(cmds[0]);
-					return;
-				} catch (ClassNotFoundException e) {}
-			}
-			logger.warn("No sun.java.command property, try to parse call stack, but args could not be fetched.");
-			as = null;
-			StackTraceElement[] s = Thread.currentThread().getStackTrace();
-			try {
-				mc = Class.forName(s[s.length - 1].getClassName());
-			} catch (ClassNotFoundException e) {
-				throw new RuntimeException(e);
-			}
-		} finally {
-			args = as;
-			mainClass = mc;
+		String cmd = System.getProperty("sun.java.command");
+		if (null == cmd) logger.warn("No sun.java.command property, main args could not be fetched.");
+		else {
+			args = new ArrayList<>(Arrays.asList(cmd.split(" ")));
+			args.remove(0);
 		}
 	}
 
-	public JVMRunning(Class<?> mainClass, String... args) {
-		super();
-		RuntimeMXBean mx = ManagementFactory.getRuntimeMXBean();
-		vmArgs = mx.getInputArguments();
-		isDebug = isDebug();
-		this.mainClass = mainClass;
-		this.args = Arrays.asList(args);
+	private Class<?> parseMainClass() {
+		StackTraceElement[] s = Thread.currentThread().getStackTrace();
+		try {
+			return Class.forName(s[s.length - 1].getClassName());
+		} catch (ClassNotFoundException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
-	public void unwrap() throws Throwable {
+	public synchronized JVMRunning args(String... args) {
+		if (this.args != null) this.args.clear();
+		else this.args = new ArrayList<>();
+		this.args.addAll(Arrays.asList(args));
+		return this;
+	}
+
+	public JVMRunning unwrap() throws Throwable {
 		if (args == null) throw new RuntimeException("JVM main class args not parsed, set it before run it.");
 		if (args.isEmpty()) throw new RuntimeException(
 				"JVM main method wrapping need at list 1 argument: actually main class being wrapped.");
@@ -95,6 +98,7 @@ public class JVMRunning {
 		} catch (InvocationTargetException e) {
 			throw e.getTargetException();
 		}
+		return this;
 	}
 
 	private static Method findMain(String methodName, BlockingQueue<Class<?>> cls) {
@@ -112,10 +116,10 @@ public class JVMRunning {
 		return null;
 	}
 
-	public void fork(boolean daemon) throws IOException {
+	public JVMRunning fork(boolean daemon) throws IOException {
 		if (isDebug) {
 			logger.warn("JVM in debug, not forked.");
-			return;
+			return this;
 		}
 		if (daemon) {
 			Daemon d = new Daemon();
@@ -140,6 +144,7 @@ public class JVMRunning {
 			vmas.add("-Dalbacore.app._forked=true");
 			fork(vmas, Boolean.parseBoolean(System.getProperty("albacore.app.fork.hard", "true")));
 		}
+		return this;
 	}
 
 	protected void fork(List<String> vmas, boolean hard) throws IOException {
@@ -188,10 +193,6 @@ public class JVMRunning {
 
 	}
 
-	public Class<?> mainClass() {
-		return mainClass;
-	}
-
 	public String[] mainArgs() {
 		if (null == args) throw new RuntimeException("JVM main class args not parsed, set it before run it.");
 		return args.toArray(new String[args.size()]);
@@ -206,4 +207,5 @@ public class JVMRunning {
 			if (a.startsWith("-Xrunjdwp:") || a.startsWith("-agentlib:jdwp=")) return true;
 		return false;
 	}
+
 }
