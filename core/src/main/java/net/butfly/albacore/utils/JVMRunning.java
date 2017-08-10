@@ -105,7 +105,7 @@ public class JVMRunning {
 		n = System.getProperty("sun.java.command");
 		if (null != n) {
 			if (n.endsWith(".jar")) {
-				try (JarFile jar = new JarFile(Thread.currentThread().getContextClassLoader().getResource("narc.jar").getPath());) {
+				try (JarFile jar = new JarFile(Thread.currentThread().getContextClassLoader().getResource(n).getPath());) {
 					String mn = jar.getManifest().getMainAttributes().getValue(Attributes.Name.MAIN_CLASS);
 					if (null != mn) try {
 						return Class.forName(mn);
