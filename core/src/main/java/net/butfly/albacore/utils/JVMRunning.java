@@ -3,7 +3,6 @@ package net.butfly.albacore.utils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.management.ManagementFactory;
-import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -13,6 +12,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.jar.Attributes;
+import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 
 import com.google.common.base.Joiner;
@@ -23,71 +24,98 @@ import net.butfly.albacore.utils.logger.Logger;
 
 public class JVMRunning {
 	private final static Logger logger = Logger.getLogger(JVMRunning.class);
+	private static final Object mutex = new Object();
 	private static JVMRunning current = null;
 	private final List<String> vmArgs;
-	public final Thread mainThread;
 	public final Class<?> mainClass;
-	private List<String> args;
-	public final boolean isDebug;
-
-	public static JVMRunning current(String... mainArgs) {
-		if (current == null) current = new JVMRunning();
-		current.args.clear();
-		current.args.addAll(Arrays.asList(mainArgs));
-		return current;
-	}
-
-	public static synchronized JVMRunning current() {
-		if (null == current) current = new JVMRunning();
-		return current;
-	}
+	public final boolean debugging;
+	private final List<String> args;
 
 	private JVMRunning() {
-		super();
-		RuntimeMXBean mx = ManagementFactory.getRuntimeMXBean();
-		vmArgs = mx.getInputArguments();
-		isDebug = isDebug();
-		mainThread = getMainThread();
-		mainClass = parseMainClass();
-
-		String cmd = System.getProperty("exec.mainArgs");
-		if (null != cmd) {
-			args = new ArrayList<>(Arrays.asList(cmd.split(" ")));
-			return;
-		}
-		cmd = System.getProperty("sun.java.command");
-		if (null != cmd) {
-			args = new ArrayList<>(Arrays.asList(cmd.split(" ")));
-			args.remove(0);
-			return;
-		}
-		logger.warn("No sun.java.command property, main args could not be fetched.");
+		this.mainClass = parseMainClass();
+		this.vmArgs = ManagementFactory.getRuntimeMXBean().getInputArguments();
+		this.debugging = checkDebug();
+		this.args = parseArgs();
 	}
 
-	private Thread getMainThread() {
+	private JVMRunning(Class<?> mainClass, String... args) {
+		this.mainClass = mainClass;
+		this.vmArgs = ManagementFactory.getRuntimeMXBean().getInputArguments();
+		this.debugging = checkDebug();
+		this.args = Arrays.asList(args);
+	}
+
+	public static JVMRunning current() {
+		synchronized (mutex) {
+			if (null == current) current = new JVMRunning();
+			return current;
+		}
+	}
+
+	public static JVMRunning customize(String... args) {
+		synchronized (mutex) {
+			current = new JVMRunning(null == current ? parseMainClass() : current.mainClass, args);
+			return current;
+		}
+	}
+
+	public static JVMRunning customize(Class<?> mainClass, String... args) {
+		synchronized (mutex) {
+			current = new JVMRunning(mainClass, args);
+			return current;
+		}
+	}
+
+	private List<String> parseArgs() {
+		String cmd = System.getProperty("exec.mainArgs");
+		if (null != cmd) return parseCommandLineArgs(cmd);
+		cmd = System.getProperty("sun.java.command");
+		if (null != cmd) {
+			String[] segs = cmd.split(" ", 2);
+			if (segs.length < 2) return Arrays.asList();
+			else return parseCommandLineArgs(segs[1]);
+		}
+		logger.warn("No sun.java.command property, main args could not be fetched.");
+		return null;
+	}
+
+	private List<String> parseCommandLineArgs(String cmd) {
+		// XXX
+		return Arrays.asList(cmd.split(" "));
+	}
+
+	private static Thread getMainThread() {
 		for (Thread t : Thread.getAllStackTraces().keySet())
 			if (t.getId() == 1) return t;
 		return null;
 	}
 
-	private Class<?> parseMainClass() {
+	private static Class<?> parseMainClass() {
 		String n = System.getProperty("exec.mainClass");
-		if (n != null) try {
+		if (null != n) try {
 			return Class.forName(n);
-		} catch (ClassNotFoundException e1) {}
-		StackTraceElement[] s = (mainThread == null ? Thread.currentThread() : mainThread).getStackTrace();
-		try {
-			return Class.forName(s[s.length - 1].getClassName());
-		} catch (ClassNotFoundException e) {
-			throw new RuntimeException(e);
+		} catch (ClassNotFoundException e) {}
+		Thread t = getMainThread();
+		if (null != t) {
+			StackTraceElement[] s = t.getStackTrace();
+			try {
+				return Class.forName(s[s.length - 1].getClassName());
+			} catch (ClassNotFoundException e) {}
 		}
-	}
-
-	public synchronized JVMRunning args(String... args) {
-		if (this.args != null) this.args.clear();
-		else this.args = new ArrayList<>();
-		this.args.addAll(Arrays.asList(args));
-		return this;
+		n = System.getProperty("sun.java.command");
+		if (null != n) {
+			if (n.endsWith(".jar")) {
+				try (JarFile jar = new JarFile(Thread.currentThread().getContextClassLoader().getResource("narc.jar").getPath());) {
+					String mn = jar.getManifest().getMainAttributes().getValue(Attributes.Name.MAIN_CLASS);
+					if (null != mn) try {
+						return Class.forName(mn);
+					} catch (ClassNotFoundException e) {}
+				} catch (IOException e) {}
+			} else try {
+				return Class.forName(n.split(" ")[0]);
+			} catch (ClassNotFoundException e) {}
+		}
+		return null;
 	}
 
 	public JVMRunning unwrap() throws Throwable {
@@ -135,7 +163,7 @@ public class JVMRunning {
 	}
 
 	public JVMRunning fork(boolean daemon) throws IOException {
-		if (isDebug) {
+		if (debugging) {
 			logger.warn("JVM in debug, not forked.");
 			return this;
 		}
@@ -220,7 +248,7 @@ public class JVMRunning {
 		return vmArgs;
 	}
 
-	private boolean isDebug() {
+	private boolean checkDebug() {
 		for (String a : vmArgs)
 			if (a.startsWith("-Xrunjdwp:") || a.startsWith("-agentlib:jdwp=")) return true;
 		return false;
