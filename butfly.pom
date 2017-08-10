@@ -12,6 +12,7 @@
 		<project.build.configOutputDirectory>${project.build.testOutputDirectory}</project.build.configOutputDirectory>
 		<maven.test.skip.exec>true</maven.test.skip.exec>
 		<maven.props.skip>false</maven.props.skip>
+		<exec.mainArgs>${exec.arguments}</exec.mainArgs>
 		<mdep.unpack.excludes>META-INF/**</mdep.unpack.excludes>
 		<!-- -->
 		<version.jackson>2.9.0</version.jackson>
@@ -307,7 +308,7 @@
 						<phase>none</phase>
 						<configuration>
 							<mainClass>alpp</mainClass>
-							<commandlineArgs>${exec.mainClass} ${exec.arguments}</commandlineArgs>
+							<commandlineArgs>${exec.mainClass} ${exec.mainArgs}</commandlineArgs>
 							<additionalClasspathElements>
 								<additionalClasspathElement>${project.build.configOutputDirectory}</additionalClasspathElement>
 							</additionalClasspathElements>

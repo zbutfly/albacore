@@ -50,7 +50,7 @@ public class JVMRunning {
 		mainThread = getMainThread();
 		mainClass = parseMainClass();
 
-		String cmd = System.getProperty("exec.arguments");
+		String cmd = System.getProperty("exec.mainArgs");
 		if (null != cmd) {
 			args = new ArrayList<>(Arrays.asList(cmd.split(" ")));
 			return;
