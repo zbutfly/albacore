@@ -10,9 +10,9 @@ import net.butfly.albacore.utils.Systems;
 import net.butfly.albacore.utils.logger.Logger;
 
 public interface Statistical<T extends Statistical<T>> {
+	static final String LOG_PREFIX = Systems.JVM.current().mainClass.getName();
 	final static long DEFAULT_STEP = Long.MAX_VALUE;
-	static final String LOG_PREFIX = "A.Statistic";
-	static final Logger slogger = Logger.getLogger(LOG_PREFIX);
+	static final Logger slogger = Logger.getLogger(Statistic.class);
 
 	default T trace(long step) {
 		return trace(step, () -> null);
@@ -31,7 +31,7 @@ public interface Statistical<T extends Statistical<T>> {
 	}
 
 	default T trace(String prefix, long step, Function<Object, Long> sizing, Supplier<String> detailing) {
-		String logname = null == prefix ? LOG_PREFIX : LOG_PREFIX + "." + prefix;
+		String logname = this.getClass().getName() + "." + (null == prefix ? getClass().getSimpleName() : prefix);
 		slogger.debug(() -> "Staticstic register as [" + logname + "] on step [" + step + "]");
 		@SuppressWarnings("unchecked")
 		T t = (T) this;
