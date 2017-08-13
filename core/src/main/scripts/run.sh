@@ -18,7 +18,7 @@ JAVA_OPTS="${JAVA_OPTS} -d64 -server"
 #JAVA_OPTS="${JAVA_OPTS} -agentpath:/opt/jprofiler/bin/linux-x64/libjprofilerti.so=port=18999"
 #JAVA_OPTS="${JAVA_OPTS} -Xdebug -Xnoagent -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=18089"
 #JAVA_OPTS="${JAVA_OPTS} -Dalbacore.gc.interval.ms=3000"
-#JAVA_OPTS="${JAVA_OPTS} -Dalbacore.io.parallelism.ratio=2"
+#JAVA_OPTS="${JAVA_OPTS} -Dalbacore.io.stream.parallelism.factor=2"
 
 # TODO: Application configuration processing...
 
