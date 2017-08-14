@@ -34,8 +34,8 @@ class Statistic implements Serializable {
 			Supplier<String> detailing) {
 		Reflections.noneNull("", owner, logname);
 		lock = new ReentrantLock();
-		this.logger = Logger.getLogger(logname);
-		this.packsStep = new AtomicLong(step - 1);
+		logger = Logger.getLogger(logname);
+		packsStep = new AtomicLong(step - 1);
 		packsInStep = new AtomicLong(0);
 		bytesInStep = new AtomicLong(0);
 		packsInTotal = new AtomicLong(0);

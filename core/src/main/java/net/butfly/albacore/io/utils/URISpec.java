@@ -192,11 +192,12 @@ public final class URISpec implements Serializable {
 	}
 
 	private String join(String[] segs) {
-		return segs == null || segs.length == 0 ? null : Joiner.on(SLASH).join(segs);
+		return segs == null || segs.length == 0 ? "" : Joiner.on(SLASH).join(segs);
 	}
 
 	public String getPathAt(int index, String... defaults) {
-		if (index < 0 || index > paths.length) return null;
+		if (Math.abs(index) > paths.length) return null;
+		if (index < 0) return getPathAtLast(-index, defaults);
 		if (index < paths.length) return paths[index];
 		String v = getFile();
 		if (null != v) return v;
@@ -212,24 +213,23 @@ public final class URISpec implements Serializable {
 	}
 
 	public String getPathSkip(int segs) {
-		return join(segs >= paths.length ? null : Arrays.copyOfRange(paths, segs, paths.length));
+		return segs < 0 ? getPathSkip(-segs) : join(segs >= paths.length ? null : Arrays.copyOfRange(paths, segs, paths.length));
 	}
 
-	private String paths() {
-		String ps = join(paths);
-		return null == ps ? SLASHS : ps + SLASHS;
+	public String getPathOnly() {
+		return SLASHS + join(paths) + SLASHS;
 	}
 
 	private String pathfile() {
 		if (paths.length == 0 && file == null) return null;
 		if (paths.length == 0) return file;
-		if (file == null) return paths();
-		return paths() + file;
+		if (file == null) return getPathOnly();
+		return getPathOnly() + file;
 	}
 
 	public String getPath() {
 		String p = pathfile();
-		return null == p ? p : SLASHS + p;
+		return null == p ? null : p;
 	}
 
 	public String getQuery() {
@@ -349,7 +349,7 @@ public final class URISpec implements Serializable {
 			f = p.getFileName();
 			p = p.getParent();
 		}
-		Path np = Paths.get(paths());
+		Path np = Paths.get(getPathOnly());
 		if (null != p) np = np.resolve(p);
 		if (null != f) np = np.resolve(f);
 		else if (null != file) np = np.resolve(file);

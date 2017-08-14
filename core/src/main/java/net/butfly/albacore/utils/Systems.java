@@ -71,11 +71,12 @@ public final class Systems extends Utils {
 
 	@Deprecated
 	public static Class<?> getMainClass() {
-		return JVM.current().mainClass;
+		return JVM.mainClass();
 	}
 
+	@Deprecated
 	public static boolean isDebug() {
-		return Boolean.parseBoolean(System.getProperty("albacore.debug"));
+		return JVM.current().debugging;
 	}
 
 	public static String suffixDebug(String origin, Logger logger) {
@@ -158,6 +159,10 @@ public final class Systems extends Utils {
 		public final Class<?> mainClass;
 		public final boolean debugging;
 		private final List<String> args;
+
+		public static Class<?> mainClass() {
+			return current().mainClass;
+		}
 
 		private JVM() {
 			this.mainClass = parseMainClass();
@@ -381,6 +386,5 @@ public final class Systems extends Utils {
 				if (a.startsWith("-Xrunjdwp:") || a.startsWith("-agentlib:jdwp=")) return true;
 			return false;
 		}
-
 	}
 }

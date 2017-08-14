@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 import net.butfly.albacore.utils.logger.Logger;
 
 public class Configs extends Utils {
-	private static final Conf MAIN_CONF = init(Systems.JVM.current().mainClass);
+	private static final Conf MAIN_CONF = init(Systems.JVM.mainClass());
 
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target(ElementType.TYPE)
@@ -99,7 +99,7 @@ public class Configs extends Utils {
 	}
 
 	public static Conf init() {
-		return init(Systems.JVM.current().mainClass);
+		return init(Systems.JVM.mainClass());
 	}
 
 	/**

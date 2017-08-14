@@ -3,18 +3,15 @@ package net.butfly.albacore.io.ext;
 import static net.butfly.albacore.io.utils.Streams.collect;
 import static net.butfly.albacore.io.utils.Streams.list;
 import static net.butfly.albacore.io.utils.Streams.of;
-import static net.butfly.albacore.utils.Exceptions.unwrap;
-import static net.butfly.albacore.utils.Exceptions.wrap;
-import static net.butfly.albacore.utils.parallel.Parals.listen;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.google.common.util.concurrent.ListenableFuture;
-
 import net.butfly.albacore.base.Namedly;
 import net.butfly.albacore.io.Output;
+import net.butfly.albacore.utils.parallel.Task;
 
 public class FanOutput<V> extends Namedly implements Output<V> {
 	private final Iterable<? extends Output<V>> outputs;
@@ -32,15 +29,14 @@ public class FanOutput<V> extends Namedly implements Output<V> {
 	@Override
 	public long enqueue(Stream<V> items) {
 		List<V> values = list(items);
-		ListenableFuture<List<Long>> fs = listen(list(outputs, o -> () -> o.enqueue(of(values))));
-		List<Long> rs;
-		try {
-			rs = fs.get();
-		} catch (InterruptedException e) {
-			throw new RuntimeException("Streaming inturrupted", e);
-		} catch (Exception e) {
-			throw wrap(unwrap(e));
+		AtomicLong c = new AtomicLong();
+		Task t = null;
+		for (Output<V> o : outputs) {
+			Task t0 = () -> c.addAndGet(o.enqueue(of(values)));
+			if (null == t) t = t0;
+			else t = t.multiple(t0);
 		}
-		return collect(rs, Collectors.summingLong(Long::longValue));
+		t.run();
+		return c.get();
 	}
 }

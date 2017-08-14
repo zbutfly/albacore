@@ -77,6 +77,7 @@ public final class Parals extends Utils {
 	private final static String EXECUTOR_NAME = "AlbacoreIOStream";
 	private static final String PARALLELISM_FACTOR_KEY = "albacore.io.stream.parallelism.factor";
 	private final static int SYS_PARALLELISM = Exers.detectParallelism();
+	private final static Exers EXERS = new Exers(EXECUTOR_NAME, SYS_PARALLELISM, false);
 
 	public static int calcBatchParal(long total, long batch) {
 		return total == 0 ? 0 : (int) (((total - 1) / batch) + 1);
@@ -257,8 +258,6 @@ public final class Parals extends Utils {
 		return null;
 	}
 
-	private final static Exers EXERS = new Exers(EXECUTOR_NAME, SYS_PARALLELISM, false);
-
 	private final static class Exers extends Namedly implements AutoCloseable {
 		public static final Logger logger = Logger.getLogger(Exers.class);
 		final ExecutorService exor;
@@ -279,9 +278,9 @@ public final class Parals extends Utils {
 					return t;
 				};
 				exor = parallelism == 0 ? Executors.newCachedThreadPool(factory) : Executors.newFixedThreadPool(-parallelism, factory);
+				((ThreadPoolExecutor) exor).setRejectedExecutionHandler((r, ex) -> logger.error(tracePool("Task rejected by the exor")));
 			}
-			if (exor instanceof ThreadPoolExecutor) ((ThreadPoolExecutor) exor).setRejectedExecutionHandler((r, ex) -> logger.error(
-					tracePool("Task rejected by the exor")));
+			logger.info("Main executor constructed: " + exor.toString());
 			lexor = MoreExecutors.listeningDecorator(exor);
 			Systems.handleSignal(sig -> close(), "TERM", "INT");
 		}
@@ -292,14 +291,20 @@ public final class Parals extends Utils {
 		}
 
 		private static int detectParallelism() {
-			double f = Double.parseDouble(Configs.gets(PARALLELISM_FACTOR_KEY, "0"));
+			double f = Double.parseDouble(Configs.gets(PARALLELISM_FACTOR_KEY, "1"));
 			if (f <= 0) return (int) f;
 			int p = 16 + (int) Math.round((ForkJoinPool.getCommonPoolParallelism() - 16) * (f - 1));
-			if (p < 2) p = 2;
-			logger.debug("AlbacoreIO parallelism calced as: [" + p + "]\n\t[from: (((-D" + PARALLELISM_FACTOR_KEY + "[" + f
-					+ "]) - 1) * (JVM_DEFAULT_PARALLELISM[" + ForkJoinPool.getCommonPoolParallelism()
-					+ "] - IO_DEFAULT_PARALLELISM[16])) + IO_DEFAULT_PARALLELISM[16], Max=JVM_DEFAULT_PARALLELISM, Min=2]");
-			return p;
+			if (p < 2) {
+				logger.warn("AlbacoreIO parallelism calced as: [" + p + "]\n\t[from: (((-D" + PARALLELISM_FACTOR_KEY + "[" + f
+						+ "]) - 1) * (JVM_DEFAULT_PARALLELISM[" + ForkJoinPool.getCommonPoolParallelism()
+						+ "] - IO_DEFAULT_PARALLELISM[16])), too small, set to 2, no parallelism, for debugging]");
+				return 2;
+			} else {
+				logger.debug("AlbacoreIO parallelism calced as: [" + p + "]\n\t[from: (((-D" + PARALLELISM_FACTOR_KEY + "[" + f
+						+ "]) - 1) * (JVM_DEFAULT_PARALLELISM[" + ForkJoinPool.getCommonPoolParallelism()
+						+ "] - IO_DEFAULT_PARALLELISM[16])) + IO_DEFAULT_PARALLELISM[16], Max=JVM_DEFAULT_PARALLELISM, Min=2]");
+				return p;
+			}
 		}
 	}
 
