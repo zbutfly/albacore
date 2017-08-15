@@ -27,6 +27,7 @@ import com.google.common.base.Joiner;
 import com.sun.akuma.Daemon;
 import com.sun.akuma.JavaVMArguments;
 
+import net.butfly.albacore.Albacore;
 import net.butfly.albacore.io.ext.OpenableThread;
 import net.butfly.albacore.io.utils.Streams;
 import net.butfly.albacore.utils.logger.Logger;
@@ -69,19 +70,18 @@ public final class Systems extends Utils {
 		}
 	}
 
-	@Deprecated
 	public static Class<?> getMainClass() {
-		return JVM.mainClass();
+		return JVM.current().mainClass;
 	}
 
-	@Deprecated
 	public static boolean isDebug() {
 		return JVM.current().debugging;
 	}
 
 	public static String suffixDebug(String origin, Logger logger) {
 		if (Systems.isDebug()) {
-			String suffix = System.getProperty("albacore.debug.suffix", "_DEBUG_" + new SimpleDateFormat("yyyyMMdd").format(new Date()));
+			String suffix = System.getProperty(Albacore.Props.PROP_DEBUG_SUFFIX, "_DEBUG_" + new SimpleDateFormat("yyyyMMdd").format(
+					new Date()));
 			logger.warn("Debug mode, suffix [" + suffix + "] append to origin: [" + origin + "], now: [" + origin + suffix + "].");
 			return origin + suffix;
 		} else return origin;
@@ -132,7 +132,7 @@ public final class Systems extends Utils {
 		}
 	}
 
-	public final static GC gc = gc(Long.parseLong(System.getProperty("albacore.gc.interval.ms", "0")));
+	public final static GC gc = gc(Long.parseLong(System.getProperty(Albacore.Props.PROP_GC_INTERVAL_MS, "0")));
 
 	private static GC gc(long ms) {
 		if (ms <= 0) return null;
@@ -144,7 +144,7 @@ public final class Systems extends Utils {
 	}
 
 	public static String getDefaultCachePathBase() {
-		return System.getProperty("albacore.cache.local.path", "./cache/");
+		return System.getProperty(Albacore.Props.PROP_CACHE_LOCAL_PATH, "./cache/");
 	}
 
 	public static long sizeOf(Object obj) {
@@ -156,13 +156,9 @@ public final class Systems extends Utils {
 		private static final Object mutex = new Object();
 		private static JVM current = null;
 		private final List<String> vmArgs;
-		public final Class<?> mainClass;
-		public final boolean debugging;
+		private final Class<?> mainClass;
+		private final boolean debugging;
 		private final List<String> args;
-
-		public static Class<?> mainClass() {
-			return current().mainClass;
-		}
 
 		private JVM() {
 			this.mainClass = parseMainClass();
@@ -321,7 +317,7 @@ public final class Systems extends Utils {
 			else {
 				List<String> vmas = loadVmArgsConfig();
 				vmas.add("-Dalbacore.app._forked=true");
-				fork(vmas, Boolean.parseBoolean(System.getProperty("albacore.app.fork.hard", "true")));
+				fork(vmas, Boolean.parseBoolean(System.getProperty(Albacore.Props.PROP_APP_FORK_HARD, "true")));
 			}
 			return this;
 		}
@@ -347,7 +343,7 @@ public final class Systems extends Utils {
 
 		private List<String> loadVmArgsConfig() {
 			List<String> configed = new ArrayList<>();
-			for (String conf : System.getProperty("albacore.app.vmconfig", "").split(","))
+			for (String conf : System.getProperty(Albacore.Props.PROP_APP_FORK_VM_ARGS, "").split(","))
 				configed.addAll(loadVmArgs(conf));
 			List<String> jvmArgs = new ArrayList<>(vmArgs);
 			if (configed.isEmpty()) return jvmArgs;

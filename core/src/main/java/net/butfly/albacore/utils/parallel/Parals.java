@@ -33,6 +33,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 
+import net.butfly.albacore.Albacore;
 import net.butfly.albacore.base.Namedly;
 import net.butfly.albacore.io.utils.Streams;
 import net.butfly.albacore.utils.Configs;
@@ -42,11 +43,10 @@ import net.butfly.albacore.utils.Utils;
 import net.butfly.albacore.utils.logger.Logger;
 
 /**
- * <b>Auto detection of thread executor type and parallelism based on
- * <code>-Dalbacore.io.stream.parallelism.factor=factor(double)</code>, default
- * 0.</b> <blockquote>Default <code>factor<code> value without
- * <code>albacore.io.stream.parallelism.factor</code> setting causes traditional
- * unlimited <code>CachedThreadPool</code> implementation.</blockquote>
+ * <b>Auto detection of thread executor type and parallelism based on <code>-Dalbacore.io.stream.parallelism.factor=factor(double)</code>,
+ * default 0.</b> <blockquote>Default <code>factor<code> value without
+ * <code>albacore.io.stream.parallelism.factor</code> setting causes traditional unlimited <code>CachedThreadPool</code>
+ * implementation.</blockquote>
  * 
  * <ul>
  * <li>Positives double values: ForkJoinPool</li>
@@ -54,8 +54,7 @@ import net.butfly.albacore.utils.logger.Logger;
  * <ul>
  * <li>Minimum: 2</li>
  * <li>IO_PARALLELISM: 16</li>
- * <li>JVM_PARALLELISM:
- * <code>ForkJoinPool.getCommonPoolParallelism()</code></li>
+ * <li>JVM_PARALLELISM: <code>ForkJoinPool.getCommonPoolParallelism()</code></li>
  * </ul>
  * Which means:
  * <ul>
@@ -66,8 +65,7 @@ import net.butfly.albacore.utils.logger.Logger;
  * <li>(2, ): more than JVM_PARALLELISM</li>
  * </ul>
  * <li>0: CachedThreadPool</li>
- * <li>Negatives values: FixedThreadPool with parallelism =
- * <code>abs((int)facor)</code></li>
+ * <li>Negatives values: FixedThreadPool with parallelism = <code>abs((int)facor)</code></li>
  * </ul>
  * 
  * @author zx
@@ -75,7 +73,6 @@ import net.butfly.albacore.utils.logger.Logger;
 public final class Parals extends Utils {
 	private static final Logger logger = Logger.getLogger(Parals.class);
 	private final static String EXECUTOR_NAME = "AlbacoreIOStream";
-	private static final String PARALLELISM_FACTOR_KEY = "albacore.io.stream.parallelism.factor";
 	private final static int SYS_PARALLELISM = Exers.detectParallelism();
 	private final static Exers EXERS = new Exers(EXECUTOR_NAME, SYS_PARALLELISM, false);
 
@@ -291,17 +288,17 @@ public final class Parals extends Utils {
 		}
 
 		private static int detectParallelism() {
-			double f = Double.parseDouble(Configs.gets(PARALLELISM_FACTOR_KEY, "1"));
+			double f = Double.parseDouble(Configs.gets(Albacore.Props.PROP_PARALLEL_FACTOR, "1"));
 			if (f <= 0) return (int) f;
 			int p = 16 + (int) Math.round((ForkJoinPool.getCommonPoolParallelism() - 16) * (f - 1));
 			if (p < 2) {
-				logger.warn("AlbacoreIO parallelism calced as: [" + p + "]\n\t[from: (((-D" + PARALLELISM_FACTOR_KEY + "[" + f
-						+ "]) - 1) * (JVM_DEFAULT_PARALLELISM[" + ForkJoinPool.getCommonPoolParallelism()
+				logger.warn("AlbacoreIO parallelism calced as: [" + p + "]\n\t[from: (((-D" + Albacore.Props.PROP_PARALLEL_FACTOR + "["
+						+ f + "]) - 1) * (JVM_DEFAULT_PARALLELISM[" + ForkJoinPool.getCommonPoolParallelism()
 						+ "] - IO_DEFAULT_PARALLELISM[16])), too small, set to 2, no parallelism, for debugging]");
 				return 2;
 			} else {
-				logger.debug("AlbacoreIO parallelism calced as: [" + p + "]\n\t[from: (((-D" + PARALLELISM_FACTOR_KEY + "[" + f
-						+ "]) - 1) * (JVM_DEFAULT_PARALLELISM[" + ForkJoinPool.getCommonPoolParallelism()
+				logger.debug("AlbacoreIO parallelism calced as: [" + p + "]\n\t[from: (((-D" + Albacore.Props.PROP_PARALLEL_FACTOR + "["
+						+ f + "]) - 1) * (JVM_DEFAULT_PARALLELISM[" + ForkJoinPool.getCommonPoolParallelism()
 						+ "] - IO_DEFAULT_PARALLELISM[16])) + IO_DEFAULT_PARALLELISM[16], Max=JVM_DEFAULT_PARALLELISM, Min=2]");
 				return p;
 			}

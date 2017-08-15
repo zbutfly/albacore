@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Spliterator;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -17,15 +16,13 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import net.butfly.albacore.Albacore;
 import net.butfly.albacore.utils.Configs;
 import net.butfly.albacore.utils.Utils;
 import net.butfly.albacore.utils.collection.Maps;
-import net.butfly.albacore.utils.logger.Logger;
 import net.butfly.albacore.utils.parallel.Suppliterator;
 
 public final class Streams extends Utils {
-	private static final Logger logger = Logger.getLogger(Streams.class);
-	private static final boolean STREAM_DEBUGGING = Boolean.parseBoolean(System.getProperty("albacore.io.stream.debug", "false"));
 	public static final Predicate<Object> NOT_NULL = t -> null != t;
 	public static final BinaryOperator<Long> LONG_SUM = (r1, r2) -> {
 		if (null == r1 && null == r2) return 0L;
@@ -56,7 +53,7 @@ public final class Streams extends Utils {
 		return Streams.of(new Suppliterator<>(get, size, ending));
 	}
 
-	private static final boolean DEFAULT_PARALLEL_ENABLE = Boolean.parseBoolean(Configs.gets("albacore.parallel.stream.enable", "false"));
+	private static final boolean DEFAULT_PARALLEL_ENABLE = Boolean.parseBoolean(Configs.gets(Albacore.Props.PROP_STREAM_PARALLES, "false"));
 
 	public static <V> Stream<V> of(Stream<V> s) {
 		if (DEFAULT_PARALLEL_ENABLE) s = s.parallel();
@@ -118,12 +115,7 @@ public final class Streams extends Utils {
 	}
 
 	public static <V, R> R collect(Stream<? extends V> s, Collector<? super V, ?, R> collector) {
-		if (STREAM_DEBUGGING && logger.isTraceEnabled()) {
-			AtomicLong c = new AtomicLong();
-			R r = Streams.of(s).peek(e -> c.incrementAndGet()).collect(collector);
-			logger.debug("One stream collected [" + c.get() + "] elements, performance issue?");
-			return r;
-		} else return Streams.of(s).collect(collector);
+		return of(s).collect(collector);
 	}
 
 	public static <V> List<V> list(Stream<? extends V> stream) {

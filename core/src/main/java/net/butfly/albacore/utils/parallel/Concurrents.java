@@ -23,6 +23,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
+import net.butfly.albacore.Albacore;
 import net.butfly.albacore.lambda.Callable;
 import net.butfly.albacore.utils.Exceptions;
 import net.butfly.albacore.utils.Instances;
@@ -149,22 +150,19 @@ public final class Concurrents extends Utils {
 
 	/**
 	 * @param key
-	 *            Create or fetch {@link ExecutorService} with key based on
-	 *            {@link Concurrents#executor(int)}, with concurrence defined by
-	 *            System Property "albacore.concurrence", default 0.
+	 *            Create or fetch {@link ExecutorService} with key based on {@link Concurrents#executor(int)}, with concurrence defined by
+	 *            System Property Albacore.Props.PROP_CURRENCE, default 0.
 	 * @return
 	 */
 	public static ListeningExecutorService executor(String... name) {
-		return executor(Integer.parseInt(System.getProperty("albacore.concurrence", "0")), name);
+		return executor(Integer.parseInt(System.getProperty(Albacore.Props.PROP_CURRENCE, "0")), name);
 	}
 
 	/**
 	 * @param key
 	 *            Create or fetch {@link ExecutorService} with key.<br>
-	 *            Concurrence by System Property "albacore.concurrence", default
-	 *            0.<br>
-	 *            Forkjoin first by System Property
-	 *            "albacore.concurrent.forkjoin", default true.
+	 *            Concurrence by System Property Albacore.Props.PROP_CURRENCE, default 0.<br>
+	 *            Forkjoin first by System Property Albacore.Props.PROP_CURRENCE_FORKJOIN, default true.
 	 * @param concurrence
 	 *            <br>
 	 *            -N: {@link Executors#newFixedThreadPool} with size N <br>
@@ -173,7 +171,7 @@ public final class Concurrents extends Utils {
 	 *            N: {@link ForkJoinPool} with parallelism N
 	 */
 	public static ListeningExecutorService executor(int concurrence, String... name) {
-		boolean forkjoin = Boolean.parseBoolean(System.getProperty("albacore.concurrent.forkjoin", "true"));
+		boolean forkjoin = Boolean.parseBoolean(System.getProperty(Albacore.Props.PROP_CURRENCE_FORKJOIN, "true"));
 		logger.info("ForkJoin first? " + forkjoin + "!, change it by -Dalbacore.concurrent.forkjoin=false");
 		return Instances.fetch(() -> {
 			String prefix = name == null || name.length == 0 ? "AlbacoreThread" : Joiner.on('-').join(name);
@@ -189,7 +187,7 @@ public final class Concurrents extends Utils {
 	}
 
 	public static ListeningExecutorService executor(int c, ThreadFactory fac) {
-		boolean forkjoin = Boolean.parseBoolean(System.getProperty("albacore.concurrent.forkjoin", "true"));
+		boolean forkjoin = Boolean.parseBoolean(System.getProperty(Albacore.Props.PROP_CURRENCE_FORKJOIN, "true"));
 		return MoreExecutors.listeningDecorator(forkjoin ? forkjoin(c, fac) : classic(c, fac));
 	}
 

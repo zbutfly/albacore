@@ -18,10 +18,11 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import net.butfly.albacore.Albacore;
 import net.butfly.albacore.utils.logger.Logger;
 
 public class Configs extends Utils {
-	private static final Conf MAIN_CONF = init(Systems.JVM.mainClass());
+	private static final Conf MAIN_CONF = init(Systems.getMainClass());
 
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target(ElementType.TYPE)
@@ -99,7 +100,7 @@ public class Configs extends Utils {
 	}
 
 	public static Conf init() {
-		return init(Systems.JVM.mainClass());
+		return init(Systems.getMainClass());
 	}
 
 	/**
@@ -237,6 +238,6 @@ public class Configs extends Utils {
 	}
 
 	private static final String DEFAULT_PROP_EXT() {
-		return "." + System.getProperty("albacore.config.ext", "properties");
+		return "." + System.getProperty(Albacore.Props.PROP_CONFIG_EXTENSION, "properties");
 	}
 }

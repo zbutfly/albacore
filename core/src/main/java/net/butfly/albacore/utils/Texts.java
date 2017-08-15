@@ -17,6 +17,8 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import net.butfly.albacore.Albacore;
+
 public final class Texts extends Utils {
 	public static boolean isEmpty(String str) {
 		return null == str || str.trim().length() == 0;
@@ -78,12 +80,12 @@ public final class Texts extends Utils {
 		return l;
 	}
 
-	private static final int POOL_SIZE = Integer.parseInt(Configs.gets("albacore.parallel.object.cache.size", Integer.toString(Runtime
-			.getRuntime().availableProcessors() - 1)));
+	private static final int POOL_SIZE = Integer.parseInt(Configs.gets(Albacore.Props.PROP_PARALLEL_POOL_SIZE_OBJECT, Integer.toString(
+			Runtime.getRuntime().availableProcessors() - 1)));
 
 	private static final Map<String, LinkedBlockingQueue<DateFormat>> DATE_FORMATS = new ConcurrentHashMap<>();
 	public static final String SEGUST_DATE_FORMAT = "yyyy-MM-dd'T'hh:mm:ss.SSS'Z'";
-	public static final String DEFAULT_DATE_FORMAT = Configs.gets("albacore.text.date.format", SEGUST_DATE_FORMAT);
+	public static final String DEFAULT_DATE_FORMAT = Configs.gets(Albacore.Props.PROP_TEXT_DATE_FORMAT, SEGUST_DATE_FORMAT);
 
 	public static String formatDate(Date date) {
 		return formatDate(DEFAULT_DATE_FORMAT, date);

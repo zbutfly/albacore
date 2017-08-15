@@ -1,7 +1,5 @@
 package net.butfly.albacore.io.stats;
 
-import static net.butfly.albacore.utils.Systems.JVM.mainClass;
-
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -32,7 +30,7 @@ public interface Statistical<T extends Statistical<T>> {
 	}
 
 	default T trace(String prefix, long step, Function<Object, Long> sizing, Supplier<String> detailing) {
-		String logname = mainClass().getName() + "." + (null == prefix ? getClass().getSimpleName() : prefix);
+		String logname = Systems.getMainClass().getName() + "." + (null == prefix ? getClass().getSimpleName() : prefix);
 		slogger.info(() -> "Staticstic register as [" + logname + "] on step [" + step + "]");
 		@SuppressWarnings("unchecked")
 		T t = (T) this;
