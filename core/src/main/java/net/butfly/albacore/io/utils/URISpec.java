@@ -302,7 +302,7 @@ public final class URISpec implements Serializable {
 		if (!opaque) sb.append("//");
 		sb.append(getAuthority());
 		String pf = getPath();
-		sb.append(null == pf ? SLASHS : pf);
+		sb.append(null == pf ? SLASHS : SLASH + pf);
 		if (!query.isEmpty()) sb.append('?').append(getQuery());
 		if (frag != null) sb.append('#').append(frag);
 		return sb.toString();
