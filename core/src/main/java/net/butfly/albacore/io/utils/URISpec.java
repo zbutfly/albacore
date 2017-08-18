@@ -217,19 +217,14 @@ public final class URISpec implements Serializable {
 	}
 
 	public String getPathOnly() {
-		return SLASHS + join(paths) + SLASHS;
-	}
-
-	private String pathfile() {
-		if (paths.length == 0 && file == null) return null;
-		if (paths.length == 0) return file;
-		if (file == null) return getPathOnly();
-		return getPathOnly() + file;
+		return paths.length == 0 ? SLASHS : SLASHS + join(paths) + SLASHS;
 	}
 
 	public String getPath() {
-		String p = pathfile();
-		return null == p ? null : p;
+		if (paths.length == 0 && file == null) return SLASHS;
+		String p = getPathOnly();
+		if (null != file) p += file;
+		return p;
 	}
 
 	public String getQuery() {
@@ -318,27 +313,27 @@ public final class URISpec implements Serializable {
 
 	@Override
 	public URISpec clone() {
-		return new URISpec(getScheme(), opaque, username, password, getHost(), defPort, pathfile(), frag, getQuery());
+		return new URISpec(getScheme(), opaque, username, password, getHost(), defPort, getPath(), frag, getQuery());
 	}
 
 	public URISpec redirect(String host, int port) {
 		String h = host;
 		if (port >= 0) h += ":" + port;
-		return new URISpec(getScheme(), opaque, username, password, h, defPort, pathfile(), frag, getQuery());
+		return new URISpec(getScheme(), opaque, username, password, h, defPort, getPath(), frag, getQuery());
 	}
 
 	public URISpec redirect(String host) {
-		return new URISpec(getScheme(), opaque, username, password, host, defPort, pathfile(), frag, getQuery());
+		return new URISpec(getScheme(), opaque, username, password, host, defPort, getPath(), frag, getQuery());
 	}
 
 	public URISpec reauth(String username) {
 		if (opaque) throw new IllegalArgumentException("opaque uri could not be reauth since no recoganizable password segment.");
-		return new URISpec(getScheme(), opaque, username, null, getHost(), defPort, pathfile(), frag, getQuery());
+		return new URISpec(getScheme(), opaque, username, null, getHost(), defPort, getPath(), frag, getQuery());
 	}
 
 	public URISpec reauth(String username, String password) {
 		if (opaque) throw new IllegalArgumentException("opaque uri could not be reauth since no recoganizable password segment.");
-		return new URISpec(getScheme(), opaque, username, password, getHost(), defPort, pathfile(), frag, getQuery());
+		return new URISpec(getScheme(), opaque, username, password, getHost(), defPort, getPath(), frag, getQuery());
 	}
 
 	public URISpec resolve(String rel) {
