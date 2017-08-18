@@ -59,8 +59,15 @@ class Statistic implements Serializable {
 
 	<T> T stats(T v) {
 		ForkJoinPool.commonPool().submit(() -> {
-			Long l = sizing == null || v == null ? 0L : sizing.apply(v);
-			stats(null == l ? 0 : l.longValue());
+			long size;
+			if (sizing == null || v == null) size = 0;
+			else try {
+				Long s = sizing.apply(v);
+				size = null == s ? 0 : s.longValue();
+			} catch (Throwable t) {
+				size = 0;
+			}
+			stats(size);
 		});
 		return v;
 	}
