@@ -34,7 +34,6 @@ import net.butfly.albacore.utils.logger.Logger;
 import sun.management.VMManagement;
 import sun.misc.Signal;
 
-@SuppressWarnings("restriction")
 public final class Systems extends Utils {
 	final static Logger logger = Logger.getLogger(Systems.class);
 
@@ -148,7 +147,11 @@ public final class Systems extends Utils {
 	}
 
 	public static long sizeOf(Object obj) {
-		return jdk.nashorn.internal.ir.debug.ObjectSizeCalculator.getObjectSize(obj);
+		try {
+			return jdk.nashorn.internal.ir.debug.ObjectSizeCalculator.getObjectSize(obj);
+		} catch (Exception ex) {
+			return 0;
+		}
 	}
 
 	public static class JVM {
