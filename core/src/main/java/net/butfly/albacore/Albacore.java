@@ -13,7 +13,7 @@ public interface Albacore {
 		final String PROP_LOGGER_ASYNC = "albacore.logger.async.enable";// true
 		final String PROP_CURRENCE_FORKJOIN = "albacore.concurrent.forkjoin";// true
 		final String PROP_CURRENCE = "albacore.concurrence";// 0
-		final String PROP_PARALLEL_FACTOR = "albacore.io.stream.parallelism.factor";// 1
+		final String PROP_PARALLEL_FACTOR = "albacore.parallel.factor";// 1 //"albacore.io.stream.parallelism.factor"
 		final String PROP_PARALLEL_POOL_SIZE_OBJECT = "albacore.parallel.object.cache.size";
 		final String PROP_PARALLEL_POOL_SIZE_LOCKER = "albacore.parallel.pool.number.locker";
 		final String PROP_PARALLEL_POOL_SIZE_LOCKER_FAIR = "albacore.parallel.pool.number.locker.fair";

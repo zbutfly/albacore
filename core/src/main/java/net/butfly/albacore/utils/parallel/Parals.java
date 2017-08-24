@@ -290,15 +290,16 @@ public final class Parals extends Utils {
 		private static int detectParallelism() {
 			double f = Double.parseDouble(Configs.gets(Albacore.Props.PROP_PARALLEL_FACTOR, "1"));
 			if (f <= 0) return (int) f;
-			int p = 16 + (int) Math.round((ForkJoinPool.getCommonPoolParallelism() - 16) * (f - 1));
+			int cp = ForkJoinPool.getCommonPoolParallelism();
+			int p = (int) (cp > 20 ? 16 + Math.round((cp - 16) * (f - 1)) : cp + Math.round(f - 1));
 			if (p < 2) {
-				logger.warn("AlbacoreIO parallelism calced as: [" + p + "]\n\t[from: (((-D" + Albacore.Props.PROP_PARALLEL_FACTOR + "["
-						+ f + "]) - 1) * (JVM_DEFAULT_PARALLELISM[" + ForkJoinPool.getCommonPoolParallelism()
+				logger.warn("AlbacoreIO parallelism calced as: [" + p + "]\n\t[from: (((-D" + Albacore.Props.PROP_PARALLEL_FACTOR + "[" + f
+						+ "]) - 1) * (JVM_DEFAULT_PARALLELISM[" + ForkJoinPool.getCommonPoolParallelism()
 						+ "] - IO_DEFAULT_PARALLELISM[16])), too small, set to 2, no parallelism, for debugging]");
 				return 2;
 			} else {
-				logger.debug("AlbacoreIO parallelism calced as: [" + p + "]\n\t[from: (((-D" + Albacore.Props.PROP_PARALLEL_FACTOR + "["
-						+ f + "]) - 1) * (JVM_DEFAULT_PARALLELISM[" + ForkJoinPool.getCommonPoolParallelism()
+				logger.debug("AlbacoreIO parallelism calced as: [" + p + "]\n\t[from: (((-D" + Albacore.Props.PROP_PARALLEL_FACTOR + "[" + f
+						+ "]) - 1) * (JVM_DEFAULT_PARALLELISM[" + ForkJoinPool.getCommonPoolParallelism()
 						+ "] - IO_DEFAULT_PARALLELISM[16])) + IO_DEFAULT_PARALLELISM[16], Max=JVM_DEFAULT_PARALLELISM, Min=2]");
 				return p;
 			}
