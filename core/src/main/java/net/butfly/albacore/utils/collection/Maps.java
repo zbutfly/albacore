@@ -11,10 +11,19 @@ import net.butfly.albacore.utils.Pair;
 
 public class Maps {
 	@SuppressWarnings("unchecked")
-	public static <K, V> Map<K, V> of(Object... kvs) {
+	public static <K, V> Map<K, V> of(K firstFieldName, Object... firstFieldValueAndOthers) {
 		Map<K, V> map = new ConcurrentHashMap<>();
-		for (int i = 0; i + 1 < kvs.length; i += 2)
-			map.put((K) kvs[i], (V) kvs[i + 1]);
+		if (firstFieldValueAndOthers != null && firstFieldValueAndOthers.length > 1) {
+			map.put(firstFieldName, (V) firstFieldValueAndOthers[0]);
+			for (int i = 1; i + 1 < firstFieldValueAndOthers.length; i += 2)
+				map.put((K) firstFieldValueAndOthers[i], (V) firstFieldValueAndOthers[i + 1]);
+		}
+		return map;
+	}
+
+	public static <K, V> Map<K, V> of(K fieldName, V fieldValue) {
+		Map<K, V> map = new ConcurrentHashMap<>();
+		if (null != fieldName && null != fieldValue) map.put(fieldName, fieldValue);
 		return map;
 	}
 

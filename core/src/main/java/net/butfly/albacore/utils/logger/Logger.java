@@ -1,6 +1,8 @@
 package net.butfly.albacore.utils.logger;
 
 import java.io.Serializable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
@@ -47,12 +49,14 @@ public class Logger implements Serializable {
 		this.logger = logger;
 	}
 
+	private static final ConcurrentMap<CharSequence, Logger> loggers = new ConcurrentHashMap<>();
+
 	public static final Logger getLogger(CharSequence name) {
-		return new Logger(org.slf4j.LoggerFactory.getLogger(name.toString()));
+		return loggers.computeIfAbsent(name, n -> new Logger(org.slf4j.LoggerFactory.getLogger(name.toString())));
 	}
 
 	public static final Logger getLogger(Class<?> clazz) {
-		return new Logger(org.slf4j.LoggerFactory.getLogger(clazz));
+		return loggers.computeIfAbsent(clazz.getName(), c -> new Logger(org.slf4j.LoggerFactory.getLogger(clazz)));
 	}
 
 	public Logger(CharSequence name) {

@@ -34,6 +34,7 @@ import net.butfly.albacore.utils.logger.Logger;
 import sun.management.VMManagement;
 import sun.misc.Signal;
 
+@SuppressWarnings("restriction")
 public final class Systems extends Utils {
 	final static Logger logger = Logger.getLogger(Systems.class);
 
@@ -384,6 +385,24 @@ public final class Systems extends Utils {
 			for (String a : vmArgs)
 				if (a.startsWith("-Xrunjdwp:") || a.startsWith("-agentlib:jdwp=")) return true;
 			return false;
+		}
+	}
+
+	public static class Timeing implements AutoCloseable {
+		private final long begin;
+		private final Logger tlogger;
+		private final String prefix;
+
+		public Timeing(Class<?> c, String prefix) {
+			super();
+			tlogger = Logger.getLogger(c);
+			begin = tlogger.isDebugEnabled() ? System.currentTimeMillis() : 0;
+			this.prefix = prefix;
+		}
+
+		@Override
+		public void close() throws Exception {
+			if (tlogger.isDebugEnabled()) tlogger.debug(prefix + " spent: " + (System.currentTimeMillis() - begin));
 		}
 	}
 }
