@@ -1,12 +1,15 @@
-package net.butfly.albacore.io.utils;
+package net.butfly.albacore.utils.collection;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Spliterator;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -19,7 +22,6 @@ import java.util.stream.StreamSupport;
 import net.butfly.albacore.Albacore;
 import net.butfly.albacore.utils.Configs;
 import net.butfly.albacore.utils.Utils;
-import net.butfly.albacore.utils.collection.Maps;
 import net.butfly.albacore.utils.parallel.Suppliterator;
 
 public final class Streams extends Utils {
@@ -30,6 +32,19 @@ public final class Streams extends Utils {
 		if (null == r2) return r1.longValue();
 		return r1.longValue() + r2.longValue();
 	};
+
+	public static <V> Stream<Stream<V>> batching(Stream<V> s, int batchSize) {
+		BlockingQueue<Stream<V>> ss = new LinkedBlockingQueue<>();
+		BlockingQueue<V> batch = new LinkedBlockingQueue<>(batchSize);
+		s.filter(NOT_NULL).forEach(v -> {
+			while (!batch.offer(v)) {
+				List<V> curr = new ArrayList<>();
+				batch.drainTo(curr, batchSize);
+				if (!curr.isEmpty()) ss.offer(of(curr));
+			}
+		});
+		return of(ss);
+	}
 
 	public static <V> Map<Integer, Spliterator<V>> spatial(Spliterator<V> it, int parallelism) {
 		if (parallelism <= 1) return Maps.of(0, it);

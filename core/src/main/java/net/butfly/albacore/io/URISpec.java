@@ -1,4 +1,4 @@
-package net.butfly.albacore.io.utils;
+package net.butfly.albacore.io;
 
 import java.io.Serializable;
 import java.net.InetSocketAddress;

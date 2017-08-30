@@ -28,8 +28,7 @@ import com.sun.akuma.Daemon;
 import com.sun.akuma.JavaVMArguments;
 
 import net.butfly.albacore.Albacore;
-import net.butfly.albacore.io.ext.OpenableThread;
-import net.butfly.albacore.io.utils.Streams;
+import net.butfly.albacore.utils.collection.Streams;
 import net.butfly.albacore.utils.logger.Logger;
 import sun.management.VMManagement;
 import sun.misc.Signal;

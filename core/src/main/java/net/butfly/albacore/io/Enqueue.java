@@ -3,6 +3,6 @@ package net.butfly.albacore.io;
 import java.util.stream.Stream;
 
 @FunctionalInterface
-interface Enqueue<V> {
-	long enqueue(Stream<V> items);
+public interface Enqueue<V> {
+	long enqueue(Stream<V> items) throws EnqueueException;
 }

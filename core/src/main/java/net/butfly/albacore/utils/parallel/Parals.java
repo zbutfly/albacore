@@ -35,11 +35,11 @@ import com.google.common.util.concurrent.MoreExecutors;
 
 import net.butfly.albacore.Albacore;
 import net.butfly.albacore.base.Namedly;
-import net.butfly.albacore.io.utils.Streams;
 import net.butfly.albacore.utils.Configs;
 import net.butfly.albacore.utils.Systems;
 import net.butfly.albacore.utils.Texts;
 import net.butfly.albacore.utils.Utils;
+import net.butfly.albacore.utils.collection.Streams;
 import net.butfly.albacore.utils.logger.Logger;
 
 /**

@@ -1,4 +1,4 @@
-package net.butfly.albacore.io.ext;
+package net.butfly.albacore.utils;
 
 import java.util.concurrent.atomic.AtomicInteger;
 

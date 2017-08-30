@@ -22,12 +22,22 @@ public interface Openable extends AutoCloseable, Loggable, Named {
 		return Opened.status(this).get() == Status.CLOSED;
 	}
 
+	/**
+	 * Run the handler before self close handler.
+	 * 
+	 * @param handler
+	 */
 	default void opening(Runnable handler) {
 		Opened.OPENING.compute(this, (self, orig) -> {
 			return orig == null ? handler : Runnable.merge(orig, handler);
 		});
 	}
 
+	/**
+	 * Run the handler before self close handler.
+	 * 
+	 * @param handler
+	 */
 	default void closing(Runnable handler) {
 		Opened.CLOSING.compute(this, (self, orig) -> {
 			return orig == null ? handler : Runnable.merge(orig, handler);

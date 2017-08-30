@@ -1,6 +1,6 @@
-package net.butfly.albacore.io.utils;
+package net.butfly.albacore.utils.collection;
 
-import static net.butfly.albacore.io.utils.Streams.list;
+import static net.butfly.albacore.utils.collection.Streams.list;
 import static net.butfly.albacore.utils.parallel.Parals.join;
 import static net.butfly.albacore.utils.parallel.Parals.listen;
 import static net.butfly.albacore.utils.parallel.Parals.listenRun;

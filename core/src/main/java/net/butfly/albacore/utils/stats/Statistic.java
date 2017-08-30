@@ -1,4 +1,4 @@
-package net.butfly.albacore.io.stats;
+package net.butfly.albacore.utils.stats;
 
 import java.io.Serializable;
 import java.text.MessageFormat;

@@ -6,8 +6,6 @@ import java.net.URISyntaxException;
 
 import org.junit.Test;
 
-import net.butfly.albacore.io.utils.URISpec;
-
 public class URITest {
 	@Test
 	public void URITestDB() throws MalformedURLException, URISyntaxException {

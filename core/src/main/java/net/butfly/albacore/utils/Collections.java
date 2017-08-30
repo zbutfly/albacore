@@ -1,6 +1,6 @@
 package net.butfly.albacore.utils;
 
-import static net.butfly.albacore.io.utils.Streams.of;
+import static net.butfly.albacore.utils.collection.Streams.of;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,7 +16,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import net.butfly.albacore.io.utils.Streams;
+import net.butfly.albacore.utils.collection.Streams;
 
 public final class Collections extends Utils {
 	public static <T> BinaryOperator<List<T>> merging() {
