@@ -26,11 +26,6 @@
 			<version>3.3.0</version>
 			<scope>test</scope>
 		</dependency>
-		<!-- <dependency> -->
-		<!-- <groupId>kilim</groupId> -->
-		<!-- <artifactId>kilim</artifactId> -->
-		<!-- <version>1.0</version> -->
-		<!-- </dependency> -->
 		<dependency>
 			<groupId>com.typesafe.akka</groupId>
 			<artifactId>akka-actor_2.11</artifactId>
