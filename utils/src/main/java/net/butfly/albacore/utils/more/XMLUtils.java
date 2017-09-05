@@ -14,6 +14,7 @@ import net.butfly.albacore.exception.NotImplementedException;
 import net.butfly.albacore.utils.Objects;
 import net.butfly.albacore.utils.Utils;
 import net.butfly.albacore.utils.imports.meta.MetaObject;
+import net.butfly.albacore.utils.logger.Logger;
 
 import org.dom4j.Attribute;
 import org.dom4j.Element;
@@ -26,6 +27,8 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 public class XMLUtils extends Utils {
+	private final static Logger logger = Logger.getLogger(XMLUtils.class);
+
 	@SuppressWarnings("unchecked")
 	public static void setPropsByAttr(Object target, Element element, String... ignores) {
 		MetaObject meta = Objects.createMeta(target);
@@ -75,12 +78,9 @@ public class XMLUtils extends Utils {
 				output.setCharacterStream(writer);
 				lss.write(doc, output);
 				return writer.toString();
-			} else {
-				throw new RuntimeException("DOMConfiguration 'format-pretty-print' parameter isn't settable.");
-			}
-		} else {
-			throw new RuntimeException("DOM 3.0 LS and/or DOM 2.0 Core not supported.");
-		}
+			} else logger.debug("DOMConfiguration 'format-pretty-print' parameter isn't settable.");
+		} else logger.debug("DOM 3.0 LS and/or DOM 2.0 Core not supported.");
+		return unformattedXml;
 	}
 
 	private static Document parseXmlFile(String in) {
