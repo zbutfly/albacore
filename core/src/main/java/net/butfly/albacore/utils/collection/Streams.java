@@ -26,6 +26,9 @@ import net.butfly.albacore.utils.parallel.Suppliterator;
 
 public final class Streams extends Utils {
 	public static final Predicate<Object> NOT_NULL = t -> null != t;
+	@SuppressWarnings("rawtypes")
+	public static final Predicate<Map> NOT_EMPTY_MAP = t -> null != t && !t.isEmpty();
+
 	public static final BinaryOperator<Long> LONG_SUM = (r1, r2) -> {
 		if (null == r1 && null == r2) return 0L;
 		if (null == r1) return r2.longValue();
