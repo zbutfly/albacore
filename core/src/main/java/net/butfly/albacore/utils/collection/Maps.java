@@ -1,5 +1,6 @@
 package net.butfly.albacore.utils.collection;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -32,5 +33,12 @@ public class Maps {
 
 	public static <K, V> Set<Pair<K, V>> pairs(Map<K, V> map) {
 		return Streams.of(map).map(e -> new Pair<>(e.getKey(), e.getValue())).collect(Collectors.toSet());
+	}
+
+	@SuppressWarnings("unchecked")
+	public static <K, KV> Pair<K, Object[]> parseFirstKey(Object... kvs) {
+		if (null == kvs || kvs.length <= 1) return new Pair<>(null, null);
+		else return new Pair<>((K) kvs[0], Arrays.copyOfRange(kvs, 1, kvs.length));
+
 	}
 }
