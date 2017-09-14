@@ -52,6 +52,7 @@ public class OpenableThread extends Thread implements Openable {
 		try {
 			exec();
 		} finally {
+			logger().debug(name() + " close.");
 			runned.set(2);
 		}
 	}
@@ -80,7 +81,7 @@ public class OpenableThread extends Thread implements Openable {
 	@Override
 	public void close() {
 		Openable.super.close();
-		while (runned.get() <= 1 && runned.get() >= 0)
+		while (runned.get() < 2)
 			Concurrents.waitSleep(100);
 	}
 }
