@@ -66,6 +66,11 @@ public final class URISpec implements Serializable {
 		return true;
 	}
 
+	@Override
+	public int hashCode() {
+		return super.hashCode();
+	}
+
 	private <T> boolean eq(T v1, T v2) {
 		if (null == v1 && null == v2) return true;
 		if (null == v1 || null == v2) return false;
@@ -182,7 +187,7 @@ public final class URISpec implements Serializable {
 	private Map<String, String> parseQueryMap(String query) {
 		if (query == null) return new ConcurrentHashMap<>();
 		return Arrays.stream(query.split("&")).parallel().map(q -> q.split("=", 2)).collect(Collectors.toConcurrentMap(kv -> kv[0],
-				kv -> kv[1]));
+				kv -> kv.length > 1 ? kv[1] : ""));
 	}
 
 	private InetSocketAddress[] parseHostPort(String remain, int defaultPort) {
