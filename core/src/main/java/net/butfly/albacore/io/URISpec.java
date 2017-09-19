@@ -187,7 +187,7 @@ public final class URISpec implements Serializable {
 	private Map<String, String> parseQueryMap(String query) {
 		if (query == null) return new ConcurrentHashMap<>();
 		return Arrays.stream(query.split("&")).parallel().map(q -> q.split("=", 2)).collect(Collectors.toConcurrentMap(kv -> kv[0],
-				kv -> kv.length > 1 ? kv[1] : ""));
+				kv -> kv.length > 1 ? kv[1] : "", (k1, k2) -> k2));
 	}
 
 	private InetSocketAddress[] parseHostPort(String remain, int defaultPort) {
