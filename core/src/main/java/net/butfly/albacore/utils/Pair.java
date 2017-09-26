@@ -84,7 +84,7 @@ public final class Pair<T1, T2> implements Serializable, Entry<T1, T2> {
 		Pair p = (Pair) obj;
 		if (null == v1 && p.v1 != v1) return false;
 		if (null == v2 && p.v2 != v2) return false;
-		return v1.equals(p.v1()) && v2.equals(p.v2);
+		return v1.equals(p.v1) && v2.equals(p.v2);
 	}
 
 	@Override
