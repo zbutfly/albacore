@@ -44,7 +44,7 @@ public class Objects extends Utils {
 	public static Beans clone(Beans src, Class<? extends Beans> dstClass, boolean cloneNull) {
 		Beans dst = null;
 		try {
-			dst = dstClass.newInstance();
+			dst = dstClass.getConstructor().newInstance();
 		} catch (Exception ex) {
 			throw new RuntimeException("Failure create an instance for class: " + dstClass.getName());
 		}
@@ -117,7 +117,7 @@ public class Objects extends Utils {
 	public static void fromMap(Object target, Map<String, Object> map) {
 		if (target == null) throw new NullPointerException();
 		if (Class.class.isAssignableFrom(target.getClass())) try {
-			target = ((Class) target).newInstance();
+			target = ((Class<?>) target).getConstructor().newInstance();
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
@@ -237,7 +237,7 @@ public class Objects extends Utils {
 						Class<?> dstComponentType = TypeChecker.getIterableClass(to);
 						Collection dst;
 						try {
-							dst = (Collection) to.newInstance();
+							dst = (Collection) to.getConstructor().newInstance();
 						} catch (Exception e) {
 							return Defaults.defaultValue(to);
 						}
@@ -259,7 +259,7 @@ public class Objects extends Utils {
 						} else if (Collection.class.isAssignableFrom(to)) {
 							Collection dst;
 							try {
-								dst = (Collection) to.newInstance();
+								dst = (Collection) to.getConstructor().newInstance();
 							} catch (Exception e) {
 								return Defaults.defaultValue(to);
 							}
@@ -281,7 +281,7 @@ public class Objects extends Utils {
 						} else if (Collection.class.isAssignableFrom(to)) {
 							Collection dst;
 							try {
-								dst = (Collection) to.newInstance();
+								dst = (Collection) to.getConstructor().newInstance();
 							} catch (Exception e) {
 								return Defaults.defaultValue(to);
 							}
@@ -317,6 +317,7 @@ public class Objects extends Utils {
 		return TypeComparators.mapComparator.compare(toMap(o1), toMap(o2));
 	}
 
+	@SuppressWarnings("unlikely-arg-type")
 	public static <T1, T2> boolean equals(T1 o1, T2 o2) {
 		if (null == o1 && null == o2) return true;
 		if (null == o1 || null == o2) return false;

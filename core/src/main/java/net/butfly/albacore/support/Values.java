@@ -123,15 +123,15 @@ public final class Values extends Utils {
 		FROM_STRING_METHOD.put(Character.class, s -> s.toCharArray()[0]);
 		FROM_STRING_METHOD.put(char.class, s -> s.toCharArray()[0]);
 
-		FROM_STRING_METHOD.put(byte.class, s -> new Byte(s).byteValue());
-		FROM_STRING_METHOD.put(short.class, s -> new Short(s).shortValue());
-		FROM_STRING_METHOD.put(int.class, s -> new Integer(s).intValue());
-		FROM_STRING_METHOD.put(long.class, s -> new Long(s).longValue());
-		FROM_STRING_METHOD.put(double.class, s -> new Double(s).doubleValue());
-		FROM_STRING_METHOD.put(float.class, s -> new Float(s).floatValue());
+		FROM_STRING_METHOD.put(byte.class, s -> Byte.valueOf(s).byteValue());
+		FROM_STRING_METHOD.put(short.class, s -> Short.valueOf(s).shortValue());
+		FROM_STRING_METHOD.put(int.class, s -> Integer.valueOf(s).intValue());
+		FROM_STRING_METHOD.put(long.class, s -> Long.valueOf(s).longValue());
+		FROM_STRING_METHOD.put(double.class, s -> Double.valueOf(s).doubleValue());
+		FROM_STRING_METHOD.put(float.class, s -> Float.valueOf(s).floatValue());
 
-		FROM_STRING_METHOD.put(boolean.class, s -> new Boolean(s).booleanValue());
-		FROM_STRING_METHOD.put(Boolean.class, s -> new Boolean(s));
+		FROM_STRING_METHOD.put(boolean.class, s -> Boolean.valueOf(s).booleanValue());
+		FROM_STRING_METHOD.put(Boolean.class, s -> Boolean.valueOf(s));
 		FROM_STRING_METHOD.put(Date.class, s -> new Date(Long.parseLong(s)));
 	}
 	private static final Class<?>[] NUMBER_TYPES = new Class[] { //

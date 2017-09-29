@@ -8,7 +8,6 @@ import java.nio.channels.SocketChannel;
 
 import sun.nio.ch.WindowsSelectorProvider;
 
-@SuppressWarnings("restriction")
 public class ProxableSelectorProvider extends WindowsSelectorProvider {
 	@Override
 	public SocketChannel openSocketChannel() throws IOException {

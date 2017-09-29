@@ -74,7 +74,6 @@ public final class Generics extends OldGeneric {
 		return l.toArray(array());
 	}
 
-	@SuppressWarnings("restriction")
 	public static <T> Type type(Class<T> generic, Class<?>... param) {
 		return sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl.make(generic, param, null);
 	}

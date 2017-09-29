@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.base.Joiner;
 
+@Deprecated
 public class EnqueueException extends RuntimeException {
 	private static final long serialVersionUID = 7327387986796280231L;
 	private final ConcurrentMap<Object, Throwable> fails;

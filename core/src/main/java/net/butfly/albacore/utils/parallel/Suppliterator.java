@@ -91,6 +91,5 @@ public class Suppliterator<V> implements Spliterator<V> {
 	@Override
 	protected void finalize() throws Throwable {
 		lock.close();
-		super.finalize();
 	}
 }

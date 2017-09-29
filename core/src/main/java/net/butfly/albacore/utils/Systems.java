@@ -33,7 +33,6 @@ import net.butfly.albacore.utils.logger.Logger;
 import sun.management.VMManagement;
 import sun.misc.Signal;
 
-@SuppressWarnings("restriction")
 public final class Systems extends Utils {
 	final static Logger logger = Logger.getLogger(Systems.class);
 
