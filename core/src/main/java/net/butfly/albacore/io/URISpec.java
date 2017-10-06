@@ -406,6 +406,7 @@ public final class URISpec implements Serializable {
 	}
 
 	private Pair<String, String> split2last(String spec, char split) {
+		if (null == spec || spec.isEmpty()) return new Pair<>(spec, null);
 		while (spec.charAt(0) == split)
 			spec = spec.substring(1);
 		int pos = spec.lastIndexOf(split);
