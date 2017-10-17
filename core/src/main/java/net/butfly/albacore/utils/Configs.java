@@ -97,6 +97,18 @@ public class Configs extends Utils {
 		public Conf prefix(String prefix) {
 			return new Conf(prefixed() ? this.prefix + prefix : prefix, entries);
 		}
+
+		public Map<String, String> getByPrefix(String prefix) {
+			Map<String, String> sub = new ConcurrentHashMap<>();
+			for (String k : entries.keySet())
+				if (k.startsWith(prefix)) {
+					String subk = k.substring(prefix.length() - 1);
+					while (!subk.isEmpty() && subk.startsWith("."))
+						subk = subk.substring(1);
+					sub.put(subk, entries.get(k));
+				}
+			return sub;
+		}
 	}
 
 	public static Conf init() {
@@ -192,6 +204,10 @@ public class Configs extends Utils {
 
 	public static String get(String key) {
 		return MAIN_CONF.get(key);
+	}
+
+	public static Map<String, String> getByPrefix(String prefix) {
+		return MAIN_CONF.getByPrefix(prefix);
 	}
 
 	public static String get(String key, String... def) {
