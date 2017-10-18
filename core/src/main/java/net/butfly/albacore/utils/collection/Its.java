@@ -120,7 +120,7 @@ public final class Its extends Utils {
 		List<Future<?>> fs = new ArrayList<>();
 		while (origin.estimateSize() > max) {
 			Spliterator<V> split = origin.trySplit();
-			if (null != split) fs.add(listen(() -> splitRun(split, max, using)));
+			if (null != split) fs.add(listen((Runnable) () -> splitRun(split, max, using)));
 		}
 		if (origin.estimateSize() > 0) using.accept(origin);
 		join(fs);
