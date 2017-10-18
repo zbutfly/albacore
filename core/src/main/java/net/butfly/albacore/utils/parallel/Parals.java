@@ -31,7 +31,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -46,10 +45,11 @@ import net.butfly.albacore.utils.collection.Streams;
 import net.butfly.albacore.utils.logger.Logger;
 
 /**
- * <b>Auto detection of thread executor type and parallelism based on <code>-Dalbacore.io.stream.parallelism.factor=factor(double)</code>,
- * default 0.</b> <blockquote>Default <code>factor<code> value without
- * <code>albacore.io.stream.parallelism.factor</code> setting causes traditional unlimited <code>CachedThreadPool</code>
- * implementation.</blockquote>
+ * <b>Auto detection of thread executor type and parallelism based on
+ * <code>-Dalbacore.io.stream.parallelism.factor=factor(double)</code>, default
+ * 0.</b> <blockquote>Default <code>factor<code> value without
+ * <code>albacore.io.stream.parallelism.factor</code> setting causes traditional
+ * unlimited <code>CachedThreadPool</code> implementation.</blockquote>
  * 
  * <ul>
  * <li>Positives double values: ForkJoinPool</li>
@@ -57,7 +57,8 @@ import net.butfly.albacore.utils.logger.Logger;
  * <ul>
  * <li>Minimum: 2</li>
  * <li>IO_PARALLELISM: 16</li>
- * <li>JVM_PARALLELISM: <code>ForkJoinPool.getCommonPoolParallelism()</code></li>
+ * <li>JVM_PARALLELISM:
+ * <code>ForkJoinPool.getCommonPoolParallelism()</code></li>
  * </ul>
  * Which means:
  * <ul>
@@ -68,7 +69,8 @@ import net.butfly.albacore.utils.logger.Logger;
  * <li>(2, ): more than JVM_PARALLELISM</li>
  * </ul>
  * <li>0: CachedThreadPool</li>
- * <li>Negatives values: FixedThreadPool with parallelism = <code>abs((int)facor)</code></li>
+ * <li>Negatives values: FixedThreadPool with parallelism =
+ * <code>abs((int)facor)</code></li>
  * </ul>
  * 
  * @author zx
@@ -102,11 +104,16 @@ public final class Parals extends Utils {
 	 * @param firstAndThens
 	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
+	@Deprecated
 	public static void runs(Runnable... firstAndThens) {
 		if (null == firstAndThens || firstAndThens.length == 0) return;
 		ListenableFuture f = EXERS.lexor.submit(firstAndThens[0]);
 		if (firstAndThens.length > 1) f.addListener(() -> runs(Arrays.copyOfRange(firstAndThens, 1, firstAndThens.length)), EXERS.exor);
 		get(f);
+	}
+
+	public static void run(Runnable task) {
+		get(EXERS.exor.submit(task));
 	}
 
 	/**
@@ -122,11 +129,8 @@ public final class Parals extends Utils {
 			get(f);
 	}
 
-	public static void run(Runnable task) {
-		get(EXERS.exor.submit(task));
-	}
-
 	@SafeVarargs
+	@Deprecated
 	public static <T> void runs(Callable<T> first, Consumer<T>... then) {
 		if (null == first) return;
 		ListenableFuture<T> f = EXERS.lexor.submit(first);
@@ -150,7 +154,7 @@ public final class Parals extends Utils {
 		return run(Arrays.asList(tasks));
 	}
 
-	public static <T> List<T> run(List<Callable<T>> tasks) {
+	public static <T> List<T> run(List<? extends Callable<T>> tasks) {
 		List<Future<T>> fs = new ArrayList<>();
 		for (Callable<T> t : tasks)
 			fs.add(EXERS.exor.submit(t));
@@ -160,26 +164,26 @@ public final class Parals extends Utils {
 		return rs;
 	}
 
-	public static <T> ListenableFuture<List<T>> listen(List<? extends Callable<T>> tasks) {
-		return Futures.successfulAsList(Streams.list(tasks, Parals::listen));
+	public static <T> Future<List<T>> listen(List<? extends Callable<T>> tasks) {
+		return listen(() -> run(tasks));
 	}
 
-	public static <T> ListenableFuture<T> listen(Callable<T> task) {
+	public static <T> Future<T> listen(Callable<T> task) {
 		try {
-			return EXERS.lexor.submit(task);
+			return EXERS.exor.submit(task);
 		} catch (RejectedExecutionException e) {
 			logger.error("Rejected");
 			throw e;
 		}
 	}
 
-	public static ListenableFuture<List<Object>> listenRun(Runnable... tasks) {
-		return Futures.successfulAsList(Streams.list(Arrays.asList(tasks), Parals::listenRun));
+	public static Future<?> listen(Runnable... tasks) {
+		return listen(() -> run(tasks));
 	}
 
-	public static ListenableFuture<?> listenRun(Runnable task) {
+	public static Future<?> listen(Runnable task) {
 		try {
-			return EXERS.lexor.submit(task);
+			return EXERS.exor.submit(task);
 		} catch (RejectedExecutionException e) {
 			logger.error("Rejected");
 			throw e;
@@ -195,12 +199,12 @@ public final class Parals extends Utils {
 	 * @return
 	 */
 	public static <R, V> R eachs(Iterable<V> src, Function<V, R> doing, BinaryOperator<R> accumulator) {
-		List<ListenableFuture<R>> fs = new ArrayList<>();
+		List<Future<R>> fs = new ArrayList<>();
 		src.forEach(v -> fs.add(listen(() -> doing.apply(v))));
 		if (fs.isEmpty()) return null;
 		List<R> rs = new ArrayList<>();
 		R r;
-		for (ListenableFuture<R> f : fs)
+		for (Future<R> f : fs)
 			try {
 				r = f.get();
 				if (null != r) rs.add(r);
@@ -219,9 +223,9 @@ public final class Parals extends Utils {
 	 * @return
 	 */
 	public static <V> long eachs(Iterable<V> src, Consumer<V> doing) {
-		List<ListenableFuture<?>> fs = new ArrayList<>();
-		src.forEach(v -> fs.add(listenRun(() -> doing.accept(v))));
-		for (ListenableFuture<?> f : fs)
+		List<Future<?>> fs = new ArrayList<>();
+		src.forEach(v -> fs.add(listen(() -> doing.accept(v))));
+		for (Future<?> f : fs)
 			try {
 				f.get();
 			} catch (InterruptedException e) {} catch (ExecutionException e) {
@@ -235,7 +239,8 @@ public final class Parals extends Utils {
 	}
 
 	private static <V> void each(Stream<V> s, Consumer<? super V> consumer) {
-		get(Futures.successfulAsList(Streams.list(Streams.of(s).map(v -> listenRun(() -> consumer.accept(v))))));
+		for (Future<?> f : Streams.list(Streams.of(s).map(v -> listen(() -> consumer.accept((V) v)))))
+			get(f);
 	}
 
 	public static String tracePool(String prefix) {
@@ -288,6 +293,7 @@ public final class Parals extends Utils {
 	private final static class Exers extends Namedly implements AutoCloseable {
 		public static final Logger logger = Logger.getLogger(Exers.class);
 		final ExecutorService exor;
+		@Deprecated
 		final ListeningExecutorService lexor;
 		private final static Map<String, ThreadGroup> g = new ConcurrentHashMap<>();
 

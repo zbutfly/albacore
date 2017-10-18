@@ -3,7 +3,6 @@ package net.butfly.albacore.utils.collection;
 import static net.butfly.albacore.utils.collection.Streams.list;
 import static net.butfly.albacore.utils.parallel.Parals.join;
 import static net.butfly.albacore.utils.parallel.Parals.listen;
-import static net.butfly.albacore.utils.parallel.Parals.listenRun;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -121,7 +120,7 @@ public final class Its extends Utils {
 		List<Future<?>> fs = new ArrayList<>();
 		while (origin.estimateSize() > max) {
 			Spliterator<V> split = origin.trySplit();
-			if (null != split) fs.add(listenRun(() -> splitRun(split, max, using)));
+			if (null != split) fs.add(listen(() -> splitRun(split, max, using)));
 		}
 		if (origin.estimateSize() > 0) using.accept(origin);
 		join(fs);

@@ -6,8 +6,42 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public interface Task extends Runnable {
+	public static final Task DO_NOTHING = () -> {};
+
 	static Task task(Runnable task) {
 		return task::run;
+	}
+
+	static Task assemble(boolean parallel, Runnable... tasks) {
+		return parallel ? product(tasks) : sum(tasks);
+	}
+
+	static Task sum(Runnable... tasks) {
+		if (null == tasks) return DO_NOTHING;
+		switch (tasks.length) {
+		case 0:
+			return DO_NOTHING;
+		case 1:
+			return task(tasks[0]);
+		case 2:
+			return task(tasks[0]).concat(tasks[1]);
+		default:
+			return new Tasks.TaskConsecutive(tasks[0], tasks[1], Arrays.copyOfRange(tasks, 2, tasks.length)).compact();
+		}
+	}
+
+	static Task product(Runnable... tasks) {
+		if (null == tasks) return DO_NOTHING;
+		switch (tasks.length) {
+		case 0:
+			return DO_NOTHING;
+		case 1:
+			return task(tasks[0]);
+		case 2:
+			return task(tasks[0]).multiple(tasks[1]);
+		default:
+			return new Tasks.TaskConcurrent(tasks[0], tasks[1], Arrays.copyOfRange(tasks, 2, tasks.length)).compact();
+		}
 	}
 
 	default Task concat(Runnable then) {
@@ -23,7 +57,7 @@ public interface Task extends Runnable {
 	}
 
 	default Task async() {
-		return () -> Parals.listenRun(this::run);
+		return () -> Parals.listen(this::run);
 	}
 
 	default String text() {

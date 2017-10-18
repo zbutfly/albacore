@@ -30,7 +30,7 @@ public class SpatialTest {
 		for (int i = 0; i < 5; i++)
 			its.put(i, Its.wrap(it));
 		for (int i : its.keySet())
-			Parals.listenRun(() -> its.get(i).forEachRemaining(v -> System.out.println("#" + i + ": " + v + ", remain in parent: " + it
+			Parals.listen(() -> its.get(i).forEachRemaining(v -> System.out.println("#" + i + ": " + v + ", remain in parent: " + it
 					.estimateSize())));
 		System.out.println("remain in parent: " + it.estimateSize());
 
