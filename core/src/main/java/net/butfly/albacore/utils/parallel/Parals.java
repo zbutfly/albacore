@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -21,6 +22,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -93,6 +96,11 @@ public final class Parals extends Utils {
 		}
 	}
 
+	/**
+	 * Run sequentially, by listening one by one
+	 * 
+	 * @param firstAndThens
+	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public static void runs(Runnable... firstAndThens) {
 		if (null == firstAndThens || firstAndThens.length == 0) return;
@@ -101,12 +109,21 @@ public final class Parals extends Utils {
 		get(f);
 	}
 
+	/**
+	 * Run parallelly
+	 * 
+	 * @param tasks
+	 */
 	public static void run(Runnable... tasks) {
-		get(listenRun(tasks));
+		List<Future<?>> fs = new ArrayList<>();
+		for (Runnable t : tasks)
+			fs.add(EXERS.exor.submit(t));
+		for (Future<?> f : fs)
+			get(f);
 	}
 
 	public static void run(Runnable task) {
-		get(listenRun(task));
+		get(EXERS.exor.submit(task));
 	}
 
 	@SafeVarargs
@@ -125,16 +142,22 @@ public final class Parals extends Utils {
 	}
 
 	public static <T> T run(Callable<T> task) {
-		return get(listen(task));
+		return get(EXERS.exor.submit(task));
 	}
 
 	@SafeVarargs
 	public static <T> List<T> run(Callable<T>... tasks) {
-		return get(listen(Arrays.asList(tasks)));
+		return run(Arrays.asList(tasks));
 	}
 
 	public static <T> List<T> run(List<Callable<T>> tasks) {
-		return get(listen(tasks));
+		List<Future<T>> fs = new ArrayList<>();
+		for (Callable<T> t : tasks)
+			fs.add(EXERS.exor.submit(t));
+		List<T> rs = new CopyOnWriteArrayList<>();
+		for (Future<T> f : fs)
+			rs.add(get(f));
+		return rs;
 	}
 
 	public static <T> ListenableFuture<List<T>> listen(List<? extends Callable<T>> tasks) {
@@ -247,11 +270,18 @@ public final class Parals extends Utils {
 	}
 
 	public static <T> T get(Future<T> f) {
-		try {
-			return f.get();
-		} catch (InterruptedException e) {} catch (ExecutionException e) {
-			logger.error("Subtask error", unwrap(e));
-		}
+		boolean go = true;
+		while (go)
+			try {
+				return f.get(1, TimeUnit.SECONDS);
+			} catch (InterruptedException e) {
+				go = false;
+			} catch (ExecutionException e) {
+				go = false;
+				logger.error("Subtask error", unwrap(e));
+			} catch (TimeoutException e) {
+				logger.warn("Subtask [" + f.toString() + "] slow....");
+			}
 		return null;
 	}
 

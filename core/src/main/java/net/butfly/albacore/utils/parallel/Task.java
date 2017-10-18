@@ -3,6 +3,7 @@ package net.butfly.albacore.utils.parallel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public interface Task extends Runnable {
 	static Task task(Runnable task) {
@@ -23,6 +24,11 @@ public interface Task extends Runnable {
 
 	default Task async() {
 		return () -> Parals.listenRun(this::run);
+	}
+
+	default String text() {
+		String[] segs = toString().split("/");
+		return "Task[" + (segs.length == 1 ? segs[0] : segs[segs.length - 1]) + "]";
 	}
 
 	final class Tasks {
@@ -90,6 +96,11 @@ public interface Task extends Runnable {
 			protected final boolean concurrent() {
 				return false;
 			}
+
+			@Override
+			public String toString() {
+				return subs.stream().map(r -> "Task[" + r.toString() + "]").collect(Collectors.joining("+"));
+			}
 		}
 
 		private static final class TaskConcurrent extends TaskList {
@@ -110,6 +121,11 @@ public interface Task extends Runnable {
 			@Override
 			protected final boolean concurrent() {
 				return true;
+			}
+
+			@Override
+			public String toString() {
+				return subs.stream().map(r -> "Task[" + r.toString() + "]").collect(Collectors.joining("*"));
 			}
 		}
 	}
