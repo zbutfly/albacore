@@ -31,10 +31,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
-
 import net.butfly.albacore.Albacore;
 import net.butfly.albacore.base.Namedly;
 import net.butfly.albacore.utils.Configs;
@@ -45,11 +41,10 @@ import net.butfly.albacore.utils.collection.Streams;
 import net.butfly.albacore.utils.logger.Logger;
 
 /**
- * <b>Auto detection of thread executor type and parallelism based on
- * <code>-Dalbacore.io.stream.parallelism.factor=factor(double)</code>, default
- * 0.</b> <blockquote>Default <code>factor<code> value without
- * <code>albacore.io.stream.parallelism.factor</code> setting causes traditional
- * unlimited <code>CachedThreadPool</code> implementation.</blockquote>
+ * <b>Auto detection of thread executor type and parallelism based on <code>-Dalbacore.io.stream.parallelism.factor=factor(double)</code>,
+ * default 0.</b> <blockquote>Default <code>factor<code> value without
+ * <code>albacore.io.stream.parallelism.factor</code> setting causes traditional unlimited <code>CachedThreadPool</code>
+ * implementation.</blockquote>
  * 
  * <ul>
  * <li>Positives double values: ForkJoinPool</li>
@@ -57,8 +52,7 @@ import net.butfly.albacore.utils.logger.Logger;
  * <ul>
  * <li>Minimum: 2</li>
  * <li>IO_PARALLELISM: 16</li>
- * <li>JVM_PARALLELISM:
- * <code>ForkJoinPool.getCommonPoolParallelism()</code></li>
+ * <li>JVM_PARALLELISM: <code>ForkJoinPool.getCommonPoolParallelism()</code></li>
  * </ul>
  * Which means:
  * <ul>
@@ -69,8 +63,7 @@ import net.butfly.albacore.utils.logger.Logger;
  * <li>(2, ): more than JVM_PARALLELISM</li>
  * </ul>
  * <li>0: CachedThreadPool</li>
- * <li>Negatives values: FixedThreadPool with parallelism =
- * <code>abs((int)facor)</code></li>
+ * <li>Negatives values: FixedThreadPool with parallelism = <code>abs((int)facor)</code></li>
  * </ul>
  * 
  * @author zx
@@ -98,20 +91,6 @@ public final class Parals extends Utils {
 		}
 	}
 
-	/**
-	 * Run sequentially, by listening one by one
-	 * 
-	 * @param firstAndThens
-	 */
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	@Deprecated
-	public static void runs(Runnable... firstAndThens) {
-		if (null == firstAndThens || firstAndThens.length == 0) return;
-		ListenableFuture f = EXERS.lexor.submit(firstAndThens[0]);
-		if (firstAndThens.length > 1) f.addListener(() -> runs(Arrays.copyOfRange(firstAndThens, 1, firstAndThens.length)), EXERS.exor);
-		get(f);
-	}
-
 	public static void run(Runnable task) {
 		get(EXERS.exor.submit(task));
 	}
@@ -129,21 +108,35 @@ public final class Parals extends Utils {
 			get(f);
 	}
 
-	@SafeVarargs
-	@Deprecated
-	public static <T> void runs(Callable<T> first, Consumer<T>... then) {
-		if (null == first) return;
-		ListenableFuture<T> f = EXERS.lexor.submit(first);
-		for (Consumer<T> t : then)
-			if (t != null) f.addListener(() -> {
-				try {
-					t.accept(f.get());
-				} catch (InterruptedException e) {} catch (ExecutionException e) {
-					logger.error("Subtask error", unwrap(e));
-				}
-			}, EXERS.exor);
-		get(f);
-	}
+//	/**
+//	 * Run sequentially, by listening one by one
+//	 * 
+//	 * @param firstAndThens
+//	 */
+//	@SuppressWarnings({ "rawtypes", "unchecked" })
+//	@Deprecated
+//	public static void runs(Runnable... firstAndThens) {
+//		if (null == firstAndThens || firstAndThens.length == 0) return;
+//		ListenableFuture f = EXERS.lexor.submit(firstAndThens[0]);
+//		if (firstAndThens.length > 1) f.addListener(() -> runs(Arrays.copyOfRange(firstAndThens, 1, firstAndThens.length)), EXERS.exor);
+//		get(f);
+//	}
+//
+//	@SafeVarargs
+//	@Deprecated
+//	public static <T> void runs(Callable<T> first, Consumer<T>... then) {
+//		if (null == first) return;
+//		ListenableFuture<T> f = EXERS.lexor.submit(first);
+//		for (Consumer<T> t : then)
+//			if (t != null) f.addListener(() -> {
+//				try {
+//					t.accept(f.get());
+//				} catch (InterruptedException e) {} catch (ExecutionException e) {
+//					logger.error("Subtask error", unwrap(e));
+//				}
+//			}, EXERS.exor);
+//		get(f);
+//	}
 
 	public static <T> T run(Callable<T> task) {
 		return get(EXERS.exor.submit(task));
@@ -293,8 +286,8 @@ public final class Parals extends Utils {
 	private final static class Exers extends Namedly implements AutoCloseable {
 		public static final Logger logger = Logger.getLogger(Exers.class);
 		final ExecutorService exor;
-		@Deprecated
-		final ListeningExecutorService lexor;
+		// @Deprecated
+		// final ListeningExecutorService lexor;
 		private final static Map<String, ThreadGroup> g = new ConcurrentHashMap<>();
 
 		public Exers(String name, int parallelism, boolean throwException) {
@@ -314,7 +307,7 @@ public final class Parals extends Utils {
 				((ThreadPoolExecutor) exor).setRejectedExecutionHandler((r, ex) -> logger.error(tracePool("Task rejected by the exor")));
 			}
 			logger.info("Main executor constructed: " + exor.toString());
-			lexor = MoreExecutors.listeningDecorator(exor);
+			// lexor = MoreExecutors.listeningDecorator(exor);
 			Systems.handleSignal(sig -> close(), "TERM", "INT");
 		}
 
