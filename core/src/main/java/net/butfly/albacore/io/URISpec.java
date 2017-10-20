@@ -380,12 +380,14 @@ public final class URISpec implements Serializable {
 	}
 
 	public URISpec reauth(String username) {
-		if (opaque) throw new IllegalArgumentException("opaque uri could not be reauth since no recoganizable password segment.");
+		if (opaque) throw new IllegalArgumentException("opaque uri [" + toString()
+				+ "] could not be reauth since no recoganizable password segment.");
 		return new URISpec(getScheme(), opaque, username, null, getHost(), defPort, getPath(), frag, getQuery());
 	}
 
 	public URISpec reauth(String username, String password) {
-		if (opaque) throw new IllegalArgumentException("opaque uri could not be reauth since no recoganizable password segment.");
+		if (opaque) throw new IllegalArgumentException("opaque uri [" + toString()
+				+ "] could not be reauth since no recoganizable password segment.");
 		return new URISpec(getScheme(), opaque, username, password, getHost(), defPort, getPath(), frag, getQuery());
 	}
 
