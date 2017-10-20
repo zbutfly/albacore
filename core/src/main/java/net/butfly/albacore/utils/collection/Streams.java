@@ -2,6 +2,7 @@ package net.butfly.albacore.utils.collection;
 
 import static net.butfly.albacore.utils.parallel.Parals.run;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -41,6 +42,7 @@ public final class Streams extends Utils {
 		return Its.split(s.spliterator(), batchSize, it -> {
 			using.accept(Streams.of(it));
 		});
+		return of(ss, true);
 	}
 
 	public static <V> Map<Integer, Spliterator<V>> spatial(Spliterator<V> it, int parallelism) {
@@ -106,26 +108,45 @@ public final class Streams extends Utils {
 
 	// map reduce ops
 
-	public static <V, A, R> R collect(Iterable<? extends V> col, Function<? super V, ? extends A> mapper,
-			Collector<? super A, ?, R> collector) {
-		return collect(of(col, true).map(mapper), collector);
+	public static <V, A, R> R collect(Iterable<V> col, Function<V, A> mapper, Collector<? super A, ?, R> collector) {
+		return run(() -> collect(of(col, true).map(mapper), collector));
 	}
 
 	public static <T, T1, K, V> Map<K, V> toMap(Stream<T> col, Function<T, T1> mapper, Function<T1, K> keying, Function<T1, V> valuing) {
-		return collect(col.map(mapper), Collectors.toMap(keying, valuing));
+		return run(() -> collect(col.map(mapper), Collectors.toMap(keying, valuing)));
 	}
 
 	public static <T, K, V> Map<K, V> toMap(Stream<T> col, Function<T, K> keying, Function<T, V> valuing) {
-		return collect(col, Collectors.toMap(keying, valuing));
+		return run(() -> collect(col, Collectors.toMap(keying, valuing)));
 	}
 
 	public static <V, A, R> R maps(Iterable<V> col, Function<Stream<V>, Stream<A>> mapping, Collector<? super A, ?, R> collector) {
-		return collect(mapping.apply(of(col, true)), collector);
+		return run(() -> collect(mapping.apply(of(col, true)), collector));
 	}
 
-	public static <V, A, R> R map(Iterable<? extends V> col, Function<? super V, ? extends A> mapping,
+	public static <V, A, R> R map(Iterable<V> col, Function<V, A> mapping, Collector<? super A, ?, R> collector) {
+		return run(() -> collect(of(col, true).map(mapping), collector));
+	}
+
+	public static <V, A, R> R map(Iterable<V> col, Function<V, A> mapping, Predicate<? super A> filtering,
 			Collector<? super A, ?, R> collector) {
-		return collect(of(col, true).map(mapping), collector);
+		return run(() -> collect(of(col).map(mapping).filter(filtering), collector));
+	}
+
+	public static <V, A, R> R map(Stream<V> col, Function<V, A> mapping, Collector<? super A, ?, R> collector) {
+		return run(() -> collect(of(col).map(mapping), collector));
+	}
+
+	public static <V, A> Stream<A> map(Stream<V> col, Function<V, A> mapping) {
+		return run(() -> of(col).map(mapping));
+	}
+
+	public static <V, A> Stream<A> map(Iterable<V> col, Function<V, A> mapping) {
+		return run(() -> of(col).map(mapping));
+	}
+
+	public static <V, R> R collect(Iterable<? extends V> col, Collector<? super V, ?, R> collector) {
+		return run(() -> collect(of(col), collector));
 	}
 
 	public static <V, A, R> R map(Iterable<V> col, Function<V, A> mapping, Predicate<? super A> filtering,
@@ -161,14 +182,14 @@ public final class Streams extends Utils {
 	}
 
 	public static <V> List<V> list(Stream<? extends V> stream) {
-		return collect(of(stream), Collectors.toList());
+		return run(() -> collect(of(stream), Collectors.toList()));
 	}
 
 	public static <V, R> List<R> list(Stream<V> stream, Function<V, R> mapper) {
-		return collect(of(stream).map(mapper), Collectors.toList());
+		return run(() -> collect(of(stream).map(mapper), Collectors.toList()));
 	}
 
 	public static <V, R> List<R> list(Iterable<V> col, Function<V, R> mapper) {
-		return collect(col, mapper, Collectors.toList());
+		return run(() -> collect(col, mapper, Collectors.toList()));
 	}
 }

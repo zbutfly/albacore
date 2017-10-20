@@ -3,7 +3,7 @@ package net.butfly.albacore.utils.parallel;
 import static net.butfly.albacore.utils.Exceptions.unwrap;
 import static net.butfly.albacore.utils.Exceptions.wrap;
 import static net.butfly.albacore.utils.collection.Streams.map;
-import static net.butfly.albacore.utils.collection.Streams.list;
+import static net.butfly.albacore.utils.collection.Streams.of;
 
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.text.MessageFormat;
@@ -45,9 +45,11 @@ import net.butfly.albacore.utils.logger.Logger;
 import static net.butfly.albacore.utils.parallel.Lambdas.func;
 
 /**
- * <b>Auto detection of thread executor type and parallelism based on <code>-Dalbacore.parallel.factor=factor(double)</code>, default 0.</b>
- * <blockquote>Default <code>factor<code> value without
- * <code>albacore.parallel.factor</code> setting causes traditional unlimited <code>CachedThreadPool</code> implementation.</blockquote>
+ * <b>Auto detection of thread executor type and parallelism based on
+ * <code>-Dalbacore.io.stream.parallelism.factor=factor(double)</code>, default
+ * 0.</b> <blockquote>Default <code>factor<code> value without
+ * <code>albacore.io.stream.parallelism.factor</code> setting causes traditional
+ * unlimited <code>CachedThreadPool</code> implementation.</blockquote>
  * 
  * <ul>
  * <li>Positives double values: ForkJoinPool</li>
@@ -55,7 +57,8 @@ import static net.butfly.albacore.utils.parallel.Lambdas.func;
  * <ul>
  * <li>Minimum: 2</li>
  * <li>IO_PARALLELISM: 16</li>
- * <li>JVM_PARALLELISM: <code>ForkJoinPool.getCommonPoolParallelism()</code></li>
+ * <li>JVM_PARALLELISM:
+ * <code>ForkJoinPool.getCommonPoolParallelism()</code></li>
  * </ul>
  * Which means:
  * <ul>
@@ -66,7 +69,8 @@ import static net.butfly.albacore.utils.parallel.Lambdas.func;
  * <li>(2, ): more than JVM_PARALLELISM</li>
  * </ul>
  * <li>0: CachedThreadPool</li>
- * <li>Negatives values: FixedThreadPool with parallelism = <code>abs((int)facor)</code></li>
+ * <li>Negatives values: FixedThreadPool with parallelism =
+ * <code>abs((int)facor)</code></li>
  * </ul>
  * 
  * @author zx
@@ -110,6 +114,38 @@ public final class Parals extends Utils {
 		for (Future<?> f : fs)
 			get(f);
 	}
+
+	// /**
+	// * Run sequentially, by listening one by one
+	// *
+	// * @param firstAndThens
+	// */
+	// @SuppressWarnings({ "rawtypes", "unchecked" })
+	// @Deprecated
+	// public static void runs(Runnable... firstAndThens) {
+	// if (null == firstAndThens || firstAndThens.length == 0) return;
+	// ListenableFuture f = EXERS.lexor.submit(firstAndThens[0]);
+	// if (firstAndThens.length > 1) f.addListener(() ->
+	// runs(Arrays.copyOfRange(firstAndThens, 1, firstAndThens.length)),
+	// EXERS.exor);
+	// get(f);
+	// }
+	//
+	// @SafeVarargs
+	// @Deprecated
+	// public static <T> void runs(Callable<T> first, Consumer<T>... then) {
+	// if (null == first) return;
+	// ListenableFuture<T> f = EXERS.lexor.submit(first);
+	// for (Consumer<T> t : then)
+	// if (t != null) f.addListener(() -> {
+	// try {
+	// t.accept(f.get());
+	// } catch (InterruptedException e) {} catch (ExecutionException e) {
+	// logger.error("Subtask error", unwrap(e));
+	// }
+	// }, EXERS.exor);
+	// get(f);
+	// }
 
 	public static <T> T run(Callable<T> task) {
 		return get(EXERS.exor.submit(task));
@@ -165,18 +201,7 @@ public final class Parals extends Utils {
 	 * @return
 	 */
 	public static <R, V> R eachs(Iterable<V> src, Function<V, R> doing, BinaryOperator<R> accumulator) {
-		return map(src, doing::apply, Collectors.reducing(null, accumulator));
-	}
-
-	/**
-	 * Strict Parallel traversing.
-	 * 
-	 * @param src
-	 * @param doing
-	 * @return
-	 */
-	public static <R, V> List<R> eachs(Iterable<V> src, Function<V, R> doing) {
-		return map(src, doing::apply, Collectors.toList());
+		return map(src, v -> run(() -> doing.apply(v)), Collectors.reducing(null, accumulator));
 	}
 
 	/**
@@ -186,12 +211,26 @@ public final class Parals extends Utils {
 	 * @param doing
 	 * @return couting
 	 */
-	public static <V> void eachs(Iterable<V> src, Consumer<V> doing) {
-		map(src, func(doing), Collectors.counting());
+	public static <V> long eachs(Iterable<V> src, Consumer<V> doing) {
+		return map(src, v -> run(() -> {
+			doing.accept(v);
+			return null;
+		}), Collectors.counting());
 	}
 
 	public static <V> long eachs(Stream<V> src, Consumer<V> doing) {
-		return map(src, func(doing), Collectors.counting());
+		return map(src, v -> run(() -> {
+			doing.accept(v);
+			return null;
+		}), Collectors.counting());
+	}
+
+	public static <V> void each(Iterable<V> col, Consumer<? super V> consumer) {
+		each(of(col), consumer);
+	}
+
+	private static <V> void each(Stream<V> s, Consumer<? super V> consumer) {
+		run(() -> map(s, v -> get(listen(() -> consumer.accept((V) v))), Collectors.counting()));
 	}
 
 	public static String tracePool(String prefix) {
