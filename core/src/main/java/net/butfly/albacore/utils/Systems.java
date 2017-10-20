@@ -1,5 +1,7 @@
 package net.butfly.albacore.utils;
 
+import static net.butfly.albacore.utils.collection.Streams.of;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.management.ManagementFactory;
@@ -28,11 +30,9 @@ import com.sun.akuma.Daemon;
 import com.sun.akuma.JavaVMArguments;
 
 import net.butfly.albacore.Albacore;
-import net.butfly.albacore.utils.collection.Streams;
 import net.butfly.albacore.utils.logger.Logger;
 import sun.management.VMManagement;
 import sun.misc.Signal;
-
 public final class Systems extends Utils {
 	final static Logger logger = Logger.getLogger(Systems.class);
 
@@ -44,7 +44,7 @@ public final class Systems extends Utils {
 	}
 
 	public static Stream<Thread> threadsRunning() {
-		return Streams.of(Thread.getAllStackTraces().keySet()).filter(t -> !t.isDaemon());
+		return of(Thread.getAllStackTraces().keySet()).filter(t -> !t.isDaemon());
 	}
 
 	public static int pid() {

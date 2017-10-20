@@ -1,5 +1,7 @@
 package net.butfly.albacore.utils.parallel;
 
+import static net.butfly.albacore.utils.collection.Streams.map;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -133,7 +135,7 @@ public interface Task extends Runnable {
 
 			@Override
 			public String toString() {
-				return subs.stream().map(r -> "Task[" + r.toString() + "]").collect(Collectors.joining("+"));
+				return map(subs, r -> "Task[" + r.toString() + "]", Collectors.joining("+"));
 			}
 		}
 
@@ -159,7 +161,7 @@ public interface Task extends Runnable {
 
 			@Override
 			public String toString() {
-				return subs.stream().map(r -> "Task[" + r.toString() + "]").collect(Collectors.joining("*"));
+				return map(subs, r -> "Task[" + r.toString() + "]", Collectors.joining("*"));
 			}
 		}
 	}

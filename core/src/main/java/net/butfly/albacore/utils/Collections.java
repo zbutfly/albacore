@@ -1,7 +1,7 @@
 package net.butfly.albacore.utils;
 
 import static net.butfly.albacore.utils.collection.Streams.of;
-
+import static net.butfly.albacore.utils.collection.Streams.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -16,8 +16,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import net.butfly.albacore.utils.collection.Streams;
-
+@Deprecated
 public final class Collections extends Utils {
 	public static <T> BinaryOperator<List<T>> merging() {
 		return (t1, t2) -> {
@@ -144,7 +143,7 @@ public final class Collections extends Utils {
 	public static <T> List<T> asList(Iterable<T> it) {
 		if (null == it) return null;
 		if (it instanceof List) return (List<T>) it;
-		return Streams.of(it).collect(Collectors.toList());
+		return collect(it, Collectors.toList());
 	}
 
 	public static <T> Set<T> intersection(Collection<T> c1, Collection<T> c2) {

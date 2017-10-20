@@ -2,6 +2,8 @@ package net.butfly.albacore.utils.parallel;
 
 import static net.butfly.albacore.utils.Exceptions.unwrap;
 import static net.butfly.albacore.utils.Exceptions.wrap;
+import static net.butfly.albacore.utils.collection.Streams.map;
+import static net.butfly.albacore.utils.collection.Streams.of;
 
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.text.MessageFormat;
@@ -37,14 +39,14 @@ import net.butfly.albacore.utils.Configs;
 import net.butfly.albacore.utils.Systems;
 import net.butfly.albacore.utils.Texts;
 import net.butfly.albacore.utils.Utils;
-import net.butfly.albacore.utils.collection.Streams;
 import net.butfly.albacore.utils.logger.Logger;
 
 /**
- * <b>Auto detection of thread executor type and parallelism based on <code>-Dalbacore.io.stream.parallelism.factor=factor(double)</code>,
- * default 0.</b> <blockquote>Default <code>factor<code> value without
- * <code>albacore.io.stream.parallelism.factor</code> setting causes traditional unlimited <code>CachedThreadPool</code>
- * implementation.</blockquote>
+ * <b>Auto detection of thread executor type and parallelism based on
+ * <code>-Dalbacore.io.stream.parallelism.factor=factor(double)</code>, default
+ * 0.</b> <blockquote>Default <code>factor<code> value without
+ * <code>albacore.io.stream.parallelism.factor</code> setting causes traditional
+ * unlimited <code>CachedThreadPool</code> implementation.</blockquote>
  * 
  * <ul>
  * <li>Positives double values: ForkJoinPool</li>
@@ -52,7 +54,8 @@ import net.butfly.albacore.utils.logger.Logger;
  * <ul>
  * <li>Minimum: 2</li>
  * <li>IO_PARALLELISM: 16</li>
- * <li>JVM_PARALLELISM: <code>ForkJoinPool.getCommonPoolParallelism()</code></li>
+ * <li>JVM_PARALLELISM:
+ * <code>ForkJoinPool.getCommonPoolParallelism()</code></li>
  * </ul>
  * Which means:
  * <ul>
@@ -63,7 +66,8 @@ import net.butfly.albacore.utils.logger.Logger;
  * <li>(2, ): more than JVM_PARALLELISM</li>
  * </ul>
  * <li>0: CachedThreadPool</li>
- * <li>Negatives values: FixedThreadPool with parallelism = <code>abs((int)facor)</code></li>
+ * <li>Negatives values: FixedThreadPool with parallelism =
+ * <code>abs((int)facor)</code></li>
  * </ul>
  * 
  * @author zx
@@ -108,35 +112,37 @@ public final class Parals extends Utils {
 			get(f);
 	}
 
-//	/**
-//	 * Run sequentially, by listening one by one
-//	 * 
-//	 * @param firstAndThens
-//	 */
-//	@SuppressWarnings({ "rawtypes", "unchecked" })
-//	@Deprecated
-//	public static void runs(Runnable... firstAndThens) {
-//		if (null == firstAndThens || firstAndThens.length == 0) return;
-//		ListenableFuture f = EXERS.lexor.submit(firstAndThens[0]);
-//		if (firstAndThens.length > 1) f.addListener(() -> runs(Arrays.copyOfRange(firstAndThens, 1, firstAndThens.length)), EXERS.exor);
-//		get(f);
-//	}
-//
-//	@SafeVarargs
-//	@Deprecated
-//	public static <T> void runs(Callable<T> first, Consumer<T>... then) {
-//		if (null == first) return;
-//		ListenableFuture<T> f = EXERS.lexor.submit(first);
-//		for (Consumer<T> t : then)
-//			if (t != null) f.addListener(() -> {
-//				try {
-//					t.accept(f.get());
-//				} catch (InterruptedException e) {} catch (ExecutionException e) {
-//					logger.error("Subtask error", unwrap(e));
-//				}
-//			}, EXERS.exor);
-//		get(f);
-//	}
+	// /**
+	// * Run sequentially, by listening one by one
+	// *
+	// * @param firstAndThens
+	// */
+	// @SuppressWarnings({ "rawtypes", "unchecked" })
+	// @Deprecated
+	// public static void runs(Runnable... firstAndThens) {
+	// if (null == firstAndThens || firstAndThens.length == 0) return;
+	// ListenableFuture f = EXERS.lexor.submit(firstAndThens[0]);
+	// if (firstAndThens.length > 1) f.addListener(() ->
+	// runs(Arrays.copyOfRange(firstAndThens, 1, firstAndThens.length)),
+	// EXERS.exor);
+	// get(f);
+	// }
+	//
+	// @SafeVarargs
+	// @Deprecated
+	// public static <T> void runs(Callable<T> first, Consumer<T>... then) {
+	// if (null == first) return;
+	// ListenableFuture<T> f = EXERS.lexor.submit(first);
+	// for (Consumer<T> t : then)
+	// if (t != null) f.addListener(() -> {
+	// try {
+	// t.accept(f.get());
+	// } catch (InterruptedException e) {} catch (ExecutionException e) {
+	// logger.error("Subtask error", unwrap(e));
+	// }
+	// }, EXERS.exor);
+	// get(f);
+	// }
 
 	public static <T> T run(Callable<T> task) {
 		return get(EXERS.exor.submit(task));
@@ -192,19 +198,7 @@ public final class Parals extends Utils {
 	 * @return
 	 */
 	public static <R, V> R eachs(Iterable<V> src, Function<V, R> doing, BinaryOperator<R> accumulator) {
-		List<Future<R>> fs = new ArrayList<>();
-		src.forEach(v -> fs.add(listen(() -> doing.apply(v))));
-		if (fs.isEmpty()) return null;
-		List<R> rs = new ArrayList<>();
-		R r;
-		for (Future<R> f : fs)
-			try {
-				r = f.get();
-				if (null != r) rs.add(r);
-			} catch (InterruptedException e) {} catch (ExecutionException e) {
-				logger.error("Subtask error", unwrap(e));
-			}
-		return rs.parallelStream().collect(Collectors.reducing(null, accumulator));
+		return map(src, v -> run(() -> doing.apply(v)), Collectors.reducing(null, accumulator));
 	}
 
 	/**
@@ -212,28 +206,28 @@ public final class Parals extends Utils {
 	 * 
 	 * @param src
 	 * @param doing
-	 * @param accumulator
-	 * @return
+	 * @return couting
 	 */
 	public static <V> long eachs(Iterable<V> src, Consumer<V> doing) {
-		List<Future<?>> fs = new ArrayList<>();
-		src.forEach(v -> fs.add(listen(() -> doing.accept(v))));
-		for (Future<?> f : fs)
-			try {
-				f.get();
-			} catch (InterruptedException e) {} catch (ExecutionException e) {
-				logger.error("Subtask error", unwrap(e));
-			}
-		return fs.size();
+		return map(src, v -> run(() -> {
+			doing.accept(v);
+			return null;
+		}), Collectors.counting());
+	}
+
+	public static <V> long eachs(Stream<V> src, Consumer<V> doing) {
+		return map(src, v -> run(() -> {
+			doing.accept(v);
+			return null;
+		}), Collectors.counting());
 	}
 
 	public static <V> void each(Iterable<V> col, Consumer<? super V> consumer) {
-		each(Streams.of(col), consumer);
+		each(of(col), consumer);
 	}
 
 	private static <V> void each(Stream<V> s, Consumer<? super V> consumer) {
-		for (Future<?> f : Streams.list(Streams.of(s).map(v -> listen(() -> consumer.accept((V) v)))))
-			get(f);
+		run(() -> map(s, v -> get(listen(() -> consumer.accept((V) v))), Collectors.counting()));
 	}
 
 	public static String tracePool(String prefix) {

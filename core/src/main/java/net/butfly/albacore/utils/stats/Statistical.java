@@ -1,12 +1,13 @@
 package net.butfly.albacore.utils.stats;
 
+import static net.butfly.albacore.utils.collection.Streams.of;
+
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import net.butfly.albacore.utils.Instances;
 import net.butfly.albacore.utils.Systems;
-import net.butfly.albacore.utils.collection.Streams;
 import net.butfly.albacore.utils.logger.Logger;
 
 public interface Statistical<T extends Statistical<T>> {
@@ -50,7 +51,7 @@ public interface Statistical<T extends Statistical<T>> {
 
 	default <V> void stats(Iterable<V> vv) {
 		Statistic s = Instances.fetch(() -> null, Statistic.class, this);
-		if (null != s) Streams.of(vv).forEach(v -> s.stats(v));
+		if (null != s) of(vv).forEach(v -> s.stats(v));
 	}
 
 	default <V> Stream<V> stats(Stream<V> vv) {

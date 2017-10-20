@@ -1,5 +1,7 @@
 package net.butfly.albacore.utils.collection;
 
+import static net.butfly.albacore.utils.parallel.Parals.run;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -46,7 +48,7 @@ public final class Streams extends Utils {
 				if (!curr.isEmpty()) ss.offer(of(curr));
 			}
 		});
-		return of(ss);
+		return of(ss, true);
 	}
 
 	public static <V> Map<Integer, Spliterator<V>> spatial(Spliterator<V> it, int parallelism) {
@@ -68,7 +70,7 @@ public final class Streams extends Utils {
 	}
 
 	public static <V> Stream<V> of(Supplier<V> get, long size, Supplier<Boolean> ending) {
-		return Streams.of(new Suppliterator<>(get, size, ending));
+		return of(new Suppliterator<>(get, size, ending));
 	}
 
 	private static final boolean DEFAULT_PARALLEL_ENABLE = Boolean.parseBoolean(Configs.gets(Albacore.Props.PROP_STREAM_PARALLES, "false"));
@@ -113,38 +115,59 @@ public final class Streams extends Utils {
 	// map reduce ops
 
 	public static <V, A, R> R collect(Iterable<V> col, Function<V, A> mapper, Collector<? super A, ?, R> collector) {
-		return collect(Streams.of(col).map(mapper), collector);
+		return run(() -> collect(of(col, true).map(mapper), collector));
 	}
 
-	public static <T, T1, K, V> Map<K, V> map(Stream<T> col, Function<T, T1> mapper, Function<T1, K> keying, Function<T1, V> valuing) {
-		return collect(col.map(mapper), Collectors.toMap(keying, valuing));
+	public static <T, T1, K, V> Map<K, V> toMap(Stream<T> col, Function<T, T1> mapper, Function<T1, K> keying, Function<T1, V> valuing) {
+		return run(() -> collect(col.map(mapper), Collectors.toMap(keying, valuing)));
 	}
 
-	public static <T, K, V> Map<K, V> map(Stream<T> col, Function<T, K> keying, Function<T, V> valuing) {
-		return collect(col, Collectors.toMap(keying, valuing));
+	public static <T, K, V> Map<K, V> toMap(Stream<T> col, Function<T, K> keying, Function<T, V> valuing) {
+		return run(() -> collect(col, Collectors.toMap(keying, valuing)));
 	}
 
-	public static <V, A, R> R mapping(Iterable<V> col, Function<Stream<V>, Stream<A>> mapping, Collector<? super A, ?, R> collector) {
-		return collect(mapping.apply(Streams.of(col)), collector);
+	public static <V, A, R> R maps(Iterable<V> col, Function<Stream<V>, Stream<A>> mapping, Collector<? super A, ?, R> collector) {
+		return run(() -> collect(mapping.apply(of(col, true)), collector));
+	}
+
+	public static <V, A, R> R map(Iterable<V> col, Function<V, A> mapping, Collector<? super A, ?, R> collector) {
+		return run(() -> collect(of(col, true).map(mapping), collector));
+	}
+
+	public static <V, A, R> R map(Iterable<V> col, Function<V, A> mapping, Predicate<? super A> filtering,
+			Collector<? super A, ?, R> collector) {
+		return run(() -> collect(of(col).map(mapping).filter(filtering), collector));
+	}
+
+	public static <V, A, R> R map(Stream<V> col, Function<V, A> mapping, Collector<? super A, ?, R> collector) {
+		return run(() -> collect(of(col).map(mapping), collector));
+	}
+
+	public static <V, A> Stream<A> map(Stream<V> col, Function<V, A> mapping) {
+		return run(() -> of(col).map(mapping));
+	}
+
+	public static <V, A> Stream<A> map(Iterable<V> col, Function<V, A> mapping) {
+		return run(() -> of(col).map(mapping));
 	}
 
 	public static <V, R> R collect(Iterable<? extends V> col, Collector<? super V, ?, R> collector) {
-		return collect(Streams.of(col), collector);
+		return run(() -> collect(of(col), collector));
 	}
 
 	public static <V, R> R collect(Stream<? extends V> s, Collector<? super V, ?, R> collector) {
-		return of(s).collect(collector);
+		return run(() -> of(s).collect(collector));
 	}
 
 	public static <V> List<V> list(Stream<? extends V> stream) {
-		return collect(Streams.of(stream), Collectors.toList());
+		return run(() -> collect(of(stream), Collectors.toList()));
 	}
 
 	public static <V, R> List<R> list(Stream<V> stream, Function<V, R> mapper) {
-		return collect(Streams.of(stream).map(mapper), Collectors.toList());
+		return run(() -> collect(of(stream).map(mapper), Collectors.toList()));
 	}
 
 	public static <V, R> List<R> list(Iterable<V> col, Function<V, R> mapper) {
-		return collect(col, mapper, Collectors.toList());
+		return run(() -> collect(col, mapper, Collectors.toList()));
 	}
 }

@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import net.butfly.albacore.utils.Pair;
+import static net.butfly.albacore.utils.collection.Streams.*;
 
 public class Maps {
 	@SuppressWarnings("unchecked")
@@ -28,11 +29,11 @@ public class Maps {
 	}
 
 	public static Map<String, String> of(Properties props) {
-		return Streams.of(props).collect(Collectors.toConcurrentMap(e -> e.getKey().toString(), e -> e.getValue().toString()));
+		return collect(props.entrySet(), Collectors.toConcurrentMap(e -> e.getKey().toString(), e -> e.getValue().toString()));
 	}
 
 	public static <K, V> Set<Pair<K, V>> pairs(Map<K, V> map) {
-		return Streams.of(map).map(e -> new Pair<>(e.getKey(), e.getValue())).collect(Collectors.toSet());
+		return map(map.entrySet(), e -> new Pair<>(e.getKey(), e.getValue()), Collectors.toSet());
 	}
 
 	@SuppressWarnings("unchecked")
