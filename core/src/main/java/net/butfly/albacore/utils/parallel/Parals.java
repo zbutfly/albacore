@@ -290,8 +290,22 @@ public final class Parals extends Utils {
 				logger.error("Migrater pool task failure @" + t.getName(), e);
 				if (throwException) throw wrap(unwrap(e));
 			};
-			exor = parallelism > 0 ? new ForkJoinPool(parallelism, Concurrents.forkjoinFactory(name), handler, false)
-					: threadPool(parallelism, handler);
+			if (parallelism > 0) exor = new ForkJoinPool(parallelism, Concurrents.forkjoinFactory(name), handler, false);
+			else {
+				ThreadFactory factory = r -> {
+					Thread t = new Thread(g.computeIfAbsent(name, n -> new ThreadGroup(name + "ThreadGroup")), r, name + "@" + Texts
+							.formatDate(new Date()));
+					t.setUncaughtExceptionHandler(handler);
+					return t;
+				};
+				RejectedExecutionHandler rejected = (r, ex) -> logger.error("Paral task rejected", ex);;
+				exor = parallelism == 0 ? //
+						new ThreadPoolExecutor(0, Integer.MAX_VALUE, 10L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(), factory,
+								rejected) : //
+						new ThreadPoolExecutor(-parallelism, -parallelism, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(),
+								factory, rejected);
+				((ThreadPoolExecutor) exor).setRejectedExecutionHandler((r, ex) -> logger.error(tracePool("Task rejected by the exor")));
+			}
 			logger.info("Main executor constructed: " + exor.toString());
 			Systems.handleSignal(sig -> close(), "TERM", "INT");
 		}
@@ -360,6 +374,14 @@ public final class Parals extends Utils {
 	}
 
 	public static String status() {
-		return EXERS.exor.toString();
+		return status(EXERS.exor);
+	}
+
+	public static String status(ExecutorService exor) {
+		if (null == exor) return null;
+		if (exor instanceof ThreadPoolExecutor || exor instanceof ForkJoinPool) return exor.toString();
+		Object o = Reflections.get(exor, "e");// DelegatedExecutorService
+		if (null == o) return null;
+		return o instanceof ExecutorService ? status((ExecutorService) o) : exor.toString();
 	}
 }
