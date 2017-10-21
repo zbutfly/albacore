@@ -17,11 +17,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -36,6 +37,7 @@ import java.util.stream.Stream;
 import net.butfly.albacore.Albacore;
 import net.butfly.albacore.base.Namedly;
 import net.butfly.albacore.utils.Configs;
+import net.butfly.albacore.utils.Reflections;
 import net.butfly.albacore.utils.Systems;
 import net.butfly.albacore.utils.Texts;
 import net.butfly.albacore.utils.Utils;
@@ -294,11 +296,15 @@ public final class Parals extends Utils {
 					t.setUncaughtExceptionHandler(handler);
 					return t;
 				};
-				exor = parallelism == 0 ? Executors.newCachedThreadPool(factory) : Executors.newFixedThreadPool(-parallelism, factory);
+				RejectedExecutionHandler rejected = (r, ex) -> logger.error("Paral task rejected", ex);;
+				exor = parallelism == 0 ? //
+						new ThreadPoolExecutor(0, Integer.MAX_VALUE, 10L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(), factory,
+								rejected) : //
+						new ThreadPoolExecutor(-parallelism, -parallelism, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(),
+								factory, rejected);
 				((ThreadPoolExecutor) exor).setRejectedExecutionHandler((r, ex) -> logger.error(tracePool("Task rejected by the exor")));
 			}
 			logger.info("Main executor constructed: " + exor.toString());
-			// lexor = MoreExecutors.listeningDecorator(exor);
 			Systems.handleSignal(sig -> close(), "TERM", "INT");
 		}
 
@@ -355,6 +361,14 @@ public final class Parals extends Utils {
 	}
 
 	public static String status() {
-		return EXERS.exor.toString();
+		return status(EXERS.exor);
+	}
+
+	public static String status(ExecutorService exor) {
+		if (null == exor) return null;
+		if (exor instanceof ThreadPoolExecutor || exor instanceof ForkJoinPool) return exor.toString();
+		Object o = Reflections.get(exor, "e");// DelegatedExecutorService
+		if (null == o) return null;
+		return o instanceof ExecutorService ? status((ExecutorService) o) : exor.toString();
 	}
 }

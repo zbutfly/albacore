@@ -4,45 +4,36 @@ import java.io.Serializable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import net.butfly.albacore.Albacore;
 
 public class Logger implements Serializable {
 	private static final long serialVersionUID = -1940330974751419775L;
-	private static final boolean async;
-	private static final AtomicInteger tn;
-	private static final ThreadGroup g;
-	public static final ExecutorService logex;
+	private static final Consumer<Runnable> submit;
 	static {
-		async = Boolean.parseBoolean(System.getProperty(Albacore.Props.PROP_LOGGER_ASYNC, "true"));
-		if (async) {
-			tn = new AtomicInteger();
-			g = new ThreadGroup("AlbacoreLoggerThread");
-			logex = Executors.newFixedThreadPool(16, r -> {
+		if (Boolean.parseBoolean(System.getProperty(Albacore.Props.PROP_LOGGER_ASYNC, "true"))) {
+			AtomicInteger tn = new AtomicInteger();
+			ThreadGroup g = new ThreadGroup("AlbacoreLoggerThread");
+			ExecutorService logex = new ThreadPoolExecutor(8, 8, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(1024), r -> {
 				Thread t = new Thread(g, r, "AlbacoreLoggerThread#" + tn.getAndIncrement());
 				t.setDaemon(true);
 				return t;
+			}, (r, ex) -> {
+				// process rejected...ignore
 			});
+
+			submit = logex::submit;
 		} else {
-			tn = null;
-			g = null;
-			logex = null;
+			submit = Runnable::run;
 		}
 	}
 	private final org.slf4j.Logger logger;
-
-	private void submit(Runnable run) {
-		if (async) try {
-			logex.submit(run);
-		} catch (RejectedExecutionException e) {
-			// run.run();
-		}
-		else run.run();
-	}
 
 	private Logger(org.slf4j.Logger logger) {
 		super();
@@ -93,14 +84,14 @@ public class Logger implements Serializable {
 	}
 
 	public boolean debug(CharSequence msg) {
-		submit(() -> logger.debug(msg.toString()));
+		submit.accept(() -> logger.debug(msg.toString()));
 		return true;
 	}
 
 	public boolean debug(Supplier<CharSequence> msg) {
 		if (logger.isDebugEnabled()) {
 			CharSequence m = msg.get();
-			if (null != m) submit(() -> logger.debug(m.toString()));
+			if (null != m) submit.accept(() -> logger.debug(m.toString()));
 		}
 		return true;
 	}
@@ -110,14 +101,14 @@ public class Logger implements Serializable {
 	}
 
 	public boolean info(CharSequence msg) {
-		submit(() -> logger.info(msg.toString()));
+		submit.accept(() -> logger.info(msg.toString()));
 		return true;
 	}
 
 	public boolean info(Supplier<CharSequence> msg) {
 		if (logger.isInfoEnabled()) {
 			CharSequence m = msg.get();
-			if (null != m) submit(() -> logger.info(m.toString()));
+			if (null != m) submit.accept(() -> logger.info(m.toString()));
 		}
 		return true;
 	}
@@ -127,14 +118,14 @@ public class Logger implements Serializable {
 	}
 
 	public boolean warn(CharSequence msg) {
-		submit(() -> logger.warn(msg.toString()));
+		submit.accept(() -> logger.warn(msg.toString()));
 		return true;
 	}
 
 	public boolean warn(Supplier<CharSequence> msg) {
 		if (logger.isWarnEnabled()) {
 			CharSequence m = msg.get();
-			if (null != m) submit(() -> logger.warn(m.toString()));
+			if (null != m) submit.accept(() -> logger.warn(m.toString()));
 		}
 		return true;
 	}
@@ -144,14 +135,14 @@ public class Logger implements Serializable {
 	}
 
 	public boolean error(CharSequence msg) {
-		submit(() -> logger.error(msg.toString()));
+		submit.accept(() -> logger.error(msg.toString()));
 		return true;
 	}
 
 	public boolean error(Supplier<CharSequence> msg) {
 		if (logger.isErrorEnabled()) {
 			CharSequence m = msg.get();
-			if (null != m) submit(() -> logger.error(m.toString()));
+			if (null != m) submit.accept(() -> logger.error(m.toString()));
 		}
 		return true;
 	}
@@ -159,7 +150,7 @@ public class Logger implements Serializable {
 	public boolean trace(Supplier<CharSequence> msg, Throwable t) {
 		if (logger.isTraceEnabled()) {
 			CharSequence m = msg.get();
-			if (null != m) submit(() -> logger.trace(m.toString(), t));
+			if (null != m) submit.accept(() -> logger.trace(m.toString(), t));
 		}
 		return true;
 	}
@@ -167,7 +158,7 @@ public class Logger implements Serializable {
 	public boolean debug(Supplier<CharSequence> msg, Throwable t) {
 		if (logger.isDebugEnabled()) {
 			CharSequence m = msg.get();
-			if (null != m) submit(() -> logger.debug(m.toString(), t));
+			if (null != m) submit.accept(() -> logger.debug(m.toString(), t));
 		}
 		return true;
 	}
@@ -175,7 +166,7 @@ public class Logger implements Serializable {
 	public boolean info(Supplier<CharSequence> msg, Throwable t) {
 		if (logger.isInfoEnabled()) {
 			CharSequence m = msg.get();
-			if (null != m) submit(() -> logger.info(m.toString(), t));
+			if (null != m) submit.accept(() -> logger.info(m.toString(), t));
 		}
 		return true;
 	}
@@ -183,7 +174,7 @@ public class Logger implements Serializable {
 	public boolean warn(Supplier<CharSequence> msg, Throwable t) {
 		if (logger.isWarnEnabled()) {
 			CharSequence m = msg.get();
-			if (null != m) submit(() -> logger.warn(m.toString(), t));
+			if (null != m) submit.accept(() -> logger.warn(m.toString(), t));
 		}
 		return true;
 	}
@@ -191,109 +182,109 @@ public class Logger implements Serializable {
 	public boolean error(Supplier<CharSequence> msg, Throwable t) {
 		if (logger.isErrorEnabled()) {
 			CharSequence m = msg.get();
-			if (null != m) submit(() -> logger.error(m.toString(), t));
+			if (null != m) submit.accept(() -> logger.error(m.toString(), t));
 		}
 		return true;
 	}
 
 	public boolean trace(CharSequence msg, Throwable t) {
-		submit(() -> logger.trace(msg.toString(), t));
+		submit.accept(() -> logger.trace(msg.toString(), t));
 		return true;
 	}
 
 	public boolean debug(CharSequence msg, Throwable t) {
-		submit(() -> logger.debug(msg.toString(), t));
+		submit.accept(() -> logger.debug(msg.toString(), t));
 		return true;
 	}
 
 	public boolean info(CharSequence msg, Throwable t) {
-		submit(() -> logger.info(msg.toString(), t));
+		submit.accept(() -> logger.info(msg.toString(), t));
 		return true;
 	}
 
 	public boolean warn(CharSequence msg, Throwable t) {
-		submit(() -> logger.warn(msg.toString(), t));
+		submit.accept(() -> logger.warn(msg.toString(), t));
 		return true;
 	}
 
 	public boolean error(CharSequence msg, Throwable t) {
-		submit(() -> logger.error(msg.toString(), t));
+		submit.accept(() -> logger.error(msg.toString(), t));
 		return true;
 	}
 
 	/** Old style */
 	public boolean trace(CharSequence format, Object arg) {
-		submit(() -> logger.trace(format.toString(), arg));
+		submit.accept(() -> logger.trace(format.toString(), arg));
 		return true;
 	}
 
 	public boolean trace(CharSequence format, Object arg1, Object arg2) {
-		submit(() -> logger.trace(format.toString(), arg1, arg2));
+		submit.accept(() -> logger.trace(format.toString(), arg1, arg2));
 		return true;
 	}
 
 	public boolean trace(CharSequence format, Object... arguments) {
-		submit(() -> logger.trace(format.toString(), arguments));
+		submit.accept(() -> logger.trace(format.toString(), arguments));
 		return true;
 	}
 
 	public boolean debug(CharSequence format, Object arg) {
-		submit(() -> logger.debug(format.toString(), arg));
+		submit.accept(() -> logger.debug(format.toString(), arg));
 		return true;
 	}
 
 	public boolean debug(CharSequence format, Object arg1, Object arg2) {
-		submit(() -> logger.debug(format.toString(), arg1, arg2));
+		submit.accept(() -> logger.debug(format.toString(), arg1, arg2));
 		return true;
 	}
 
 	public boolean debug(CharSequence format, Object... arguments) {
-		submit(() -> logger.debug(format.toString(), arguments));
+		submit.accept(() -> logger.debug(format.toString(), arguments));
 		return true;
 	}
 
 	public boolean info(CharSequence format, Object arg) {
-		submit(() -> logger.info(format.toString(), arg));
+		submit.accept(() -> logger.info(format.toString(), arg));
 		return true;
 	}
 
 	public boolean info(CharSequence format, Object arg1, Object arg2) {
-		submit(() -> logger.info(format.toString(), arg1, arg2));
+		submit.accept(() -> logger.info(format.toString(), arg1, arg2));
 		return true;
 	}
 
 	public boolean info(CharSequence format, Object... arguments) {
-		submit(() -> logger.info(format.toString(), arguments));
+		submit.accept(() -> logger.info(format.toString(), arguments));
 		return true;
 	}
 
 	public boolean warn(CharSequence format, Object arg) {
-		submit(() -> logger.warn(format.toString(), arg));
+		submit.accept(() -> logger.warn(format.toString(), arg));
 		return true;
 	}
 
 	public boolean warn(CharSequence format, Object... arguments) {
-		submit(() -> logger.warn(format.toString(), arguments));
+		submit.accept(() -> logger.warn(format.toString(), arguments));
 		return true;
 	}
 
 	public boolean warn(CharSequence format, Object arg1, Object arg2) {
-		submit(() -> logger.warn(format.toString(), arg1, arg2));
+		submit.accept(() -> logger.warn(format.toString(), arg1, arg2));
 		return true;
 	}
 
 	public boolean error(CharSequence format, Object arg) {
-		submit(() -> logger.error(format.toString(), arg));
+		submit.accept(() -> logger.error(format.toString(), arg));
 		return true;
 	}
 
 	public boolean error(CharSequence format, Object arg1, Object arg2) {
-		submit(() -> logger.error(format.toString(), arg1, arg2));
+		submit.accept(() -> logger.error(format.toString(), arg1, arg2));
 		return true;
 	}
 
 	public boolean error(CharSequence format, Object... arguments) {
-		submit(() -> logger.error(format.toString(), arguments));
+		submit.accept(() -> logger.error(format.toString(), arguments));
 		return true;
 	}
 
