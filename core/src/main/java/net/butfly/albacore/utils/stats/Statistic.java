@@ -1,9 +1,12 @@
 package net.butfly.albacore.utils.stats;
 
+import static net.butfly.albacore.utils.logger.Logger.getLogger;
+import static net.butfly.albacore.utils.logger.Logger.logex;
+
 import java.io.Serializable;
 import java.text.MessageFormat;
 import java.util.Date;
-import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
@@ -34,7 +37,7 @@ class Statistic implements Serializable {
 			Supplier<String> detailing) {
 		Reflections.noneNull("", owner, logname);
 		lock = new ReentrantLock();
-		logger = Logger.getLogger(logname);
+		logger = getLogger(logname);
 		packsStep = new AtomicLong(step - 1);
 		packsInStep = new AtomicLong(0);
 		bytesInStep = new AtomicLong(0);
@@ -58,17 +61,19 @@ class Statistic implements Serializable {
 	}
 
 	<T> T stats(T v) {
-		ForkJoinPool.commonPool().submit(() -> {
-			long size;
-			if (sizing == null || v == null) size = 0;
-			else try {
-				Long s = sizing.apply(v);
-				size = null == s ? 0 : s.longValue();
-			} catch (Throwable t) {
-				size = 0;
-			}
-			stats(size);
-		});
+		try {
+			logex.submit(() -> {
+				long size;
+				if (sizing == null || v == null) size = 0;
+				else try {
+					Long s = sizing.apply(v);
+					size = null == s ? 0 : s.longValue();
+				} catch (Throwable t) {
+					size = 0;
+				}
+				stats(size);
+			});
+		} catch (RejectedExecutionException e) {}
 		return v;
 	}
 

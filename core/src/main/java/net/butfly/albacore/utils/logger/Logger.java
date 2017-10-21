@@ -16,13 +16,13 @@ public class Logger implements Serializable {
 	private static final boolean async;
 	private static final AtomicInteger tn;
 	private static final ThreadGroup g;
-	private static final ExecutorService logex;
+	public static final ExecutorService logex;
 	static {
 		async = Boolean.parseBoolean(System.getProperty(Albacore.Props.PROP_LOGGER_ASYNC, "true"));
 		if (async) {
 			tn = new AtomicInteger();
 			g = new ThreadGroup("AlbacoreLoggerThread");
-			logex = Executors.newCachedThreadPool(r -> {
+			logex = Executors.newFixedThreadPool(16, r -> {
 				Thread t = new Thread(g, r, "AlbacoreLoggerThread#" + tn.getAndIncrement());
 				t.setDaemon(true);
 				return t;
@@ -39,7 +39,7 @@ public class Logger implements Serializable {
 		if (async) try {
 			logex.submit(run);
 		} catch (RejectedExecutionException e) {
-			run.run();
+			// run.run();
 		}
 		else run.run();
 	}

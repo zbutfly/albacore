@@ -42,11 +42,10 @@ import net.butfly.albacore.utils.Utils;
 import net.butfly.albacore.utils.logger.Logger;
 
 /**
- * <b>Auto detection of thread executor type and parallelism based on
- * <code>-Dalbacore.io.stream.parallelism.factor=factor(double)</code>, default
- * 0.</b> <blockquote>Default <code>factor<code> value without
- * <code>albacore.io.stream.parallelism.factor</code> setting causes traditional
- * unlimited <code>CachedThreadPool</code> implementation.</blockquote>
+ * <b>Auto detection of thread executor type and parallelism based on <code>-Dalbacore.io.stream.parallelism.factor=factor(double)</code>,
+ * default 0.</b> <blockquote>Default <code>factor<code> value without
+ * <code>albacore.io.stream.parallelism.factor</code> setting causes traditional unlimited <code>CachedThreadPool</code>
+ * implementation.</blockquote>
  * 
  * <ul>
  * <li>Positives double values: ForkJoinPool</li>
@@ -54,8 +53,7 @@ import net.butfly.albacore.utils.logger.Logger;
  * <ul>
  * <li>Minimum: 2</li>
  * <li>IO_PARALLELISM: 16</li>
- * <li>JVM_PARALLELISM:
- * <code>ForkJoinPool.getCommonPoolParallelism()</code></li>
+ * <li>JVM_PARALLELISM: <code>ForkJoinPool.getCommonPoolParallelism()</code></li>
  * </ul>
  * Which means:
  * <ul>
@@ -66,8 +64,7 @@ import net.butfly.albacore.utils.logger.Logger;
  * <li>(2, ): more than JVM_PARALLELISM</li>
  * </ul>
  * <li>0: CachedThreadPool</li>
- * <li>Negatives values: FixedThreadPool with parallelism =
- * <code>abs((int)facor)</code></li>
+ * <li>Negatives values: FixedThreadPool with parallelism = <code>abs((int)facor)</code></li>
  * </ul>
  * 
  * @author zx
@@ -355,5 +352,9 @@ public final class Parals extends Utils {
 				} catch (Exception e) {}
 			}
 		}
+	}
+
+	public static String status() {
+		return EXERS.exor.toString();
 	}
 }
