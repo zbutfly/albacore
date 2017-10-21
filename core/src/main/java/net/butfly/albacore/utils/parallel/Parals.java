@@ -45,11 +45,10 @@ import net.butfly.albacore.utils.logger.Logger;
 import static net.butfly.albacore.utils.parallel.Lambdas.func;
 
 /**
- * <b>Auto detection of thread executor type and parallelism based on
- * <code>-Dalbacore.io.stream.parallelism.factor=factor(double)</code>, default
- * 0.</b> <blockquote>Default <code>factor<code> value without
- * <code>albacore.io.stream.parallelism.factor</code> setting causes traditional
- * unlimited <code>CachedThreadPool</code> implementation.</blockquote>
+ * <b>Auto detection of thread executor type and parallelism based on <code>-Dalbacore.io.stream.parallelism.factor=factor(double)</code>,
+ * default 0.</b> <blockquote>Default <code>factor<code> value without
+ * <code>albacore.io.stream.parallelism.factor</code> setting causes traditional unlimited <code>CachedThreadPool</code>
+ * implementation.</blockquote>
  * 
  * <ul>
  * <li>Positives double values: ForkJoinPool</li>
@@ -57,8 +56,7 @@ import static net.butfly.albacore.utils.parallel.Lambdas.func;
  * <ul>
  * <li>Minimum: 2</li>
  * <li>IO_PARALLELISM: 16</li>
- * <li>JVM_PARALLELISM:
- * <code>ForkJoinPool.getCommonPoolParallelism()</code></li>
+ * <li>JVM_PARALLELISM: <code>ForkJoinPool.getCommonPoolParallelism()</code></li>
  * </ul>
  * Which means:
  * <ul>
@@ -69,8 +67,7 @@ import static net.butfly.albacore.utils.parallel.Lambdas.func;
  * <li>(2, ): more than JVM_PARALLELISM</li>
  * </ul>
  * <li>0: CachedThreadPool</li>
- * <li>Negatives values: FixedThreadPool with parallelism =
- * <code>abs((int)facor)</code></li>
+ * <li>Negatives values: FixedThreadPool with parallelism = <code>abs((int)facor)</code></li>
  * </ul>
  * 
  * @author zx
@@ -363,15 +360,6 @@ public final class Parals extends Utils {
 	}
 
 	public static String status() {
-		return status(EXERS.exor);
+		return EXERS.exor.toString();
 	}
-
-	public static String status(ExecutorService exor) {
-		if (null == exor) return null;
-		if (exor instanceof ThreadPoolExecutor || exor instanceof ForkJoinPool) return exor.toString();
-		Object o = Reflections.get(exor, "e");// DelegatedExecutorService
-		if (null == o) return null;
-		return o instanceof ExecutorService ? status((ExecutorService) o) : exor.toString();
-	}
-
 }

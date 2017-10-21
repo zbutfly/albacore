@@ -15,13 +15,16 @@ import net.butfly.albacore.Albacore;
 
 public class Logger implements Serializable {
 	private static final long serialVersionUID = -1940330974751419775L;
-	private static final Consumer<Runnable> submit;
+	private static final boolean async;
+	private static final AtomicInteger tn;
+	private static final ThreadGroup g;
 	public static final ExecutorService logex;
 	static {
-		if (Boolean.parseBoolean(System.getProperty(Albacore.Props.PROP_LOGGER_ASYNC, "true"))) {
-			AtomicInteger tn = new AtomicInteger();
-			ThreadGroup g = new ThreadGroup("AlbacoreLoggerThread");
-			logex = new ThreadPoolExecutor(8, 8, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(1024), r -> {
+		async = Boolean.parseBoolean(System.getProperty(Albacore.Props.PROP_LOGGER_ASYNC, "true"));
+		if (async) {
+			tn = new AtomicInteger();
+			g = new ThreadGroup("AlbacoreLoggerThread");
+			logex = Executors.newFixedThreadPool(16, r -> {
 				Thread t = new Thread(g, r, "AlbacoreLoggerThread#" + tn.getAndIncrement());
 				t.setDaemon(true);
 				return t;
@@ -35,6 +38,15 @@ public class Logger implements Serializable {
 		}
 	}
 	private final org.slf4j.Logger logger;
+
+	private void submit(Runnable run) {
+		if (async) try {
+			logex.submit(run);
+		} catch (RejectedExecutionException e) {
+			// run.run();
+		}
+		else run.run();
+	}
 
 	private Logger(org.slf4j.Logger logger) {
 		super();
