@@ -3,7 +3,6 @@ package net.butfly.albacore.utils.parallel;
 import static net.butfly.albacore.utils.Exceptions.unwrap;
 import static net.butfly.albacore.utils.Exceptions.wrap;
 import static net.butfly.albacore.utils.collection.Streams.map;
-import static net.butfly.albacore.utils.collection.Streams.of;
 
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.text.MessageFormat;
@@ -42,12 +41,14 @@ import net.butfly.albacore.utils.Systems;
 import net.butfly.albacore.utils.Texts;
 import net.butfly.albacore.utils.Utils;
 import net.butfly.albacore.utils.logger.Logger;
+import static net.butfly.albacore.utils.parallel.Lambdas.func;
 
 /**
- * <b>Auto detection of thread executor type and parallelism based on <code>-Dalbacore.io.stream.parallelism.factor=factor(double)</code>,
- * default 0.</b> <blockquote>Default <code>factor<code> value without
- * <code>albacore.io.stream.parallelism.factor</code> setting causes traditional unlimited <code>CachedThreadPool</code>
- * implementation.</blockquote>
+ * <b>Auto detection of thread executor type and parallelism based on
+ * <code>-Dalbacore.io.stream.parallelism.factor=factor(double)</code>, default
+ * 0.</b> <blockquote>Default <code>factor<code> value without
+ * <code>albacore.io.stream.parallelism.factor</code> setting causes traditional
+ * unlimited <code>CachedThreadPool</code> implementation.</blockquote>
  * 
  * <ul>
  * <li>Positives double values: ForkJoinPool</li>
@@ -55,7 +56,8 @@ import net.butfly.albacore.utils.logger.Logger;
  * <ul>
  * <li>Minimum: 2</li>
  * <li>IO_PARALLELISM: 16</li>
- * <li>JVM_PARALLELISM: <code>ForkJoinPool.getCommonPoolParallelism()</code></li>
+ * <li>JVM_PARALLELISM:
+ * <code>ForkJoinPool.getCommonPoolParallelism()</code></li>
  * </ul>
  * Which means:
  * <ul>
@@ -66,7 +68,8 @@ import net.butfly.albacore.utils.logger.Logger;
  * <li>(2, ): more than JVM_PARALLELISM</li>
  * </ul>
  * <li>0: CachedThreadPool</li>
- * <li>Negatives values: FixedThreadPool with parallelism = <code>abs((int)facor)</code></li>
+ * <li>Negatives values: FixedThreadPool with parallelism =
+ * <code>abs((int)facor)</code></li>
  * </ul>
  * 
  * @author zx
@@ -111,38 +114,6 @@ public final class Parals extends Utils {
 			get(f);
 	}
 
-	// /**
-	// * Run sequentially, by listening one by one
-	// *
-	// * @param firstAndThens
-	// */
-	// @SuppressWarnings({ "rawtypes", "unchecked" })
-	// @Deprecated
-	// public static void runs(Runnable... firstAndThens) {
-	// if (null == firstAndThens || firstAndThens.length == 0) return;
-	// ListenableFuture f = EXERS.lexor.submit(firstAndThens[0]);
-	// if (firstAndThens.length > 1) f.addListener(() ->
-	// runs(Arrays.copyOfRange(firstAndThens, 1, firstAndThens.length)),
-	// EXERS.exor);
-	// get(f);
-	// }
-	//
-	// @SafeVarargs
-	// @Deprecated
-	// public static <T> void runs(Callable<T> first, Consumer<T>... then) {
-	// if (null == first) return;
-	// ListenableFuture<T> f = EXERS.lexor.submit(first);
-	// for (Consumer<T> t : then)
-	// if (t != null) f.addListener(() -> {
-	// try {
-	// t.accept(f.get());
-	// } catch (InterruptedException e) {} catch (ExecutionException e) {
-	// logger.error("Subtask error", unwrap(e));
-	// }
-	// }, EXERS.exor);
-	// get(f);
-	// }
-
 	public static <T> T run(Callable<T> task) {
 		return get(EXERS.exor.submit(task));
 	}
@@ -152,7 +123,7 @@ public final class Parals extends Utils {
 		return run(Arrays.asList(tasks));
 	}
 
-	public static <T> List<T> run(List<? extends Callable<T>> tasks) {
+	public static <T> List<T> run(List<Callable<T>> tasks) {
 		List<Future<T>> fs = new ArrayList<>();
 		for (Callable<T> t : tasks)
 			fs.add(EXERS.exor.submit(t));
@@ -162,7 +133,7 @@ public final class Parals extends Utils {
 		return rs;
 	}
 
-	public static <T> Future<List<T>> listen(List<? extends Callable<T>> tasks) {
+	public static <T> Future<List<T>> listen(List<Callable<T>> tasks) {
 		return listen(() -> run(tasks));
 	}
 
@@ -197,7 +168,18 @@ public final class Parals extends Utils {
 	 * @return
 	 */
 	public static <R, V> R eachs(Iterable<V> src, Function<V, R> doing, BinaryOperator<R> accumulator) {
-		return map(src, v -> run(() -> doing.apply(v)), Collectors.reducing(null, accumulator));
+		return map(src, doing::apply, Collectors.reducing(null, accumulator));
+	}
+
+	/**
+	 * Strict Parallel traversing.
+	 * 
+	 * @param src
+	 * @param doing
+	 * @return
+	 */
+	public static <R, V> List<R> eachs(Iterable<V> src, Function<V, R> doing) {
+		return map(src, doing::apply, Collectors.toList());
 	}
 
 	/**
@@ -207,26 +189,12 @@ public final class Parals extends Utils {
 	 * @param doing
 	 * @return couting
 	 */
-	public static <V> long eachs(Iterable<V> src, Consumer<V> doing) {
-		return map(src, v -> run(() -> {
-			doing.accept(v);
-			return null;
-		}), Collectors.counting());
+	public static <V> void eachs(Iterable<V> src, Consumer<V> doing) {
+		map(src, func(doing), Collectors.counting());
 	}
 
 	public static <V> long eachs(Stream<V> src, Consumer<V> doing) {
-		return map(src, v -> run(() -> {
-			doing.accept(v);
-			return null;
-		}), Collectors.counting());
-	}
-
-	public static <V> void each(Iterable<V> col, Consumer<? super V> consumer) {
-		each(of(col), consumer);
-	}
-
-	private static <V> void each(Stream<V> s, Consumer<? super V> consumer) {
-		run(() -> map(s, v -> get(listen(() -> consumer.accept((V) v))), Collectors.counting()));
+		return map(src, func(doing), Collectors.counting());
 	}
 
 	public static String tracePool(String prefix) {
@@ -277,35 +245,35 @@ public final class Parals extends Utils {
 	}
 
 	private final static class Exers extends Namedly implements AutoCloseable {
-		public static final Logger logger = Logger.getLogger(Exers.class);
 		final ExecutorService exor;
-		// @Deprecated
-		// final ListeningExecutorService lexor;
-		private final static Map<String, ThreadGroup> g = new ConcurrentHashMap<>();
 
 		public Exers(String name, int parallelism, boolean throwException) {
 			UncaughtExceptionHandler handler = (t, e) -> {
 				logger.error("Migrater pool task failure @" + t.getName(), e);
 				if (throwException) throw wrap(unwrap(e));
 			};
-			if (parallelism > 0) exor = new ForkJoinPool(parallelism, Concurrents.forkjoinFactory(name), handler, false);
-			else {
-				ThreadFactory factory = r -> {
-					Thread t = new Thread(g.computeIfAbsent(name, n -> new ThreadGroup(name + "ThreadGroup")), r, name + "@" + Texts
-							.formatDate(new Date()));
-					t.setUncaughtExceptionHandler(handler);
-					return t;
-				};
-				RejectedExecutionHandler rejected = (r, ex) -> logger.error("Paral task rejected", ex);;
-				exor = parallelism == 0 ? //
-						new ThreadPoolExecutor(0, Integer.MAX_VALUE, 10L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(), factory,
-								rejected) : //
-						new ThreadPoolExecutor(-parallelism, -parallelism, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(),
-								factory, rejected);
-				((ThreadPoolExecutor) exor).setRejectedExecutionHandler((r, ex) -> logger.error(tracePool("Task rejected by the exor")));
-			}
+			exor = parallelism > 0 ? new ForkJoinPool(parallelism, Concurrents.forkjoinFactory(name), handler, false)
+					: threadPool(parallelism, handler);
 			logger.info("Main executor constructed: " + exor.toString());
 			Systems.handleSignal(sig -> close(), "TERM", "INT");
+		}
+
+		private ThreadPoolExecutor threadPool(int parallelism, UncaughtExceptionHandler handler) {
+			Map<String, ThreadGroup> g = new ConcurrentHashMap<>();
+			ThreadFactory factory = r -> {
+				Thread t = new Thread(g.computeIfAbsent(name, n -> new ThreadGroup(name + "ThreadGroup")), r, name + "@" + Texts.formatDate(
+						new Date()));
+				t.setUncaughtExceptionHandler(handler);
+				return t;
+			};
+			RejectedExecutionHandler rejected = (r, ex) -> logger.error("Paral task rejected", ex);
+			ThreadPoolExecutor tp = parallelism == 0 ? //
+					new ThreadPoolExecutor(0, Integer.MAX_VALUE, 10L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(), factory, rejected)
+					: //
+					new ThreadPoolExecutor(-parallelism, -parallelism, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(),
+							factory, rejected);
+			tp.setRejectedExecutionHandler((r, ex) -> logger.error(tracePool("Task rejected by the exor")));
+			return tp;
 		}
 
 		@Override
@@ -371,4 +339,5 @@ public final class Parals extends Utils {
 		if (null == o) return null;
 		return o instanceof ExecutorService ? status((ExecutorService) o) : exor.toString();
 	}
+
 }
