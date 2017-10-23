@@ -88,9 +88,10 @@ class Statistic implements Serializable {
 	private String traceDetail(Statistic.Result step, Statistic.Result total) {
 		String ss = null == detailing ? "" : detailing.get();
 		ss = null == ss ? "" : ", [" + ss + "]";
-		return MessageFormat.format("Statistic: [Step: {0}/objs,{1},{2}], [Total: {3}/objs,{4},{5}]{6}.", step.packs, Texts.formatKilo(
-				step.bytes, "B"), Texts.formatMillis(step.millis), total.packs, Texts.formatKilo(total.bytes, "B"), Texts.formatMillis(
-						total.millis), ss);
+		return MessageFormat.format("Statistic: [Step: {0}/objs,{1},{2},{7} objs/s], [Total: {3}/objs,{4},{5},{8} objs/s] {6}.", //
+				step.packs, Texts.formatKilo(step.bytes, "B"), Texts.formatMillis(step.millis), //
+				total.packs, Texts.formatKilo(total.bytes, "B"), Texts.formatMillis(total.millis), //
+				ss, step.packs * 1000 / step.millis, total.packs * 1000 / total.millis);
 	}
 
 	void trace(String info) {

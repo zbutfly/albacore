@@ -255,7 +255,7 @@ public final class Parals extends Utils {
 				logger.error("Migrater pool task failure @" + t.getName(), e);
 				if (throwException) throw wrap(unwrap(e));
 			};
-			exor = parallelism > 0 ? new ForkJoinPool(parallelism, Concurrents.forkjoinFactory(name), handler, false)
+			exor = parallelism > 0 ? new ForkJoinPool(parallelism, Concurrents.forkjoinFactory(name), handler, true)
 					: threadPool(parallelism, handler);
 			logger.info("Main executor constructed: " + exor.toString());
 			Systems.handleSignal(sig -> close(), "TERM", "INT");
