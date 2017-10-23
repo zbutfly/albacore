@@ -3,6 +3,7 @@ package net.butfly.albacore.utils.parallel;
 import static net.butfly.albacore.utils.Exceptions.unwrap;
 import static net.butfly.albacore.utils.Exceptions.wrap;
 import static net.butfly.albacore.utils.collection.Streams.map;
+import static net.butfly.albacore.utils.collection.Streams.list;
 
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.text.MessageFormat;
@@ -44,11 +45,10 @@ import net.butfly.albacore.utils.logger.Logger;
 import static net.butfly.albacore.utils.parallel.Lambdas.func;
 
 /**
- * <b>Auto detection of thread executor type and parallelism based on
- * <code>-Dalbacore.io.stream.parallelism.factor=factor(double)</code>, default
- * 0.</b> <blockquote>Default <code>factor<code> value without
- * <code>albacore.io.stream.parallelism.factor</code> setting causes traditional
- * unlimited <code>CachedThreadPool</code> implementation.</blockquote>
+ * <b>Auto detection of thread executor type and parallelism based on <code>-Dalbacore.io.stream.parallelism.factor=factor(double)</code>,
+ * default 0.</b> <blockquote>Default <code>factor<code> value without
+ * <code>albacore.io.stream.parallelism.factor</code> setting causes traditional unlimited <code>CachedThreadPool</code>
+ * implementation.</blockquote>
  * 
  * <ul>
  * <li>Positives double values: ForkJoinPool</li>
@@ -56,8 +56,7 @@ import static net.butfly.albacore.utils.parallel.Lambdas.func;
  * <ul>
  * <li>Minimum: 2</li>
  * <li>IO_PARALLELISM: 16</li>
- * <li>JVM_PARALLELISM:
- * <code>ForkJoinPool.getCommonPoolParallelism()</code></li>
+ * <li>JVM_PARALLELISM: <code>ForkJoinPool.getCommonPoolParallelism()</code></li>
  * </ul>
  * Which means:
  * <ul>
@@ -68,8 +67,7 @@ import static net.butfly.albacore.utils.parallel.Lambdas.func;
  * <li>(2, ): more than JVM_PARALLELISM</li>
  * </ul>
  * <li>0: CachedThreadPool</li>
- * <li>Negatives values: FixedThreadPool with parallelism =
- * <code>abs((int)facor)</code></li>
+ * <li>Negatives values: FixedThreadPool with parallelism = <code>abs((int)facor)</code></li>
  * </ul>
  * 
  * @author zx
@@ -228,18 +226,23 @@ public final class Parals extends Utils {
 			get(f);
 	}
 
+	public static <T> List<T> get(List<Future<T>> fs) {
+		return list(fs, Parals::get);
+	}
+
 	public static <T> T get(Future<T> f) {
 		boolean go = true;
 		while (go)
 			try {
-				return f.get(1, TimeUnit.SECONDS);
+				return f.get(2, TimeUnit.SECONDS);
 			} catch (InterruptedException e) {
 				go = false;
 			} catch (ExecutionException e) {
 				go = false;
 				logger.error("Subtask error", unwrap(e));
 			} catch (TimeoutException e) {
-				logger.warn("Subtask [" + f.toString() + "] slow....");
+				Concurrents.waitSleep(10);
+				logger.trace(() -> "Subtask [" + f.toString() + "] slow....");
 			}
 		return null;
 	}
@@ -284,16 +287,17 @@ public final class Parals extends Utils {
 		private static int detectParallelism() {
 			double f = Double.parseDouble(Configs.gets(Albacore.Props.PROP_PARALLEL_FACTOR, "1"));
 			if (f <= 0) return (int) f;
-			int cp = ForkJoinPool.getCommonPoolParallelism();
+			int cp = Integer.parseInt(Configs.get("java.util.concurrent.ForkJoinPool.common.parallelism", Integer.toString(ForkJoinPool
+					.getCommonPoolParallelism())));
 			int p = (int) (cp > 20 ? 16 + Math.round((cp - 16) * (f - 1)) : cp + Math.round(f - 1));
 			if (p < 2) {
 				logger.warn("AlbacoreIO parallelism calced as: [" + p + "]\n\t[from: (((-D" + Albacore.Props.PROP_PARALLEL_FACTOR + "[" + f
-						+ "]) - 1) * (JVM_DEFAULT_PARALLELISM[" + ForkJoinPool.getCommonPoolParallelism()
+						+ "]) - 1) * (JVM_DEFAULT_PARALLELISM[" + cp
 						+ "] - IO_DEFAULT_PARALLELISM[16])), too small, set to 2, no parallelism, for debugging]");
 				return 2;
 			} else {
-				logger.debug("AlbacoreIO parallelism calced as: [" + p + "]\n\t[from: (((-D" + Albacore.Props.PROP_PARALLEL_FACTOR + "[" + f
-						+ "]) - 1) * (JVM_DEFAULT_PARALLELISM[" + ForkJoinPool.getCommonPoolParallelism()
+				logger.info("AlbacoreIO parallelism calced as: [" + p + "]\n\t[from: (((-D" + Albacore.Props.PROP_PARALLEL_FACTOR + "[" + f
+						+ "]) - 1) * (JVM_DEFAULT_PARALLELISM[" + cp
 						+ "] - IO_DEFAULT_PARALLELISM[16])) + IO_DEFAULT_PARALLELISM[16], Max=JVM_DEFAULT_PARALLELISM, Min=2]");
 				return p;
 			}

@@ -1,6 +1,6 @@
 package net.butfly.albacore.utils.collection;
 
-import static net.butfly.albacore.utils.collection.Streams.list;
+import static net.butfly.albacore.utils.parallel.Parals.get;
 import static net.butfly.albacore.utils.parallel.Parals.join;
 import static net.butfly.albacore.utils.parallel.Parals.listen;
 
@@ -8,8 +8,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Spliterator;
-import java.util.Spliterators;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -116,32 +114,24 @@ public final class Its extends Utils {
 		};
 	}
 
-	public static <V> void splitRun(Spliterator<V> origin, long max, Consumer<Spliterator<V>> using) {
+	public static <V> Future<?> split(Spliterator<V> origin, long max, Consumer<Spliterator<V>> using) {
 		List<Future<?>> fs = new ArrayList<>();
 		while (origin.estimateSize() > max) {
 			Spliterator<V> split = origin.trySplit();
-			if (null != split) fs.add(listen((Runnable) () -> splitRun(split, max, using)));
+			if (null != split) fs.add(listen(() -> split(split, max, using)));
 		}
 		if (origin.estimateSize() > 0) using.accept(origin);
-		join(fs);
+		return listen(() -> join(fs));
 	}
 
-	public static <V, R> Spliterator<R> splitMap(Spliterator<V> origin, long maxSize, Function<Spliterator<V>, Spliterator<R>> using) {
+	public static <V, R> Spliterator<R> split(Spliterator<V> origin, long max, Function<Spliterator<V>, Spliterator<R>> using) {
 		List<Future<Spliterator<R>>> fs = new ArrayList<>();
-		while (origin.estimateSize() > maxSize) {
+		while (origin.estimateSize() > max) {
 			Spliterator<V> split = origin.trySplit();
-			if (null != split) fs.add(listen(() -> splitMap(split, maxSize, using)));
+			if (null != split) fs.add(listen(() -> split(split, max, using)));
 		}
-		Spliterator<R> v = origin.estimateSize() > 0 ? using.apply(origin) : null;
-		List<Spliterator<R>> rs = list(fs, f -> {
-			try {
-				return f.get();
-			} catch (InterruptedException | ExecutionException e) {
-				return Spliterators.emptySpliterator();
-			}
-		});
-		if (null != v) rs.add(0, v);
-		return new ConcatSpliterator<>(rs);
+		if (origin.estimateSize() > 0) fs.add(0, listen(() -> using.apply(origin)));
+		return new ConcatSpliterator<>(get(fs));
 	}
 
 	private static class ConcatSpliterator<V> implements Spliterator<V> {
