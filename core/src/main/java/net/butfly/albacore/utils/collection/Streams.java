@@ -1,7 +1,5 @@
 package net.butfly.albacore.utils.collection;
 
-import static net.butfly.albacore.utils.parallel.Parals.eachs;
-import static net.butfly.albacore.utils.parallel.Parals.listen;
 import static net.butfly.albacore.utils.parallel.Parals.run;
 
 import java.util.Collection;
@@ -11,8 +9,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Spliterator;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Future;
 import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -40,19 +37,10 @@ public final class Streams extends Utils {
 		return r1.longValue() + r2.longValue();
 	};
 
-	public static <V> void batching(Stream<V> s, Consumer<Stream<V>> using, int batchSize) {
-		BlockingQueue<V> batch = new LinkedBlockingQueue<>(batchSize);
-		eachs(of(s), v -> {
-			batch.offer(v);
-			if (batch.size() >= batchSize) useBatch(batch, using, batchSize);
+	public static <V> Future<?> batching(Stream<V> s, Consumer<Stream<V>> using, int batchSize) {
+		return Its.split(s.spliterator(), batchSize, it -> {
+			using.accept(Streams.of(it));
 		});
-		while (!batch.isEmpty())
-			useBatch(batch, using, batchSize);
-	}
-
-	private static <V> void useBatch(BlockingQueue<V> batch, Consumer<Stream<V>> using, int batchSize) {
-		CopyOnWriteArrayList<V> b = new CopyOnWriteArrayList<>();
-		if (batch.drainTo(b, batchSize) > 0) listen(() -> using.accept(of(b)));
 	}
 
 	public static <V> Map<Integer, Spliterator<V>> spatial(Spliterator<V> it, int parallelism) {
