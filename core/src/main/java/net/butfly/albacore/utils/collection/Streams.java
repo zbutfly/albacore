@@ -95,7 +95,7 @@ public final class Streams extends Utils {
 		return s.filter(NOT_NULL);
 	}
 
-	public static <K, V> Stream<Entry<K, V>> of(Map<K, V> map) {
+	public static <K, V> Stream<Entry<K, V>> ofMap(Map<K, V> map) {
 		return of(map.entrySet()).filter(e -> e.getKey() != null && e.getValue() != null);
 	}
 

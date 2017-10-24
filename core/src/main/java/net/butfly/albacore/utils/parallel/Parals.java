@@ -45,9 +45,9 @@ import net.butfly.albacore.utils.logger.Logger;
 import static net.butfly.albacore.utils.parallel.Lambdas.func;
 
 /**
- * <b>Auto detection of thread executor type and parallelism based on <code>-Dalbacore.io.stream.parallelism.factor=factor(double)</code>,
+ * <b>Auto detection of thread executor type and parallelism based on <code>-Dalbacore.parallel.factor=factor(double)</code>,
  * default 0.</b> <blockquote>Default <code>factor<code> value without
- * <code>albacore.io.stream.parallelism.factor</code> setting causes traditional unlimited <code>CachedThreadPool</code>
+ * <code>albacore.parallel.factor</code> setting causes traditional unlimited <code>CachedThreadPool</code>
  * implementation.</blockquote>
  * 
  * <ul>
