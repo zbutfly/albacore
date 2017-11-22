@@ -45,10 +45,9 @@ import net.butfly.albacore.utils.logger.Logger;
 import static net.butfly.albacore.utils.parallel.Lambdas.func;
 
 /**
- * <b>Auto detection of thread executor type and parallelism based on <code>-Dalbacore.parallel.factor=factor(double)</code>,
- * default 0.</b> <blockquote>Default <code>factor<code> value without
- * <code>albacore.parallel.factor</code> setting causes traditional unlimited <code>CachedThreadPool</code>
- * implementation.</blockquote>
+ * <b>Auto detection of thread executor type and parallelism based on <code>-Dalbacore.parallel.factor=factor(double)</code>, default 0.</b>
+ * <blockquote>Default <code>factor<code> value without
+ * <code>albacore.parallel.factor</code> setting causes traditional unlimited <code>CachedThreadPool</code> implementation.</blockquote>
  * 
  * <ul>
  * <li>Positives double values: ForkJoinPool</li>
@@ -255,7 +254,7 @@ public final class Parals extends Utils {
 				logger.error("Migrater pool task failure @" + t.getName(), e);
 				if (throwException) throw wrap(unwrap(e));
 			};
-			exor = parallelism > 0 ? new ForkJoinPool(parallelism, Concurrents.forkjoinFactory(name), handler, true)
+			exor = parallelism > 0 ? new ForkJoinPool(parallelism, Concurrents.forkjoinFactory(name), handler, false)
 					: threadPool(parallelism, handler);
 			logger.info("Main executor constructed: " + exor.toString());
 			Systems.handleSignal(sig -> close(), "TERM", "INT");
@@ -285,22 +284,14 @@ public final class Parals extends Utils {
 		}
 
 		private static int detectParallelism() {
+			int fp = ForkJoinPool.getCommonPoolParallelism();
+			logger.info("ForkJoinPool.getCommonPoolParallelism(): " + fp);
 			double f = Double.parseDouble(Configs.gets(Albacore.Props.PROP_PARALLEL_FACTOR, "1"));
 			if (f <= 0) return (int) f;
-			int cp = Integer.parseInt(Configs.get("java.util.concurrent.ForkJoinPool.common.parallelism", Integer.toString(ForkJoinPool
-					.getCommonPoolParallelism())));
-			int p = (int) (cp > 20 ? 16 + Math.round((cp - 16) * (f - 1)) : cp + Math.round(f - 1));
-			if (p < 2) {
-				logger.warn("AlbacoreIO parallelism calced as: [" + p + "]\n\t[from: (((-D" + Albacore.Props.PROP_PARALLEL_FACTOR + "[" + f
-						+ "]) - 1) * (JVM_DEFAULT_PARALLELISM[" + cp
-						+ "] - IO_DEFAULT_PARALLELISM[16])), too small, set to 2, no parallelism, for debugging]");
-				return 2;
-			} else {
-				logger.info("AlbacoreIO parallelism calced as: [" + p + "]\n\t[from: (((-D" + Albacore.Props.PROP_PARALLEL_FACTOR + "[" + f
-						+ "]) - 1) * (JVM_DEFAULT_PARALLELISM[" + cp
-						+ "] - IO_DEFAULT_PARALLELISM[16])) + IO_DEFAULT_PARALLELISM[16], Max=JVM_DEFAULT_PARALLELISM, Min=2]");
-				return p;
-			}
+			int p = 16 + (int) Math.round((fp - 16) * (f - 1));
+			if (p < 2) p = 2;
+			logger.info("AlbacoreIO parallelism adjusted to [" + p + "] by [-D" + Albacore.Props.PROP_PARALLEL_FACTOR + "=" + f + "].");
+			return p;
 		}
 	}
 
