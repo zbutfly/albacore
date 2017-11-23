@@ -1,5 +1,7 @@
 package net.butfly.albacore.io;
 
+import static net.butfly.albacore.utils.parallel.Exeters.DEFEX;
+
 import java.util.Map;
 import java.util.Spliterator;
 import java.util.concurrent.ConcurrentHashMap;
@@ -8,7 +10,6 @@ import java.util.stream.Stream;
 
 import net.butfly.albacore.utils.collection.Its;
 import net.butfly.albacore.utils.collection.Streams;
-import net.butfly.albacore.utils.parallel.Parals;
 
 public class SpatialTest {
 	public static void main(String[] args) {
@@ -30,7 +31,7 @@ public class SpatialTest {
 		for (int i = 0; i < 5; i++)
 			its.put(i, Its.wrap(it));
 		for (int i : its.keySet())
-			Parals.listen(() -> its.get(i).forEachRemaining(v -> System.out.println("#" + i + ": " + v + ", remain in parent: " + it
+			DEFEX.submit(() -> its.get(i).forEachRemaining(v -> System.out.println("#" + i + ": " + v + ", remain in parent: " + it
 					.estimateSize())));
 		System.out.println("remain in parent: " + it.estimateSize());
 

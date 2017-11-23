@@ -1,6 +1,6 @@
 package net.butfly.albacore.utils.collection;
 
-import static net.butfly.albacore.utils.parallel.Parals.run;
+import static net.butfly.albacore.utils.parallel.Exeters.DEFEX;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Spliterator;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.function.BinaryOperator;
@@ -153,7 +154,7 @@ public final class Streams extends Utils {
 	 * @return
 	 */
 	public static <V, R> R collect(Stream<? extends V> s, Collector<? super V, ?, R> collector) {
-		return run(() -> of(s).collect(collector));
+		return DEFEX.join((Callable<R>) () -> of(s).collect(collector));
 	}
 
 	public static <V, R> R collect(Iterable<? extends V> col, Collector<? super V, ?, R> collector) {

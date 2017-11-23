@@ -9,6 +9,11 @@
 	<artifactId>albacore-core</artifactId>
 	<dependencies>
 		<dependency>
+			<groupId>net.butfly.albacore</groupId>
+			<artifactId>albacore-parallel</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
 			<groupId>log4j</groupId>
 			<artifactId>log4j</artifactId>
 		</dependency>

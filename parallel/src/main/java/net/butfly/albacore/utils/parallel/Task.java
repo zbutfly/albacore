@@ -1,11 +1,9 @@
 package net.butfly.albacore.utils.parallel;
 
-import static net.butfly.albacore.utils.collection.Streams.map;
-
+import static net.butfly.albacore.utils.parallel.Exeters.DEFEX;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public interface Task extends Runnable {
 	public static final Task DO_NOTHING = () -> {};
@@ -59,7 +57,7 @@ public interface Task extends Runnable {
 	}
 
 	default Task async() {
-		return () -> Parals.listen(this::run);
+		return () -> DEFEX.submit(this);
 	}
 
 	default String text() {
@@ -135,7 +133,11 @@ public interface Task extends Runnable {
 
 			@Override
 			public String toString() {
-				return map(subs, r -> "Task[" + r.toString() + "]", Collectors.joining("+"));
+				if (subs.size() <= 0) return "Empty task";
+				StringBuilder s = new StringBuilder();
+				for (Runnable sub : subs)
+					s.append("+").append("Task[" + sub.toString() + "]");
+				return s.substring(1);
 			}
 		}
 
@@ -146,7 +148,7 @@ public interface Task extends Runnable {
 
 			@Override
 			public void run() {
-				Parals.run(subs.toArray(new Task[subs.size()]));
+				DEFEX.join(subs.toArray(new Task[subs.size()]));
 			}
 
 			@Override
@@ -161,7 +163,11 @@ public interface Task extends Runnable {
 
 			@Override
 			public String toString() {
-				return map(subs, r -> "Task[" + r.toString() + "]", Collectors.joining("*"));
+				if (subs.size() <= 0) return "Empty task";
+				StringBuilder s = new StringBuilder();
+				for (Runnable sub : subs)
+					s.append("*").append("Task[" + sub.toString() + "]");
+				return s.substring(1);
 			}
 		}
 	}

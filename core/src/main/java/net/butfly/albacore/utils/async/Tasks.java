@@ -3,6 +3,7 @@ package net.butfly.albacore.utils.async;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
@@ -13,7 +14,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 import net.butfly.albacore.exception.AggregaedException;
-import net.butfly.albacore.lambda.Callable;
 import net.butfly.albacore.utils.Instances;
 import net.butfly.albacore.utils.Utils;
 import net.butfly.albacore.utils.logger.Logger;

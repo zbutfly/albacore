@@ -3,6 +3,7 @@ package net.butfly.albacore.utils;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -78,17 +79,14 @@ public final class Pair<T1, T2> implements Serializable, Entry<T1, T2> {
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		if (null == obj || !Pair.class.isAssignableFrom(obj.getClass())) return false;
-		@SuppressWarnings("rawtypes")
-		Pair p = (Pair) obj;
-		if (null == v1 && p.v1 != v1) return false;
-		if (null == v2 && p.v2 != v2) return false;
-		return v1.equals(p.v1) && v2.equals(p.v2);
+	public boolean equals(Object other) {
+		return other instanceof Pair<?, ?> && Objects.equals(v1, ((Pair<?, ?>) other).v1) && Objects.equals(v2, ((Pair<?, ?>) other).v2);
 	}
 
 	@Override
 	public int hashCode() {
-		return super.hashCode();
+		if (v1 == null) return (v2 == null) ? 0 : v2.hashCode() + 1;
+		else if (v2 == null) return v1.hashCode() + 2;
+		else return v1.hashCode() * 17 + v2.hashCode();
 	}
 }

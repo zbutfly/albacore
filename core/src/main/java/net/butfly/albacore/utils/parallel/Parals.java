@@ -1,48 +1,18 @@
 package net.butfly.albacore.utils.parallel;
 
-import static net.butfly.albacore.utils.Exceptions.unwrap;
-import static net.butfly.albacore.utils.Exceptions.wrap;
 import static net.butfly.albacore.utils.collection.Streams.map;
-import static net.butfly.albacore.utils.collection.Streams.list;
+import static net.butfly.albacore.utils.parallel.Exeters.DEFEX;
+import static net.butfly.albacore.utils.parallel.Lambdas.func;
 
-import java.lang.Thread.UncaughtExceptionHandler;
-import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.RejectedExecutionHandler;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import net.butfly.albacore.Albacore;
-import net.butfly.albacore.base.Namedly;
-import net.butfly.albacore.utils.Configs;
-import net.butfly.albacore.utils.Reflections;
-import net.butfly.albacore.utils.Systems;
-import net.butfly.albacore.utils.Texts;
 import net.butfly.albacore.utils.Utils;
 import net.butfly.albacore.utils.logger.Logger;
-import static net.butfly.albacore.utils.parallel.Lambdas.func;
 
 /**
  * <b>Auto detection of thread executor type and parallelism based on <code>-Dalbacore.parallel.factor=factor(double)</code>, default 0.</b>
@@ -73,9 +43,6 @@ import static net.butfly.albacore.utils.parallel.Lambdas.func;
  */
 public final class Parals extends Utils {
 	private static final Logger logger = Logger.getLogger(Parals.class);
-	private final static String EXECUTOR_NAME = "AlbacoreIOStream";
-	private final static int SYS_PARALLELISM = Exers.detectParallelism();
-	private final static Exers EXERS = new Exers(EXECUTOR_NAME, SYS_PARALLELISM, false);
 
 	public static int calcBatchParal(long total, long batch) {
 		return total == 0 ? 0 : (int) (((total - 1) / batch) + 1);
@@ -91,68 +58,6 @@ public final class Parals extends Utils {
 		@Override
 		default void onFailure(Throwable t) {
 			logger.error("Run sequential fail", t);
-		}
-	}
-
-	public static void run(Runnable task) {
-		get(EXERS.exor.submit(task));
-	}
-
-	/**
-	 * Run parallelly
-	 * 
-	 * @param tasks
-	 */
-	public static void run(Runnable... tasks) {
-		List<Future<?>> fs = new ArrayList<>();
-		for (Runnable t : tasks)
-			fs.add(EXERS.exor.submit(t));
-		for (Future<?> f : fs)
-			get(f);
-	}
-
-	public static <T> T run(Callable<T> task) {
-		return get(EXERS.exor.submit(task));
-	}
-
-	@SafeVarargs
-	public static <T> List<T> run(Callable<T>... tasks) {
-		return run(Arrays.asList(tasks));
-	}
-
-	public static <T> List<T> run(List<Callable<T>> tasks) {
-		List<Future<T>> fs = new ArrayList<>();
-		for (Callable<T> t : tasks)
-			fs.add(EXERS.exor.submit(t));
-		List<T> rs = new CopyOnWriteArrayList<>();
-		for (Future<T> f : fs)
-			rs.add(get(f));
-		return rs;
-	}
-
-	public static <T> Future<List<T>> listen(List<Callable<T>> tasks) {
-		return listen(() -> run(tasks));
-	}
-
-	public static <T> Future<T> listen(Callable<T> task) {
-		try {
-			return EXERS.exor.submit(task);
-		} catch (RejectedExecutionException e) {
-			logger.error("Rejected");
-			throw e;
-		}
-	}
-
-	public static Future<?> listen(Runnable... tasks) {
-		return listen(() -> run(tasks));
-	}
-
-	public static Future<?> listen(Runnable task) {
-		try {
-			return EXERS.exor.submit(task);
-		} catch (RejectedExecutionException e) {
-			logger.error("Rejected");
-			throw e;
 		}
 	}
 
@@ -194,145 +99,12 @@ public final class Parals extends Utils {
 		return map(src, func(doing), Collectors.counting());
 	}
 
-	public static String tracePool(String prefix) {
-		if (EXERS.exor instanceof ForkJoinPool) {
-			ForkJoinPool ex = (ForkJoinPool) EXERS.exor;
-			return MessageFormat.format("{5}, Fork/Join: tasks={4}, threads(active/running)={1}/{2}, steals={3}, pool size={0}", ex
-					.getPoolSize(), ex.getActiveThreadCount(), ex.getRunningThreadCount(), ex.getStealCount(), ex.getQueuedTaskCount(),
-					prefix);
-		} else if (EXERS.exor instanceof ThreadPoolExecutor) {
-			ThreadPoolExecutor ex = (ThreadPoolExecutor) EXERS.exor;
-			return MessageFormat.format("{3}, ThreadPool: tasks={2}, threads(active)={1}, pool size={0}", ex.getPoolSize(), ex
-					.getActiveCount(), ex.getTaskCount(), prefix);
-		} else return prefix + ": " + EXERS.exor.toString();
-	}
-
+	@Deprecated
 	public static int parallelism() {
-		if (EXERS.exor instanceof ForkJoinPool) return ((ForkJoinPool) EXERS.exor).getParallelism();
-		if (SYS_PARALLELISM < 0) return -SYS_PARALLELISM;
-		return Integer.MAX_VALUE;
-	}
-
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public static void join(Future... futures) {
-		for (Future f : futures)
-			get(f);
-	}
-
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public static void join(Iterable<Future<?>> futures) {
-		for (Future f : futures)
-			get(f);
-	}
-
-	public static <T> List<T> get(List<Future<T>> fs) {
-		return list(fs, Parals::get);
-	}
-
-	public static <T> T get(Future<T> f) {
-		boolean go = true;
-		while (go)
-			try {
-				return f.get(2, TimeUnit.SECONDS);
-			} catch (InterruptedException e) {
-				go = false;
-			} catch (ExecutionException e) {
-				go = false;
-				logger.error("Subtask error", unwrap(e));
-			} catch (TimeoutException e) {
-				Concurrents.waitSleep(10);
-				logger.trace(() -> "Subtask [" + f.toString() + "] slow....");
-			}
-		return null;
-	}
-
-	private final static class Exers extends Namedly implements AutoCloseable {
-		final ExecutorService exor;
-
-		public Exers(String name, int parallelism, boolean throwException) {
-			UncaughtExceptionHandler handler = (t, e) -> {
-				logger.error("Migrater pool task failure @" + t.getName(), e);
-				if (throwException) throw wrap(unwrap(e));
-			};
-			exor = parallelism > 0 ? new ForkJoinPool(parallelism, Concurrents.forkjoinFactory(name), handler, false)
-					: threadPool(parallelism, handler);
-			logger.info("Main executor constructed: " + exor.toString());
-			Systems.handleSignal(sig -> close(), "TERM", "INT");
-		}
-
-		private ThreadPoolExecutor threadPool(int parallelism, UncaughtExceptionHandler handler) {
-			Map<String, ThreadGroup> g = new ConcurrentHashMap<>();
-			ThreadFactory factory = r -> {
-				Thread t = new Thread(g.computeIfAbsent(name, n -> new ThreadGroup(name + "ThreadGroup")), r, name + "@" + Texts.formatDate(
-						new Date()));
-				t.setUncaughtExceptionHandler(handler);
-				return t;
-			};
-			RejectedExecutionHandler rejected = (r, ex) -> logger.error("Paral task rejected", ex);
-			ThreadPoolExecutor tp = parallelism == 0 ? //
-					new ThreadPoolExecutor(0, Integer.MAX_VALUE, 10L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(), factory, rejected)
-					: //
-					new ThreadPoolExecutor(-parallelism, -parallelism, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(),
-							factory, rejected);
-			tp.setRejectedExecutionHandler((r, ex) -> logger.error(tracePool("Task rejected by the exor")));
-			return tp;
-		}
-
-		@Override
-		public void close() {
-			logger.debug(name + " is closing...");
-		}
-
-		private static int detectParallelism() {
-			int fp = ForkJoinPool.getCommonPoolParallelism();
-			logger.info("ForkJoinPool.getCommonPoolParallelism(): " + fp);
-			double f = Double.parseDouble(Configs.gets(Albacore.Props.PROP_PARALLEL_FACTOR, "1"));
-			if (f <= 0) return (int) f;
-			int p = 16 + (int) Math.round((fp - 16) * (f - 1));
-			if (p < 2) p = 2;
-			logger.info("AlbacoreIO parallelism adjusted to [" + p + "] by [-D" + Albacore.Props.PROP_PARALLEL_FACTOR + "=" + f + "].");
-			return p;
-		}
-	}
-
-	public final static class Pool<V> {
-		private final LinkedBlockingQueue<V> pool;
-		final Supplier<V> constuctor;
-		final Consumer<V> destroyer;
-
-		public Pool(int size, Supplier<V> constuctor) {
-			this(size, constuctor, v -> {});
-		}
-
-		public Pool(int size, Supplier<V> constuctor, Consumer<V> destroyer) {
-			pool = new LinkedBlockingQueue<>(size);
-			this.constuctor = constuctor;
-			this.destroyer = destroyer;
-		}
-
-		public void use(Consumer<V> using) {
-			V v = pool.poll();
-			if (null == v) v = constuctor.get();
-			try {
-				using.accept(v);
-			} finally {
-				if (!pool.offer(v) && v instanceof AutoCloseable) try {
-					((AutoCloseable) v).close();
-				} catch (Exception e) {}
-			}
-		}
+		return DEFEX.parallelism();
 	}
 
 	public static String status() {
-		return status(EXERS.exor);
+		return DEFEX.toString();
 	}
-
-	public static String status(ExecutorService exor) {
-		if (null == exor) return null;
-		if (exor instanceof ThreadPoolExecutor || exor instanceof ForkJoinPool) return exor.toString();
-		Object o = Reflections.get(exor, "e");// DelegatedExecutorService
-		if (null == o) return null;
-		return o instanceof ExecutorService ? status((ExecutorService) o) : exor.toString();
-	}
-
 }

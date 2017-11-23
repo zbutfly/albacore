@@ -1,13 +1,12 @@
 package net.butfly.albacore.utils.collection;
 
-import static net.butfly.albacore.utils.parallel.Parals.get;
-import static net.butfly.albacore.utils.parallel.Parals.join;
-import static net.butfly.albacore.utils.parallel.Parals.listen;
+import static net.butfly.albacore.utils.parallel.Exeters.DEFEX;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Spliterator;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -17,6 +16,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import net.butfly.albacore.utils.Utils;
+import net.butfly.albacore.utils.parallel.Exeters;
 
 public final class Its extends Utils {
 	public static <V> Iterator<V> it(Supplier<V> get, Supplier<Boolean> ending) {
@@ -115,23 +115,23 @@ public final class Its extends Utils {
 	}
 
 	public static <V> Future<?> split(Spliterator<V> origin, long max, Consumer<Spliterator<V>> using) {
-		List<Future<?>> fs = new ArrayList<>();
+		List<Runnable> fs = new ArrayList<>();
 		while (origin.estimateSize() > max) {
 			Spliterator<V> split = origin.trySplit();
-			if (null != split) fs.add(listen(() -> split(split, max, using)));
+			if (null != split) fs.add(() -> split(split, max, using));
 		}
 		if (origin.estimateSize() > 0) using.accept(origin);
-		return listen(() -> join(fs));
+		return DEFEX.submit(fs.toArray(new Runnable[fs.size()]));
 	}
 
 	public static <V, R> Spliterator<R> split(Spliterator<V> origin, long max, Function<Spliterator<V>, Spliterator<R>> using) {
 		List<Future<Spliterator<R>>> fs = new ArrayList<>();
 		while (origin.estimateSize() > max) {
 			Spliterator<V> split = origin.trySplit();
-			if (null != split) fs.add(listen(() -> split(split, max, using)));
+			if (null != split) fs.add(DEFEX.submit((Callable<Spliterator<R>>) () -> split(split, max, using)));
 		}
-		if (origin.estimateSize() > 0) fs.add(0, listen(() -> using.apply(origin)));
-		return new ConcatSpliterator<>(get(fs));
+		if (origin.estimateSize() > 0) fs.add(0, DEFEX.submit((Callable<Spliterator<R>>) () -> using.apply(origin)));
+		return new ConcatSpliterator<>(Exeters.get(fs));
 	}
 
 	private static class ConcatSpliterator<V> implements Spliterator<V> {

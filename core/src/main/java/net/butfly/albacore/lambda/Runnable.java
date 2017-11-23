@@ -1,5 +1,7 @@
 package net.butfly.albacore.lambda;
 
+import java.util.function.Supplier;
+
 @FunctionalInterface
 public interface Runnable extends java.lang.Runnable {
 	@Override
