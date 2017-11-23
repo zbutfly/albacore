@@ -7,7 +7,6 @@ abstract class SteamBase<E, S, SELF extends Steam<E>> implements Steam<E> {
 
 	protected SteamBase(S impl) {
 		super();
-		Objects.requireNonNull(impl);
-		this.impl = impl;
+		this.impl = Objects.requireNonNull(impl);
 	}
 }

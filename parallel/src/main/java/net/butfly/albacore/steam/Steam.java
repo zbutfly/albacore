@@ -1,18 +1,16 @@
 package net.butfly.albacore.steam;
 
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Spliterator;
+import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 import net.butfly.albacore.utils.Pair;
 
 public interface Steam<E> {
-	boolean next(Consumer<E> using);
+	Spliterator<E> spliterator();
 
 	<R> Steam<R> map(Function<E, R> conv);
 
@@ -22,21 +20,19 @@ public interface Steam<E> {
 
 	<E1> Steam<Pair<E, E1>> join(Function<E, E1> func);
 
-	<K> Map<K, Steam<E>> groupBy(Function<E, K> keying);
+	Steam<E> union(Steam<E> another);
 
-	List<Steam<E>> partition(int parts);
+	// ==================
+	boolean next(Consumer<E> using);
 
-	List<Steam<E>> batch(long maxBatch);
+	void partition(Consumer<E> using, int minPartNum);
 
-	static <E, S> Steam<E> wrap(Spliterator<E> impl) {
-		return new SpliteratorSteam<>(impl);
-	}
+	<K> void partition(BiConsumer<K, List<E>> using, Function<E, K> keying, int maxBatchSize);
 
-	static <E, S> Steam<E> wrap(Iterator<E> impl) {
-		return new IteratorSteam<>(impl);
-	}
+	void batch(Consumer<List<E>> using, int maxBatchSize);
 
-	static <E, S> Steam<E> wrap(Stream<E> impl) {
-		return new StreamSteam<>(impl);
-	}
+	void each(Consumer<E> using);
+
+	// ==================
+
 }
