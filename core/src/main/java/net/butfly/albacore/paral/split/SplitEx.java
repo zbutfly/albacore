@@ -210,9 +210,9 @@ public interface SplitEx {
 		do {
 			Spliterator<E> ss = s0.trySplit();
 			splited = null != ss;
-			if (null != ss) DEFEX.submit(() -> each(ss, using));
+			if (null != ss) DEFEX.submit((Runnable) () -> each(ss, using));
 		} while (splited);
-		DEFEX.submit(() -> eachs(s0, using));
+		DEFEX.submit((Runnable) () -> eachs(s0, using));
 	}
 
 	static <K, E> void partition(Spliterator<E> s, BiConsumer<K, E> using, Function<E, K> keying) {
