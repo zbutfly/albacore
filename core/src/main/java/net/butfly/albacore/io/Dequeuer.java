@@ -1,9 +1,10 @@
 package net.butfly.albacore.io;
 
 import java.util.function.Consumer;
-import java.util.stream.Stream;
+
+import net.butfly.albacore.paral.steam.Steam;
 
 @FunctionalInterface
 public interface Dequeuer<V> {
-	void dequeue(Consumer<Stream<V>> using, int batchSize);
+	void dequeue(Consumer<Steam<V>> using, int batchSize);
 }

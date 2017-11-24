@@ -1,6 +1,6 @@
 package net.butfly.albacore.support;
 
-import net.butfly.albacore.utils.Objects;
+import net.butfly.albacore.utils.imports.utils.meta.MetaUtils;
 
 public abstract class Bean<T extends Beans<T>> implements Beans<T> {
 	private static final long serialVersionUID = 1L;
@@ -8,22 +8,22 @@ public abstract class Bean<T extends Beans<T>> implements Beans<T> {
 	@SuppressWarnings("unchecked")
 	@Override
 	public T clone() {
-		return (T) Objects.clone(this, this.getClass());
+		return (T) MetaUtils.clone(this, this.getClass());
 	}
 
 	@Override
 	public boolean equals(Object object) {
-		return Objects.equals(this, object);
+		return MetaUtils.equals(this, object);
 	}
 
 	public Beans<T> copy(Beans<?> src) {
-		if (null != src) Objects.copy(src, this);
+		if (null != src) MetaUtils.copy(src, this);
 		return this;
 	}
 
 	@Override
 	public String toString() {
-		return Objects.toMap(this).toString();
+		return MetaUtils.toMap(this).toString();
 	}
 
 	public Object shadowClone() {

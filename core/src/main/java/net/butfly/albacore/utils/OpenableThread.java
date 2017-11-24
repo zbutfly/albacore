@@ -1,9 +1,10 @@
 package net.butfly.albacore.utils;
 
+import static net.butfly.albacore.paral.Task.waitSleep;
+
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.butfly.albacore.io.Openable;
-import net.butfly.albacore.utils.parallel.Concurrents;
 
 public class OpenableThread extends Thread implements Openable {
 	// Thread status: 0: not started, 1: running, 2: stopped
@@ -70,7 +71,7 @@ public class OpenableThread extends Thread implements Openable {
 	public void open() {
 		Openable.super.open();
 		while (runned.get() <= 0)
-			Concurrents.waitSleep(10);
+			waitSleep(10);
 	}
 
 	@Override
@@ -82,6 +83,6 @@ public class OpenableThread extends Thread implements Openable {
 	public void close() {
 		Openable.super.close();
 		while (runned.get() < 2)
-			Concurrents.waitSleep(100);
+			waitSleep(100);
 	}
 }

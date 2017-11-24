@@ -1,23 +1,20 @@
-package net.butfly.albacore.utils.parallel;
+package net.butfly.albacore.paral;
 
-import static net.butfly.albacore.utils.parallel.Exeters.Sleeps.waitSleep;
-import static net.butfly.albacore.utils.parallel.Exeters.Throws.unwrap;
+import static net.butfly.albacore.paral.Task.waitSleep;
+import static net.butfly.albacore.utils.Exceptions.unwrap;
 
 import java.lang.Thread.UncaughtExceptionHandler;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.UndeclaredThrowableException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinPool.ForkJoinWorkerThreadFactory;
 import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -27,9 +24,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.ForkJoinPool.ForkJoinWorkerThreadFactory;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.Supplier;
 import java.util.logging.Level;
 
 public interface Exeters {
@@ -133,74 +127,5 @@ public interface Exeters {
 			if (null != threadNamePrefix) worker.setName(threadNamePrefix + "#" + worker.getPoolIndex());
 			return worker;
 		};
-	}
-
-	interface Sleeps {
-		final long DEF_WAIT_MS = 100;
-
-		static boolean waitSleep(Supplier<Boolean> waiting) {
-			while (waiting.get())
-				if (!waitSleep()) return false;
-			return true;
-		}
-
-		static boolean waitSleep() {
-			return waitSleep(DEF_WAIT_MS);
-		}
-
-		static boolean waitSleep(long millis) {
-			if (millis < 0) return true;
-			try {
-				Thread.sleep(millis);
-				return true;
-			} catch (InterruptedException e) {
-				return false;
-			}
-		}
-	}
-
-	class Throws {
-		private static final ReentrantReadWriteLock METHODS_LOCK = new ReentrantReadWriteLock();
-		private static final Map<Class<? extends Throwable>, Method> WRAPPING_METHODS = initWrappingMethods();
-
-		private static Map<Class<? extends Throwable>, Method> initWrappingMethods() {
-			try {
-				Map<Class<? extends Throwable>, Method> m = new ConcurrentHashMap<>();
-				m.put(ExecutionException.class, ExecutionException.class.getMethod("getCause"));
-				m.put(InvocationTargetException.class, InvocationTargetException.class.getMethod("getTargetException"));
-				m.put(UndeclaredThrowableException.class, UndeclaredThrowableException.class.getMethod("getUndeclaredThrowable"));
-				m.put(RuntimeException.class, RuntimeException.class.getMethod("getCause"));
-				return m;
-			} catch (NoSuchMethodException e) {
-				throw new RuntimeException(e);
-			}
-		}
-
-		public static void unwrap(Class<? extends Throwable> t, String methodName) {
-			METHODS_LOCK.writeLock().lock();
-			try {
-				WRAPPING_METHODS.put(t, t.getMethod(methodName));
-			} catch (NoSuchMethodException e) {
-				throw new RuntimeException();
-			} finally {
-				METHODS_LOCK.writeLock().unlock();
-			}
-		}
-
-		public static Throwable unwrap(Throwable ex) {
-			if (null == ex) return null;
-			METHODS_LOCK.readLock().lock();
-			try {
-				for (Entry<Class<? extends Throwable>, Method> t : WRAPPING_METHODS.entrySet())
-					if (t.getKey().isAssignableFrom(ex.getClass())) try {
-						Throwable cause = (Throwable) t.getValue().invoke(ex);
-						return null == cause || ex.equals(cause) ? ex : unwrap(cause);
-					} catch (Exception e) {}
-			} finally {
-				METHODS_LOCK.readLock().unlock();
-			}
-			return ex;
-		}
-
 	}
 }

@@ -1,28 +1,25 @@
 package net.butfly.albacore.io;
 
-import static net.butfly.albacore.utils.parallel.Exeters.DEFEX;
+import static net.butfly.albacore.paral.Exeters.DEFEX;
 
 import java.util.Map;
 import java.util.Spliterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
 
+import net.butfly.albacore.paral.steam.Steam;
 import net.butfly.albacore.utils.collection.Its;
-import net.butfly.albacore.utils.collection.Streams;
 
 public class SpatialTest {
 	public static void main(String[] args) {
-		Stream<Integer> s;
+		Steam<Integer> s;
 		int MAX = 10000;
 		AtomicInteger seed = new AtomicInteger();
-		s = Streams.of(() -> {
+		s = Steam.of(() -> {
 			int i = seed.getAndIncrement();
 			System.out.println("\t\t==> advancing to " + i);
 			return i;
-		}, MAX, () -> seed.get() >= MAX).onClose(() -> {
-			System.out.println("\t\t<== closed!");
-		});
+		}, MAX, () -> seed.get() >= MAX);
 		Spliterator<Integer> it = s.spliterator();
 		it.hasCharacteristics(Spliterator.SIZED);
 

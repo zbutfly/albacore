@@ -1,9 +1,13 @@
-package net.butfly.albacore.utils.parallel;
+package net.butfly.albacore.paral;
 
-import static net.butfly.albacore.utils.parallel.Exeters.DEFEX;
+import static net.butfly.albacore.paral.Exeters.DEFEX;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Supplier;
+
+import net.butfly.albacore.utils.logger.Logger;
 
 public interface Task extends Runnable {
 	public static final Task DO_NOTHING = () -> {};
@@ -169,6 +173,41 @@ public interface Task extends Runnable {
 					s.append("*").append("Task[" + sub.toString() + "]");
 				return s.substring(1);
 			}
+		}
+	}
+
+	// for sleep
+	final long DEF_WAIT_MS = 100;
+
+	static boolean waitSleep(Supplier<Boolean> waiting) {
+		while (waiting.get())
+			if (!waitSleep()) return false;
+		return true;
+	}
+
+	static boolean waitSleep() {
+		return waitSleep(DEF_WAIT_MS);
+	}
+
+	static boolean waitSleep(long millis) {
+		if (millis < 0) return true;
+		try {
+			Thread.sleep(millis);
+			return true;
+		} catch (InterruptedException e) {
+			return false;
+		}
+	}
+
+	static boolean waitSleep(long millis, Logger logger, CharSequence cause) {
+		if (millis < 0) return true;
+		try {
+			if (null != logger && logger.isTraceEnabled()) logger.trace("Thread [" + Thread.currentThread().getName() + "] sleep for ["
+					+ millis + "ms], cause [" + cause + "].");
+			Thread.sleep(millis);
+			return true;
+		} catch (InterruptedException e) {
+			return false;
 		}
 	}
 

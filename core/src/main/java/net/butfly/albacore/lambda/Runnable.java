@@ -1,5 +1,6 @@
 package net.butfly.albacore.lambda;
 
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 @FunctionalInterface

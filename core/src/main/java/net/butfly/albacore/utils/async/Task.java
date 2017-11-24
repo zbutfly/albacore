@@ -7,6 +7,7 @@ import java.util.function.Supplier;
 
 import net.butfly.albacore.utils.parallel.Concurrents;
 
+@Deprecated
 public class Task<T> {
 	protected java.util.concurrent.Callable<T> call;
 	protected Consumer<T> back;

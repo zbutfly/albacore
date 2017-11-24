@@ -1,5 +1,7 @@
 package net.butfly.albacore.io;
 
+import static net.butfly.albacore.paral.Task.waitSleep;
+
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
@@ -7,7 +9,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import net.butfly.albacore.base.Named;
 import net.butfly.albacore.lambda.Runnable;
 import net.butfly.albacore.utils.logger.Loggable;
-import net.butfly.albacore.utils.parallel.Concurrents;
 
 public interface Openable extends AutoCloseable, Loggable, Named {
 	enum Status {
@@ -68,7 +69,7 @@ public interface Openable extends AutoCloseable, Loggable, Named {
 			s.compareAndSet(Status.CLOSING, Status.CLOSED);
 		} // else logger().warn(name() + " closing again?");
 		while (!closed())
-			Concurrents.waitSleep(500, logger(), "Waiting for closing finished...");
+			waitSleep(500, logger(), "Waiting for closing finished...");
 		Opened.STATUS.remove(this);
 		logger().trace(name() + " closed.");
 	}

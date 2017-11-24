@@ -4,7 +4,6 @@ import static net.butfly.albacore.utils.collection.Streams.of;
 
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 import net.butfly.albacore.utils.Instances;
 import net.butfly.albacore.utils.Systems;
@@ -39,9 +38,10 @@ public interface Statistical<T extends Statistical<T>> {
 		return t;
 	}
 
-	default <V> void stats(V v) {
+	default <V> V stats(V v) {
 		Statistic s = Instances.fetch(() -> null, Statistic.class, this);
 		if (null != s) s.stats(v);
+		return v;
 	}
 
 	default void traceForce(String curr) {
@@ -52,10 +52,5 @@ public interface Statistical<T extends Statistical<T>> {
 	default <V> void stats(Iterable<V> vv) {
 		Statistic s = Instances.fetch(() -> null, Statistic.class, this);
 		if (null != s) of(vv).forEach(v -> s.stats(v));
-	}
-
-	default <V> Stream<V> stats(Stream<V> vv) {
-		Statistic s = Instances.fetch(() -> null, Statistic.class, this);
-		return null != s ? vv.peek(s::stats) : vv;
 	}
 }

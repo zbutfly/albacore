@@ -8,7 +8,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
-import net.butfly.albacore.utils.parallel.Suppliterator;
+import net.butfly.albacore.paral.split.Suppliterator;
 
 public class SplitTest {
 	static int max = 45;// Integer.MAX_VALUE;
@@ -19,7 +19,7 @@ public class SplitTest {
 		@Override
 		public Integer next() {
 			prefix(ii + "#source advanced...", ii);
-			// Concurrents.waitSleep();
+			// waitSleep();
 			return seed.getAndIncrement() >= max ? null : seed.get();
 		}
 
@@ -44,7 +44,7 @@ public class SplitTest {
 			int ii = i;
 			fs[i] = ex.submit(() -> {
 				ss[ii].forEachRemaining(v -> {
-					// Concurrents.waitSleep();
+					// waitSleep();
 					prefix(ii + "#split: " + v, ii);
 					counts[ii].incrementAndGet();
 				});

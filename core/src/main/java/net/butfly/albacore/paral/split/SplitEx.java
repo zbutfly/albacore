@@ -1,4 +1,4 @@
-package net.butfly.albacore.steam;
+package net.butfly.albacore.paral.split;
 
 import static java.util.Spliterator.CONCURRENT;
 import static java.util.Spliterator.DISTINCT;
@@ -8,7 +8,8 @@ import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterator.SIZED;
 import static java.util.Spliterator.SORTED;
 import static java.util.Spliterator.SUBSIZED;
-import static net.butfly.albacore.utils.parallel.Exeters.DEFEX;
+import static net.butfly.albacore.paral.Exeters.DEFEX;
+import static net.butfly.albacore.paral.steam.Steam.of;
 
 import java.util.List;
 import java.util.Map;
@@ -24,36 +25,10 @@ import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import net.butfly.albacore.paral.steam.Steam;
 import net.butfly.albacore.utils.Pair;
 
 public interface SplitEx {
-	interface chars {
-		final int ALL = SORTED | DISTINCT | SUBSIZED | ORDERED | SIZED | NONNULL | CONCURRENT | IMMUTABLE;
-		final int NON_ALL = ~ALL;
-		// never merge
-		final int NON_SORTED = ~SORTED;
-		final int NON_DISTINCT = ~DISTINCT;
-		// and merge
-		final int NON_SUBSIZED = ~SUBSIZED;
-		final int NON_ORDERED = ~ORDERED;
-		final int NON_SIZED = ~SIZED;
-		final int NON_NONNULL = ~NONNULL;
-		final int NON_CONCURRENT = ~CONCURRENT;
-		// or merge
-		final int NON_IMMUTABLE = ~IMMUTABLE;
-
-		static boolean has(int ch, int bit) {
-			return (ch & bit) == ch;
-		}
-
-		static int merge(int ch1, int ch2) {
-			int and = ch1 & ch2 & SUBSIZED & ORDERED & SIZED & NONNULL & CONCURRENT;
-			int or = (ch1 | ch2) & IMMUTABLE;
-			int non = NON_SORTED | NON_DISTINCT;
-			return ch1 & ch2 & NON_ALL | and | or | non;
-		}
-	}
-
 	static <E> E reduce(Spliterator<E> s, BinaryOperator<E> accumulator) {
 		Spliterator<E> s0 = Objects.requireNonNull(s);
 		AtomicReference<E> r = new AtomicReference<>();
@@ -91,11 +66,44 @@ public interface SplitEx {
 		};
 	}
 
-	static <E, R> Spliterator<R> mapFlat(Spliterator<E> s, Function<E, List<R>> flat) {
+	static <E, R> Spliterator<R> map(Spliterator<E> s, Function<Steam<E>, Steam<R>> conv, int maxBatchSize) {
 		Spliterator<E> s0 = Objects.requireNonNull(s);
 		return new Spliterator<R>() {
-			private final BlockingQueue<R> cache = new LinkedBlockingQueue<>();
+			private final BlockingQueue<E> cache = new LinkedBlockingQueue<>();
 
+			@Override
+			public int characteristics() {
+				return s0.characteristics();
+			}
+
+			@Override
+			public long estimateSize() {
+				return s0.estimateSize();
+			}
+
+			@Override
+			public boolean tryAdvance(Consumer<? super R> using) {
+				return s0.tryAdvance(e -> {
+					List<E> batch = list();
+					cache.offer(e);
+					cache.drainTo(batch, maxBatchSize);
+					if (batch.size() >= maxBatchSize || cache.isEmpty()) conv.apply(Steam.of(batch)).each(using::accept);
+					else for (E ee : batch)
+						cache.offer(ee);
+				});
+			}
+
+			@Override
+			public Spliterator<R> trySplit() {
+				Spliterator<E> ss = s0.trySplit();
+				return null == ss ? null : map(ss, conv, maxBatchSize);
+			}
+		};
+	}
+
+	static <E, R> Spliterator<R> mapFlat(Spliterator<E> impl, Function<E, Steam<R>> flat) {
+		Spliterator<E> s0 = Objects.requireNonNull(impl);
+		return new Spliterator<R>() {
 			@Override
 			public int characteristics() {
 				return s0.characteristics() //
@@ -109,17 +117,7 @@ public interface SplitEx {
 
 			@Override
 			public boolean tryAdvance(Consumer<? super R> using) {
-				R r;
-				while (true) {
-					while (null == (r = cache.poll()) && !cache.isEmpty()) {}
-					if (null != r) {
-						using.accept(r);
-						return true;
-					} else if (!s0.tryAdvance(e -> {
-						if (null != e) for (R rr : flat.apply(e))
-							if (null != rr) cache.offer(rr);
-					})) return false;
-				}
+				return s0.tryAdvance(e -> flat.apply(e).each(using::accept));
 			}
 
 			@Override
@@ -187,9 +185,13 @@ public interface SplitEx {
 		};
 	}
 
+	static <E> List<E> list() {
+		return new CopyOnWriteArrayList<>();
+	}
+
 	static <E> List<E> list(Spliterator<E> s) {
 		Spliterator<E> s0 = Objects.requireNonNull(s);
-		List<E> l = new CopyOnWriteArrayList<>();
+		List<E> l = list();
 		each(s0, l::add);
 		return l;
 	}
@@ -213,7 +215,12 @@ public interface SplitEx {
 		DEFEX.submit(() -> eachs(s0, using));
 	}
 
-	static <K, E> void partition(Spliterator<E> s, BiConsumer<K, List<E>> using, Function<E, K> keying, int maxBatchSize) {
+	static <K, E> void partition(Spliterator<E> s, BiConsumer<K, E> using, Function<E, K> keying) {
+		Spliterator<E> s0 = Objects.requireNonNull(s);
+		each(s0, e -> using.accept(keying.apply(e), e));
+	}
+
+	static <K, E> void partition(Spliterator<E> s, BiConsumer<K, Steam<E>> using, Function<E, K> keying, int maxBatchSize) {
 		Spliterator<E> s0 = Objects.requireNonNull(s);
 		Map<K, BlockingQueue<E>> map = new ConcurrentHashMap<>();
 		each(s0, e -> map.compute(keying.apply(e), (k, l) -> {
@@ -221,30 +228,57 @@ public interface SplitEx {
 			l.offer(e);
 			List<E> batch = new CopyOnWriteArrayList<>();
 			l.drainTo(batch, maxBatchSize);
-			if (l.isEmpty() || batch.size() >= maxBatchSize) DEFEX.submit(() -> using.accept(k, batch));
+			if (l.isEmpty() || batch.size() >= maxBatchSize) DEFEX.submit(() -> using.accept(k, of(batch)));
 			else l.addAll(batch);
 			return l.isEmpty() ? null : l;
 		}));
 	}
 
-	static <E> void partition(Spliterator<E> s, Consumer<E> using, int minPartNum) {
+	static <E> void partition(Spliterator<E> s, Consumer<Steam<E>> using, int minPartNum) {
 		Spliterator<E> s0 = Objects.requireNonNull(s);
 		for (int i = 0; i < minPartNum; i++) {
 			Spliterator<E> ss = s0.trySplit();
-			if (null != ss) DEFEX.submit(() -> each(ss, using));
+			if (null != ss) DEFEX.submit(() -> using.accept(of(ss)));
 			else break;
 		}
-		DEFEX.submit(() -> each(s0, using));
+		DEFEX.submit(() -> using.accept(of(s0)));
 	}
 
-	static <E> void batch(Spliterator<E> s, Consumer<List<E>> using, int maxBatchSize) {
+	static <E> void batch(Spliterator<E> s, Consumer<Steam<E>> using, int maxBatchSize) {
 		Spliterator<E> s0 = Objects.requireNonNull(s);
 		if (s0.hasCharacteristics(SUBSIZED)) while (s0.estimateSize() > maxBatchSize) {
 			Spliterator<E> ss = s0.trySplit();
-			if (null != ss) DEFEX.submit(() -> using.accept(list(ss)));
+			if (null != ss) DEFEX.submit(() -> using.accept(of(ss)));
 			else break;
 		}
-		DEFEX.submit(() -> using.accept(list(s0)));
+		DEFEX.submit(() -> using.accept(of(s0)));
+	}
+
+	interface chars {
+		final int ALL = SORTED | DISTINCT | SUBSIZED | ORDERED | SIZED | NONNULL | CONCURRENT | IMMUTABLE;
+		final int NON_ALL = ~ALL;
+		// never merge
+		final int NON_SORTED = ~SORTED;
+		final int NON_DISTINCT = ~DISTINCT;
+		// and merge
+		final int NON_SUBSIZED = ~SUBSIZED;
+		final int NON_ORDERED = ~ORDERED;
+		final int NON_SIZED = ~SIZED;
+		final int NON_NONNULL = ~NONNULL;
+		final int NON_CONCURRENT = ~CONCURRENT;
+		// or merge
+		final int NON_IMMUTABLE = ~IMMUTABLE;
+
+		static boolean has(int ch, int bit) {
+			return (ch & bit) == ch;
+		}
+
+		static int merge(int ch1, int ch2) {
+			int and = ch1 & ch2 & SUBSIZED & ORDERED & SIZED & NONNULL & CONCURRENT;
+			int or = (ch1 | ch2) & IMMUTABLE;
+			int non = NON_SORTED | NON_DISTINCT;
+			return ch1 & ch2 & NON_ALL | and | or | non;
+		}
 	}
 
 }

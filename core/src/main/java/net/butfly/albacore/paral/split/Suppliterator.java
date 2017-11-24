@@ -1,4 +1,4 @@
-package net.butfly.albacore.utils.parallel;
+package net.butfly.albacore.paral.split;
 
 import java.util.Iterator;
 import java.util.Spliterator;
@@ -8,7 +8,7 @@ import java.util.function.Supplier;
 
 public class Suppliterator<V> implements Spliterator<V> {
 	private final int chars;
-	private final ResPool<ReentrantLock>.Res lock;
+	private final ReentrantLock lock;
 	private final Supplier<V> get;
 	private final Supplier<Boolean> ending;
 	private long est;
@@ -33,12 +33,12 @@ public class Suppliterator<V> implements Spliterator<V> {
 		chars = c;
 		this.get = get;
 		this.ending = ending;
-		this.lock = ResPool.FAIR_LOCKERS.aquire();
+		this.lock = new ReentrantLock(true);
 	}
 
 	@Override
 	public boolean tryAdvance(Consumer<? super V> action) {
-		if (!lock.res.tryLock()) return false;
+		if (!lock.tryLock()) return false;
 		try {
 			boolean next = !ending.get();
 			if (!next) est = 0;
@@ -51,7 +51,7 @@ public class Suppliterator<V> implements Spliterator<V> {
 			}
 			return next;
 		} finally {
-			lock.res.unlock();
+			lock.unlock();
 		}
 	}
 
@@ -59,23 +59,23 @@ public class Suppliterator<V> implements Spliterator<V> {
 	public Spliterator<V> trySplit() {
 		if (infinite()) return new Suppliterator<>(get, ending);
 		if (est < 2) return null;
-		lock.res.lock();
+		lock.lock();
 		try {
 			long est1 = est / 2;
 			est -= est1;
 			return new Suppliterator<>(get, est1, ending);
 		} finally {
-			lock.res.unlock();
+			lock.unlock();
 		}
 	}
 
 	@Override
 	public long estimateSize() {
-		lock.res.lock();
+		lock.lock();
 		try {
 			return est;
 		} finally {
-			lock.res.unlock();
+			lock.unlock();
 		}
 	}
 
@@ -86,10 +86,5 @@ public class Suppliterator<V> implements Spliterator<V> {
 	@Override
 	public int characteristics() {
 		return chars;
-	}
-
-	@Override
-	protected void finalize() throws Throwable {
-		lock.close();
 	}
 }

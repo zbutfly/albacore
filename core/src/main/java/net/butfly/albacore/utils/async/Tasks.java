@@ -1,5 +1,7 @@
 package net.butfly.albacore.utils.async;
 
+import static net.butfly.albacore.paral.Task.waitSleep;
+
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,6 +21,7 @@ import net.butfly.albacore.utils.Utils;
 import net.butfly.albacore.utils.logger.Logger;
 import net.butfly.albacore.utils.parallel.Concurrents;
 
+@Deprecated
 public final class Tasks extends Utils {
 	private static final Logger logger = Logger.getLogger(Tasks.class);
 
@@ -77,7 +80,7 @@ public final class Tasks extends Utils {
 				result = handle(task, ex);
 				retried++;
 			}
-			Concurrents.waitSleep(task.options.interval);
+			waitSleep(task.options.interval);
 		}
 		return result;
 	}

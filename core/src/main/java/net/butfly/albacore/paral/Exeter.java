@@ -1,6 +1,6 @@
-package net.butfly.albacore.utils.parallel;
+package net.butfly.albacore.paral;
 
-import static net.butfly.albacore.utils.parallel.Exeters.get;
+import static net.butfly.albacore.paral.Exeters.get;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;

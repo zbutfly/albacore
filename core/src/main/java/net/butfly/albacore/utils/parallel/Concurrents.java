@@ -1,6 +1,7 @@
 package net.butfly.albacore.utils.parallel;
 
-import static net.butfly.albacore.utils.parallel.Exeters.Sleeps;
+import static net.butfly.albacore.paral.Task.DEF_WAIT_MS;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -29,6 +30,7 @@ import net.butfly.albacore.utils.Systems;
 import net.butfly.albacore.utils.Utils;
 import net.butfly.albacore.utils.logger.Logger;
 
+@Deprecated
 public final class Concurrents extends Utils {
 	private static final Logger logger = Logger.getLogger(Concurrents.class);
 	private static ListeningExecutorService CORE_EXECUTOR = null;
@@ -51,7 +53,7 @@ public final class Concurrents extends Utils {
 		ThreadPoolExecutor pool = (ThreadPoolExecutor) executor;
 		while (pool.getActiveCount() >= pool.getMaximumPoolSize()) {
 			logger.trace("Executor [" + pool.getClass().getSimpleName() + "] is full, waiting...");
-			Sleeps.waitSleep();
+			waitSleep();
 		}
 	}
 
@@ -73,7 +75,7 @@ public final class Concurrents extends Utils {
 	}
 
 	public static boolean waitShutdown(ExecutorService executor, Logger logger) {
-		return waitShutdown(executor, Sleeps.DEF_WAIT_MS * 10, logger);
+		return waitShutdown(executor, DEF_WAIT_MS * 10, logger);
 	}
 
 	public static boolean waitShutdown() {
@@ -97,7 +99,7 @@ public final class Concurrents extends Utils {
 			executor.shutdown();
 			while (true)
 				try {
-					if (executor.awaitTermination(Sleeps.DEF_WAIT_MS, TimeUnit.MILLISECONDS)) return true;
+					if (executor.awaitTermination(DEF_WAIT_MS, TimeUnit.MILLISECONDS)) return true;
 				} catch (InterruptedException e) {
 					return false;
 				}
@@ -251,30 +253,18 @@ public final class Concurrents extends Utils {
 		}
 	}
 
-	public static boolean waitSleep(long millis, Logger logger, CharSequence cause) {
-		if (millis < 0) return true;
-		try {
-			if (null != logger && logger.isTraceEnabled()) logger.trace("Thread [" + Thread.currentThread().getName() + "] sleep for ["
-					+ millis + "ms], cause [" + cause + "].");
-			Thread.sleep(millis);
-			return true;
-		} catch (InterruptedException e) {
-			return false;
-		}
-	}
-
 	@Deprecated
 	public static boolean waitSleep() {
-		return Exeters.Sleeps.waitSleep();
+		return waitSleep();
 	}
 
 	@Deprecated
 	public static boolean waitSleep(long mills) {
-		return Exeters.Sleeps.waitSleep(mills);
+		return waitSleep(mills);
 	}
 
 	@Deprecated
 	public static boolean waitSleep(Supplier<Boolean> waiting) {
-		return Exeters.Sleeps.waitSleep(waiting);
+		return waitSleep(waiting);
 	}
 }

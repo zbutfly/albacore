@@ -1,6 +1,6 @@
 package net.butfly.albacore.utils.collection;
 
-import static net.butfly.albacore.utils.parallel.Exeters.DEFEX;
+import static net.butfly.albacore.paral.Exeters.DEFEX;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -15,7 +15,6 @@ import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -24,7 +23,6 @@ import java.util.stream.StreamSupport;
 import net.butfly.albacore.Albacore;
 import net.butfly.albacore.utils.Configs;
 import net.butfly.albacore.utils.Utils;
-import net.butfly.albacore.utils.parallel.Suppliterator;
 
 public final class Streams extends Utils {
 	public static final Predicate<Object> NOT_NULL = t -> null != t;
@@ -60,10 +58,6 @@ public final class Streams extends Utils {
 		// XXX: bug? on 1, StreamSupport.stream(s.spliterator(), s.isParallel())
 		// not work?
 		return of(spatial(s, parallelism).values()).map(e -> StreamSupport.stream(convs.apply(e), s.isParallel()));
-	}
-
-	public static <V> Stream<V> of(Supplier<V> get, long size, Supplier<Boolean> ending) {
-		return of(new Suppliterator<>(get, size, ending));
 	}
 
 	private static final boolean DEFAULT_PARALLEL_ENABLE = Boolean.parseBoolean(Configs.gets(Albacore.Props.PROP_STREAM_PARALLES, "true"));

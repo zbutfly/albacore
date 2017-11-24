@@ -1,7 +1,7 @@
 package net.butfly.albacore.utils.parallel;
 
+import static net.butfly.albacore.paral.Exeters.DEFEX;
 import static net.butfly.albacore.utils.collection.Streams.map;
-import static net.butfly.albacore.utils.parallel.Exeters.DEFEX;
 import static net.butfly.albacore.utils.parallel.Lambdas.func;
 
 import java.util.List;
@@ -14,33 +14,7 @@ import java.util.stream.Stream;
 import net.butfly.albacore.utils.Utils;
 import net.butfly.albacore.utils.logger.Logger;
 
-/**
- * <b>Auto detection of thread executor type and parallelism based on <code>-Dalbacore.parallel.factor=factor(double)</code>, default 0.</b>
- * <blockquote>Default <code>factor<code> value without
- * <code>albacore.parallel.factor</code> setting causes traditional unlimited <code>CachedThreadPool</code> implementation.</blockquote>
- * 
- * <ul>
- * <li>Positives double values: ForkJoinPool</li>
- * <blockquote><code>(factor - 1) * (JVM_PARALLELISM - IO_PARALLELISM) + IO_PARALLELISM</code></blockquote>
- * <ul>
- * <li>Minimum: 2</li>
- * <li>IO_PARALLELISM: 16</li>
- * <li>JVM_PARALLELISM: <code>ForkJoinPool.getCommonPoolParallelism()</code></li>
- * </ul>
- * Which means:
- * <ul>
- * <li>1: IO_PARALLELISM</li>
- * <li>(0, 1): less than IO_PARALLELISM</li>
- * <li>(1, 2): (IO_PARALLELISM, JVM_PARALLELISM)</li>
- * <li>2: JVM_PARALLELISM</li>
- * <li>(2, ): more than JVM_PARALLELISM</li>
- * </ul>
- * <li>0: CachedThreadPool</li>
- * <li>Negatives values: FixedThreadPool with parallelism = <code>abs((int)facor)</code></li>
- * </ul>
- * 
- * @author zx
- */
+@Deprecated
 public final class Parals extends Utils {
 	private static final Logger logger = Logger.getLogger(Parals.class);
 

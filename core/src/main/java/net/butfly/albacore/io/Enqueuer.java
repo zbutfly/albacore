@@ -1,12 +1,12 @@
 package net.butfly.albacore.io;
 
-import java.util.stream.Stream;
+import net.butfly.albacore.paral.steam.Steam;
 
 @FunctionalInterface
 public interface Enqueuer<V> {
-	void enqueue(Stream<V> items);
+	void enqueue(Steam<V> items);
 
-	default void failed(Stream<V> fails) {}
+	default void failed(Steam<V> fails) {}
 
 	default void succeeded(long success) {}
 }

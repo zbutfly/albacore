@@ -8,8 +8,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import net.butfly.albacore.paral.split.Suppliterator;
 import net.butfly.albacore.utils.collection.Streams;
-import net.butfly.albacore.utils.parallel.Suppliterator;
 
 public class StreamTest {
 	static int max = 45;//Integer.MAX_VALUE;
@@ -20,7 +20,7 @@ public class StreamTest {
 		@Override
 		public Integer next() {
 			prefix(ii + "#source advanced...", ii);
-//			Concurrents.waitSleep();
+//			waitSleep();
 			return seed.getAndIncrement() >= max ? null : seed.get();
 		}
 
@@ -44,7 +44,7 @@ public class StreamTest {
 			int ii = i;
 			fs[i] = ex.submit(() -> {
 				ss[ii].forEach(v -> {
-//					Concurrents.waitSleep();
+//					waitSleep();
 					prefix(ii + "#split: " + v, ii);
 					counts[ii].incrementAndGet();
 				});

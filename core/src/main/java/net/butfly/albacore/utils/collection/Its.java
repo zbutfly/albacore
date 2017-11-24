@@ -1,6 +1,6 @@
 package net.butfly.albacore.utils.collection;
 
-import static net.butfly.albacore.utils.parallel.Exeters.DEFEX;
+import static net.butfly.albacore.paral.Exeters.DEFEX;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -15,8 +15,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import net.butfly.albacore.paral.Exeters;
 import net.butfly.albacore.utils.Utils;
-import net.butfly.albacore.utils.parallel.Exeters;
 
 public final class Its extends Utils {
 	public static <V> Iterator<V> it(Supplier<V> get, Supplier<Boolean> ending) {
