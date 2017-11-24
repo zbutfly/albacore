@@ -1,11 +1,11 @@
 package net.butfly.albacore.steam;
 
 import static net.butfly.albacore.steam.SplitEx.concat;
-import static net.butfly.albacore.steam.SplitEx.of;
+import static net.butfly.albacore.steam.Steam.of;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Spliterator;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
@@ -13,11 +13,20 @@ import java.util.function.Function;
 
 import net.butfly.albacore.utils.Pair;
 
-class SpliteratorSteam<E> extends SteamBase<E, Spliterator<E>, SpliteratorSteam<E>> implements Steam<E> {
-	SpliteratorSteam(Spliterator<E> impl) {
-		super(impl);
+final class Splitream<E, SELF extends Steam<E>> implements Steam<E> {
+	protected final Spliterator<E> impl;
+
+	protected Splitream(Spliterator<E> impl) {
+		super();
+		this.impl = Objects.requireNonNull(impl);
 	}
 
+	@Override
+	public Spliterator<E> spliterator() {
+		return impl;
+	}
+
+	// =======================================
 	@Override
 	public <R> Steam<R> map(Function<E, R> conv) {
 		return of(SplitEx.map(impl, conv));
@@ -30,13 +39,7 @@ class SpliteratorSteam<E> extends SteamBase<E, Spliterator<E>, SpliteratorSteam<
 
 	@Override
 	public E reduce(BinaryOperator<E> accumulator) {
-		AtomicReference<E> r = new AtomicReference<>();
-		SplitEx.each(impl, e -> r.accumulateAndGet(e, (e1, e2) -> {
-			if (null == e1) return e2;
-			if (null == e2) return e1;
-			return accumulator.apply(e1, e2);
-		}));
-		return r.get();
+		return SplitEx.reduce(impl, accumulator);
 	}
 
 	@Override
@@ -50,11 +53,6 @@ class SpliteratorSteam<E> extends SteamBase<E, Spliterator<E>, SpliteratorSteam<
 	}
 
 	// ==================
-
-	@Override
-	public Spliterator<E> spliterator() {
-		return impl;
-	}
 
 	@Override
 	public void each(Consumer<E> using) {
@@ -79,5 +77,27 @@ class SpliteratorSteam<E> extends SteamBase<E, Spliterator<E>, SpliteratorSteam<
 	@Override
 	public <K> void partition(BiConsumer<K, List<E>> using, Function<E, K> keying, int maxBatchSize) {
 		SplitEx.partition(impl, using, keying, maxBatchSize);
+	}
+
+	// =========================
+
+	@Override
+	public int characteristics() {
+		return impl.characteristics();
+	}
+
+	@Override
+	public long estimateSize() {
+		return impl.estimateSize();
+	}
+
+	@Override
+	public boolean tryAdvance(Consumer<? super E> using) {
+		return impl.tryAdvance(using);
+	}
+
+	@Override
+	public Spliterator<E> trySplit() {
+		return impl.trySplit();
 	}
 }

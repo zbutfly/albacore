@@ -18,28 +18,15 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
+import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 import net.butfly.albacore.utils.Pair;
 
 public interface SplitEx {
-	static <E, S> Steam<E> of(Spliterator<E> impl) {
-		return new SpliteratorSteam<>(impl);
-	}
-
-	static <E, S> Steam<E> of(Iterable<E> impl) {
-		return new SpliteratorSteam<>(impl.spliterator());
-	}
-
-	/** @deprecated Terminal of the stream */
-	@Deprecated
-	static <E, S> Steam<E> of(Stream<E> impl) {
-		return new SpliteratorSteam<>(impl.spliterator());
-	}
-
 	interface chars {
 		final int ALL = SORTED | DISTINCT | SUBSIZED | ORDERED | SIZED | NONNULL | CONCURRENT | IMMUTABLE;
 		final int NON_ALL = ~ALL;
@@ -65,6 +52,17 @@ public interface SplitEx {
 			int non = NON_SORTED | NON_DISTINCT;
 			return ch1 & ch2 & NON_ALL | and | or | non;
 		}
+	}
+
+	static <E> E reduce(Spliterator<E> s, BinaryOperator<E> accumulator) {
+		Spliterator<E> s0 = Objects.requireNonNull(s);
+		AtomicReference<E> r = new AtomicReference<>();
+		SplitEx.each(s0, e -> r.accumulateAndGet(e, (e1, e2) -> {
+			if (null == e1) return e2;
+			if (null == e2) return e1;
+			return accumulator.apply(e1, e2);
+		}));
+		return r.get();
 	}
 
 	static <E, R> Spliterator<R> map(Spliterator<E> s, Function<E, R> conv) {
@@ -248,4 +246,5 @@ public interface SplitEx {
 		}
 		DEFEX.submit(() -> using.accept(list(s0)));
 	}
+
 }

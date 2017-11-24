@@ -6,10 +6,11 @@ import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import net.butfly.albacore.utils.Pair;
 
-public interface Steam<E> {
+public interface Steam<E> extends Spliterator<E> {
 	Spliterator<E> spliterator();
 
 	<R> Steam<R> map(Function<E, R> conv);
@@ -18,7 +19,7 @@ public interface Steam<E> {
 
 	E reduce(BinaryOperator<E> accumulator);
 
-	<E1> Steam<Pair<E, E1>> join(Function<E, E1> func);
+	<E1> Steam<Pair<E, E1>> join(Function<E, E1> joining);
 
 	Steam<E> union(Steam<E> another);
 
@@ -34,5 +35,17 @@ public interface Steam<E> {
 	void each(Consumer<E> using);
 
 	// ==================
+	static <E, S> Steam<E> of(Spliterator<E> impl) {
+		return new Splitream<>(impl);
+	}
 
+	static <E, S> Steam<E> of(Iterable<E> impl) {
+		return new Splitream<>(impl.spliterator());
+	}
+
+	/** @deprecated Terminal of the stream */
+	@Deprecated
+	static <E, S> Steam<E> of(Stream<E> impl) {
+		return new Splitream<>(impl.spliterator());
+	}
 }
