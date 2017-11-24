@@ -10,12 +10,6 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
-import net.butfly.albacore.exception.NotImplementedException;
-import net.butfly.albacore.utils.Objects;
-import net.butfly.albacore.utils.Utils;
-import net.butfly.albacore.utils.imports.meta.MetaObject;
-import net.butfly.albacore.utils.logger.Logger;
-
 import org.dom4j.Attribute;
 import org.dom4j.Element;
 import org.w3c.dom.DOMImplementation;
@@ -26,25 +20,31 @@ import org.w3c.dom.ls.LSSerializer;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
+import net.butfly.albacore.exception.NotImplementedException;
+import net.butfly.albacore.utils.Utils;
+import net.butfly.albacore.utils.imports.meta.MetaObject;
+import net.butfly.albacore.utils.imports.utils.meta.MetaUtils;
+import net.butfly.albacore.utils.logger.Logger;
+
 public class XMLUtils extends Utils {
 	private final static Logger logger = Logger.getLogger(XMLUtils.class);
 
 	@SuppressWarnings("unchecked")
 	public static void setPropsByAttr(Object target, Element element, String... ignores) {
-		MetaObject meta = Objects.createMeta(target);
+		MetaObject meta = MetaUtils.createMeta(target);
 		Iterator<Attribute> it = element.attributeIterator();
 		while (it.hasNext()) {
 			Attribute attr = it.next();
 			String name = attr.getName();
 			if (ignores != null) for (String ig : ignores)
 				if (name.equals(ig)) continue;
-			if (meta.hasSetter(name)) meta.setValue(name, Objects.castValue(attr.getValue(), meta.getSetterType(name)));
+			if (meta.hasSetter(name)) meta.setValue(name, MetaUtils.castValue(attr.getValue(), meta.getSetterType(name)));
 		}
 	}
 
 	@SuppressWarnings("unchecked")
 	public static void setPropsByNode(Object target, Element element, String... ignores) {
-		MetaObject meta = Objects.createMeta(target);
+		MetaObject meta = MetaUtils.createMeta(target);
 		for (Element node : (List<Element>) element.selectNodes("*")) {
 			String name = node.getName();
 			if (ignores != null) for (String ig : ignores)
@@ -52,7 +52,7 @@ public class XMLUtils extends Utils {
 			if (meta.hasSetter(name)) {
 				if (!meta.getSetterType(name).isArray()) {
 					String value = node.getTextTrim();
-					meta.setValue(name, Objects.castValue(value, meta.getSetterType(name)));
+					meta.setValue(name, MetaUtils.castValue(value, meta.getSetterType(name)));
 				} else {
 					throw new NotImplementedException();
 				}

@@ -21,6 +21,11 @@
 		</dependency>
 		<dependency>
 			<groupId>net.butfly.albacore</groupId>
+			<artifactId>albacore-meta</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>net.butfly.albacore</groupId>
 			<artifactId>albacore-frame</artifactId>
 			<version>${project.version}</version>
 		</dependency>
