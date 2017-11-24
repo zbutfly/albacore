@@ -16,7 +16,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Spliterator;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
@@ -27,6 +26,7 @@ import java.util.function.Function;
 
 import net.butfly.albacore.paral.steam.Steam;
 import net.butfly.albacore.utils.Pair;
+import net.butfly.albacore.utils.collection.Maps;
 
 public interface SplitEx {
 	static <E> E reduce(Spliterator<E> s, BinaryOperator<E> accumulator) {
@@ -38,6 +38,37 @@ public interface SplitEx {
 			return accumulator.apply(e1, e2);
 		}));
 		return r.get();
+	}
+
+	static <E, R> List<R> map(Iterable<E> s, Function<E, R> conv) {
+		List<R> l = list();
+		R r;
+		for (E e : s)
+			if (null != e && null != (r = conv.apply(e))) l.add(r);
+		return l;
+	}
+
+	static <E, K, V> Map<K, V> maps(Iterable<E> s, Function<E, K> keying, Function<E, V> valuing) {
+		Map<K, V> l = Maps.of();
+		K k;
+		for (E e : s)
+			if (null != e && null != (k = keying.apply(e))) l.computeIfAbsent(k, kk -> valuing.apply(e));
+		return l;
+	}
+
+	static <E, K, V> Map<K, List<V>> map(Iterable<E> s, Function<E, K> keying, Function<E, V> valuing) {
+		Map<K, List<V>> m = Maps.of();
+		K key;
+		for (E e : s)
+			if (null != e && null != (key = keying.apply(e))) m.compute(key, (k, l) -> {
+				V v = valuing.apply(e);
+				if (null != v) {
+					if (null == l) l = list();
+					l.add(v);
+				}
+				return l;
+			});
+		return m;
 	}
 
 	static <E, R> Spliterator<R> map(Spliterator<E> s, Function<E, R> conv) {
@@ -68,6 +99,7 @@ public interface SplitEx {
 
 	static <E, R> Spliterator<R> map(Spliterator<E> s, Function<Steam<E>, Steam<R>> conv, int maxBatchSize) {
 		Spliterator<E> s0 = Objects.requireNonNull(s);
+		boolean unbatch = maxBatchSize >= Integer.MAX_VALUE || maxBatchSize <= 0;
 		return new Spliterator<R>() {
 			private final BlockingQueue<E> cache = new LinkedBlockingQueue<>();
 
@@ -96,7 +128,9 @@ public interface SplitEx {
 			@Override
 			public Spliterator<R> trySplit() {
 				Spliterator<E> ss = s0.trySplit();
-				return null == ss ? null : map(ss, conv, maxBatchSize);
+				if (null == ss) return null;
+				else if (unbatch) return conv.apply(of(ss)).spliterator();
+				else return map(ss, conv, maxBatchSize);
 			}
 		};
 	}
@@ -192,7 +226,9 @@ public interface SplitEx {
 	static <E> List<E> list(Spliterator<E> s) {
 		Spliterator<E> s0 = Objects.requireNonNull(s);
 		List<E> l = list();
-		each(s0, l::add);
+		eachs(s0, e -> {
+			if (null != e) l.add(e);
+		});
 		return l;
 	}
 
@@ -205,13 +241,11 @@ public interface SplitEx {
 	/** Using spliterator parallelly with trySplit() */
 	static <E> void each(Spliterator<E> s, Consumer<E> using) {
 		Spliterator<E> s0 = Objects.requireNonNull(s);
-		if (!s0.hasCharacteristics(CONCURRENT)) eachs(s, using);
-		boolean splited;
 		do {
 			Spliterator<E> ss = s0.trySplit();
-			splited = null != ss;
-			if (null != ss) DEFEX.submit((Runnable) () -> each(ss, using));
-		} while (splited);
+			if (null == ss) break;
+			else DEFEX.submit((Runnable) () -> each(ss, using));
+		} while (true);
 		DEFEX.submit((Runnable) () -> eachs(s0, using));
 	}
 
@@ -222,13 +256,13 @@ public interface SplitEx {
 
 	static <K, E> void partition(Spliterator<E> s, BiConsumer<K, Steam<E>> using, Function<E, K> keying, int maxBatchSize) {
 		Spliterator<E> s0 = Objects.requireNonNull(s);
-		Map<K, BlockingQueue<E>> map = new ConcurrentHashMap<>();
+		Map<K, BlockingQueue<E>> map = Maps.of();
 		each(s0, e -> map.compute(keying.apply(e), (k, l) -> {
 			if (null == l) l = new LinkedBlockingQueue<>();
 			l.offer(e);
-			List<E> batch = new CopyOnWriteArrayList<>();
+			List<E> batch = list();
 			l.drainTo(batch, maxBatchSize);
-			if (l.isEmpty() || batch.size() >= maxBatchSize) DEFEX.submit(() -> using.accept(k, of(batch)));
+			if (l.isEmpty() || batch.size() > maxBatchSize) DEFEX.submit(() -> using.accept(k, of(batch)));
 			else l.addAll(batch);
 			return l.isEmpty() ? null : l;
 		}));
@@ -246,7 +280,7 @@ public interface SplitEx {
 
 	static <E> void batch(Spliterator<E> s, Consumer<Steam<E>> using, int maxBatchSize) {
 		Spliterator<E> s0 = Objects.requireNonNull(s);
-		if (s0.hasCharacteristics(SUBSIZED)) while (s0.estimateSize() > maxBatchSize) {
+		while (s0.estimateSize() > maxBatchSize) {
 			Spliterator<E> ss = s0.trySplit();
 			if (null != ss) DEFEX.submit(() -> using.accept(of(ss)));
 			else break;

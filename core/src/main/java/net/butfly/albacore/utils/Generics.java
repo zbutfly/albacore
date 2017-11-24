@@ -9,10 +9,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import com.google.common.reflect.TypeToken;
+
+import net.butfly.albacore.utils.collection.Maps;
 
 @SuppressWarnings("unchecked")
 public final class Generics extends OldGeneric {
@@ -32,15 +33,15 @@ public final class Generics extends OldGeneric {
 		return (Class<E>) TypeToken.of(entity.getClass()).getType();
 	}
 
-	static final Map<Type, Map<Class<?>, Map<String, Class<?>>>> pools = new ConcurrentHashMap<>();
+	static final Map<Type, Map<Class<?>, Map<String, Class<?>>>> pools = Maps.of();
 
 	public static Map<String, Class<?>> resolveGenericParameters(final Type implType, final Class<?> declareClass) {
-		return pools.computeIfAbsent(implType, tt -> new ConcurrentHashMap<>()).computeIfAbsent(declareClass, cc -> compute(implType,
+		return pools.computeIfAbsent(implType, tt -> Maps.of()).computeIfAbsent(declareClass, cc -> compute(implType,
 				declareClass));
 	}
 
 	private static final Map<String, Class<?>> compute(final Type implType, final Class<?> declareClass) {
-		ConcurrentMap<String, Class<?>> types = new ConcurrentHashMap<>();
+		ConcurrentMap<String, Class<?>> types = Maps.of();
 		TypeVariable<?>[] vv = declareClass.getTypeParameters();
 		for (TypeVariable<?> v : vv)
 			types.put(v.getName(), (Class<?>) TypeToken.of(implType).resolveType(v).getRawType());

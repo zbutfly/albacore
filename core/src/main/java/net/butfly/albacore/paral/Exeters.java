@@ -10,7 +10,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.AbstractExecutorService;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
@@ -25,12 +24,14 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
+import net.butfly.albacore.utils.collection.Maps;
 
 public interface Exeters {
 	final String PROP_PARALLEL_FACTOR = "albacore.parallel.factor";// 1 //"albacore.io.stream.parallelism.factor"
 	final String DEF_EXECUTOR_NAME = "AlbacoreIOStream";
 	final int DEF_EXECUTOR_PARALLELISM = detectParallelism();
 	final Exeter DEFEX = newExecutor(DEF_EXECUTOR_NAME, DEF_EXECUTOR_PARALLELISM);
+
 
 	static <T> T get(Future<T> f) {
 		boolean go = true;
@@ -92,7 +93,7 @@ public interface Exeters {
 
 	@Deprecated
 	static Exeter newThreadPool(String name, int parallelism, UncaughtExceptionHandler handler) {
-		Map<String, ThreadGroup> g = new ConcurrentHashMap<>();
+		Map<String, ThreadGroup> g = Maps.of();
 		ThreadFactory factory = r -> {
 			Thread t = new Thread(g.computeIfAbsent(name, n -> new ThreadGroup(name + "ThreadGroup")), r, name + "@[" + new Date()
 					.toString() + "]");

@@ -1,7 +1,8 @@
 package net.butfly.albacore.utils;
 
+import static net.butfly.albacore.utils.collection.Streams.collect;
 import static net.butfly.albacore.utils.collection.Streams.of;
-import static net.butfly.albacore.utils.collection.Streams.*;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;

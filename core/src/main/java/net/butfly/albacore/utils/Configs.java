@@ -13,13 +13,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import net.butfly.albacore.Albacore;
 import net.butfly.albacore.utils.logger.Logger;
+import net.butfly.albacore.utils.collection.Maps;
 
 public class Configs extends Utils {
 	private static final Conf MAIN_CONF = init(Systems.getMainClass());
@@ -99,7 +99,7 @@ public class Configs extends Utils {
 		}
 
 		public Map<String, String> getByPrefix(String prefix) {
-			Map<String, String> sub = new ConcurrentHashMap<>();
+			Map<String, String> sub = Maps.of();
 			for (String k : entries.keySet())
 				if (k.startsWith(prefix)) {
 					String subk = k.substring(prefix.length() - 1);
@@ -152,7 +152,7 @@ public class Configs extends Utils {
 				+ "\n\tcustomized: [" + Paths.get("").toAbsolutePath().toString() + File.separator + filename + "]"//
 				+ "\n\tcustomized: [classpath:/" + filename + "]" //
 				+ "\n\t   default: [classpath:/" + defname + "]");
-		Map<String, String> settings = new ConcurrentHashMap<>();
+		Map<String, String> settings = Maps.of();
 		fill(settings, null, Configs::filterSystemAndInvalidPrefix, mapProps(System.getProperties()));
 		try (InputStream in = IOs.openFile(filename);) {
 			if (!fill(settings, null, null, in) && null != cl) try (InputStream in2 = IOs.openClasspath(cl, filename);) {

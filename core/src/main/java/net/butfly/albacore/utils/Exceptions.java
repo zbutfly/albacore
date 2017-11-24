@@ -10,10 +10,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import net.butfly.albacore.utils.collection.Maps;
 import net.butfly.albacore.utils.logger.Logger;
 
 public class Exceptions extends Utils {
@@ -83,7 +83,7 @@ public class Exceptions extends Utils {
 
 	private static Map<Class<? extends Throwable>, Method> initWrappingMethods() {
 		try {
-			Map<Class<? extends Throwable>, Method> m = new ConcurrentHashMap<>();
+			Map<Class<? extends Throwable>, Method> m = Maps.of();
 			m.put(ExecutionException.class, ExecutionException.class.getMethod("getCause"));
 			m.put(InvocationTargetException.class, InvocationTargetException.class.getMethod("getTargetException"));
 			m.put(UndeclaredThrowableException.class, UndeclaredThrowableException.class.getMethod("getUndeclaredThrowable"));

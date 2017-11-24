@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Spliterator;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
@@ -44,7 +43,7 @@ public final class Streams extends Utils {
 
 	public static <V> Map<Integer, Spliterator<V>> spatial(Spliterator<V> it, int parallelism) {
 		if (parallelism <= 1) return Maps.of(0, it);
-		Map<Integer, Spliterator<V>> b = new ConcurrentHashMap<>();
+		Map<Integer, Spliterator<V>> b = Maps.of();
 		for (int i = 0; i < parallelism; i++)
 			b.put(i, Its.wrap(it));
 		return b;

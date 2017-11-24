@@ -17,7 +17,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
 import java.util.jar.Attributes;
@@ -30,9 +29,11 @@ import com.sun.akuma.Daemon;
 import com.sun.akuma.JavaVMArguments;
 
 import net.butfly.albacore.Albacore;
+import net.butfly.albacore.utils.collection.Maps;
 import net.butfly.albacore.utils.logger.Logger;
 import sun.management.VMManagement;
 import sun.misc.Signal;
+
 public final class Systems extends Utils {
 	final static Logger logger = Logger.getLogger(Systems.class);
 
@@ -90,7 +91,7 @@ public final class Systems extends Utils {
 		else run.run();
 	}
 
-	private static final Map<String, BlockingQueue<Consumer<Signal>>> SIGNAL_HANDLERS = new ConcurrentHashMap<>();
+	private static final Map<String, BlockingQueue<Consumer<Signal>>> SIGNAL_HANDLERS = Maps.of();
 
 	public static void handleSignal(Consumer<Signal> handler, String... signal) {
 		for (String sig : signal)

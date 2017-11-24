@@ -1,8 +1,7 @@
 package net.butfly.albacore.utils.logger;
 
 import java.io.Serializable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -12,6 +11,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import net.butfly.albacore.Albacore;
+import net.butfly.albacore.utils.collection.Maps;
 
 public class Logger implements Serializable {
 	private static final long serialVersionUID = -1940330974751419775L;
@@ -41,7 +41,7 @@ public class Logger implements Serializable {
 		this.logger = logger;
 	}
 
-	private static final ConcurrentMap<CharSequence, Logger> loggers = new ConcurrentHashMap<>();
+	private static final Map<CharSequence, Logger> loggers = Maps.of();
 
 	public static final Logger getLogger(CharSequence name) {
 		return loggers.computeIfAbsent(name, n -> new Logger(org.slf4j.LoggerFactory.getLogger(name.toString())));

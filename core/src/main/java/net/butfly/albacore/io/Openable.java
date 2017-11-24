@@ -3,11 +3,11 @@ package net.butfly.albacore.io;
 import static net.butfly.albacore.paral.Task.waitSleep;
 
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 import net.butfly.albacore.base.Named;
 import net.butfly.albacore.lambda.Runnable;
+import net.butfly.albacore.utils.collection.Maps;
 import net.butfly.albacore.utils.logger.Loggable;
 
 public interface Openable extends AutoCloseable, Loggable, Named {
@@ -75,8 +75,8 @@ public interface Openable extends AutoCloseable, Loggable, Named {
 	}
 
 	class Opened {
-		private final static Map<Openable, AtomicReference<Status>> STATUS = new ConcurrentHashMap<>();
-		private final static Map<Openable, Runnable> OPENING = new ConcurrentHashMap<>(), CLOSING = new ConcurrentHashMap<>();
+		private final static Map<Openable, AtomicReference<Status>> STATUS = Maps.of();
+		private final static Map<Openable, Runnable> OPENING = Maps.of(), CLOSING = Maps.of();
 
 		private Opened() {}
 

@@ -11,13 +11,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import net.butfly.albacore.Albacore;
+import net.butfly.albacore.utils.collection.Maps;
 
 public final class Texts extends Utils {
 	public static boolean isEmpty(String str) {
@@ -83,7 +83,7 @@ public final class Texts extends Utils {
 	private static final int POOL_SIZE = Integer.parseInt(Configs.gets(Albacore.Props.PROP_PARALLEL_POOL_SIZE_OBJECT, Integer.toString(
 			Runtime.getRuntime().availableProcessors() - 1)));
 
-	private static final Map<String, LinkedBlockingQueue<DateFormat>> DATE_FORMATS = new ConcurrentHashMap<>();
+	private static final Map<String, LinkedBlockingQueue<DateFormat>> DATE_FORMATS = Maps.of();
 	public static final String SEGUST_DATE_FORMAT = "yyyy-MM-dd'T'hh:mm:ss.SSS'Z'";
 	public static final String DEFAULT_DATE_FORMAT = Configs.gets(Albacore.Props.PROP_TEXT_DATE_FORMAT, SEGUST_DATE_FORMAT);
 
@@ -177,7 +177,7 @@ public final class Texts extends Utils {
 		return Stream.of(origin.split(split)).map(s -> s.trim()).filter(s -> !"".equals(s)).collect(Collectors.toList());
 	}
 
-	private static final Map<String, BlockingQueue<CloseDateFormat>> DATA_FORMATS = new ConcurrentHashMap<>();
+	private static final Map<String, BlockingQueue<CloseDateFormat>> DATA_FORMATS = Maps.of();
 
 	private static final class CloseDateFormat extends SimpleDateFormat implements AutoCloseable {
 		private static final long serialVersionUID = 6278552096977426484L;

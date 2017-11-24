@@ -21,6 +21,13 @@ public final class Exeter extends AbstractExecutorService {
 	static final Logger logger = Logger.getLogger(Exeter.class.getName());
 	private final AbstractExecutorService impl;
 
+	public Future<?> collect(Iterable<Future<?>> futures) {
+		return submit(() -> {
+			for (Future<?> f : futures)
+				get(f);
+		});
+	}
+
 	public <T> Future<T> submit(Supplier<T> task) {
 		return impl.submit(() -> task.get());
 	}

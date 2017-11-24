@@ -4,11 +4,11 @@ import static net.butfly.albacore.paral.Exeters.DEFEX;
 
 import java.util.Map;
 import java.util.Spliterator;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.butfly.albacore.paral.steam.Steam;
 import net.butfly.albacore.utils.collection.Its;
+import net.butfly.albacore.utils.collection.Maps;
 
 public class SpatialTest {
 	public static void main(String[] args) {
@@ -24,7 +24,7 @@ public class SpatialTest {
 		it.hasCharacteristics(Spliterator.SIZED);
 
 		System.out.println("remain in parent: " + it.estimateSize());
-		Map<Integer, Spliterator<Integer>> its = new ConcurrentHashMap<>();
+		Map<Integer, Spliterator<Integer>> its = Maps.of();
 		for (int i = 0; i < 5; i++)
 			its.put(i, Its.wrap(it));
 		for (int i : its.keySet())

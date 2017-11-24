@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -23,6 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import net.butfly.albacore.utils.Objects;
 import net.butfly.albacore.utils.Pair;
 import net.butfly.albacore.utils.Texts;
+import net.butfly.albacore.utils.collection.Maps;
 
 /**
  * Parse URI string like:
@@ -185,7 +185,7 @@ public final class URISpec implements Serializable {
 	}
 
 	private Map<String, String> parseQueryMap(String query) {
-		if (query == null) return new ConcurrentHashMap<>();
+		if (query == null) return Maps.of();
 		return Arrays.stream(query.split("&")).parallel().map(q -> q.split("=", 2)).collect(Collectors.toConcurrentMap(kv -> kv[0],
 				kv -> kv.length > 1 ? kv[1] : "", (k1, k2) -> k2));
 	}
