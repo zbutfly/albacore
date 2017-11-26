@@ -10,7 +10,6 @@ public interface Albacore {
 		final String PROP_APP_FORK_VM_ARGS = "albacore.app.vmconfig";
 		final String PROP_CACHE_LOCAL_PATH = "albacore.cache.local.path";// "./cache/"
 		final String PROP_STREAM_PARALLES = "albacore.parallel.stream.enable";// true
-		final String PROP_LOGGER_ASYNC = "albacore.logger.async.enable";// true
 		final String PROP_CURRENCE_FORKJOIN = "albacore.concurrent.forkjoin";// true
 		final String PROP_CURRENCE = "albacore.concurrence";// 0
 		final String PROP_PARALLEL_FACTOR = "albacore.parallel.factor";// 1 //"albacore.io.stream.parallelism.factor"
