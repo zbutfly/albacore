@@ -14,7 +14,6 @@
 	<modules>
 		<module>logging</module>
 		<module>core</module>
-		<!--<module>serializer</module> -->
 		<module>meta</module>
 		<module>frame</module>
 		<module>utils</module>
@@ -23,6 +22,7 @@
 		<!--<module>extra</module> -->
 		<!--<module>cache</module> -->
 		<module>test</module>
+		<module>async</module><!-- deprecated!! -->
 		<!-- <module>demo</module> -->
 	</modules>
 	<scm>

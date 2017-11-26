@@ -1,7 +1,5 @@
 package net.butfly.albacore.paral;
 
-import static net.butfly.albacore.paral.Exeters.DEFEX;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -61,7 +59,7 @@ public interface Task extends Runnable {
 	}
 
 	default Task async() {
-		return () -> DEFEX.submit(this);
+		return () -> Parals.submit(this);
 	}
 
 	default String text() {
@@ -152,7 +150,7 @@ public interface Task extends Runnable {
 
 			@Override
 			public void run() {
-				DEFEX.join(subs.toArray(new Task[subs.size()]));
+				Parals.join(subs.toArray(new Task[subs.size()]));
 			}
 
 			@Override

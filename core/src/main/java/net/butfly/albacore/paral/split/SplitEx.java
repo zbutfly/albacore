@@ -8,7 +8,6 @@ import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterator.SIZED;
 import static java.util.Spliterator.SORTED;
 import static java.util.Spliterator.SUBSIZED;
-import static net.butfly.albacore.paral.Exeters.DEFEX;
 import static net.butfly.albacore.paral.steam.Steam.of;
 
 import java.util.List;
@@ -24,6 +23,7 @@ import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import net.butfly.albacore.paral.Parals;
 import net.butfly.albacore.paral.steam.Steam;
 import net.butfly.albacore.utils.Pair;
 import net.butfly.albacore.utils.collection.Maps;
@@ -244,9 +244,9 @@ public interface SplitEx {
 		do {
 			Spliterator<E> ss = s0.trySplit();
 			if (null == ss) break;
-			else DEFEX.submit((Runnable) () -> each(ss, using));
+			else Parals.submit((Runnable) () -> each(ss, using));
 		} while (true);
-		DEFEX.submit((Runnable) () -> eachs(s0, using));
+		Parals.submit((Runnable) () -> eachs(s0, using));
 	}
 
 	static <K, E> void partition(Spliterator<E> s, BiConsumer<K, E> using, Function<E, K> keying) {
@@ -262,7 +262,7 @@ public interface SplitEx {
 			l.offer(e);
 			List<E> batch = list();
 			l.drainTo(batch, maxBatchSize);
-			if (l.isEmpty() || batch.size() > maxBatchSize) DEFEX.submit(() -> using.accept(k, of(batch)));
+			if (l.isEmpty() || batch.size() > maxBatchSize) Parals.submit(() -> using.accept(k, of(batch)));
 			else l.addAll(batch);
 			return l.isEmpty() ? null : l;
 		}));
@@ -272,20 +272,20 @@ public interface SplitEx {
 		Spliterator<E> s0 = Objects.requireNonNull(s);
 		for (int i = 0; i < minPartNum; i++) {
 			Spliterator<E> ss = s0.trySplit();
-			if (null != ss) DEFEX.submit(() -> using.accept(of(ss)));
+			if (null != ss) Parals.submit(() -> using.accept(of(ss)));
 			else break;
 		}
-		DEFEX.submit(() -> using.accept(of(s0)));
+		Parals.submit(() -> using.accept(of(s0)));
 	}
 
 	static <E> void batch(Spliterator<E> s, Consumer<Steam<E>> using, int maxBatchSize) {
 		Spliterator<E> s0 = Objects.requireNonNull(s);
 		while (s0.estimateSize() > maxBatchSize) {
 			Spliterator<E> ss = s0.trySplit();
-			if (null != ss) DEFEX.submit(() -> using.accept(of(ss)));
+			if (null != ss) Parals.submit(() -> using.accept(of(ss)));
 			else break;
 		}
-		DEFEX.submit(() -> using.accept(of(s0)));
+		Parals.submit(() -> using.accept(of(s0)));
 	}
 
 	interface chars {
@@ -314,5 +314,4 @@ public interface SplitEx {
 			return ch1 & ch2 & NON_ALL | and | or | non;
 		}
 	}
-
 }

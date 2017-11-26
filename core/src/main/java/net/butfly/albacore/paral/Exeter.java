@@ -129,7 +129,7 @@ public final class Exeter extends AbstractExecutorService {
 
 	public int parallelism() {
 		if (impl instanceof ForkJoinPool) return ((ForkJoinPool) impl).getParallelism();
-		if (Exeters.DEF_EXECUTOR_PARALLELISM < 0) return -Exeters.DEF_EXECUTOR_PARALLELISM;
+		if (Exeters.Internal.DEF_EXECUTOR_PARALLELISM < 0) return -Exeters.Internal.DEF_EXECUTOR_PARALLELISM;
 		return Integer.MAX_VALUE;
 	}
 }

@@ -3,6 +3,9 @@ package net.butfly.albacore.cache.utils.init;
 import java.io.IOException;
 import java.util.Properties;
 
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+
 import net.butfly.albacore.cache.client.MemCachePond;
 import net.butfly.albacore.cache.config.CacheConfig;
 import net.butfly.albacore.cache.config.CacheConfigBase;
@@ -12,11 +15,8 @@ import net.butfly.albacore.cache.utils.control.CacheContant;
 import net.butfly.albacore.cache.utils.control.CacheControl;
 import net.butfly.albacore.exception.BusinessException;
 import net.butfly.albacore.exception.SystemException;
+import net.butfly.albacore.paral.Task;
 import net.butfly.albacore.utils.logger.Logger;
-import net.butfly.albacore.utils.parallel.Concurrents;
-
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.Resource;
 
 public class CacheInit {
 	private CacheConfigService cacheConfigService;
@@ -76,7 +76,7 @@ class CacheTask extends Thread {
 		while (true) {
 			try {
 				while (CacheInit.cacheTaskWait)
-					Concurrents.waitSleep();
+					Task.waitSleep();
 				CacheConfig[] listCacheConfig = CacheConfigBase.getCacheConfigService().loadConfig();
 				CacheConfig usedCacheServer = null; // 数据库中主用缓存服务器配置
 				CacheConfig standbyCacheServer = null; // 数据库中备用用缓存服务器配置

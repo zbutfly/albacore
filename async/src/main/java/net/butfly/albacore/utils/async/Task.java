@@ -5,8 +5,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import net.butfly.albacore.utils.parallel.Concurrents;
-
 @Deprecated
 public class Task<T> {
 	protected java.util.concurrent.Callable<T> call;

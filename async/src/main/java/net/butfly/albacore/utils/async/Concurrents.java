@@ -1,4 +1,4 @@
-package net.butfly.albacore.utils.parallel;
+package net.butfly.albacore.utils.async;
 
 import static net.butfly.albacore.paral.Task.DEF_WAIT_MS;
 

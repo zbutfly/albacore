@@ -19,7 +19,6 @@ import net.butfly.albacore.exception.AggregaedException;
 import net.butfly.albacore.utils.Instances;
 import net.butfly.albacore.utils.Utils;
 import net.butfly.albacore.utils.logger.Logger;
-import net.butfly.albacore.utils.parallel.Concurrents;
 
 @Deprecated
 public final class Tasks extends Utils {

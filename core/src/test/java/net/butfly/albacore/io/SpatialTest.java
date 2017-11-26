@@ -1,11 +1,10 @@
 package net.butfly.albacore.io;
 
-import static net.butfly.albacore.paral.Exeters.DEFEX;
-
 import java.util.Map;
 import java.util.Spliterator;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import net.butfly.albacore.paral.Parals;
 import net.butfly.albacore.paral.steam.Steam;
 import net.butfly.albacore.utils.collection.Its;
 import net.butfly.albacore.utils.collection.Maps;
@@ -28,7 +27,7 @@ public class SpatialTest {
 		for (int i = 0; i < 5; i++)
 			its.put(i, Its.wrap(it));
 		for (int i : its.keySet())
-			DEFEX.submit(() -> its.get(i).forEachRemaining(v -> System.out.println("#" + i + ": " + v + ", remain in parent: " + it
+			Parals.submit(() -> its.get(i).forEachRemaining(v -> System.out.println("#" + i + ": " + v + ", remain in parent: " + it
 					.estimateSize())));
 		System.out.println("remain in parent: " + it.estimateSize());
 

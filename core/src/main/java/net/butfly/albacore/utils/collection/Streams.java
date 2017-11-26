@@ -1,7 +1,5 @@
 package net.butfly.albacore.utils.collection;
 
-import static net.butfly.albacore.paral.Exeters.DEFEX;
-
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -20,6 +18,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import net.butfly.albacore.Albacore;
+import net.butfly.albacore.paral.Parals;
 import net.butfly.albacore.utils.Configs;
 import net.butfly.albacore.utils.Utils;
 
@@ -147,7 +146,7 @@ public final class Streams extends Utils {
 	 * @return
 	 */
 	public static <V, R> R collect(Stream<? extends V> s, Collector<? super V, ?, R> collector) {
-		return DEFEX.join((Callable<R>) () -> of(s).collect(collector));
+		return Parals.join((Callable<R>) () -> of(s).collect(collector));
 	}
 
 	public static <V, R> R collect(Iterable<? extends V> col, Collector<? super V, ?, R> collector) {
