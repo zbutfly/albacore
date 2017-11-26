@@ -12,6 +12,7 @@
 	<version>3.0.3-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<modules>
+		<module>logging</module>
 		<module>core</module>
 		<!--<module>serializer</module> -->
 		<module>meta</module>
