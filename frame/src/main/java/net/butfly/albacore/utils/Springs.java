@@ -5,13 +5,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
-import net.butfly.albacore.utils.logger.Logger;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.beans.factory.config.PropertyPlaceholderConfigurer;
 import org.springframework.core.Ordered;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
+
+import net.butfly.albacore.utils.logger.Logger;
 
 public final class Springs extends Utils {
 	private static final Logger logger = Logger.getLogger(Springs.class);

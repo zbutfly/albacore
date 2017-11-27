@@ -18,8 +18,8 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import net.butfly.albacore.Albacore;
-import net.butfly.albacore.utils.logger.Logger;
 import net.butfly.albacore.utils.collection.Maps;
+import net.butfly.albacore.utils.logger.Logger;
 
 public class Configs extends Utils {
 	private static final Conf MAIN_CONF = init(Systems.getMainClass());

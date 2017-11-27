@@ -6,7 +6,6 @@ import java.util.WeakHashMap;
 import net.butfly.albacore.cache.config.CacheConfigManager;
 import net.butfly.albacore.cache.utils.impl.BaseCacheImpl;
 import net.butfly.albacore.exception.SystemException;
-
 import net.butfly.albacore.utils.logger.Logger;
 
 public class CacheFactory {

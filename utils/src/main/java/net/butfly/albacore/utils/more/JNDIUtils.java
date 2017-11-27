@@ -13,15 +13,15 @@ import javax.naming.Reference;
 import javax.naming.StringRefAddr;
 import javax.naming.spi.ObjectFactory;
 
-import net.butfly.albacore.utils.Objects;
-import net.butfly.albacore.utils.Reflections;
-import net.butfly.albacore.utils.Utils;
-
 import org.dom4j.Attribute;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
+
+import net.butfly.albacore.utils.Objects;
+import net.butfly.albacore.utils.Reflections;
+import net.butfly.albacore.utils.Utils;
 import net.butfly.albacore.utils.logger.Logger;
 
 public final class JNDIUtils extends Utils {

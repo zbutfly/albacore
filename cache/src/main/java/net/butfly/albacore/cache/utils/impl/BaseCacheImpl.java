@@ -10,7 +10,6 @@ import net.butfly.albacore.cache.utils.control.CacheContant;
 import net.butfly.albacore.cache.utils.strategy.ICacheStrategy;
 import net.butfly.albacore.cache.utils.strategy.StrategyFactory;
 import net.butfly.albacore.exception.SystemException;
-
 import net.butfly.albacore.utils.logger.Logger;
 
 public class BaseCacheImpl implements ICacheHelper {

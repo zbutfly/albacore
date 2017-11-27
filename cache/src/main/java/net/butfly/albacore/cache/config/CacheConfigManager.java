@@ -13,7 +13,6 @@ import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
-import net.butfly.albacore.utils.logger.Logger;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
@@ -22,6 +21,7 @@ import net.butfly.albacore.cache.utils.strategy.ICacheStrategy;
 import net.butfly.albacore.cache.utils.strategy.keygenerate.IKeyGenerator;
 import net.butfly.albacore.exception.SystemException;
 import net.butfly.albacore.utils.Reflections;
+import net.butfly.albacore.utils.logger.Logger;
 
 @SuppressWarnings({ "unchecked" })
 public class CacheConfigManager {

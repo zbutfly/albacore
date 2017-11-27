@@ -59,7 +59,7 @@ public interface Task extends Runnable {
 	}
 
 	default Task async() {
-		return () -> Parals.submit(this);
+		return () -> Exeter.of().submit(this);
 	}
 
 	default String text() {
@@ -150,7 +150,7 @@ public interface Task extends Runnable {
 
 			@Override
 			public void run() {
-				Parals.join(subs.toArray(new Task[subs.size()]));
+				Exeter.of().join(subs.toArray(new Task[subs.size()]));
 			}
 
 			@Override

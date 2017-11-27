@@ -2,7 +2,6 @@ package net.butfly.albacore.cache.utils.strategy.keygenerate;
 
 import net.butfly.albacore.cache.utils.Key;
 import net.butfly.albacore.exception.SystemException;
-
 import net.butfly.albacore.utils.logger.Logger;
 
 public class StringKeyGenerator implements IKeyGenerator {

@@ -8,7 +8,6 @@ import net.butfly.albacore.cache.utils.Key;
 import net.butfly.albacore.exception.SystemException;
 import net.butfly.albacore.utils.encrypt.Algorithm.DigesterAlgorithm;
 import net.butfly.albacore.utils.encrypt.DigesterEncryptor;
-
 import net.butfly.albacore.utils.logger.Logger;
 
 public class SerializeKeyGenerator implements IKeyGenerator {

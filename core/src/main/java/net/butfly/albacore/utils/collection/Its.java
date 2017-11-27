@@ -13,8 +13,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import net.butfly.albacore.paral.Exeters;
-import net.butfly.albacore.paral.Parals;
+import net.butfly.albacore.paral.Exeter;
 import net.butfly.albacore.utils.Utils;
 
 public final class Its extends Utils {
@@ -120,17 +119,17 @@ public final class Its extends Utils {
 			if (null != split) fs.add(() -> split(split, max, using));
 		}
 		if (origin.estimateSize() > 0) using.accept(origin);
-		return Parals.submit(fs.toArray(new Runnable[fs.size()]));
+		return Exeter.of().submit(fs.toArray(new Runnable[fs.size()]));
 	}
 
 	public static <V, R> Spliterator<R> split(Spliterator<V> origin, long max, Function<Spliterator<V>, Spliterator<R>> using) {
 		List<Future<Spliterator<R>>> fs = new ArrayList<>();
 		while (origin.estimateSize() > max) {
 			Spliterator<V> split = origin.trySplit();
-			if (null != split) fs.add(Parals.submit((Callable<Spliterator<R>>) () -> split(split, max, using)));
+			if (null != split) fs.add(Exeter.of().submit((Callable<Spliterator<R>>) () -> split(split, max, using)));
 		}
-		if (origin.estimateSize() > 0) fs.add(0, Parals.submit((Callable<Spliterator<R>>) () -> using.apply(origin)));
-		return new ConcatSpliterator<>(Exeters.get(fs));
+		if (origin.estimateSize() > 0) fs.add(0, Exeter.of().submit((Callable<Spliterator<R>>) () -> using.apply(origin)));
+		return new ConcatSpliterator<>(Exeter.get(fs));
 	}
 
 	private static class ConcatSpliterator<V> implements Spliterator<V> {

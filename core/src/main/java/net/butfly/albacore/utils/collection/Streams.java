@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Spliterator;
-import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
@@ -18,7 +17,6 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import net.butfly.albacore.Albacore;
-import net.butfly.albacore.paral.Parals;
 import net.butfly.albacore.utils.Configs;
 import net.butfly.albacore.utils.Utils;
 
@@ -146,7 +144,7 @@ public final class Streams extends Utils {
 	 * @return
 	 */
 	public static <V, R> R collect(Stream<? extends V> s, Collector<? super V, ?, R> collector) {
-		return Parals.join((Callable<R>) () -> of(s).collect(collector));
+		return of(s).collect(collector);
 	}
 
 	public static <V, R> R collect(Iterable<? extends V> col, Collector<? super V, ?, R> collector) {

@@ -1,14 +1,14 @@
 package net.butfly.albacore.cache.utils.autoproxy;
 
+import org.aopalliance.intercept.MethodInterceptor;
+import org.aopalliance.intercept.MethodInvocation;
+
 import net.butfly.albacore.cache.config.CacheConfigManager;
 import net.butfly.albacore.cache.utils.CacheFactory;
 import net.butfly.albacore.cache.utils.ICacheHelper;
 import net.butfly.albacore.cache.utils.Key;
 import net.butfly.albacore.cache.utils.control.CacheControl;
 import net.butfly.albacore.exception.SystemException;
-
-import org.aopalliance.intercept.MethodInterceptor;
-import org.aopalliance.intercept.MethodInvocation;
 
 /**
  * 

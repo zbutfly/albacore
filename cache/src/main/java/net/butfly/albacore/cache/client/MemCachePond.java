@@ -4,19 +4,18 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.code.yanf4j.core.impl.StandardSocketOption;
+
 import net.butfly.albacore.cache.config.CacheConfig;
 import net.butfly.albacore.cache.utils.control.CacheContant;
 import net.butfly.albacore.exception.SystemException;
+import net.butfly.albacore.utils.logger.Logger;
 import net.rubyeye.xmemcached.MemcachedClientBuilder;
 import net.rubyeye.xmemcached.XMemcachedClientBuilder;
 import net.rubyeye.xmemcached.command.TextCommandFactory;
 import net.rubyeye.xmemcached.impl.KetamaMemcachedSessionLocator;
 import net.rubyeye.xmemcached.transcoders.SerializingTranscoder;
 import net.rubyeye.xmemcached.utils.AddrUtil;
-
-import net.butfly.albacore.utils.logger.Logger;
-
-import com.google.code.yanf4j.core.impl.StandardSocketOption;
 
 public class MemCachePond {
 	private static MemCachePond memCachePond = new MemCachePond();
