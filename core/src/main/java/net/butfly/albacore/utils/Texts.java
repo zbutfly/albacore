@@ -13,10 +13,9 @@ import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import net.butfly.albacore.Albacore;
+import net.butfly.albacore.paral.steam.Sdream;
 import net.butfly.albacore.utils.collection.Maps;
 
 public final class Texts extends Utils {
@@ -174,7 +173,7 @@ public final class Texts extends Utils {
 
 	public static List<String> split(String origin, String split) {
 		if (origin == null) return new ArrayList<>();
-		return Stream.of(origin.split(split)).map(s -> s.trim()).filter(s -> !"".equals(s)).collect(Collectors.toList());
+		return Sdream.of(origin.split(split)).map(s -> s.trim()).filter(s -> !"".equals(s)).list();
 	}
 
 	private static final Map<String, BlockingQueue<CloseDateFormat>> DATA_FORMATS = Maps.of();

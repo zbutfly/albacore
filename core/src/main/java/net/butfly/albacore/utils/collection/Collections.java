@@ -1,4 +1,4 @@
-package net.butfly.albacore.utils;
+package net.butfly.albacore.utils.collection;
 
 import static net.butfly.albacore.utils.collection.Streams.collect;
 import static net.butfly.albacore.utils.collection.Streams.of;
@@ -16,6 +16,9 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import net.butfly.albacore.utils.Pair;
+import net.butfly.albacore.utils.Utils;
 
 @Deprecated
 public final class Collections extends Utils {

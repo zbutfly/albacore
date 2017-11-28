@@ -19,9 +19,10 @@ import java.util.stream.StreamSupport;
 import net.butfly.albacore.Albacore;
 import net.butfly.albacore.utils.Configs;
 import net.butfly.albacore.utils.Utils;
+import net.butfly.albacore.utils.parallel.Lambdas;
 
+@Deprecated
 public final class Streams extends Utils {
-	public static final Predicate<Object> NOT_NULL = t -> null != t;
 	@SuppressWarnings("rawtypes")
 	public static final Predicate<Map> NOT_EMPTY_MAP = t -> null != t && !t.isEmpty();
 
@@ -61,11 +62,11 @@ public final class Streams extends Utils {
 	public static <V> Stream<V> of(Stream<V> s) {
 		if (DEFAULT_PARALLEL_ENABLE) s = s.parallel();
 		// else s = s.sequential();
-		return s.filter(NOT_NULL);
+		return s.filter(Lambdas.notNull());
 	}
 
 	public static <V> Stream<V> of(Spliterator<V> it) {
-		return StreamSupport.stream(it, DEFAULT_PARALLEL_ENABLE).filter(NOT_NULL);
+		return StreamSupport.stream(it, DEFAULT_PARALLEL_ENABLE).filter(Lambdas.notNull());
 	}
 
 	public static <V> Stream<V> of(Iterable<V> col) {
@@ -83,7 +84,7 @@ public final class Streams extends Utils {
 			Collection<V> c = (Collection<V>) col;
 			s = parallel ? c.parallelStream() : c.stream();
 		} else s = StreamSupport.stream(col.spliterator(), parallel);
-		return s.filter(NOT_NULL);
+		return s.filter(Lambdas.notNull());
 	}
 
 	public static <K, V> Stream<Entry<K, V>> ofMap(Map<K, V> map) {

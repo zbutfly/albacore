@@ -18,25 +18,23 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import net.butfly.albacore.paral.Exeter;
-import net.butfly.albacore.paral.Parals;
 import net.butfly.albacore.paral.split.BatchSpliterator;
 import net.butfly.albacore.paral.split.ConcatSpliterator;
 import net.butfly.albacore.paral.split.ConvedSpliterator;
 import net.butfly.albacore.paral.split.FilteredSpliterator;
 import net.butfly.albacore.paral.split.FlatedSpliterator;
 import net.butfly.albacore.utils.Pair;
+import net.butfly.albacore.utils.collection.Colls;
 import net.butfly.albacore.utils.collection.Maps;
 
 public final class Splidream<E, SELF extends Sdream<E>> implements Sdream<E>, Spliterator<E> {
 	protected Exeter ex;
-	protected boolean wait;
 	protected final Spliterator<E> impl;
 
 	public Splidream(Spliterator<E> impl) {
 		super();
 		this.impl = Objects.requireNonNull(impl);
 		ex = Exeter.of();
-		wait = false;
 	}
 
 	@Override
@@ -50,16 +48,10 @@ public final class Splidream<E, SELF extends Sdream<E>> implements Sdream<E>, Sp
 		return this;
 	}
 
-	@Override
-	public Sdream<E> setWait(boolean wait) {
-		this.wait = wait;
-		return this;
-	}
-
 	// =======================================
 	@Override
 	public List<E> collect() {
-		List<E> l = Parals.list();
+		List<E> l = Colls.list();
 		get(each(ex, spliterator(), e -> {
 			if (null != e) l.add(e);
 		}, new LinkedBlockingQueue<>()));
@@ -68,7 +60,7 @@ public final class Splidream<E, SELF extends Sdream<E>> implements Sdream<E>, Sp
 
 	@Override
 	public List<E> list() {
-		List<E> l = Parals.list();
+		List<E> l = Colls.list();
 		eachs(e -> {
 			if (null != e) l.add(e);
 		});
@@ -133,11 +125,11 @@ public final class Splidream<E, SELF extends Sdream<E>> implements Sdream<E>, Sp
 		eachs(spliterator(), using);
 	}
 
-	/** Using spliterator parallelly with trySplit() */
+	/** Using spliterator parallelly with trySplit() 
+	 * @return */
 	@Override
-	public void each(Consumer<E> using) {
-		BlockingQueue<Future<?>> fs = each(ex, spliterator(), using, new LinkedBlockingQueue<>());
-		if (wait) Exeter.get(fs);
+	public BlockingQueue<Future<?>> each(Consumer<E> using) {
+		return each(ex, spliterator(), using, new LinkedBlockingQueue<>());
 	}
 
 	@Override
@@ -158,7 +150,7 @@ public final class Splidream<E, SELF extends Sdream<E>> implements Sdream<E>, Sp
 
 	@Override
 	public List<Sdream<E>> partition(int minPartNum) {
-		List<Sdream<E>> l = Parals.list();
+		List<Sdream<E>> l = Colls.list();
 		get(partition(ex, impl, l::add, minPartNum));
 		return l;
 	}
@@ -173,7 +165,7 @@ public final class Splidream<E, SELF extends Sdream<E>> implements Sdream<E>, Sp
 		Map<K, List<V>> m = Maps.of();
 		get(partition(ex, impl, (k, e) -> m.compute(k, (kk, l) -> {
 			if (null != e) {
-				if (null == l) l = Parals.list();
+				if (null == l) l = Colls.list();
 				l.add(valuing.apply(e));
 			}
 			return l;
@@ -200,7 +192,7 @@ public final class Splidream<E, SELF extends Sdream<E>> implements Sdream<E>, Sp
 		each(ex, impl, e -> map.compute(keying.apply(e), (k, l) -> {
 			if (null == l) l = new LinkedBlockingQueue<>();
 			l.offer(e);
-			List<E> batch = Parals.list();
+			List<E> batch = Colls.list();
 			l.drainTo(batch, maxBatchSize);
 			if (l.isEmpty() || batch.size() > maxBatchSize) fs.offer(ex.submit(() -> using.accept(k, of(batch))));
 			else l.addAll(batch);
@@ -259,7 +251,7 @@ public final class Splidream<E, SELF extends Sdream<E>> implements Sdream<E>, Sp
 		return each(ex, Objects.requireNonNull(s), e -> map.compute(keying.apply(e), (k, l) -> {
 			if (null == l) l = new LinkedBlockingQueue<>();
 			l.offer(e);
-			List<E> batch = Parals.list();
+			List<E> batch = Colls.list();
 			l.drainTo(batch, maxBatchSize);
 			if (l.isEmpty() || batch.size() > maxBatchSize) fs.offer(ex.submit(() -> using.accept(k, of(batch))));
 			else l.addAll(batch);

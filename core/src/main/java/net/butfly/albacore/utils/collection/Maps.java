@@ -49,5 +49,4 @@ public class Maps {
 		else return new Pair<>((K) kvs[0], Arrays.copyOfRange(kvs, 1, kvs.length));
 
 	}
-
 }

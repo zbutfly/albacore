@@ -4,8 +4,8 @@ import java.util.List;
 import java.util.Spliterator;
 import java.util.function.Consumer;
 
-import net.butfly.albacore.paral.Parals;
 import net.butfly.albacore.paral.steam.Sdream;
+import net.butfly.albacore.utils.collection.Colls;
 
 public class BatchSpliterator<E> extends ConvedSpliteratorBase<Sdream<E>, E> {
 	private int batchSize;
@@ -22,7 +22,7 @@ public class BatchSpliterator<E> extends ConvedSpliteratorBase<Sdream<E>, E> {
 
 	@Override
 	public boolean tryAdvance(Consumer<? super Sdream<E>> using) {
-		List<E> batch = Parals.list();
+		List<E> batch = Colls.list();
 		while (batch.size() < batchSize && impl.tryAdvance(batch::add)) {}
 		if (batch.isEmpty()) return false;
 		using.accept(Sdream.of(batch));

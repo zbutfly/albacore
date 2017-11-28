@@ -1,9 +1,9 @@
 package net.butfly.albacore.paral;
 
-import static net.butfly.albacore.paral.Parals.list;
 import static net.butfly.albacore.paral.Futures.done;
 import static net.butfly.albacore.paral.Futures.fail;
 import static net.butfly.albacore.utils.Exceptions.unwrap;
+import static net.butfly.albacore.utils.collection.Colls.list;
 import static net.butfly.albacore.paral.Exeter.get;
 import java.util.Collection;
 import java.util.List;

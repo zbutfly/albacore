@@ -1,9 +1,9 @@
-package net.butfly.albacore.paral;
+package net.butfly.albacore.utils.collection;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public interface Parals {
+public interface Colls {
 	static <E> List<E> list() {
 		return new CopyOnWriteArrayList<>();
 	}
