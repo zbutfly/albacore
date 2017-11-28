@@ -1,5 +1,7 @@
 package net.butfly.albacore.utils.parallel;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -46,4 +48,12 @@ public final class Lambdas extends Utils {
 		return v -> c.get();
 	}
 
+	public static <T> BinaryOperator<List<T>> merging() {
+		return (t1, t2) -> {
+			List<T> l = new ArrayList<>();
+			l.addAll(t1);
+			l.addAll(t2);
+			return l;
+		};
+	}
 }

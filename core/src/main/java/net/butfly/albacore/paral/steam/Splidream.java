@@ -6,6 +6,7 @@ import static net.butfly.albacore.paral.steam.Sdream.of;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Spliterator;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Future;
@@ -50,20 +51,18 @@ public final class Splidream<E, SELF extends Sdream<E>> implements Sdream<E>, Sp
 
 	// =======================================
 	@Override
+	public Optional<E> next() {
+		AtomicReference<E> ref = new AtomicReference<>();
+		tryAdvance(ref::lazySet);
+		return Optional.ofNullable(ref.get());
+	}
+
+	@Override
 	public List<E> collect() {
 		List<E> l = Colls.list();
 		get(each(ex, spliterator(), e -> {
 			if (null != e) l.add(e);
 		}, new LinkedBlockingQueue<>()));
-		return l;
-	}
-
-	@Override
-	public List<E> list() {
-		List<E> l = Colls.list();
-		eachs(e -> {
-			if (null != e) l.add(e);
-		});
 		return l;
 	}
 
@@ -99,16 +98,6 @@ public final class Splidream<E, SELF extends Sdream<E>> implements Sdream<E>, Sp
 	}
 
 	@Override
-	public <R> Sdream<Pair<E, R>> join(Function<E, R> joining) {
-		return map(e -> {
-			if (null == e) return null;
-			R r = joining.apply(e);
-			if (null == r) return null;
-			return new Pair<>(e, r);
-		});
-	}
-
-	@Override
 	public Sdream<E> union(Sdream<E> another) {
 		return of(new ConcatSpliterator<>(impl, another.spliterator()));
 	}
@@ -125,8 +114,11 @@ public final class Splidream<E, SELF extends Sdream<E>> implements Sdream<E>, Sp
 		eachs(spliterator(), using);
 	}
 
-	/** Using spliterator parallelly with trySplit() 
-	 * @return */
+	/**
+	 * Using spliterator parallelly with trySplit()
+	 * 
+	 * @return
+	 */
 	@Override
 	public BlockingQueue<Future<?>> each(Consumer<E> using) {
 		return each(ex, spliterator(), using, new LinkedBlockingQueue<>());

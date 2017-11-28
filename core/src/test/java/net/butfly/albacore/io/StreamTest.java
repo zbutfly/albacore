@@ -6,13 +6,12 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 import net.butfly.albacore.paral.split.Suppliterator;
-import net.butfly.albacore.utils.collection.Streams;
+import net.butfly.albacore.paral.steam.Sdream;
 
 public class StreamTest {
-	static int max = 45;//Integer.MAX_VALUE;
+	static int max = 45;// Integer.MAX_VALUE;
 	static int parallelism = 5;
 	static ForkJoinPool ex = new ForkJoinPool(parallelism);
 	static AtomicInteger seed = new AtomicInteger();
@@ -20,7 +19,7 @@ public class StreamTest {
 		@Override
 		public Integer next() {
 			prefix(ii + "#source advanced...", ii);
-//			waitSleep();
+			// waitSleep();
 			return seed.getAndIncrement() >= max ? null : seed.get();
 		}
 
@@ -36,15 +35,15 @@ public class StreamTest {
 		for (int i = 0; i < parallelism; i++)
 			counts[i] = new AtomicInteger();
 
-		Stream<Integer>[] ss = new Stream[parallelism];
+		Sdream<Integer>[] ss = new Sdream[parallelism];
 		for (int i = 0; i < parallelism; i++)
-			ss[i] = Streams.of(new Suppliterator<Integer>(iter.apply(i), 100));
+			ss[i] = Sdream.of(new Suppliterator<Integer>(iter.apply(i), 100));
 		Future<?>[] fs = new Future[parallelism];
 		for (int i = 0; i < parallelism; i++) {
 			int ii = i;
 			fs[i] = ex.submit(() -> {
-				ss[ii].forEach(v -> {
-//					waitSleep();
+				ss[ii].each(v -> {
+					// waitSleep();
 					prefix(ii + "#split: " + v, ii);
 					counts[ii].incrementAndGet();
 				});

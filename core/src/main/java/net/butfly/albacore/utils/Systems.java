@@ -1,7 +1,5 @@
 package net.butfly.albacore.utils;
 
-import static net.butfly.albacore.utils.collection.Streams.of;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.management.ManagementFactory;
@@ -22,13 +20,13 @@ import java.util.function.Consumer;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import com.google.common.base.Joiner;
 import com.sun.akuma.Daemon;
 import com.sun.akuma.JavaVMArguments;
 
 import net.butfly.albacore.Albacore;
+import net.butfly.albacore.paral.steam.Sdream;
 import net.butfly.albacore.utils.collection.Maps;
 import net.butfly.albacore.utils.logger.Logger;
 import sun.management.VMManagement;
@@ -44,8 +42,8 @@ public final class Systems extends Utils {
 			System.err.println("\targs[" + (++i) + "]: " + a);
 	}
 
-	public static Stream<Thread> threadsRunning() {
-		return of(Thread.getAllStackTraces().keySet()).filter(t -> !t.isDaemon());
+	public static Sdream<Thread> threadsRunning() {
+		return Sdream.of(Thread.getAllStackTraces().keySet()).filter(t -> !t.isDaemon());
 	}
 
 	public static int pid() {

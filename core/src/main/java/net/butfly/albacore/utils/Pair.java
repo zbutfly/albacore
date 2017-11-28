@@ -6,7 +6,8 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
+
+import net.butfly.albacore.utils.collection.Maps;
 
 public final class Pair<T1, T2> implements Serializable, Entry<T1, T2> {
 	private static final long serialVersionUID = 6995675769216721583L;
@@ -66,8 +67,11 @@ public final class Pair<T1, T2> implements Serializable, Entry<T1, T2> {
 		return Collectors.toMap(p -> p.v1(), p -> p.v2());
 	}
 
-	public static <T1, T2> Map<T1, T2> collect(Stream<Pair<T1, T2>> s) {
-		return s.collect(toMap());
+	public static <T1, T2> Map<T1, T2> collect(Iterable<Pair<T1, T2>> s) {
+		Map<T1, T2> m = Maps.of();
+		for (Pair<T1, T2> p : s)
+			m.putIfAbsent(p.v1, p.v2);
+		return m;
 	}
 
 	public static <T1, T2> Pair<T1, T2> of(T1 v1, T2 v2) {
