@@ -1,4 +1,4 @@
-package net.butfly.albacore.paral;
+package net.butfly.albacore.paral.split;
 
 import java.util.Iterator;
 import java.util.Spliterator;

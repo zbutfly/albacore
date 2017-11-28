@@ -16,49 +16,51 @@ import java.util.stream.Stream;
 import com.google.common.base.Joiner;
 
 import net.butfly.albacore.paral.Exeter;
-import net.butfly.albacore.paral.Suppliterator;
+import net.butfly.albacore.paral.split.Suppliterator;
 import net.butfly.albacore.utils.Pair;
 
-public interface Steam<E> {
+public interface Sdream<E> {
 	Spliterator<E> spliterator();
 
-	Steam<E> setWait(boolean wait);
+	Sdream<E> setWait(boolean wait);
 
-	default Steam<E> ex(ExecutorService ex) {
+	default Sdream<E> ex(ExecutorService ex) {
 		return ex(Exeter.of(ex));
 	}
 
-	Steam<E> ex(Exeter ex);
+	Sdream<E> ex(Exeter ex);
 
-	default Steam<E> ex() {
+	default Sdream<E> ex() {
 		return ex(Exeter.of());
 	}
 
-	default Steam<E> unex() {
+	default Sdream<E> unex() {
 		return ex(Exeter.synchro);
 	}
 
 	/** Terminal!! */
-	default Steam<E> nonNull() {
+	default Sdream<E> nonNull() {
 		return filter(e -> null != e);
 	}
 
 	/** Terminal!! */
-	Steam<E> filter(Predicate<E> checking);
+	Sdream<E> filter(Predicate<E> checking);
 
-	<R> Steam<R> map(Function<E, R> conv);
+	Sdream<Sdream<E>> batch(int maxBatchSize);
 
-	<R> Steam<R> map(Function<Steam<E>, Steam<R>> conv, int maxBatchSize);
+	<R> Sdream<R> map(Function<E, R> conv);
 
-	<R> Steam<R> mapFlat(Function<E, Steam<R>> flat);
+	<R> Sdream<R> map(Function<Sdream<E>, Sdream<R>> conv, int maxBatchSize);
+
+	<R> Sdream<R> mapFlat(Function<E, Sdream<R>> flat);
 
 	E reduce(BinaryOperator<E> accumulator);
 
-	<E1> Steam<Pair<E, E1>> join(Function<E, E1> joining);
+	<E1> Sdream<Pair<E, E1>> join(Function<E, E1> joining);
 
-	<E1> Steam<Pair<E, E1>> join(Function<Steam<E>, Steam<E1>> joining, int maxBatchSize);
+	<E1> Sdream<Pair<E, E1>> join(Function<Sdream<E>, Sdream<E1>> joining, int maxBatchSize);
 
-	Steam<E> union(Steam<E> another);
+	Sdream<E> union(Sdream<E> another);
 
 	// ==================
 	List<E> collect();
@@ -78,41 +80,42 @@ public interface Steam<E> {
 		return null == prefix || prefix.length() == 0 ? s : prefix + s;
 	}
 
-	void partition(Consumer<Steam<E>> using, int minPartNum);
+	void partition(Consumer<Sdream<E>> using, int minPartNum);
 
 	<K> void partition(BiConsumer<K, E> using, Function<E, K> keying);
 
-	<K> void partition(BiConsumer<K, Steam<E>> using, Function<E, K> keying, int maxBatchSize);
+	<K> void partition(BiConsumer<K, Sdream<E>> using, Function<E, K> keying, int maxBatchSize);
 
-	void batch(Consumer<Steam<E>> using, int maxBatchSize);
+	void batch(Consumer<Sdream<E>> using, int maxBatchSize);
 
-	static <E, S> Steam<E> of(Spliterator<E> impl) {
-		return new Splitream<>(impl);
+	static <E, S> Sdream<E> of(Spliterator<E> impl) {
+		return new Splidream<>(impl);
 	}
 
-	static <E, S> Steam<E> of(Iterable<E> impl) {
-		return new Splitream<>(impl.spliterator());
+	static <E, S> Sdream<E> of(Iterable<E> impl) {
+		return new Splidream<>(impl.spliterator());
 	}
 
 	/** @deprecated Terminal of the stream */
 	@Deprecated
-	static <E, S> Steam<E> of(Stream<E> impl) {
-		return new Splitream<>(impl.spliterator());
+	static <E, S> Sdream<E> of(Stream<E> impl) {
+		return new Splidream<>(impl.spliterator());
 	}
 
 	@SafeVarargs
-	static <V> Steam<V> of(V... t) {
+	static <V> Sdream<V> of(V... t) {
 		return of(new CopyOnWriteArrayList<>(t).spliterator());
 	}
 
-	public static <V> Steam<V> of(Supplier<V> get, long size, Supplier<Boolean> ending) {
+	public static <V> Sdream<V> of(Supplier<V> get, long size, Supplier<Boolean> ending) {
 		return of(new Suppliterator<>(get, size, ending));
 	}
 
 	// ==================
-	List<Steam<E>> partition(int minPartNum);
+	List<Sdream<E>> partition(int minPartNum);
 
 	<K, V> Map<K, List<V>> partition(Function<E, K> keying, Function<E, V> valuing);
 
 	<K, V> Map<K, V> partition(Function<E, K> keying, Function<E, V> valuing, BinaryOperator<V> reducing);
+
 }

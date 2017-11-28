@@ -3,7 +3,7 @@ package net.butfly.albacore.utils.stats;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import net.butfly.albacore.paral.steam.Steam;
+import net.butfly.albacore.paral.steam.Sdream;
 import net.butfly.albacore.utils.Instances;
 import net.butfly.albacore.utils.Systems;
 import net.butfly.albacore.utils.logger.Logger;
@@ -50,6 +50,6 @@ public interface Statistical<T extends Statistical<T>> {
 
 	default <V> void stats(Iterable<V> vv) {
 		Statistic s = Instances.fetch(() -> null, Statistic.class, this);
-		if (null != s) Steam.of(vv).ex(Logger.logex).each(v -> s.stats(v));
+		if (null != s) Sdream.of(vv).ex(Logger.logex).each(v -> s.stats(v));
 	}
 }

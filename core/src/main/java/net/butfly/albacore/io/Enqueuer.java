@@ -1,12 +1,12 @@
 package net.butfly.albacore.io;
 
-import net.butfly.albacore.paral.steam.Steam;
+import net.butfly.albacore.paral.steam.Sdream;
 
 @FunctionalInterface
 public interface Enqueuer<V> {
-	void enqueue(Steam<V> items);
+	void enqueue(Sdream<V> items);
 
-	default void failed(Steam<V> fails) {}
+	default void failed(Sdream<V> fails) {}
 
 	default void succeeded(long success) {}
 }

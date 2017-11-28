@@ -5,16 +5,16 @@ import java.util.Spliterator;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.butfly.albacore.paral.Exeter;
-import net.butfly.albacore.paral.steam.Steam;
+import net.butfly.albacore.paral.steam.Sdream;
 import net.butfly.albacore.utils.collection.Its;
 import net.butfly.albacore.utils.collection.Maps;
 
 public class SpatialTest {
 	public static void main(String[] args) {
-		Steam<Integer> s;
+		Sdream<Integer> s;
 		int MAX = 10000;
 		AtomicInteger seed = new AtomicInteger();
-		s = Steam.of(() -> {
+		s = Sdream.of(() -> {
 			int i = seed.getAndIncrement();
 			System.out.println("\t\t==> advancing to " + i);
 			return i;

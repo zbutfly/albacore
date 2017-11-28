@@ -8,7 +8,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
-import net.butfly.albacore.paral.Suppliterator;
+import net.butfly.albacore.paral.split.Suppliterator;
 
 public class SplitTest {
 	static int max = 45;// Integer.MAX_VALUE;
