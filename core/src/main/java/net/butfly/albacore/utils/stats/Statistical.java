@@ -3,7 +3,7 @@ package net.butfly.albacore.utils.stats;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import net.butfly.albacore.paral.steam.Sdream;
+import net.butfly.albacore.paral.Sdream;
 import net.butfly.albacore.utils.Instances;
 import net.butfly.albacore.utils.Systems;
 import net.butfly.albacore.utils.logger.Logger;

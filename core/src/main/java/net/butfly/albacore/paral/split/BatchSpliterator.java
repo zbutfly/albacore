@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Spliterator;
 import java.util.function.Consumer;
 
-import net.butfly.albacore.paral.steam.Sdream;
+import net.butfly.albacore.paral.Sdream;
 import net.butfly.albacore.utils.collection.Colls;
 
 public class BatchSpliterator<E> extends ConvedSpliteratorBase<Sdream<E>, E> {

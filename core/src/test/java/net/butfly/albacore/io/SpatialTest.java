@@ -5,7 +5,7 @@ import java.util.Spliterator;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.butfly.albacore.paral.Exeter;
-import net.butfly.albacore.paral.steam.Sdream;
+import net.butfly.albacore.paral.Sdream;
 import net.butfly.albacore.utils.collection.Its;
 import net.butfly.albacore.utils.collection.Maps;
 

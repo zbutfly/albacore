@@ -26,7 +26,7 @@ import com.sun.akuma.Daemon;
 import com.sun.akuma.JavaVMArguments;
 
 import net.butfly.albacore.Albacore;
-import net.butfly.albacore.paral.steam.Sdream;
+import net.butfly.albacore.paral.Sdream;
 import net.butfly.albacore.utils.collection.Maps;
 import net.butfly.albacore.utils.logger.Logger;
 import sun.management.VMManagement;

@@ -9,7 +9,7 @@ import static net.butfly.albacore.paral.split.SplitChars.NON_SUBSIZED;
 import java.util.Spliterator;
 import java.util.function.Consumer;
 
-import net.butfly.albacore.paral.steam.Sdream;
+import net.butfly.albacore.paral.Sdream;
 
 public class FlatedSpliterator<E> extends PooledSpliteratorBase<E, Sdream<E>> {
 

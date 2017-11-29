@@ -1,4 +1,4 @@
-package net.butfly.albacore.paral.steam;
+package net.butfly.albacore.paral;
 
 import java.util.List;
 import java.util.Map;
@@ -19,7 +19,7 @@ import java.util.stream.Stream;
 
 import com.google.common.base.Joiner;
 
-import net.butfly.albacore.paral.Exeter;
+import net.butfly.albacore.paral.split.Splidream;
 import net.butfly.albacore.paral.split.Suppliterator;
 import net.butfly.albacore.utils.Pair;
 import net.butfly.albacore.utils.collection.Colls;

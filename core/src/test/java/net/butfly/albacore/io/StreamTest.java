@@ -7,8 +7,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
+import net.butfly.albacore.paral.Sdream;
 import net.butfly.albacore.paral.split.Suppliterator;
-import net.butfly.albacore.paral.steam.Sdream;
 
 public class StreamTest {
 	static int max = 45;// Integer.MAX_VALUE;

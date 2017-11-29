@@ -1,7 +1,7 @@
-package net.butfly.albacore.paral.steam;
+package net.butfly.albacore.paral.split;
 
 import static net.butfly.albacore.paral.Exeter.get;
-import static net.butfly.albacore.paral.steam.Sdream.of;
+import static net.butfly.albacore.paral.Sdream.of;
 
 import java.util.List;
 import java.util.Map;
@@ -19,11 +19,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import net.butfly.albacore.paral.Exeter;
-import net.butfly.albacore.paral.split.BatchSpliterator;
-import net.butfly.albacore.paral.split.ConcatSpliterator;
-import net.butfly.albacore.paral.split.ConvedSpliterator;
-import net.butfly.albacore.paral.split.FilteredSpliterator;
-import net.butfly.albacore.paral.split.FlatedSpliterator;
+import net.butfly.albacore.paral.Sdream;
 import net.butfly.albacore.utils.Pair;
 import net.butfly.albacore.utils.collection.Colls;
 import net.butfly.albacore.utils.collection.Maps;

@@ -2,7 +2,7 @@ package net.butfly.albacore.io;
 
 import java.util.function.Consumer;
 
-import net.butfly.albacore.paral.steam.Sdream;
+import net.butfly.albacore.paral.Sdream;
 
 @FunctionalInterface
 public interface Dequeuer<V> {

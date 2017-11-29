@@ -1,6 +1,6 @@
 package net.butfly.albacore.io;
 
-import net.butfly.albacore.paral.steam.Sdream;
+import net.butfly.albacore.paral.Sdream;
 
 @FunctionalInterface
 public interface Enqueuer<V> {

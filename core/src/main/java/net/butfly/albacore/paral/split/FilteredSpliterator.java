@@ -1,6 +1,6 @@
 package net.butfly.albacore.paral.split;
 
-import static net.butfly.albacore.paral.steam.Sdream.of;
+import static net.butfly.albacore.paral.Sdream.of;
 
 import java.util.Spliterator;
 import java.util.concurrent.atomic.AtomicReference;
