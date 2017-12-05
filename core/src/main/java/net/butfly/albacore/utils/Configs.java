@@ -1,5 +1,7 @@
 package net.butfly.albacore.utils;
 
+import static net.butfly.albacore.paral.Sdream.of;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -15,7 +17,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import net.butfly.albacore.Albacore;
 import net.butfly.albacore.utils.collection.Maps;
@@ -240,9 +241,9 @@ public class Configs extends Utils {
 	// other utils
 
 	public static Map<String, String> mapProps(Properties props) {
-		return props.entrySet().stream().filter(e -> e.getKey() != null && CharSequence.class.isAssignableFrom(e.getKey().getClass()) && e
-				.getValue() != null && CharSequence.class.isAssignableFrom(e.getValue().getClass())).collect(Collectors.toConcurrentMap(
-						e -> e.getKey().toString(), e -> e.getValue().toString()));
+		return of(props).filter(e -> e.getKey() != null && CharSequence.class.isAssignableFrom(e.getKey().getClass()) && e
+				.getValue() != null && CharSequence.class.isAssignableFrom(e.getValue().getClass())).partitions(e -> String.valueOf(e
+						.getKey()), e -> String.valueOf(e.getValue()));
 	}
 
 	public static Properties propsMap(Map<String, String> settings) {

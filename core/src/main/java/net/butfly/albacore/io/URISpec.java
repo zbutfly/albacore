@@ -1,5 +1,7 @@
 package net.butfly.albacore.io;
 
+import static net.butfly.albacore.paral.Sdream.of;
+
 import java.io.Serializable;
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -174,7 +176,7 @@ public final class URISpec implements Serializable {
 	}
 
 	private String[] parseScheme(String scheme) {
-		return Arrays.stream(scheme.split(":")).filter(Texts::notEmpty).toArray(i -> new String[i]);
+		return of(scheme.split(":")).filter(Texts::notEmpty).array(i -> new String[i]);
 	}
 
 	private Pair<String[], String> parsePathFile(String pathfile) {
@@ -186,8 +188,12 @@ public final class URISpec implements Serializable {
 
 	private Map<String, String> parseQueryMap(String query) {
 		if (query == null) return Maps.of();
-		return Arrays.stream(query.split("&")).parallel().map(q -> q.split("=", 2)).collect(Collectors.toConcurrentMap(kv -> kv[0],
-				kv -> kv.length > 1 ? kv[1] : "", (k1, k2) -> k2));
+		Map<String, String> m = Maps.of();
+		for (String param : query.split("&")) {
+			String[] kv = param.split("=", 2);
+			m.put(kv[0], kv.length > 1 ? kv[1] : "");
+		}
+		return m;
 	}
 
 	private InetSocketAddress[] parseHostPort(String remain, int defaultPort) {

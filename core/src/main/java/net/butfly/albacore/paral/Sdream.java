@@ -13,6 +13,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -71,6 +72,11 @@ public interface Sdream<E> {
 	Optional<E> next();
 
 	List<E> collect();
+
+	default E[] array(IntFunction<E[]> arr) {
+		List<E> l = list();
+		return l.toArray(arr.apply(l.size()));
+	}
 
 	default List<E> list() {
 		List<E> l = Colls.list();

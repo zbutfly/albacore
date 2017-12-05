@@ -4,8 +4,6 @@ import java.io.Serializable;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
 
 import net.butfly.albacore.utils.collection.Maps;
 
@@ -61,10 +59,6 @@ public final class Pair<T1, T2> implements Serializable, Entry<T1, T2> {
 	@Override
 	public T2 setValue(T2 value) {
 		return v2 = value;
-	}
-
-	public static <T1, T2> Collector<? super Pair<T1, T2>, ?, Map<T1, T2>> toMap() {
-		return Collectors.toMap(p -> p.v1(), p -> p.v2());
 	}
 
 	public static <T1, T2> Map<T1, T2> collect(Iterable<Pair<T1, T2>> s) {
