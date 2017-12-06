@@ -83,8 +83,15 @@ public final class Pair<T1, T2> implements Serializable, Entry<T1, T2> {
 
 	@Override
 	public int hashCode() {
-		if (v1 == null) return (v2 == null) ? 0 : v2.hashCode() + 1;
-		else if (v2 == null) return v1.hashCode() + 2;
-		else return v1.hashCode() * 17 + v2.hashCode();
+		return hashCode(v1, v2);
+	}
+
+	public static int hashCode(Object... objs) {
+		if (null == objs) return 0;
+		if (objs.length == 0) return objs.hashCode();
+		int hash = 0;
+		for (int i = 0; i < objs.length; i++)
+			if (null != objs[i]) hash = hash * 17 + (objs[i].hashCode() + i);
+		return hash;
 	}
 }

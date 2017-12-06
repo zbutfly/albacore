@@ -34,4 +34,9 @@ public class Triple<T1, T2, T3> implements Serializable {
 		if (null == v3 && p.v3 != v3) return false;
 		return v1.equals(p.v1) && v2.equals(p.v2) && v3.equals(p.v3);
 	}
+
+	@Override
+	public int hashCode() {
+		return Pair.hashCode(v1, v2, v3);
+	}
 }
