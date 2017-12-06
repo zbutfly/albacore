@@ -27,13 +27,12 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import net.butfly.albacore.utils.collection.Maps;
+import net.butfly.albacore.utils.logger.Logger;
 
 public interface Exeter extends ExecutorService {
-	static final Logger logger = Logger.getLogger(Exeter.class.getName());
+	static final Logger logger = Logger.getLogger(Exeter.class);
 	final static Exeter synchro = new CurrentExeter();
 
 	int parallelism();
@@ -84,10 +83,10 @@ public interface Exeter extends ExecutorService {
 				go = false;
 			} catch (ExecutionException e) {
 				go = false;
-				logger.log(Level.SEVERE, unwrap(e), () -> "Subtask error");
+				logger.error("Subtask error", unwrap(e));
 			} catch (TimeoutException e) {
 				waitSleep(10);
-				logger.finest(() -> "Subtask [" + future.toString() + "] slow....");
+				logger.trace(() -> "Subtask [" + future.toString() + "] slow....");
 			}
 		return null;
 	}
@@ -132,7 +131,7 @@ public interface Exeter extends ExecutorService {
 
 	static WrapperExeter newExecutor(String name, int parallelism, boolean throwException) {
 		UncaughtExceptionHandler handler = (t, e) -> {
-			logger.log(Level.SEVERE, e, () -> "Migrater pool task failure @" + t.getName());
+			logger.error("Migrater pool task failure @" + t.getName(), e);
 			if (throwException) throw new RuntimeException(e);
 		};
 		ExecutorService exor = parallelism > 0 ? new ForkJoinPool(parallelism, forkjoinFactory(name), handler, false)
@@ -150,12 +149,12 @@ public interface Exeter extends ExecutorService {
 			t.setUncaughtExceptionHandler(handler);
 			return t;
 		};
-		RejectedExecutionHandler rejected = (r, exec) -> logger.severe(() -> "Paral task rejected by [" + exec.toString() + "]");
+		RejectedExecutionHandler rejected = (r, exec) -> logger.error("Paral task rejected by [" + exec.toString() + "]");
 		ThreadPoolExecutor tp = parallelism == 0 ? //
 				new ThreadPoolExecutor(0, Integer.MAX_VALUE, 10L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(), factory, rejected) : //
 				new ThreadPoolExecutor(-parallelism, -parallelism, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(), factory,
 						rejected);
-		tp.setRejectedExecutionHandler((r, ex) -> logger.severe(() -> tracePool(tp, "Task rejected")));
+		tp.setRejectedExecutionHandler((r, ex) -> logger.error(tracePool(tp, "Task rejected")));
 		return new WrapperExeter(tp);
 	}
 

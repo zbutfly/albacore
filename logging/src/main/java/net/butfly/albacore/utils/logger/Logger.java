@@ -42,6 +42,12 @@ public class Logger implements Serializable {
 	private static final Consumer<Runnable> submit;
 	public static final ExecutorService logex;
 	static {
+		/* define jul to slf4j */
+		java.util.logging.LogManager.getLogManager().reset();
+		org.slf4j.bridge.SLF4JBridgeHandler.removeHandlersForRootLogger();
+		org.slf4j.bridge.SLF4JBridgeHandler.install();
+		java.util.logging.Logger.getLogger("global").setLevel(Level.FINEST);
+
 		slfToJul.put(org.slf4j.event.Level.ERROR, Level.SEVERE);
 		slfToJul.put(org.slf4j.event.Level.WARN, Level.WARNING);
 		slfToJul.put(org.slf4j.event.Level.INFO, Level.INFO);

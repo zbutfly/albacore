@@ -51,7 +51,7 @@ class WrapperExeter implements Exeter {
 		try {
 			return impl.invokeAll(tasks);
 		} catch (final InterruptedException e) {
-			logger.severe("Tasks submit interrupted");
+			logger.error("Tasks submit interrupted");
 			return Arrays.asList();
 		}
 	}

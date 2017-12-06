@@ -1,10 +1,11 @@
 package net.butfly.albacore.paral;
 
+import static net.butfly.albacore.paral.Exeter.get;
 import static net.butfly.albacore.paral.Futures.done;
 import static net.butfly.albacore.paral.Futures.fail;
 import static net.butfly.albacore.utils.Exceptions.unwrap;
 import static net.butfly.albacore.utils.collection.Colls.list;
-import static net.butfly.albacore.paral.Exeter.get;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -13,7 +14,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
-import java.util.logging.Level;
 
 public final class CurrentExeter implements Exeter {
 	@Override
@@ -144,7 +144,7 @@ public final class CurrentExeter implements Exeter {
 		try {
 			return task.call();
 		} catch (Exception e) {
-			logger.log(Level.SEVERE, unwrap(e), () -> "Subtask error");
+			logger.error("Subtask error", unwrap(e));
 			return null;
 		}
 	}
@@ -156,7 +156,7 @@ public final class CurrentExeter implements Exeter {
 			try {
 				l.add(t.call());
 			} catch (Exception e) {
-				logger.log(Level.SEVERE, unwrap(e), () -> "Subtask error");
+				logger.error("Subtask error", unwrap(e));
 			}
 		return l;
 	}
