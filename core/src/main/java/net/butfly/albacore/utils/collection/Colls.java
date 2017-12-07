@@ -13,6 +13,15 @@ public interface Colls {
 		return new CopyOnWriteArrayList<>();
 	}
 
+	@SafeVarargs
+	static <E> List<E> list(E... eles) {
+		if (null == eles || eles.length == 0) return list();
+		List<E> l = list();
+		for (E e : eles)
+			if (null != e) l.add(e);
+		return l;
+	}
+
 	static int calcBatchParal(long total, long batchSize) {
 		return total == 0 ? 0 : (int) (((total - 1) / batchSize) + 1);
 	}

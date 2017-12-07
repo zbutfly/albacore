@@ -11,7 +11,6 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -19,6 +18,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import net.butfly.albacore.Albacore;
+import net.butfly.albacore.utils.collection.Colls;
 import net.butfly.albacore.utils.collection.Maps;
 import net.butfly.albacore.utils.logger.Logger;
 
@@ -154,14 +154,13 @@ public class Configs extends Utils {
 				+ "\n\tcustomized: [classpath:/" + filename + "]" //
 				+ "\n\t   default: [classpath:/" + defname + "]");
 		Map<String, String> settings = Maps.of();
-		fill(settings, null, Configs::filterSystemAndInvalidPrefix, mapProps(System.getProperties()));
+		fill(settings, null, Configs::isKeyInvalid, mapProps(System.getProperties()));
 		try (InputStream in = IOs.openFile(filename);) {
 			if (!fill(settings, null, null, in) && null != cl) try (InputStream in2 = IOs.openClasspath(cl, filename);) {
 				fill(settings, null, null, in2);
 			} catch (IOException e) {}
 		} catch (IOException e) {}
-		fill(settings, s -> CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_DOT, s), Configs::filterSystemAndInvalidPrefix, System
-				.getenv());
+		fill(settings, s -> CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_DOT, s), Configs::isKeyInvalid, System.getenv());
 		try (InputStream in = IOs.openClasspath(cl, defname);) {
 			fill(settings, null, null, in);
 		} catch (IOException e) {}
@@ -190,10 +189,12 @@ public class Configs extends Utils {
 		return true;
 	}
 
-	private static boolean filterSystemAndInvalidPrefix(String key) {
+	private final static List<String> igs = Colls.list("java", "sun", "os", "user", "file", "path", "awt", "line", "home", "hostname",
+			"shell", "lang");
+
+	private static boolean isKeyInvalid(String key) {
 		char first = key.charAt(0);
 		if (first < 'a' || first > 'z') return true;
-		List<String> igs = Arrays.asList("java", "sun", "os", "user", "file", "path", "awt", "line", "home", "hostname", "shell", "lang");
 		for (String i : igs)
 			if (i.equals(key) || key.startsWith(i + ".")) return true;
 		return false;
@@ -238,12 +239,23 @@ public class Configs extends Utils {
 	public static Conf prefix(String prefix) {
 		return new Conf(prefix, MAIN_CONF.entries);
 	}
-	// other utils
 
+	// other utils
 	public static Map<String, String> mapProps(Properties props) {
-		return of(props).filter(e -> e.getKey() != null && CharSequence.class.isAssignableFrom(e.getKey().getClass()) && e
-				.getValue() != null && CharSequence.class.isAssignableFrom(e.getValue().getClass())).partitions(e -> String.valueOf(e
-						.getKey()), e -> String.valueOf(e.getValue()));
+		List<Pair<String, String>> kvs = Colls.list();
+		for (String k : props.stringPropertyNames()) {
+			String v = props.getProperty(k);
+			if (null == v) continue;
+			v = v.trim();
+			if (v.length() == 0) continue;
+			kvs.add(new Pair<>(k, props.getProperty(k)));
+		}
+		return of(kvs).filter(new Predicate<Pair<String, String>>() {
+			@Override
+			public boolean test(Pair<String, String> kv) {
+				return !isKeyInvalid(kv.v1());
+			}
+		}).partitions(Pair<String, String>::v1, Pair<String, String>::v2);
 	}
 
 	public static Properties propsMap(Map<String, String> settings) {

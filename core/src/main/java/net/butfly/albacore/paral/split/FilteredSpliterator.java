@@ -2,8 +2,8 @@ package net.butfly.albacore.paral.split;
 
 import static net.butfly.albacore.paral.Sdream.of;
 
+import java.util.Optional;
 import java.util.Spliterator;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -17,15 +17,15 @@ public class FilteredSpliterator<E> extends WrapperSpliterator<E> {
 
 	@Override
 	public boolean tryAdvance(Consumer<? super E> using) {
-		AtomicReference<E> ref = new AtomicReference<>();
-		do {
-			if (!impl.tryAdvance(ref::lazySet)) return false;
-			E e = ref.get();
+		Optional<E> op;
+		while (null != (op = next())) {
+			E e = op.isPresent() ? op.get() : null;
 			if (filter.test(e)) {
 				using.accept(e);
 				return true;
 			}
-		} while (true);
+		}
+		return false;
 	}
 
 	@Override

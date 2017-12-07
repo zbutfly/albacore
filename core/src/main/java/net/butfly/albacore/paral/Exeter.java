@@ -1,17 +1,16 @@
 package net.butfly.albacore.paral;
 
+import static net.butfly.albacore.Albacore.Props.PROP_PARALLEL_FACTOR;
 import static net.butfly.albacore.paral.Task.waitSleep;
 import static net.butfly.albacore.utils.Exceptions.unwrap;
 
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.text.MessageFormat;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -28,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
+import net.butfly.albacore.utils.collection.Colls;
 import net.butfly.albacore.utils.collection.Maps;
 import net.butfly.albacore.utils.logger.Logger;
 
@@ -54,9 +54,6 @@ public interface Exeter extends ExecutorService {
 	void join(Runnable... tasks);
 
 	void join(Runnable task);
-
-	//
-	final String PROP_PARALLEL_FACTOR = "albacore.parallel.factor";// 1 //"albacore.io.stream.parallelism.factor"
 
 	class Internal {
 		private static final String DEF_EXECUTOR_NAME = "AlbacoreIOStream";
@@ -91,15 +88,13 @@ public interface Exeter extends ExecutorService {
 		return null;
 	}
 
-	static void get(Queue<Future<?>> futures) {
-		if (Objects.requireNonNull(futures).isEmpty()) return;
-		Future<?> f;
-		while (null != (f = futures.poll()))
+	static void getn(Iterable<Future<?>> futures) {
+		for (Future<?> f : futures)
 			get(f);
 	}
 
 	static <T> List<T> get(Iterable<Future<T>> futures) {
-		List<T> l = new ArrayList<>();
+		List<T> l = Colls.list();
 		for (Future<T> f : futures) {
 			T t = get(f);
 			if (null != t) l.add(get(f));
@@ -107,7 +102,7 @@ public interface Exeter extends ExecutorService {
 		return l;
 	}
 
-	static void get(Future<?>... futures) {
+	static void get(@SuppressWarnings("rawtypes") Future... futures) {
 		if (Objects.requireNonNull(futures).length == 0) return;
 		for (Future<?> f : futures)
 			get(f);
@@ -134,7 +129,7 @@ public interface Exeter extends ExecutorService {
 			logger.error("Migrater pool task failure @" + t.getName(), e);
 			if (throwException) throw new RuntimeException(e);
 		};
-		ExecutorService exor = parallelism > 0 ? new ForkJoinPool(parallelism, forkjoinFactory(name), handler, false)
+		ExecutorService exor = parallelism > 0 ? new ForkJoinPool(parallelism, forkjoinFactory(name), handler, true)
 				: newThreadPool(name, parallelism, handler);
 		logger.info("Main executor constructed: " + exor.toString());
 		return new WrapperExeter(exor);

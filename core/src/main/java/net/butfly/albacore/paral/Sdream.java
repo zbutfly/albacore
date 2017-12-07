@@ -5,10 +5,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.Spliterator;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
@@ -88,13 +86,13 @@ public interface Sdream<E> {
 
 	default Set<E> distinct() {
 		Set<E> s = Colls.distinct();
-		Exeter.get(this.each(e -> s.add(e)));
+		eachs(s::add);
 		return s;
 	}
 
 	void eachs(Consumer<E> using);
 
-	BlockingQueue<Future<?>> each(Consumer<E> using);
+	void each(Consumer<E> using);
 
 	default String joinAsString(Function<E, CharSequence> conv, CharSequence... separators) {
 		return Joiner.on(null == separators || separators.length == 0 ? "" : Joiner.on("").join(separators)).join(map(conv).list());
@@ -159,10 +157,6 @@ public interface Sdream<E> {
 
 	/** Simple partition to Map<>, just ignore duplicated keys */
 	default <K, V> Map<K, V> partitions(Function<E, K> keying, Function<E, V> valuing) {
-		return partition(keying, valuing, (v1, v2) -> {
-			if (null == v1) return v2;
-			else return v1;
-		});
+		return partition(keying, valuing, Lambdas.nullOr());
 	}
-
 }

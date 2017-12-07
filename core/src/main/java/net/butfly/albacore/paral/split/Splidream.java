@@ -1,16 +1,17 @@
 package net.butfly.albacore.paral.split;
 
-import static net.butfly.albacore.paral.Exeter.get;
+import static net.butfly.albacore.paral.Exeter.getn;
 import static net.butfly.albacore.paral.Sdream.of;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Spliterator;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
@@ -24,13 +25,11 @@ import net.butfly.albacore.utils.Pair;
 import net.butfly.albacore.utils.collection.Colls;
 import net.butfly.albacore.utils.collection.Maps;
 
-public final class Splidream<E, SELF extends Sdream<E>> implements Sdream<E>, Spliterator<E> {
+public final class Splidream<E, SELF extends Sdream<E>> extends WrapperSpliterator<E> implements Sdream<E>, Spliterator<E> {
 	protected Exeter ex;
-	protected final Spliterator<E> impl;
 
 	public Splidream(Spliterator<E> impl) {
-		super();
-		this.impl = Objects.requireNonNull(impl);
+		super(impl);
 		ex = Exeter.of();
 	}
 
@@ -46,19 +45,13 @@ public final class Splidream<E, SELF extends Sdream<E>> implements Sdream<E>, Sp
 	}
 
 	// =======================================
-	@Override
-	public Optional<E> next() {
-		AtomicReference<E> ref = new AtomicReference<>();
-		tryAdvance(ref::lazySet);
-		return Optional.ofNullable(ref.get());
-	}
 
 	@Override
 	public List<E> collect() {
 		List<E> l = Colls.list();
-		get(each(ex, spliterator(), e -> {
+		eachs(e -> {
 			if (null != e) l.add(e);
-		}, new LinkedBlockingQueue<>()));
+		});
 		return l;
 	}
 
@@ -116,12 +109,13 @@ public final class Splidream<E, SELF extends Sdream<E>> implements Sdream<E>, Sp
 	 * @return
 	 */
 	@Override
-	public BlockingQueue<Future<?>> each(Consumer<E> using) {
-		return each(ex, spliterator(), using, new LinkedBlockingQueue<>());
+	public void each(Consumer<E> using) {
+		each(ex, spliterator(), using);
 	}
 
 	@Override
 	public void batch(Consumer<Sdream<E>> using, int maxBatchSize) {
+		batch(maxBatchSize).each(using);
 		BlockingQueue<Future<?>> fs = new LinkedBlockingQueue<>();
 		while (impl.estimateSize() > maxBatchSize) {
 			Spliterator<E> ss = impl.trySplit();
@@ -139,7 +133,7 @@ public final class Splidream<E, SELF extends Sdream<E>> implements Sdream<E>, Sp
 	@Override
 	public List<Sdream<E>> partition(int minPartNum) {
 		List<Sdream<E>> l = Colls.list();
-		get(partition(ex, impl, l::add, minPartNum));
+		getn(partition(ex, impl, l::add, minPartNum));
 		return l;
 	}
 
@@ -151,41 +145,46 @@ public final class Splidream<E, SELF extends Sdream<E>> implements Sdream<E>, Sp
 	@Override
 	public <K, V> Map<K, List<V>> partition(Function<E, K> keying, Function<E, V> valuing) {
 		Map<K, List<V>> m = Maps.of();
-		get(partition(ex, impl, (k, e) -> m.compute(k, (kk, l) -> {
-			if (null != e) {
-				if (null == l) l = Colls.list();
-				l.add(valuing.apply(e));
-			}
-			return l;
-		}), keying));
+		List<Future<?>> fs = Colls.list();
+		for (Spliterator<E> s : split(spliterator()))
+			fs.add(ex.submit(() -> eachs(s, e -> {
+				if (null == e) return;
+				K key = keying.apply(e);
+				if (null == key) return;
+				m.compute(key, (k, l) -> {
+					if (null == l) l = Colls.list();
+					V v = valuing.apply(e);
+					if (null != v) l.add(v);
+					return l;
+				});
+			})));
+		getn(fs);
 		return m;
 	}
 
 	@Override
 	public <K, V> Map<K, V> partition(Function<E, K> keying, Function<E, V> valuing, BinaryOperator<V> reducing) {
 		Map<K, V> m = Maps.of();
-		get(partition(ex, impl, (k, e) -> m.compute(k, (kk, v) -> {
-			if (null == e) return v;
-			V vv = valuing.apply(e);
-			if (null == v || null == vv) return vv;
-			return reducing.apply(v, vv);
-		}), keying));
+		List<Future<?>> fs = Colls.list();
+		for (Spliterator<E> s : split(spliterator()))
+			fs.add(ex.submit(() -> eachs(s, e -> {
+				if (null == e) return;
+				K key = keying.apply(e);
+				if (null == key) return;
+				m.compute(key, (k, v) -> {
+					V vv = valuing.apply(e);
+					if (null == vv) return v;
+					if (null == v) return vv;
+					return reducing.apply(v, vv);
+				});
+			})));
+		getn(fs);
 		return m;
 	}
 
 	@Override
 	public <K> void partition(BiConsumer<K, Sdream<E>> using, Function<E, K> keying, int maxBatchSize) {
-		Map<K, BlockingQueue<E>> map = Maps.of();
-		BlockingQueue<Future<?>> fs = new LinkedBlockingQueue<>();
-		each(ex, impl, e -> map.compute(keying.apply(e), (k, l) -> {
-			if (null == l) l = new LinkedBlockingQueue<>();
-			l.offer(e);
-			List<E> batch = Colls.list();
-			l.drainTo(batch, maxBatchSize);
-			if (l.isEmpty() || batch.size() > maxBatchSize) fs.offer(ex.submit(() -> using.accept(k, of(batch))));
-			else l.addAll(batch);
-			return l.isEmpty() ? null : l;
-		}), fs);
+		partition(ex, impl, using, keying, maxBatchSize);
 	}
 
 	// chars =========================
@@ -217,56 +216,72 @@ public final class Splidream<E, SELF extends Sdream<E>> implements Sdream<E>, Sp
 	}
 
 	/** Using spliterator parallelly with trySplit() */
-	static <E> BlockingQueue<Future<?>> each(Exeter ex, Spliterator<E> s, Consumer<E> using, BlockingQueue<Future<?>> fs) {
-		Spliterator<E> s0 = Objects.requireNonNull(s);
-		Spliterator<E> ss;
-		while (null != (ss = s0.trySplit())) {
-			Spliterator<E> sss = ss;
-			fs.offer(ex.submit((Runnable) () -> each(ex, sss, using, fs)));
-		}
-		fs.offer(ex.submit((Runnable) () -> eachs(s0, using)));
-		return fs;
+	static <E> void each(Exeter ex, Spliterator<E> s, Consumer<E> using) {
+		ex.submit(() -> {
+			for (Spliterator<E> ss : split(Objects.requireNonNull(s)))
+				ex.submit((Runnable) () -> eachs(ss, using));
+		});
 	}
 
-	static <E, K> BlockingQueue<Future<?>> partition(Exeter ex, Spliterator<E> s, BiConsumer<K, E> using, Function<E, K> keying) {
-		return each(ex, Objects.requireNonNull(s), e -> using.accept(keying.apply(e), e), new LinkedBlockingQueue<>());
+	static <E, K> void partition(Exeter ex, Spliterator<E> s, BiConsumer<K, E> using, Function<E, K> keying) {
+		each(ex, Objects.requireNonNull(s), e -> {
+			using.accept(keying.apply(e), e);
+		});
 	}
 
-	static <E, K> BlockingQueue<Future<?>> partition(Exeter ex, Spliterator<E> s, BiConsumer<K, Sdream<E>> using, Function<E, K> keying,
-			int maxBatchSize) {
+	static <E, K> void partition(Exeter ex, Spliterator<E> s, BiConsumer<K, Sdream<E>> using, Function<E, K> keying, int maxBatchSize) {
 		Map<K, BlockingQueue<E>> map = Maps.of();
-		BlockingQueue<Future<?>> fs = new LinkedBlockingQueue<>();
-		return each(ex, Objects.requireNonNull(s), e -> map.compute(keying.apply(e), (k, l) -> {
+		each(ex, Objects.requireNonNull(s), e -> map.compute(keying.apply(e), (k, l) -> {
 			if (null == l) l = new LinkedBlockingQueue<>();
 			l.offer(e);
-			List<E> batch = Colls.list();
-			l.drainTo(batch, maxBatchSize);
-			if (l.isEmpty() || batch.size() > maxBatchSize) fs.offer(ex.submit(() -> using.accept(k, of(batch))));
-			else l.addAll(batch);
-			return l.isEmpty() ? null : l;
-		}), fs);
+			return checkBatch(ex, l, batch -> using.accept(k, of(batch)), maxBatchSize);
+		}));
+	}
+
+	static <E> BlockingQueue<E> checkBatch(Exeter ex, BlockingQueue<E> l, Consumer<Collection<E>> using, int maxBatchSize) {
+		List<E> batch = Colls.list();
+		l.drainTo(batch, maxBatchSize);
+		if (l.isEmpty() || batch.size() > maxBatchSize) ex.submit(() -> using.accept(batch));
+		else l.addAll(batch);
+		return l.isEmpty() ? null : l;
 	}
 
 	static <E> E reduce(Exeter ex, Spliterator<E> s, BinaryOperator<E> accumulator) {
-		Spliterator<E> s0 = Objects.requireNonNull(s);
 		AtomicReference<E> r = new AtomicReference<>();
-		get(each(ex, s0, e -> r.accumulateAndGet(e, (e1, e2) -> {
-			if (null == e1) return e2;
-			if (null == e2) return e1;
-			return accumulator.apply(e1, e2);
-		}), new LinkedBlockingQueue<>()));
+		List<Future<?>> fs = Colls.list();
+		for (Spliterator<E> ss : split(Objects.requireNonNull(s)))
+			fs.add(ex.submit(() -> eachs(ss, e -> r.accumulateAndGet(e, accumulator::apply))));
+		getn(fs);
 		return r.get();
 	}
 
-	static <E> BlockingQueue<Future<?>> partition(Exeter ex, Spliterator<E> s, Consumer<Sdream<E>> using, int minPartNum) {
-		Spliterator<E> s0 = Objects.requireNonNull(s);
-		BlockingQueue<Future<?>> fs = new LinkedBlockingQueue<>();
-		for (int i = 0; i < minPartNum; i++) {
-			Spliterator<E> ss = s0.trySplit();
-			if (null != ss) fs.offer(ex.submit(() -> using.accept(of(ss))));
-			else break;
+	static <E> List<Spliterator<E>> split(Spliterator<E> origin) {
+		List<Spliterator<E>> l = Colls.list(origin);
+		l.add(origin);
+		Spliterator<E> s;
+		while (null != (s = origin.trySplit()))
+			l.add(s);
+		return l;
+	}
+
+	static <E> List<Spliterator<E>> split(Spliterator<E> origin, int partNum) {
+		List<Spliterator<E>> l = Colls.list(origin);
+		if (partNum > 1) {
+			AtomicInteger parts = new AtomicInteger();
+			l.add(origin);
+			Spliterator<E> s;
+			while (parts.incrementAndGet() < partNum) {
+				if (null == (s = origin.trySplit())) return l;
+				l.add(s);
+			}
 		}
-		fs.offer(ex.submit(() -> using.accept(of(s0))));
+		return l;
+	}
+
+	static <E> BlockingQueue<Future<?>> partition(Exeter ex, Spliterator<E> s, Consumer<Sdream<E>> using, int minPartNum) {
+		BlockingQueue<Future<?>> fs = new LinkedBlockingQueue<>();
+		for (Spliterator<E> ss : split(Objects.requireNonNull(s), minPartNum))
+			fs.offer(ex.submit(() -> using.accept(of(ss))));
 		return fs;
 	}
 }
