@@ -104,7 +104,7 @@ public interface Sdream<E> {
 	}
 
 	default long count() {
-		return map(e -> 1).reduce(Lambdas.sumLong());
+		return map(e -> 1L).reduce(Lambdas.sumLong());
 	}
 
 	void partition(Consumer<Sdream<E>> using, int minPartNum);

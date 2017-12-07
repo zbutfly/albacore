@@ -23,8 +23,8 @@ public final class Lambdas extends Utils {
 	@SuppressWarnings("unchecked")
 	public final static <N extends Number> BinaryOperator<N> sumLong() {
 		return (i1, i2) -> {
-			long v1 = null == i1 ? 0 : i1.intValue();
-			long v2 = null == i1 ? 0 : i1.intValue();
+			long v1 = null == i1 ? 0 : i1.longValue();
+			long v2 = null == i1 ? 0 : i1.longValue();
 			return (N) (Long.valueOf(v1 + v2));
 		};
 	}

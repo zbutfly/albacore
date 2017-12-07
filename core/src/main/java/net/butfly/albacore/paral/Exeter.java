@@ -14,6 +14,7 @@ import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinPool.ForkJoinWorkerThreadFactory;
 import java.util.concurrent.ForkJoinWorkerThread;
@@ -116,6 +117,7 @@ public interface Exeter extends ExecutorService {
 		if (f <= 0) return (int) f;
 		int p = 16 + (int) Math.round((fp - 16) * (f - 1));
 		if (p < 2) p = 2;
+		if (p > 0x7fff) p = 0x7fff;
 		logger.info("AlbacoreIO parallelism adjusted to [" + p + "] by [-D" + PROP_PARALLEL_FACTOR + "=" + f + "].");
 		return p;
 	}
@@ -130,8 +132,8 @@ public interface Exeter extends ExecutorService {
 			if (throwException) throw new RuntimeException(e);
 		};
 		ExecutorService exor = parallelism > 0 ? //
-		// Executors.newCachedThreadPool()
-				new ForkJoinPool(parallelism, forkjoinFactory(name), handler, true)//
+				Executors.newCachedThreadPool()
+				// new ForkJoinPool(parallelism, forkjoinFactory(name), handler, true)//
 				: newThreadPool(name, parallelism, handler);
 		logger.info("Main executor constructed: " + exor.toString());
 		return new WrapperExeter(exor);

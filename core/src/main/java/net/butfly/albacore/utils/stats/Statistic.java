@@ -88,10 +88,12 @@ class Statistic implements Serializable {
 	private String traceDetail(Statistic.Result step, Statistic.Result total) {
 		String ss = null == detailing ? "" : detailing.get();
 		ss = null == ss ? "" : ", [" + ss + "]";
+		String stepAvg = step.millis > 0 ? Long.toString(step.packs * 1000 / step.millis) : "no_time";
+		String totalAvg = total.millis > 0 ? Long.toString(total.packs * 1000 / total.millis) : "no_time";
 		return MessageFormat.format("Statistic: [Step: {0}/objs,{1},{2},{7} objs/s], [Total: {3}/objs,{4},{5},{8} objs/s] {6}.", //
 				step.packs, Texts.formatKilo(step.bytes, "B"), Texts.formatMillis(step.millis), //
 				total.packs, Texts.formatKilo(total.bytes, "B"), Texts.formatMillis(total.millis), //
-				ss, step.packs * 1000 / step.millis, total.packs * 1000 / total.millis);
+				ss, stepAvg, totalAvg);
 	}
 
 	void trace(String info) {
