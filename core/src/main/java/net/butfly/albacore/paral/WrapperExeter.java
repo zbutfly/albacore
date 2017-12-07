@@ -71,7 +71,7 @@ class WrapperExeter implements Exeter {
 
 	@Override
 	public <T> T join(final Callable<T> task) {
-		return get(impl.submit(task));
+		return get(submit(task));
 	}
 
 	@Override
@@ -89,43 +89,13 @@ class WrapperExeter implements Exeter {
 
 	@Override
 	public void join(final Runnable task) {
-		get(impl.submit(task));
+		get(submit(task));
 	}
 
 	// wrappers
 	WrapperExeter(final ExecutorService impl) {
 		super();
 		this.impl = impl;
-	}
-
-	@Override
-	public boolean awaitTermination(final long timeout, final TimeUnit unit) throws InterruptedException {
-		return impl.awaitTermination(timeout, unit);
-	}
-
-	@Override
-	public boolean isShutdown() {
-		return impl.isShutdown();
-	}
-
-	@Override
-	public boolean isTerminated() {
-		return impl.isTerminated();
-	}
-
-	@Override
-	public void shutdown() {
-		impl.shutdown();
-	}
-
-	@Override
-	public List<Runnable> shutdownNow() {
-		return impl.shutdownNow();
-	}
-
-	@Override
-	public void execute(final Runnable command) {
-		impl.execute(command);
 	}
 
 	private static ExecutorService realExector(final ExecutorService ex) {
@@ -142,10 +112,14 @@ class WrapperExeter implements Exeter {
 		return null == o || !(o instanceof ExecutorService) ? ex : realExector((ExecutorService) o);
 	}
 
-	//
+	// ===========================
+	@Override
+	public void execute(final Runnable command) {
+		impl.execute(command);
+	}
+
 	@Override
 	public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks) throws InterruptedException {
-		// TODO Auto-generated method stub
 		return impl.invokeAll(tasks);
 	}
 
@@ -178,5 +152,31 @@ class WrapperExeter implements Exeter {
 	@Override
 	public <T> Future<T> submit(Runnable task, T result) {
 		return impl.submit(task, result);
+	}
+
+	// ===========================
+	@Override
+	public boolean awaitTermination(final long timeout, final TimeUnit unit) throws InterruptedException {
+		return impl.awaitTermination(timeout, unit);
+	}
+
+	@Override
+	public boolean isShutdown() {
+		return impl.isShutdown();
+	}
+
+	@Override
+	public boolean isTerminated() {
+		return impl.isTerminated();
+	}
+
+	@Override
+	public void shutdown() {
+		impl.shutdown();
+	}
+
+	@Override
+	public List<Runnable> shutdownNow() {
+		return impl.shutdownNow();
 	}
 }

@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 import net.butfly.albacore.utils.collection.Maps;
 
@@ -93,5 +94,9 @@ public final class Pair<T1, T2> implements Serializable, Entry<T1, T2> {
 		for (int i = 0; i < objs.length; i++)
 			if (null != objs[i]) hash = hash * 17 + (objs[i].hashCode() + i);
 		return hash;
+	}
+
+	public static <K, V> Predicate<Pair<K, V>> notNull() {
+		return p -> null != p && null != p.v1() && null != p.v2();
 	}
 }

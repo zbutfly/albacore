@@ -147,17 +147,19 @@ public final class Splidream<E, SELF extends Sdream<E>> extends WrapperSpliterat
 		Map<K, List<V>> m = Maps.of();
 		List<Future<?>> fs = Colls.list();
 		for (Spliterator<E> s : split(spliterator()))
-			fs.add(ex.submit((Runnable) () -> eachs(s, e -> {
-				if (null == e) return;
-				K key = keying.apply(e);
-				if (null == key) return;
-				m.compute(key, (k, l) -> {
-					if (null == l) l = Colls.list();
-					V v = valuing.apply(e);
-					if (null != v) l.add(v);
-					return l;
+			fs.add(ex.submit((Runnable) () -> {
+				eachs(s, e -> {
+					if (null == e) return;
+					K key = keying.apply(e);
+					if (null == key) return;
+					m.compute(key, (k, l) -> {
+						if (null == l) l = Colls.list();
+						V v = valuing.apply(e);
+						if (null != v) l.add(v);
+						return l;
+					});
 				});
-			})));
+			}));
 		getn(fs);
 		return m;
 	}

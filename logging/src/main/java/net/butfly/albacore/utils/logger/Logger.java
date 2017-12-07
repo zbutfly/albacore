@@ -8,9 +8,10 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.logging.Level;
+
+import org.slf4j.LoggerFactory;
+import org.slf4j.event.Level;
 
 /**
  * </p>
@@ -36,34 +37,9 @@ public class Logger implements Serializable {
 	public static final String PROP_LOGGER_PARALLELISM = "albacore.logger.parallelism";// true
 	public static final String PROP_LOGGER_QUEUE_SIZE = "albacore.logger.queue.size";// true
 	private static final long serialVersionUID = -1940330974751419775L;
-	private static Map<org.slf4j.event.Level, Level> slfToJul = new ConcurrentHashMap<>();
-	private static Map<Level, org.slf4j.event.Level> julToSlf = new ConcurrentHashMap<>();
 
-	private static final Consumer<Runnable> submit;
 	public static final ExecutorService logex;
 	static {
-		/* define jul to slf4j */
-		java.util.logging.LogManager.getLogManager().reset();
-		org.slf4j.bridge.SLF4JBridgeHandler.removeHandlersForRootLogger();
-		org.slf4j.bridge.SLF4JBridgeHandler.install();
-		java.util.logging.Logger.getLogger("global").setLevel(Level.FINEST);
-
-		slfToJul.put(org.slf4j.event.Level.ERROR, Level.SEVERE);
-		slfToJul.put(org.slf4j.event.Level.WARN, Level.WARNING);
-		slfToJul.put(org.slf4j.event.Level.INFO, Level.INFO);
-		slfToJul.put(org.slf4j.event.Level.DEBUG, Level.FINE);
-		slfToJul.put(org.slf4j.event.Level.TRACE, Level.FINEST);
-
-		julToSlf.put(Level.OFF, org.slf4j.event.Level.ERROR);
-		julToSlf.put(Level.SEVERE, org.slf4j.event.Level.ERROR);
-		julToSlf.put(Level.WARNING, org.slf4j.event.Level.WARN);
-		julToSlf.put(Level.INFO, org.slf4j.event.Level.INFO);
-		julToSlf.put(Level.CONFIG, org.slf4j.event.Level.INFO);
-		julToSlf.put(Level.FINE, org.slf4j.event.Level.DEBUG);
-		julToSlf.put(Level.FINER, org.slf4j.event.Level.DEBUG);
-		julToSlf.put(Level.FINEST, org.slf4j.event.Level.TRACE);
-		julToSlf.put(Level.ALL, org.slf4j.event.Level.TRACE);
-
 		if (Boolean.parseBoolean(System.getProperty(PROP_LOGGER_ASYNC, "true"))) {
 			int parallelism = Integer.parseInt(System.getProperty(PROP_LOGGER_PARALLELISM, "8"));
 			int queueSize = Integer.parseInt(System.getProperty(PROP_LOGGER_QUEUE_SIZE, "1024"));
@@ -77,16 +53,13 @@ public class Logger implements Serializable {
 					}, (r, ex) -> {
 						// process rejected...ignore
 					});
-			submit = logex::submit;
 		} else {
 			logex = null;
-			submit = Runnable::run;
 		}
 	}
-	// private final org.slf4j.Logger logger;
-	private java.util.logging.Logger logger;
+	private final org.slf4j.Logger logger;
 
-	private Logger(java.util.logging.Logger logger) {
+	private Logger(org.slf4j.Logger logger) {
 		super();
 		this.logger = logger;
 	}
@@ -95,20 +68,20 @@ public class Logger implements Serializable {
 
 	// factory
 	public static final Logger getLogger(CharSequence name) {
-		return loggers.computeIfAbsent(name.toString(), n -> new Logger(java.util.logging.Logger.getLogger(name.toString())));
+		return loggers.computeIfAbsent(name.toString(), n -> new Logger(LoggerFactory.getLogger(name.toString())));
 	}
 
 	public static final Logger getLogger(Class<?> clazz) {
-		return loggers.computeIfAbsent(clazz.getName(), c -> new Logger(java.util.logging.Logger.getLogger(clazz.getName())));
+		return loggers.computeIfAbsent(clazz.getName(), c -> new Logger(LoggerFactory.getLogger(clazz.getName())));
 	}
 
 	public Logger(CharSequence name) {
-		this(java.util.logging.Logger.getLogger(name.toString()));
+		this(LoggerFactory.getLogger(name.toString()));
 	}
 
 	// basic
 	public Logger(Class<?> clazz) {
-		this(java.util.logging.Logger.getLogger(clazz.getName()));
+		this(LoggerFactory.getLogger(clazz.getName()));
 	}
 
 	public CharSequence getName() {
@@ -116,149 +89,247 @@ public class Logger implements Serializable {
 	}
 
 	public boolean isLoggable(Level level) {
-		return logger.isLoggable(level);
-	}
-
-	public boolean isLoggable(org.slf4j.event.Level level) {
-		return logger.isLoggable(slfToJul.get(level));
-	}
-
-	public boolean log(org.slf4j.event.Level l, CharSequence msg) {
-		return log(slfToJul.get(l), msg);
+		switch (level) {
+		case TRACE:
+			return logger.isTraceEnabled();
+		case DEBUG:
+			return logger.isDebugEnabled();
+		case INFO:
+			return logger.isInfoEnabled();
+		case WARN:
+			return logger.isWarnEnabled();
+		case ERROR:
+			return logger.isErrorEnabled();
+		default:
+			return false;
+		}
 	}
 
 	public boolean log(Level level, CharSequence msg) {
-		logger.log(level, () -> null == msg ? null : msg.toString());
-		return true;
-	}
-
-	public boolean log(org.slf4j.event.Level l, Supplier<CharSequence> msg) {
-		return log(slfToJul.get(l), msg);
+		return log(level, () -> msg);
 	}
 
 	public boolean log(Level level, Supplier<CharSequence> msg) {
-		if (logger.isLoggable(level)) submit.accept(() -> {
-			CharSequence m = msg.get();
-			if (null != m) logger.log(level, () -> m.toString());
-		});
-		return true;
+		switch (level) {
+		case TRACE:
+			return trace(msg);
+		case DEBUG:
+			return debug(msg);
+		case INFO:
+			return info(msg);
+		case WARN:
+			return warn(msg);
+		case ERROR:
+			return error(msg);
+		default:
+			return false;
+		}
 	}
 
 	// slf4j style
 	public boolean isTraceEnabled() {
-		return isLoggable(Level.FINEST);
+		return logger.isTraceEnabled();
 	}
 
 	public boolean trace(CharSequence msg) {
-		return log(Level.FINEST, () -> msg);
+		if (null == msg) return false;
+		logex.execute(() -> logger.trace(msg.toString()));
+		return true;
 	}
 
 	public boolean trace(Supplier<CharSequence> msg) {
-		return log(Level.FINEST, msg);
+		if (null == msg) return false;
+		logex.execute(() -> {
+			CharSequence s = msg.get();
+			if (null != s) logger.trace(s.toString());
+		});
+		return true;
 	}
 
 	public boolean isDebugEnabled() {
-		return isLoggable(Level.FINER);
+		return logger.isDebugEnabled();
 	}
 
 	public boolean debug(CharSequence msg) {
-		return log(Level.FINE, () -> msg);
+		if (null == msg) return false;
+		logex.execute(() -> logger.debug(msg.toString()));
+		return true;
 	}
 
 	public boolean debug(Supplier<CharSequence> msg) {
-		return log(Level.FINE, msg);
+		if (null == msg) return false;
+		logex.execute(() -> {
+			CharSequence s = msg.get();
+			if (null != s) logger.debug(s.toString());
+		});
+		return true;
 	}
 
 	public boolean isInfoEnabled() {
-		return isLoggable(Level.INFO);
+		return logger.isInfoEnabled();
 	}
 
 	public boolean info(CharSequence msg) {
-		return log(Level.INFO, () -> msg);
+		if (null == msg) return false;
+		logex.execute(() -> logger.info(msg.toString()));
+		return true;
 	}
 
 	public boolean info(Supplier<CharSequence> msg) {
-		return log(Level.INFO, msg);
+		if (null == msg) return false;
+		logex.execute(() -> {
+			CharSequence s = msg.get();
+			if (null != s) logger.info(s.toString());
+		});
+		return true;
 	}
 
 	public boolean isWarnEnabled() {
-		return isLoggable(Level.WARNING);
+		return logger.isWarnEnabled();
 	}
 
 	public boolean warn(CharSequence msg) {
-		return log(Level.WARNING, () -> msg);
+		if (null == msg) return false;
+		logex.execute(() -> logger.warn(msg.toString()));
+		return true;
 	}
 
 	public boolean warn(Supplier<CharSequence> msg) {
-		return log(Level.WARNING, msg);
+		if (null == msg) return false;
+		logex.execute(() -> {
+			CharSequence s = msg.get();
+			if (null != s) logger.warn(s.toString());
+		});
+		return true;
 	}
 
 	public boolean isErrorEnabled() {
-		return isLoggable(Level.SEVERE);
+		return logger.isErrorEnabled();
 	}
 
 	public boolean error(CharSequence msg) {
-		return log(Level.SEVERE, () -> msg);
+		if (null == msg) return false;
+		logex.execute(() -> logger.error(msg.toString()));
+		return true;
 	}
 
 	public boolean error(Supplier<CharSequence> msg) {
-		return log(Level.SEVERE, msg);
+		if (null == msg) return false;
+		logex.execute(() -> {
+			CharSequence s = msg.get();
+			if (null != s) logger.error(s.toString());
+		});
+		return true;
 	}
 
 	// extends args
 	public boolean log(Level level, CharSequence msg, Throwable t) {
-		if (logger.isLoggable(level)) submit.accept(() -> {
-			if (null != msg) logger.log(level, msg.toString(), t);
-		});
-		return true;
+		switch (level) {
+		case TRACE:
+			return trace(msg, t);
+		case DEBUG:
+			return debug(msg, t);
+		case INFO:
+			return info(msg, t);
+		case WARN:
+			return warn(msg, t);
+		case ERROR:
+			return error(msg, t);
+		default:
+			return false;
+		}
 	}
 
 	public boolean trace(CharSequence msg, Throwable t) {
-		return log(Level.FINEST, msg, t);
+		if (null == msg) return false;
+		logex.execute(() -> logger.trace(msg.toString(), t));
+		return true;
 	}
 
 	public boolean debug(CharSequence msg, Throwable t) {
-		return log(Level.FINE, msg, t);
+		if (null == msg) return false;
+		logex.execute(() -> logger.debug(msg.toString(), t));
+		return true;
 	}
 
 	public boolean info(CharSequence msg, Throwable t) {
-		return log(Level.INFO, msg, t);
+		if (null == msg) return false;
+		logex.execute(() -> logger.info(msg.toString(), t));
+		return true;
 	}
 
 	public boolean warn(CharSequence msg, Throwable t) {
-		return log(Level.WARNING, msg, t);
+		if (null == msg) return false;
+		logex.execute(() -> logger.warn(msg.toString(), t));
+		return true;
 	}
 
 	public boolean error(CharSequence msg, Throwable t) {
-		return log(Level.SEVERE, msg, t);
+		if (null == msg) return false;
+		logex.execute(() -> logger.error(msg.toString(), t));
+		return true;
 	}
 
 	public boolean log(Level level, Supplier<CharSequence> msg, Throwable t) {
-		if (logger.isLoggable(level)) submit.accept(() -> {
-			String m = msg.toString();
-			if (null != m) logger.log(level, m.toString(), t);
+		switch (level) {
+		case TRACE:
+			return trace(msg, t);
+		case DEBUG:
+			return debug(msg, t);
+		case INFO:
+			return info(msg, t);
+		case WARN:
+			return warn(msg, t);
+		case ERROR:
+			return error(msg, t);
+		default:
+			return false;
+		}
+	}
+
+	public boolean trace(Supplier<CharSequence> msg, Throwable t) {
+		if (null == msg) return false;
+		logex.execute(() -> {
+			CharSequence s = msg.get();
+			if (null != s) logger.trace(s.toString(), t);
 		});
 		return true;
 	}
 
-	public boolean trace(Supplier<CharSequence> msg, Throwable t) {
-		return log(Level.FINEST, msg, t);
-	}
-
 	public boolean debug(Supplier<CharSequence> msg, Throwable t) {
-		return log(Level.FINE, msg, t);
+		if (null == msg) return false;
+		logex.execute(() -> {
+			CharSequence s = msg.get();
+			if (null != s) logger.debug(s.toString(), t);
+		});
+		return true;
 	}
 
 	public boolean info(Supplier<CharSequence> msg, Throwable t) {
-		return log(Level.INFO, msg, t);
+		if (null == msg) return false;
+		logex.execute(() -> {
+			CharSequence s = msg.get();
+			if (null != s) logger.info(s.toString(), t);
+		});
+		return true;
 	}
 
 	public boolean warn(Supplier<CharSequence> msg, Throwable t) {
-		return log(Level.WARNING, msg, t);
+		if (null == msg) return false;
+		logex.execute(() -> {
+			CharSequence s = msg.get();
+			if (null != s) logger.warn(s.toString(), t);
+		});
+		return true;
 	}
 
 	public boolean error(Supplier<CharSequence> msg, Throwable t) {
-		return log(Level.SEVERE, msg, t);
+		if (null == msg) return false;
+		logex.execute(() -> {
+			CharSequence s = msg.get();
+			if (null != s) logger.error(s.toString(), t);
+		});
+		return true;
 	}
 
 	// /** Old style */
