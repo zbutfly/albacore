@@ -147,7 +147,7 @@ public final class Splidream<E, SELF extends Sdream<E>> extends WrapperSpliterat
 		Map<K, List<V>> m = Maps.of();
 		List<Future<?>> fs = Colls.list();
 		for (Spliterator<E> s : split(spliterator()))
-			fs.add(ex.submit(() -> eachs(s, e -> {
+			fs.add(ex.submit((Runnable) () -> eachs(s, e -> {
 				if (null == e) return;
 				K key = keying.apply(e);
 				if (null == key) return;
@@ -167,7 +167,7 @@ public final class Splidream<E, SELF extends Sdream<E>> extends WrapperSpliterat
 		Map<K, V> m = Maps.of();
 		List<Future<?>> fs = Colls.list();
 		for (Spliterator<E> s : split(spliterator()))
-			fs.add(ex.submit(() -> eachs(s, e -> {
+			fs.add(ex.submit((Runnable) () -> eachs(s, e -> {
 				if (null == e) return;
 				K key = keying.apply(e);
 				if (null == key) return;
@@ -250,7 +250,7 @@ public final class Splidream<E, SELF extends Sdream<E>> extends WrapperSpliterat
 		AtomicReference<E> r = new AtomicReference<>();
 		List<Future<?>> fs = Colls.list();
 		for (Spliterator<E> ss : split(Objects.requireNonNull(s)))
-			fs.add(ex.submit(() -> eachs(ss, e -> r.accumulateAndGet(e, accumulator::apply))));
+			fs.add(ex.submit((Runnable) () -> eachs(ss, e -> r.accumulateAndGet(e, accumulator::apply))));
 		getn(fs);
 		return r.get();
 	}

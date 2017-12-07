@@ -28,7 +28,7 @@ public class FlatedSpliterator<E> extends PooledSpliteratorBase<E, Sdream<E>> {
 		boolean hasNext = true;
 		E e;
 		while (null == (e = pool.poll()))
-			if (!(hasNext = impl.tryAdvance(s -> s.each(pool::offer)))) break;
+			if (!(hasNext = impl.tryAdvance(s -> s.eachs(pool::offer)))) break;
 		if (null == e && null == (e = pool.poll()) && !hasNext) return false;
 		using.accept(e);
 		return true;

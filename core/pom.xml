@@ -7,6 +7,10 @@
 		<version>3.0.3-SNAPSHOT</version>
 	</parent>
 	<artifactId>albacore-core</artifactId>
+<!-- 	<properties> -->
+<!-- 		<maven.compiler.source>1.9</maven.compiler.source> -->
+<!-- 		<maven.compiler.target>1.9</maven.compiler.target> -->
+<!-- 	</properties> -->
 	<dependencies>
 		<dependency>
 			<groupId>net.butfly.albacore</groupId>

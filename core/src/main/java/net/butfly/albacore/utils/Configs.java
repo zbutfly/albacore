@@ -22,13 +22,17 @@ import net.butfly.albacore.utils.collection.Colls;
 import net.butfly.albacore.utils.collection.Maps;
 import net.butfly.albacore.utils.logger.Logger;
 
-public class Configs extends Utils {
+public final class Configs {
+	private static final String[] CONF_KEY_PREFIX_IGNORED = { "java", "sun", "os", "user", "file", "path", "awt", "line", "home",
+			"hostname", "shell", "lang", "jdk" };
 	private static final Conf MAIN_CONF = init(Systems.getMainClass());
 
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target(ElementType.TYPE)
 	public @interface Config {
-		String value() default "";
+		String value()
+
+		default "";
 
 		String prefix() default "";
 	}
@@ -167,43 +171,6 @@ public class Configs extends Utils {
 		return new Conf(prefix, settings);
 	}
 
-	private static boolean fill(Map<String, String> origin, Function<String, String> mapping, Predicate<String> filter, InputStream next) {
-		if (null == next) return false;
-		Properties p = new Properties();
-		try {
-			p.load(next);
-		} catch (Exception e) {
-			return false;
-		}
-		return fill(origin, mapping, filter, mapProps(p));
-	}
-
-	private static boolean fill(Map<String, String> origin, Function<String, String> mapping, Predicate<String> filter,
-			Map<String, String> defaults) {
-		if (null == defaults) return false;
-		for (String key : defaults.keySet()) {
-			if (null == defaults.get(key)) continue;
-			String k = null == mapping ? key : mapping.apply(key);
-			if (null == filter || !filter.test(k)) origin.putIfAbsent(k, defaults.get(key));
-		}
-		return true;
-	}
-
-	private final static List<String> igs = Colls.list("java", "sun", "os", "user", "file", "path", "awt", "line", "home", "hostname",
-			"shell", "lang");
-
-	private static boolean isKeyInvalid(String key) {
-		char first = key.charAt(0);
-		if (first < 'a' || first > 'z') return true;
-		for (String i : igs)
-			if (i.equals(key) || key.startsWith(i + ".")) return true;
-		return false;
-	}
-
-	private static String calcClassConfigFile(Class<?> configed) {
-		return CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_HYPHEN, configed.getSimpleName());
-	}
-
 	public static String get(String key) {
 		return MAIN_CONF.get(key);
 	}
@@ -244,18 +211,14 @@ public class Configs extends Utils {
 	public static Map<String, String> mapProps(Properties props) {
 		List<Pair<String, String>> kvs = Colls.list();
 		for (String k : props.stringPropertyNames()) {
+			if (isKeyInvalid(k)) continue;
 			String v = props.getProperty(k);
 			if (null == v) continue;
 			v = v.trim();
 			if (v.length() == 0) continue;
 			kvs.add(new Pair<>(k, props.getProperty(k)));
 		}
-		return of(kvs).filter(new Predicate<Pair<String, String>>() {
-			@Override
-			public boolean test(Pair<String, String> kv) {
-				return !isKeyInvalid(kv.v1());
-			}
-		}).partitions(Pair<String, String>::v1, Pair<String, String>::v2);
+		return of(kvs).partitions(Pair<String, String>::v1, Pair<String, String>::v2);
 	}
 
 	public static Properties propsMap(Map<String, String> settings) {
@@ -266,7 +229,43 @@ public class Configs extends Utils {
 		return props;
 	}
 
-	private static final String DEFAULT_PROP_EXT() {
+	// ================================
+
+	private static String DEFAULT_PROP_EXT() {
 		return "." + System.getProperty(Albacore.Props.PROP_CONFIG_EXTENSION, "properties");
+	}
+
+	private static boolean fill(Map<String, String> origin, Function<String, String> mapping, Predicate<String> filter, InputStream next) {
+		if (null == next) return false;
+		Properties p = new Properties();
+		try {
+			p.load(next);
+		} catch (Exception e) {
+			return false;
+		}
+		return fill(origin, mapping, filter, mapProps(p));
+	}
+
+	private static boolean fill(Map<String, String> origin, Function<String, String> mapping, Predicate<String> filter,
+			Map<String, String> defaults) {
+		if (null == defaults) return false;
+		for (String key : defaults.keySet()) {
+			if (null == defaults.get(key)) continue;
+			String k = null == mapping ? key : mapping.apply(key);
+			if (null == filter || !filter.test(k)) origin.putIfAbsent(k, defaults.get(key));
+		}
+		return true;
+	}
+
+	private static boolean isKeyInvalid(String key) {
+		char first = key.charAt(0);
+		if (first < 'a' || first > 'z') return true;
+		for (String i : CONF_KEY_PREFIX_IGNORED)
+			if (i.equals(key) || key.startsWith(i + ".")) return true;
+		return false;
+	}
+
+	private static String calcClassConfigFile(Class<?> configed) {
+		return CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_HYPHEN, configed.getSimpleName());
 	}
 }

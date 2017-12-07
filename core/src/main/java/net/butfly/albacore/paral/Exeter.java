@@ -129,7 +129,9 @@ public interface Exeter extends ExecutorService {
 			logger.error("Migrater pool task failure @" + t.getName(), e);
 			if (throwException) throw new RuntimeException(e);
 		};
-		ExecutorService exor = parallelism > 0 ? new ForkJoinPool(parallelism, forkjoinFactory(name), handler, true)
+		ExecutorService exor = parallelism > 0 ? //
+		// Executors.newCachedThreadPool()
+				new ForkJoinPool(parallelism, forkjoinFactory(name), handler, true)//
 				: newThreadPool(name, parallelism, handler);
 		logger.info("Main executor constructed: " + exor.toString());
 		return new WrapperExeter(exor);
@@ -173,5 +175,4 @@ public interface Exeter extends ExecutorService {
 			return worker;
 		};
 	}
-
 }

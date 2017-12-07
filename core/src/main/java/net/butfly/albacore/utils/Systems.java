@@ -29,7 +29,6 @@ import net.butfly.albacore.Albacore;
 import net.butfly.albacore.paral.Sdream;
 import net.butfly.albacore.utils.collection.Maps;
 import net.butfly.albacore.utils.logger.Logger;
-import sun.management.VMManagement;
 import sun.misc.Signal;
 
 public final class Systems extends Utils {
@@ -46,25 +45,31 @@ public final class Systems extends Utils {
 		return Sdream.of(Thread.getAllStackTraces().keySet()).filter(t -> !t.isDaemon());
 	}
 
-	public static int pid() {
-		VMManagement vm = Reflections.get(ManagementFactory.getRuntimeMXBean(), "jvm");
-		Method m;
-		try {
-			m = vm.getClass().getDeclaredMethod("getProcessId");
-		} catch (NoSuchMethodException | SecurityException e) {
-			throw new RuntimeException(e);
-		}
-		boolean acc = m.isAccessible();
-		m.setAccessible(true);
-		try {
-			return ((Integer) m.invoke(vm)).intValue();
-		} catch (IllegalAccessException | IllegalArgumentException e) {
-			throw new RuntimeException(e);
-		} catch (InvocationTargetException e) {
-			throw new RuntimeException(e.getTargetException());
-		} finally {
-			m.setAccessible(acc);
-		}
+	/** for java 8 */
+//	public static int pid() {
+//		sun.management.VMManagement vm = Reflections.get(ManagementFactory.getRuntimeMXBean(), "jvm");
+//		Method m;
+//		try {
+//			m = vm.getClass().getDeclaredMethod("getProcessId");
+//		} catch (NoSuchMethodException | SecurityException e) {
+//			throw new RuntimeException(e);
+//		}
+//		boolean acc = m.isAccessible();
+//		m.setAccessible(true);
+//		try {
+//			return ((Integer) m.invoke(vm)).intValue();
+//		} catch (IllegalAccessException | IllegalArgumentException e) {
+//			throw new RuntimeException(e);
+//		} catch (InvocationTargetException e) {
+//			throw new RuntimeException(e.getTargetException());
+//		} finally {
+//			m.setAccessible(acc);
+//		}
+//	}
+
+	/** for java 9 */
+	public static long pid() {
+		return ProcessHandle.current().pid();
 	}
 
 	public static Class<?> getMainClass() {
