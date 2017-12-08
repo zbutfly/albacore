@@ -13,18 +13,19 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import com.google.common.base.Joiner;
 
 import net.butfly.albacore.paral.split.Splidream;
-import net.butfly.albacore.paral.split.Suppliterator;
 import net.butfly.albacore.utils.Pair;
 import net.butfly.albacore.utils.collection.Colls;
+import net.butfly.albacore.utils.logger.Logger;
 import net.butfly.albacore.utils.parallel.Lambdas;
 
 public interface Sdream<E> {
+	static final Logger logger = Logger.getLogger(Sdream.class);
+
 	default Sdream<E> ex(ExecutorService ex) {
 		return ex(Exeter.of(ex));
 	}
@@ -144,9 +145,9 @@ public interface Sdream<E> {
 		return of(new CopyOnWriteArrayList<>(t).spliterator());
 	}
 
-	public static <V> Sdream<V> of(Supplier<V> get, long size, Supplier<Boolean> ending) {
-		return of(new Suppliterator<>(get, size, ending));
-	}
+//	public static <V> Sdream<V> of(Supplier<V> get, long size, Supplier<Boolean> ending) {
+//		return of(new Suppliterator<>(get, size, ending));
+//	}
 
 	// ==================
 	List<Sdream<E>> partition(int minPartNum);

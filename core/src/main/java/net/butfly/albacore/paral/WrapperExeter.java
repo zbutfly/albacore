@@ -43,13 +43,13 @@ class WrapperExeter implements Exeter {
 
 	@Override
 	public <T> Future<T> submit(final Supplier<T> task) {
-		return impl.submit(() -> task.get());
+		return submit((Callable<T>) () -> task.get());
 	}
 
 	@Override
 	public <T> List<Future<T>> submit(final Collection<? extends Callable<T>> tasks) {
 		try {
-			return impl.invokeAll(tasks);
+			return invokeAll(tasks);
 		} catch (final InterruptedException e) {
 			logger.error("Tasks submit interrupted");
 			return Arrays.asList();
@@ -60,7 +60,7 @@ class WrapperExeter implements Exeter {
 	public <T> Future<?> submit(final Runnable... tasks) {
 		final List<Future<?>> fs = new ArrayList<>();
 		for (final Runnable t : tasks)
-			if (null != t) fs.add(impl.submit(t));
+			if (null != t) fs.add(submit(t));
 		return submit(() -> get(fs.toArray(new Future<?>[fs.size()])));
 	}
 
@@ -83,7 +83,7 @@ class WrapperExeter implements Exeter {
 	public void join(final Runnable... tasks) {
 		final List<Future<?>> fs = new ArrayList<>();
 		for (final Runnable t : tasks)
-			if (null != t) fs.add(impl.submit(t));
+			if (null != t) fs.add(submit(t));
 		get(fs.toArray(new Future<?>[fs.size()]));
 	}
 

@@ -34,7 +34,6 @@ import net.butfly.albacore.utils.logger.Logger;
 
 public interface Exeter extends ExecutorService {
 	static final Logger logger = Logger.getLogger(Exeter.class);
-	final static Exeter synchro = new CurrentExeter();
 
 	int parallelism();
 
@@ -78,6 +77,7 @@ public interface Exeter extends ExecutorService {
 			try {
 				return future.get(1, TimeUnit.SECONDS);
 			} catch (InterruptedException e) {
+				logger.warn("Task interrupted");
 				go = false;
 			} catch (ExecutionException e) {
 				go = false;
@@ -132,10 +132,14 @@ public interface Exeter extends ExecutorService {
 			if (throwException) throw new RuntimeException(e);
 		};
 		ExecutorService exor = parallelism > 0 ? //
-				Executors.newCachedThreadPool()
+				Executors.newCachedThreadPool(r -> {
+					Thread t = new Thread(r);
+					t.setName(name + "-" + t.getName());
+					return t;
+				})
 				// new ForkJoinPool(parallelism, forkjoinFactory(name), handler, true)//
 				: newThreadPool(name, parallelism, handler);
-		logger.info("Main executor constructed: " + exor.toString());
+		logger.info("Main executor constructed with thread name prefix [" + name + "]: " + exor.toString());
 		return new WrapperExeter(exor);
 	}
 
@@ -177,4 +181,5 @@ public interface Exeter extends ExecutorService {
 			return worker;
 		};
 	}
+
 }

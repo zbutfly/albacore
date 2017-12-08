@@ -214,6 +214,14 @@ public final class Splidream<E, SELF extends Sdream<E>> extends WrapperSpliterat
 	/** Using spliterator sequencially */
 	static <E> void eachs(Spliterator<E> s, Consumer<E> using) {
 		Spliterator<E> s0 = Objects.requireNonNull(s);
+		boolean advanced = false;
+		do {
+			try {
+				advanced = s0.tryAdvance(using);
+			} catch (ArrayIndexOutOfBoundsException ex) {
+				logger.debug("Splidream advance error: " + ex.getMessage());
+			}
+		} while (advanced);
 		while (s0.tryAdvance(using)) {}
 	}
 
