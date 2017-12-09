@@ -26,6 +26,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import net.butfly.albacore.utils.collection.Colls;
@@ -45,15 +46,19 @@ public interface Exeter extends ExecutorService {
 
 	<T> Future<?> submit(Runnable... tasks);
 
+	<T> Future<?> submit(T s, List<Consumer<T>> tasks);
+
 	<T> T join(Supplier<T> task);
 
 	<T> T join(Callable<T> task);
 
 	<T> List<T> join(Collection<? extends Callable<T>> tasks);
 
+	void join(Runnable task);
+
 	void join(Runnable... tasks);
 
-	void join(Runnable task);
+	<T> void join(T in, List<Consumer<T>> tasks);
 
 	class Internal {
 		private static final String DEF_EXECUTOR_NAME = "AlbacoreIOStream";
@@ -181,5 +186,4 @@ public interface Exeter extends ExecutorService {
 			return worker;
 		};
 	}
-
 }

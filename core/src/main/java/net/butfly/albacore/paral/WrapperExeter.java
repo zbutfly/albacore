@@ -16,6 +16,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 class WrapperExeter implements Exeter {
@@ -65,6 +66,14 @@ class WrapperExeter implements Exeter {
 	}
 
 	@Override
+	public <T> Future<?> submit(T in, List<Consumer<T>> tasks) {
+		final List<Future<?>> fs = new ArrayList<>();
+		for (Consumer<T> t : tasks)
+			if (null != t) fs.add(submit(() -> t.accept(in)));
+		return submit(() -> get(fs.toArray(new Future<?>[fs.size()])));
+	}
+
+	@Override
 	public <T> T join(final Supplier<T> task) {
 		return get(submit(task));
 	}
@@ -77,6 +86,11 @@ class WrapperExeter implements Exeter {
 	@Override
 	public <T> List<T> join(final Collection<? extends Callable<T>> tasks) {
 		return get(submit(tasks));
+	}
+
+	@Override
+	public <T> void join(T in, List<Consumer<T>> tasks) {
+		get(submit(in, tasks));
 	}
 
 	@Override

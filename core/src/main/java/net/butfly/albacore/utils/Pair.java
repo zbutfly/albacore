@@ -99,4 +99,8 @@ public final class Pair<T1, T2> implements Serializable, Entry<T1, T2> {
 	public static <K, V> Predicate<Pair<K, V>> notNull() {
 		return p -> null != p && null != p.v1() && null != p.v2();
 	}
+
+	public static <K, V> Pair<K, V> notNull(Pair<K, V> origin) {
+		return null == origin || null == origin.v1() || null == origin.v2() ? null : origin;
+	}
 }
