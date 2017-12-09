@@ -20,7 +20,7 @@ public class ThreadPoolExeter implements ExecutorService {
 		this.max = max <= 0 ? Long.MAX_VALUE : max;
 	}
 
-	private void pending() {
+	protected void pending() {
 		while (pending.incrementAndGet() > max) {
 			pending.decrementAndGet();
 			Task.waitSleep(10);
