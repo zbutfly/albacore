@@ -2,7 +2,6 @@ package net.butfly.albacore.utils;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.management.ManagementFactory;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -45,31 +44,24 @@ public final class Systems extends Utils {
 		return Sdream.of(Thread.getAllStackTraces().keySet()).filter(t -> !t.isDaemon());
 	}
 
-	/** for java 8 */
-//	public static int pid() {
-//		sun.management.VMManagement vm = Reflections.get(ManagementFactory.getRuntimeMXBean(), "jvm");
-//		Method m;
-//		try {
-//			m = vm.getClass().getDeclaredMethod("getProcessId");
-//		} catch (NoSuchMethodException | SecurityException e) {
-//			throw new RuntimeException(e);
-//		}
-//		boolean acc = m.isAccessible();
-//		m.setAccessible(true);
-//		try {
-//			return ((Integer) m.invoke(vm)).intValue();
-//		} catch (IllegalAccessException | IllegalArgumentException e) {
-//			throw new RuntimeException(e);
-//		} catch (InvocationTargetException e) {
-//			throw new RuntimeException(e.getTargetException());
-//		} finally {
-//			m.setAccessible(acc);
-//		}
-//	}
+	@Deprecated
+	public static long pid8() {
+		String[] segs = java.lang.management.ManagementFactory.getRuntimeMXBean().getName().split("@", 2);
+		return null == segs || segs.length == 0 ? -1 : Long.parseLong(segs[0]);
+	}
 
-	/** for java 9 */
+	private static long pid = -1;
+
 	public static long pid() {
-		return ProcessHandle.current().pid();
+		if (pid < 0) {
+			try { // java 9
+				Class<?> c = Class.forName("java.lang.ProcessHandle"); // return ProcessHandle.current().pid();
+				pid = ((Long) c.getMethod("pid").invoke(c.getMethod("current").invoke(null))).longValue();
+			} catch (Exception e) {// java 8
+				pid = pid8();
+			}
+		}
+		return pid;
 	}
 
 	public static Class<?> getMainClass() {
@@ -168,14 +160,14 @@ public final class Systems extends Utils {
 
 		private JVM() {
 			this.mainClass = parseMainClass();
-			this.vmArgs = ManagementFactory.getRuntimeMXBean().getInputArguments();
+			this.vmArgs = java.lang.management.ManagementFactory.getRuntimeMXBean().getInputArguments();
 			this.debugging = checkDebug();
 			this.args = parseArgs();
 		}
 
 		private JVM(Class<?> mainClass, String... args) {
 			this.mainClass = mainClass;
-			this.vmArgs = ManagementFactory.getRuntimeMXBean().getInputArguments();
+			this.vmArgs = java.lang.management.ManagementFactory.getRuntimeMXBean().getInputArguments();
 			this.debugging = checkDebug();
 			this.args = Arrays.asList(args);
 		}
