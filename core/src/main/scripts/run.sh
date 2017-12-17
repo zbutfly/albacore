@@ -13,7 +13,7 @@ JAVA_OPTS="${JAVA_OPTS} -d64 -server"
 #JAVA_OPTS="${JAVA_OPTS} -DDEBUG.MONGO=true -DDB.TRACE=true"
 #. ./gc_info.sh
 . ./gc_cms.sh
-#JAVA_OPTS="${JAVA_OPTS} -Xms1g -Xmx32g -Xss4m"
+#JAVA_OPTS="${JAVA_OPTS} -Xms1g -Xmx32g -Xss512k"
 #JAVA_OPTS="${JAVA_OPTS} -Djava.util.concurrent.ForkJoinPool.common.parallelism=16"
 #JAVA_OPTS="${JAVA_OPTS} -agentpath:/opt/jprofiler/bin/linux-x64/libjprofilerti.so=port=18999"
 #JAVA_OPTS="${JAVA_OPTS} -Xdebug -Xnoagent -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=0.0.0.0:18089"
