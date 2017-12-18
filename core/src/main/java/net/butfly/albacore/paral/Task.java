@@ -177,9 +177,13 @@ public interface Task extends Runnable {
 	// for sleep
 	final long DEF_WAIT_MS = 100;
 
-	static boolean waitSleep(Supplier<Boolean> waiting) {
+	static boolean waitWhen(Supplier<Boolean> waiting) {
+		return waitWhen(DEF_WAIT_MS, waiting);
+	}
+
+	static boolean waitWhen(long millis, Supplier<Boolean> waiting) {
 		while (waiting.get())
-			if (!waitSleep()) return false;
+			if (!waitSleep(millis)) return false;
 		return true;
 	}
 
@@ -202,6 +206,22 @@ public interface Task extends Runnable {
 		try {
 			if (null != logger && logger.isTraceEnabled()) logger.trace("Thread [" + Thread.currentThread().getName() + "] sleep for ["
 					+ millis + "ms], cause [" + cause + "].");
+			Thread.sleep(millis);
+			return true;
+		} catch (InterruptedException e) {
+			return false;
+		}
+	}
+
+	static boolean waitSleep(long millis, Logger logger, Supplier<CharSequence> causing) {
+		if (millis < 0) return true;
+		try {
+			if (null != logger && logger.isTraceEnabled()) logger.trace(() -> {
+				String cause = "Thread [" + Thread.currentThread().getName() + "] sleep for [" + millis + "ms]";
+				CharSequence c = causing.get();
+				if (null != c) cause += ", cause [" + c.toString() + "].";
+				return cause;
+			});
 			Thread.sleep(millis);
 			return true;
 		} catch (InterruptedException e) {

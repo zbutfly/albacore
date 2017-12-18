@@ -3,6 +3,7 @@ package net.butfly.albacore.base;
 public abstract class Namedly implements Named {
 	protected String name;
 
+	@Deprecated
 	public Namedly() {
 		super();
 		this.name = Named.super.name();
