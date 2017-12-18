@@ -15,13 +15,15 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 import net.butfly.albacore.utils.logger.Logger;
 
-public final class IOs extends Utils {
+public final class IOs {
 	private static final Logger logger = Logger.getLogger(IOs.class);
 
 	public static InputStream open(String... file) {
@@ -176,11 +178,10 @@ public final class IOs extends Utils {
 	}
 
 	public static byte[] readAll(final InputStream is) {
-		Reflections.noneNull("null byte array not allow", is);
 		try (ByteArrayOutputStream os = new ByteArrayOutputStream();) {
 			byte[] buffer = new byte[1024];
 			int n;
-			while (-1 != (n = is.read(buffer)))
+			while (-1 != (n = Objects.requireNonNull(is, "null byte array not allow").read(buffer)))
 				os.write(buffer, 0, n);
 			byte[] b = os.toByteArray();
 			logger.trace(() -> "Read all: " + b.length);
@@ -195,10 +196,9 @@ public final class IOs extends Utils {
 	}
 
 	public static String[] readLines(final InputStream is, Predicate<String> ignore) {
-		Reflections.noneNull("null byte array not allow", is);
 		List<String> lines = new ArrayList<>();
 		String l = null;
-		try (BufferedReader r = new BufferedReader(new InputStreamReader(is));) {
+		try (BufferedReader r = new BufferedReader(new InputStreamReader(Objects.requireNonNull(is, "null byte array not allow")));) {
 			while ((l = r.readLine()) != null)
 				if (!ignore.test(l)) lines.add(l);
 			logger.trace(() -> "Read all: " + lines.size());
@@ -242,4 +242,15 @@ public final class IOs extends Utils {
 			return null;
 		}
 	}
+
+	public static long bytes2long(byte[] bytes) {
+		Objects.requireNonNull(bytes, "Null bytes invalid parsing into long");
+		if (bytes.length < 8) bytes = Arrays.copyOf(bytes, 8);
+		long l = 0L;
+		for (int i = 0; i < 8; i++)
+			l += bytes[i] << (i * 8);
+		return l;
+	}
+
+	private IOs() {}
 }

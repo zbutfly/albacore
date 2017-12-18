@@ -5,22 +5,20 @@ import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
 
 import net.butfly.albacore.Albacore;
-import net.butfly.albacore.paral.Sdream;
-import net.butfly.albacore.utils.collection.Maps;
 
-public final class Texts extends Utils {
-	public static boolean isEmpty(String str) {
-		return null == str || str.trim().length() == 0;
+public final class Texts {
+	public static boolean isEmpty(CharSequence str) {
+		return null == str || str.toString().trim().length() == 0;
 	}
 
 	public static boolean notEmpty(String... str) {
@@ -70,19 +68,11 @@ public final class Texts extends Utils {
 		return b;
 	}
 
-	public static long bytes2long(byte[] bytes) {
-		Objects.noneNull(bytes);
-		if (bytes.length < 8) bytes = Arrays.copyOf(bytes, 8);
-		long l = 0L;
-		for (int i = 0; i < 8; i++)
-			l += bytes[i] << (i * 8);
-		return l;
-	}
 
 	private static final int POOL_SIZE = Integer.parseInt(Configs.gets(Albacore.Props.PROP_PARALLEL_POOL_SIZE_OBJECT, Integer.toString(
 			Runtime.getRuntime().availableProcessors() - 1)));
 
-	private static final Map<String, LinkedBlockingQueue<DateFormat>> DATE_FORMATS = Maps.of();
+	private static final Map<String, LinkedBlockingQueue<DateFormat>> DATE_FORMATS = new ConcurrentHashMap<>();
 	public static final String SEGUST_DATE_FORMAT = "yyyy-MM-dd'T'hh:mm:ss.SSS'Z'";
 	public static final String DEFAULT_DATE_FORMAT = Configs.gets(Albacore.Props.PROP_TEXT_DATE_FORMAT, SEGUST_DATE_FORMAT);
 
@@ -172,11 +162,16 @@ public final class Texts extends Utils {
 	}
 
 	public static List<String> split(String origin, String split) {
-		if (origin == null) return new ArrayList<>();
-		return Sdream.of(origin.split(split)).map(s -> s.trim()).filter(s -> !"".equals(s)).list();
+		List<String> l = new ArrayList<>();
+		if (origin == null) return l;
+		for (String s : origin.split(split)) {
+			String ss = s.trim();
+			if (!ss.isEmpty()) l.add(ss);
+		}
+		return l;
 	}
 
-	private static final Map<String, BlockingQueue<CloseDateFormat>> DATA_FORMATS = Maps.of();
+	private static final Map<String, BlockingQueue<CloseDateFormat>> DATA_FORMATS = new ConcurrentHashMap<>();
 
 	private static final class CloseDateFormat extends SimpleDateFormat implements AutoCloseable {
 		private static final long serialVersionUID = 6278552096977426484L;

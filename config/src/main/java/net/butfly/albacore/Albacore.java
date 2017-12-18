@@ -1,7 +1,7 @@
 package net.butfly.albacore;
 
-public interface Albacore {
-	interface Props {
+public @interface Albacore {
+	@interface Props {
 		final String PROP_CONFIG_EXTENSION = "albacore.config.ext";
 		final String PROP_DEBUG_SUFFIX = "albacore.debug.suffix";
 		final String PROP_GC_INTERVAL_MS = "albacore.gc.interval.ms";// 0

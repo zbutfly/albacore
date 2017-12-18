@@ -1,5 +1,7 @@
 package net.butfly.albacore.utils;
 
+import java.util.Objects;
+
 import com.google.common.annotations.GwtCompatible;
 
 @GwtCompatible
@@ -36,7 +38,7 @@ public enum CaseFormat {
 	private com.google.common.base.CaseFormat format;
 
 	public static CaseFormat parse(String str) {
-		Objects.noneNull(str);
+		str = Objects.requireNonNull(str);
 		if (str.matches("^[a-z]*$")) return LOWER_CAMEL;
 		if (str.matches("^[a-z][A-Za-z]+")) return LOWER_CAMEL;
 		if (str.matches("^[A-Z][A-Za-z]+")) return UPPER_CAMEL;

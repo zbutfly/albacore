@@ -6,16 +6,11 @@
 		<artifactId>albacore</artifactId>
 		<version>3.0.3-SNAPSHOT</version>
 	</parent>
-	<artifactId>albacore-core</artifactId>
+	<artifactId>albacore-config</artifactId>
 	<dependencies>
 		<dependency>
 			<groupId>net.butfly.albacore</groupId>
 			<artifactId>albacore-logging</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>net.butfly.albacore</groupId>
-			<artifactId>albacore-config</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 		<dependency>
@@ -24,25 +19,13 @@
 			<version>2.9.3</version>
 		</dependency>
 		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-text</artifactId>
+			<version>1.2</version>
+		</dependency>
+		<dependency>
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>net.java.dev.jna</groupId>
-			<artifactId>jna</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>net.java.dev.jna</groupId>
-			<artifactId>jna-platform</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.kohsuke</groupId>
-			<artifactId>akuma</artifactId>
-			<version>1.10</version>
-		</dependency>
-		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
 		</dependency>
 	</dependencies>
 </project>

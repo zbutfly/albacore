@@ -13,6 +13,7 @@
 	<packaging>pom</packaging>
 	<modules>
 		<module>logging</module>
+		<module>config</module>
 		<module>core</module>
 		<module>meta</module>
 		<module>frame</module>
