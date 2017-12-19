@@ -103,7 +103,7 @@ public final class URISpec implements Serializable {
 
 	public URISpec(String spec, int defaultPort) {
 		super();
-		String remain = spec;
+		String remain = java.util.Objects.requireNonNull(spec, "URISpec should not be constructed by null spec");
 		String[] segs;
 		Pair<String, String> divs;
 

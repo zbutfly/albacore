@@ -53,7 +53,7 @@ public final class ConfigSet {
 		String cname = Configs.calcClassConfigFile(cl);
 		Config ann = findAnnedParent(cl);
 		String pfx;
-		if (Texts.isEmpty(prefix)) pfx = prefix;
+		if (Texts.notEmpty(prefix)) pfx = prefix;
 		else pfx = null == ann ? null : ann.prefix();
 		if (Config.NOT_DEFINE.equals(pfx)) pfx = null;
 		String fname = null == ann ? null : ann.value();
@@ -223,7 +223,7 @@ public final class ConfigSet {
 		if (null != cls) s.append("[class: " + cls.toString() + "]");
 		s.append(" {");
 		for (String key : entries.keySet())
-			s.append("\n\t").append(key).append(":").append(entries.get(key));
+			s.append("\n\t").append(key).append(": ").append(entries.get(key));
 		return s.append("\n}").toString();
 	}
 
