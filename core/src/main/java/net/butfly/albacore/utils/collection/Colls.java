@@ -5,7 +5,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Future;
+import java.util.function.Function;
 
+import net.butfly.albacore.paral.Exeter;
 import net.butfly.albacore.paral.Sdream;
 
 public interface Colls {
@@ -20,6 +23,22 @@ public interface Colls {
 		for (E e : eles)
 			if (null != e) l.add(e);
 		return l;
+	}
+
+	static <E> List<E> list(Iterable<E> eles) {
+		if (null == eles) return list();
+		List<E> l = list();
+		for (E e : eles)
+			if (null != e) l.add(e);
+		return l;
+	}
+
+	static <E, E1> List<E1> list(Iterable<E> eles, Function<E, E1> conv) {
+		if (null == eles) return list();
+		List<Future<E1>> l = list();
+		for (E e : eles)
+			if (null != e) l.add(Exeter.of().submit(() -> conv.apply(e)));
+		return Exeter.get(l);
 	}
 
 	static int calcBatchParal(long total, long batchSize) {

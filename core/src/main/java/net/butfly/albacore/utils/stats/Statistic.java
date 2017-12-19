@@ -86,7 +86,8 @@ class Statistic implements Serializable {
 	}
 
 	private String traceDetail(Statistic.Result step, Statistic.Result total) {
-		String ss = null == detailing ? "" : detailing.get();
+		String ss = null;
+		if (null == detailing) ss = detailing.get();
 		ss = null == ss ? "" : ", [" + ss + "]";
 		String stepAvg = step.millis > 0 ? Long.toString(step.packs * 1000 / step.millis) : "no_time";
 		String totalAvg = total.millis > 0 ? Long.toString(total.packs * 1000 / total.millis) : "no_time";

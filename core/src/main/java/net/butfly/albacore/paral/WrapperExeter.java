@@ -43,7 +43,7 @@ class WrapperExeter implements Exeter {
 	}
 
 	@Override
-	public <T> Future<T> submit(final Supplier<T> task) {
+	public <T> Future<T> submits(final Supplier<T> task) {
 		return submit((Callable<T>) () -> task.get());
 	}
 
@@ -74,8 +74,8 @@ class WrapperExeter implements Exeter {
 	}
 
 	@Override
-	public <T> T join(final Supplier<T> task) {
-		return get(submit(task));
+	public <T> T joins(final Supplier<T> task) {
+		return get(submits(task));
 	}
 
 	@Override
