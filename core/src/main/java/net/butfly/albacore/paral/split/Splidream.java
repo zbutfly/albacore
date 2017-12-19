@@ -269,8 +269,10 @@ public final class Splidream<E, SELF extends Sdream<E>> extends WrapperSpliterat
 		List<Spliterator<E>> l = Colls.list(origin);
 		l.add(origin);
 		Spliterator<E> s;
-		while (null != (s = origin.trySplit()))
+		while (origin.estimateSize() < 1000 && null != (s = origin.trySplit()))
+			// if (s.estimateSize() < Long.MAX_VALUE) logger.error("Splited: " + s.estimateSize());
 			l.add(s);
+
 		return l;
 	}
 
