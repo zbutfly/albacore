@@ -19,9 +19,10 @@ public final class ConfigSet {
 
 	protected final List<Path> file; // TODO: hot reloading
 	private final String prefix;
+	private final Class<?> cls;
 
 	public boolean prefixed() {
-		return null == prefix;
+		return null != prefix;
 	}
 
 	/**
@@ -43,36 +44,41 @@ public final class ConfigSet {
 	 * @throws ClassNotFoundException
 	 */
 	ConfigSet(Class<?> cl) {
+		this.cls = cl;
 		Config ann = findAnnedParent(cl);
-		String prefix = null == ann || Texts.isEmpty(ann.prefix()) ? null : ann.prefix();
-		String filename = null == ann ? null : ann.value();
-		if (Texts.isEmpty(filename)) filename = Configs.calcClassConfigFile(cl);
-		if (!filename.endsWith(Configs.DEFAULT_PROP_EXT)) filename = filename + Configs.DEFAULT_PROP_EXT;
-		String defname = cl.getPackage().getName().replaceAll("\\.", "/") + "/" + Configs.calcClassConfigFile(cl) + "-default"
-				+ Configs.DEFAULT_PROP_EXT;
+		String pfx = null == ann ? null : ann.prefix();
+		if (Config.NOT_DEFINE.equals(pfx)) pfx = null;
+		String filen = null == ann ? null : ann.value();
+		if (Config.NOT_DEFINE.equals(pfx)) filen = Configs.calcClassConfigFile(cl);
+		if (!filen.endsWith(Configs.DEFAULT_PROP_EXT)) filen = filen + Configs.DEFAULT_PROP_EXT;
+		String filenDefault = cl.getPackage().getName().replaceAll("\\.", "/");
+		if (filenDefault.length() > 0) filenDefault += "/";
+		filenDefault += Configs.calcClassConfigFile(cl) + "-default" + Configs.DEFAULT_PROP_EXT;
+
 		Map<String, String> settings = new ConcurrentHashMap<>();
 		fill(settings, null, Configs::isKeyInvalid, mapProps(System.getProperties()));
-		try (InputStream in = IOs.openFile(filename);) {
-			if (!fill0(settings, in) && null != cl) try (InputStream in2 = IOs.openClasspath(cl, filename);) {
+		try (InputStream in = IOs.openFile(filen);) {
+			if (!fill0(settings, in) && null != cl) try (InputStream in2 = IOs.openClasspath(cl, filen);) {
 				fill0(settings, in2);
 			} catch (IOException e) {}
 		} catch (IOException e) {}
 		fill(settings, s -> CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_DOT, s), Configs::isKeyInvalid, System.getenv());
-		try (InputStream in = IOs.openClasspath(cl, defname);) {
+		try (InputStream in = IOs.openClasspath(cl, filenDefault);) {
 			fill0(settings, in);
 		} catch (IOException e) {}
 		Logger.getLogger(cl).info("Config class"//
-				+ (Texts.isEmpty(prefix) ? " with prefix [" + prefix + "]:" : ":")//
-				+ "\n\tcustomized: [" + Paths.get("").toAbsolutePath().toString() + File.separator + filename + "]"//
-				+ "\n\tcustomized: [classpath:/" + filename + "]" //
-				+ "\n\t   default: [classpath:/" + defname + "]");
-		if (null != prefix && !prefix.endsWith(".")) prefix += ".";
-		this.prefix = prefix;
+				+ (null == pfx ? " with prefix [" + pfx + "]:" : ":")//
+				+ "\n\tcustomized: [" + Paths.get("").toAbsolutePath().toString() + File.separator + filen + "]"//
+				+ "\n\tcustomized: [classpath:/" + filen + "]" //
+				+ "\n\t   default: [classpath:/" + filenDefault + "]");
+		if (null != pfx && !pfx.endsWith(".")) pfx += ".";
+		this.prefix = pfx;
 		this.file = null;
 		this.entries = settings;
 	}
 
-	ConfigSet(String filename, String prefix) {
+	ConfigSet(String filename, String pfx) {
+		cls = null;
 		Class<?> mcls = Configs.mainClass();
 		if (!filename.endsWith(Configs.DEFAULT_PROP_EXT)) filename = filename + Configs.DEFAULT_PROP_EXT;
 		Map<String, String> settings = new ConcurrentHashMap<>();
@@ -84,12 +90,12 @@ public final class ConfigSet {
 		} catch (IOException e) {}
 		fill(settings, s -> CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_DOT, s), Configs::isKeyInvalid, System.getenv());
 		Logger.getLogger(mcls).info("Config from file"//
-				+ (Texts.isEmpty(prefix) ? " with prefix [" + prefix + "]:" : ":")//
+				+ (null == pfx ? " with prefix [" + pfx + "]:" : ":")//
 				+ "\n\tcustomized: [" + Paths.get("").toAbsolutePath().toString() + File.separator + filename + "]"//
 				+ "\n\tcustomized: [classpath:/" + filename + "]" //
 		);
-		if (null != prefix && !prefix.endsWith(".")) prefix += ".";
-		this.prefix = prefix;
+		if (null != pfx && !pfx.endsWith(".")) pfx += ".";
+		this.prefix = pfx;
 		this.file = null;
 		this.entries = settings;
 	}
@@ -146,7 +152,7 @@ public final class ConfigSet {
 
 	// ==================================
 	private ConfigSet(String prefix, Map<String, String> entries) {
-		super();
+		cls = null;
 		if (Texts.isEmpty(prefix)) this.prefix = null;
 		else this.prefix = prefix.endsWith(".") ? prefix : prefix + ".";
 		this.file = null;
@@ -193,6 +199,7 @@ public final class ConfigSet {
 	}
 
 	private static Config findAnnedParent(Class<?> cl) {
+		if (cl == null) return null;
 		if (cl.isAnnotationPresent(Config.class)) return cl.getAnnotation(Config.class);
 		Config c;
 		if (null != (c = findAnnedParent(cl.getSuperclass()))) return c;
@@ -200,4 +207,16 @@ public final class ConfigSet {
 			if (null != (c = findAnnedParent(cc.getSuperclass()))) return c;
 		return null;
 	}
+
+	@Override
+	public String toString() {
+		StringBuilder s = new StringBuilder("ConfigSet ");
+		if (null != prefix) s.append("[prefix: " + prefix + "]");
+		if (null != cls) s.append("[class: " + cls.toString() + "]");
+		s.append(" {");
+		for (String key : entries.keySet())
+			s.append("\n\t").append(key).append(":").append(entries.get(key));
+		return s.append("\n}").toString();
+	}
+
 }

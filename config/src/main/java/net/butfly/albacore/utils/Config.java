@@ -8,9 +8,9 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.TYPE, ElementType.FIELD })
 public @interface Config {
-	String value()
+	static final String NOT_DEFINE = "";
 
-	default "";
+	String value() default NOT_DEFINE;
 
-	String prefix() default "";
+	String prefix() default NOT_DEFINE;
 }
