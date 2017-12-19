@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -44,33 +45,40 @@ public final class ConfigSet {
 	 * @throws ClassNotFoundException
 	 */
 	ConfigSet(Class<?> cl) {
-		this.cls = cl;
+		this(cl, null);
+	}
+
+	public ConfigSet(Class<?> cl, String prefix) {
+		this.cls = Objects.requireNonNull(cl);
+		String cname = Configs.calcClassConfigFile(cl);
 		Config ann = findAnnedParent(cl);
-		String pfx = null == ann ? null : ann.prefix();
+		String pfx;
+		if (Texts.isEmpty(prefix)) pfx = prefix;
+		else pfx = null == ann ? null : ann.prefix();
 		if (Config.NOT_DEFINE.equals(pfx)) pfx = null;
-		String filen = null == ann ? null : ann.value();
-		if (Config.NOT_DEFINE.equals(pfx)) filen = Configs.calcClassConfigFile(cl);
-		if (!filen.endsWith(Configs.DEFAULT_PROP_EXT)) filen = filen + Configs.DEFAULT_PROP_EXT;
-		String filenDefault = cl.getPackage().getName().replaceAll("\\.", "/");
-		if (filenDefault.length() > 0) filenDefault += "/";
-		filenDefault += Configs.calcClassConfigFile(cl) + "-default" + Configs.DEFAULT_PROP_EXT;
+		String fname = null == ann ? null : ann.value();
+		if (Texts.isEmpty(fname)) fname = cname;
+		if (!fname.endsWith(Configs.DEFAULT_PROP_EXT)) fname += Configs.DEFAULT_PROP_EXT;
+		String fnameDef = cl.getPackage().getName().replaceAll("\\.", "/");
+		if (fnameDef.length() > 0) fnameDef += "/";
+		fnameDef += cname + "-default" + Configs.DEFAULT_PROP_EXT;
 
 		Map<String, String> settings = new ConcurrentHashMap<>();
 		fill(settings, null, Configs::isKeyInvalid, mapProps(System.getProperties()));
-		try (InputStream in = IOs.openFile(filen);) {
-			if (!fill0(settings, in) && null != cl) try (InputStream in2 = IOs.openClasspath(cl, filen);) {
+		try (InputStream in = IOs.openFile(fname);) {
+			if (!fill0(settings, in) && null != cl) try (InputStream in2 = IOs.openClasspath(cl, fname);) {
 				fill0(settings, in2);
 			} catch (IOException e) {}
 		} catch (IOException e) {}
 		fill(settings, s -> CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_DOT, s), Configs::isKeyInvalid, System.getenv());
-		try (InputStream in = IOs.openClasspath(cl, filenDefault);) {
+		try (InputStream in = IOs.openClasspath(cl, fnameDef);) {
 			fill0(settings, in);
 		} catch (IOException e) {}
 		Logger.getLogger(cl).info("Config class"//
 				+ (null == pfx ? " with prefix [" + pfx + "]:" : ":")//
-				+ "\n\tcustomized: [" + Paths.get("").toAbsolutePath().toString() + File.separator + filen + "]"//
-				+ "\n\tcustomized: [classpath:/" + filen + "]" //
-				+ "\n\t   default: [classpath:/" + filenDefault + "]");
+				+ "\n\tcustomized: [" + Paths.get("").toAbsolutePath().toString() + File.separator + fname + "]"//
+				+ "\n\tcustomized: [classpath:/" + fname + "]" //
+				+ "\n\t   default: [classpath:/" + fnameDef + "]");
 		if (null != pfx && !pfx.endsWith(".")) pfx += ".";
 		this.prefix = pfx;
 		this.file = null;

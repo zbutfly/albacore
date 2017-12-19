@@ -12,15 +12,21 @@ public final class Configs {
 	static String DEFAULT_PROP_EXT = "." + System.getProperty(Albacore.Props.PROP_CONFIG_EXTENSION, "properties");
 	private static final Map<Class<?>, ConfigSet> CLS_CONF = new ConcurrentHashMap<>();
 
-	public static <T> ConfigSet of() {
-		return of(parseMainClass());
+	public static ConfigSet of() {
+		return of(mainClass());
 	}
 
-	public static <T> ConfigSet of(Class<T> cls) {
+	public static ConfigSet of(Class<?> cls) {
+		if (null == cls) cls = mainClass();
 		return CLS_CONF.computeIfAbsent(cls, ConfigSet::new);
 	}
 
-	public static <T> ConfigSet of(String filename) {
+	public static ConfigSet of(Class<?> cls, String prefix) {
+		if (null == cls) cls = mainClass();
+		return CLS_CONF.computeIfAbsent(cls, c -> new ConfigSet(c, prefix));
+	}
+
+	public static ConfigSet of(String filename) {
 		return of(filename, null);
 	}
 

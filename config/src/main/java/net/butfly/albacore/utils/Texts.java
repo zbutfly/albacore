@@ -68,13 +68,12 @@ public final class Texts {
 		return b;
 	}
 
-
-	private static final int POOL_SIZE = Integer.parseInt(Configs.gets(Albacore.Props.PROP_PARALLEL_POOL_SIZE_OBJECT, Integer.toString(
-			Runtime.getRuntime().availableProcessors() - 1)));
+	private static final int POOL_SIZE = Integer.parseInt(System.getProperty(Albacore.Props.PROP_PARALLEL_POOL_SIZE_OBJECT, Integer
+			.toString(Runtime.getRuntime().availableProcessors() - 1)));
 
 	private static final Map<String, LinkedBlockingQueue<DateFormat>> DATE_FORMATS = new ConcurrentHashMap<>();
 	public static final String SEGUST_DATE_FORMAT = "yyyy-MM-dd'T'hh:mm:ss.SSS'Z'";
-	public static final String DEFAULT_DATE_FORMAT = Configs.gets(Albacore.Props.PROP_TEXT_DATE_FORMAT, SEGUST_DATE_FORMAT);
+	public static final String DEFAULT_DATE_FORMAT = System.getProperty(Albacore.Props.PROP_TEXT_DATE_FORMAT, SEGUST_DATE_FORMAT);
 
 	public static String formatDate(Date date) {
 		return formatDate(DEFAULT_DATE_FORMAT, date);
