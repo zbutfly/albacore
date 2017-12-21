@@ -130,9 +130,32 @@ public final class Splidream<E, SELF extends Sdream<E>> extends WrapperSpliterat
 		partition(ex, impl, using, minPartNum);
 	}
 
+	private <K> void batch1(K k, BlockingQueue<E> l, BiConsumer<K, Sdream<E>> using, int batchSize) {
+		List<E> batch = Colls.list();
+		l.drainTo(batch, batchSize);
+		ex.execute(() -> using.accept(k, Sdream.of(batch)));
+	}
+
 	@Override
 	public <K> void partition(BiConsumer<K, Sdream<E>> using, Function<E, K> keying, int maxBatchSize) {
-		partition(ex, impl, using, keying, maxBatchSize);
+		// partition(ex, impl, using, keying, maxBatchSize);
+		List<E> all = list();
+		if (all.isEmpty()) return;
+		Map<K, BlockingQueue<E>> map = Maps.of();
+		List<Future<BlockingQueue<E>>> fs = Colls.list();
+		for (E e : all)
+			fs.add(ex.submit(() -> map.compute(keying.apply(e), (k, l) -> {
+				if (null == l) l = new LinkedBlockingQueue<>();
+				l.offer(e);
+				if (l.size() >= maxBatchSize) batch1(k, l, using, maxBatchSize);
+				return l;
+			})));
+		Exeter.get(fs);
+		for (Map.Entry<K, BlockingQueue<E>> e : map.entrySet()) {
+			BlockingQueue<E> l = e.getValue();
+			while (!l.isEmpty())
+				batch1(e.getKey(), e.getValue(), using, maxBatchSize);
+		}
 	}
 
 	@Override
@@ -239,27 +262,24 @@ public final class Splidream<E, SELF extends Sdream<E>> extends WrapperSpliterat
 		});
 	}
 
+	@Deprecated
 	static <E, K> void partition(Exeter ex, Spliterator<E> s, BiConsumer<K, Sdream<E>> using, Function<E, K> keying, int maxBatchSize) {
 		Map<K, BlockingQueue<E>> map = Maps.of();
-		s.forEachRemaining(e -> map.compute(keying.apply(e), (k, l) -> {
+		each(ex, Objects.requireNonNull(s), e -> map.compute(keying.apply(e), (k, l) -> {
 			if (null == l) l = new LinkedBlockingQueue<>();
 			l.offer(e);
 			return checkBatch(ex, l, batch -> using.accept(k, of(batch)), maxBatchSize);
 		}));
-		for (Map.Entry<K, BlockingQueue<E>> e : map.entrySet())
-			using.accept(e.getKey(), of(e.getValue()));
-		// each(ex, Objects.requireNonNull(s), e -> map.compute(keying.apply(e), (k, l) -> {
-		// if (null == l) l = new LinkedBlockingQueue<>();
-		// l.offer(e);
-		// return checkBatch(ex, l, batch -> using.accept(k, of(batch)), maxBatchSize);
-		// }));
 	}
 
+	@Deprecated
 	static <E> BlockingQueue<E> checkBatch(Exeter ex, BlockingQueue<E> l, Consumer<Collection<E>> using, int maxBatchSize) {
 		List<E> batch = Colls.list();
 		l.drainTo(batch, maxBatchSize);
-		if (batch.size() >= maxBatchSize) ex.submit(() -> using.accept(batch));
-		else l.addAll(batch);
+		if (batch.size() >= maxBatchSize) {
+			logger.error("INFO: Start a batch part with " + batch.size());
+			ex.submit(() -> using.accept(batch));
+		} else l.addAll(batch);
 		return l.isEmpty() ? null : l;
 	}
 
