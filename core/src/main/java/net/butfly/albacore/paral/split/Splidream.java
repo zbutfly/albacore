@@ -131,6 +131,11 @@ public final class Splidream<E, SELF extends Sdream<E>> extends WrapperSpliterat
 	}
 
 	@Override
+	public <K> void partition(BiConsumer<K, Sdream<E>> using, Function<E, K> keying, int maxBatchSize) {
+		partition(ex, impl, using, keying, maxBatchSize);
+	}
+
+	@Override
 	public List<Sdream<E>> partition(int minPartNum) {
 		List<Sdream<E>> l = Colls.list();
 		getn(partition(ex, impl, l::add, minPartNum));
@@ -182,11 +187,6 @@ public final class Splidream<E, SELF extends Sdream<E>> extends WrapperSpliterat
 			})));
 		getn(fs);
 		return m;
-	}
-
-	@Override
-	public <K> void partition(BiConsumer<K, Sdream<E>> using, Function<E, K> keying, int maxBatchSize) {
-		partition(ex, impl, using, keying, maxBatchSize);
 	}
 
 	// chars =========================
@@ -241,17 +241,24 @@ public final class Splidream<E, SELF extends Sdream<E>> extends WrapperSpliterat
 
 	static <E, K> void partition(Exeter ex, Spliterator<E> s, BiConsumer<K, Sdream<E>> using, Function<E, K> keying, int maxBatchSize) {
 		Map<K, BlockingQueue<E>> map = Maps.of();
-		each(ex, Objects.requireNonNull(s), e -> map.compute(keying.apply(e), (k, l) -> {
+		s.forEachRemaining(e -> map.compute(keying.apply(e), (k, l) -> {
 			if (null == l) l = new LinkedBlockingQueue<>();
 			l.offer(e);
 			return checkBatch(ex, l, batch -> using.accept(k, of(batch)), maxBatchSize);
 		}));
+		for (Map.Entry<K, BlockingQueue<E>> e : map.entrySet())
+			using.accept(e.getKey(), of(e.getValue()));
+		// each(ex, Objects.requireNonNull(s), e -> map.compute(keying.apply(e), (k, l) -> {
+		// if (null == l) l = new LinkedBlockingQueue<>();
+		// l.offer(e);
+		// return checkBatch(ex, l, batch -> using.accept(k, of(batch)), maxBatchSize);
+		// }));
 	}
 
 	static <E> BlockingQueue<E> checkBatch(Exeter ex, BlockingQueue<E> l, Consumer<Collection<E>> using, int maxBatchSize) {
 		List<E> batch = Colls.list();
 		l.drainTo(batch, maxBatchSize);
-		if (l.isEmpty() || batch.size() > maxBatchSize) ex.submit(() -> using.accept(batch));
+		if (batch.size() >= maxBatchSize) ex.submit(() -> using.accept(batch));
 		else l.addAll(batch);
 		return l.isEmpty() ? null : l;
 	}

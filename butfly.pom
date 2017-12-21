@@ -27,7 +27,7 @@
 		<version.scala>${version.scala.main}.6</version.scala>
 		<version.spring>4.3.11.RELEASE</version.spring>
 		<version.ning>1.9.40</version.ning>
-		<version.netty4>4.1.17.Final</version.netty4>
+		<version.netty4>4.1.19.Final</version.netty4>
 		<version.netty3>3.10.6.Final</version.netty3>
 	</properties>
 	<build>
