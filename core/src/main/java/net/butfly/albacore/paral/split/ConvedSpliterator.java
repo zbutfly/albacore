@@ -14,12 +14,7 @@ public class ConvedSpliterator<E, E0> extends ConvedSpliteratorBase<E, E0> {
 
 	@Override
 	public boolean tryAdvance(Consumer<? super E> using) {
-		return impl.tryAdvance(e0 -> {
-			if (null == e0) return;
-			E e = conv.apply(e0);
-			if (null == e) return;
-			using.accept(conv.apply(e0));
-		});
+		return impl.tryAdvance(e0 -> using.accept(conv.apply(e0)));
 	}
 
 	@Override

@@ -142,12 +142,16 @@ public interface Sdream<E> {
 
 	@SafeVarargs
 	static <V> Sdream<V> of(V... t) {
-		return of(new CopyOnWriteArrayList<>(t).spliterator());
+		return of(Colls.list(t).spliterator());
 	}
 
-//	public static <V> Sdream<V> of(Supplier<V> get, long size, Supplier<Boolean> ending) {
-//		return of(new Suppliterator<>(get, size, ending));
-//	}
+	static <V> Sdream<V> of() {
+		return of(Colls.<V> list().spliterator());
+	}
+
+	// public static <V> Sdream<V> of(Supplier<V> get, long size, Supplier<Boolean> ending) {
+	// return of(new Suppliterator<>(get, size, ending));
+	// }
 
 	// ==================
 	List<Sdream<E>> partition(int minPartNum);

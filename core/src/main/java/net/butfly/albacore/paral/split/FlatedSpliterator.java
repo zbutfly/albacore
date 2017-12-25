@@ -12,7 +12,6 @@ import java.util.function.Consumer;
 import net.butfly.albacore.paral.Sdream;
 
 public class FlatedSpliterator<E> extends PooledSpliteratorBase<E, Sdream<E>> {
-
 	public FlatedSpliterator(Spliterator<Sdream<E>> impl) {
 		super(impl, impl.characteristics() //
 				& NON_SIZED & NON_SUBSIZED & NON_DISTINCT & NON_ORDERED & NON_SORTED);
@@ -25,13 +24,14 @@ public class FlatedSpliterator<E> extends PooledSpliteratorBase<E, Sdream<E>> {
 
 	@Override
 	public boolean tryAdvance(Consumer<? super E> using) {
-		boolean hasNext = true;
 		E e;
+		boolean has = true;
 		while (null == (e = pool.poll()))
-			if (!(hasNext = impl.tryAdvance(s -> s.eachs(pool::offer)))) break;
-		if (null == e && null == (e = pool.poll()) && !hasNext) return false;
-		using.accept(e);
-		return true;
+			if (!(has = impl.tryAdvance(s -> {
+				if (null != s) s.each(pool::offer);
+			}))) break;
+		if (null != e || null != (e = pool.poll())) using.accept(e);
+		return has;
 	}
 
 	@Override

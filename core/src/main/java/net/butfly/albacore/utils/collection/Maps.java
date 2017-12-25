@@ -1,7 +1,9 @@
 package net.butfly.albacore.utils.collection;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -36,6 +38,17 @@ public class Maps {
 		for (String key : props.stringPropertyNames())
 			m.put(key, props.getProperty(key));
 		return m;
+	}
+
+	public static <K, V> Pair<List<K>, List<V>> lists(Map<K, V> map) {
+		List<K> keys = Colls.list();
+		List<V> values = Colls.list();
+		for (Entry<K, V> e : map.entrySet())
+			if (null != e.getKey() && null != e.getValue()) {
+				keys.add(e.getKey());
+				values.add(e.getValue());
+			}
+		return new Pair<>(keys, values);
 	}
 
 	public static <K, V> Set<Pair<K, V>> pairs(Map<K, V> map) {
