@@ -70,7 +70,9 @@ public interface Sdream<E> {
 	// ==================
 	Optional<E> next();
 
-	List<E> collect();
+	default List<E> collect() {
+		return list();
+	}
 
 	default E[] array(IntFunction<E[]> arr) {
 		List<E> l = list();

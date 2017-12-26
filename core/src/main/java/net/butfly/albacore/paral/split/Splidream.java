@@ -47,15 +47,6 @@ public final class Splidream<E, SELF extends Sdream<E>> extends WrapperSpliterat
 	// =======================================
 
 	@Override
-	public List<E> collect() {
-		List<E> l = Colls.list();
-		eachs(e -> {
-			if (null != e) l.add(e);
-		});
-		return l;
-	}
-
-	@Override
 	public E reduce(BinaryOperator<E> accumulator) {
 		return reduce(ex, impl, accumulator);
 	}
