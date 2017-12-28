@@ -2,17 +2,20 @@ package net.butfly.albacore.utils.collection;
 
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import net.butfly.albacore.utils.Pair;
 
 public class Maps {
 	@SuppressWarnings("unchecked")
 	public static <K, V> Map<K, V> of(K firstFieldName, Object... firstFieldValueAndOthers) {
-		Map<K, V> map = new ConcurrentHashMap<>();
+		Map<K, V> map = new ConcurrentHashMap<K, V>();
 		if (firstFieldValueAndOthers != null && firstFieldValueAndOthers.length > 1) {
 			map.put(firstFieldName, (V) firstFieldValueAndOthers[0]);
 			for (int i = 1; i + 1 < firstFieldValueAndOthers.length; i += 2)
@@ -22,23 +25,40 @@ public class Maps {
 	}
 
 	public static <K, V> Map<K, V> of(K fieldName, V fieldValue) {
-		Map<K, V> map = new ConcurrentHashMap<>();
+		Map<K, V> map = new ConcurrentHashMap<K, V>();
 		if (null != fieldName && null != fieldValue) map.put(fieldName, fieldValue);
 		return map;
 	}
 
 	public static Map<String, String> of(Properties props) {
-		return Streams.of(props).collect(Collectors.toConcurrentMap(e -> e.getKey().toString(), e -> e.getValue().toString()));
+		Stream<Entry<Object, Object>> s = Streams.of(props);
+		return s.collect(Collectors.toConcurrentMap(new Function<Entry<Object, Object>, String>() {
+			@Override
+			public String apply(Entry<Object, Object> e) {
+				return e.getKey().toString();
+			}
+		}, new Function<Entry<Object, Object>, String>() {
+			@Override
+			public String apply(Entry<Object, Object> e) {
+				return e.getValue().toString();
+			}
+		}));
 	}
 
 	public static <K, V> Set<Pair<K, V>> pairs(Map<K, V> map) {
-		return Streams.of(map).map(e -> new Pair<>(e.getKey(), e.getValue())).collect(Collectors.toSet());
+		Stream<Pair<K, V>> s = Streams.of(map).map(new Function<Entry<K, V>, Pair<K, V>>() {
+			@Override
+			public Pair<K, V> apply(Entry<K, V> e) {
+				return new Pair<K, V>(e.getKey(), e.getValue());
+			}
+		});
+		return s.collect(Collectors.<Pair<K, V>> toSet());
 	}
 
 	@SuppressWarnings("unchecked")
 	public static <K, KV> Pair<K, Object[]> parseFirstKey(Object... kvs) {
-		if (null == kvs || kvs.length <= 1) return new Pair<>(null, null);
-		else return new Pair<>((K) kvs[0], Arrays.copyOfRange(kvs, 1, kvs.length));
+		if (null == kvs || kvs.length <= 1) return new Pair<K, Object[]>(null, null);
+		else return new Pair<K, Object[]>((K) kvs[0], Arrays.copyOfRange(kvs, 1, kvs.length));
 
 	}
 }

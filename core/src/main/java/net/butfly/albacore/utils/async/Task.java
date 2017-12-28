@@ -1,9 +1,9 @@
 package net.butfly.albacore.utils.async;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 import net.butfly.albacore.utils.parallel.Concurrents;
 
@@ -39,11 +39,15 @@ public class Task<T> {
 	}
 
 	public Callable<T> call() {
-		return call instanceof Callable ? (Callable<T>) call : () -> {
-			try {
-				return call.call();
-			} catch (Exception e) {
-				throw new RuntimeException(e);
+		if (call instanceof Callable) return (Callable<T>) call;
+		else return new Callable<T>() {
+			@Override
+			public T call() throws Exception {
+				try {
+					return call.call();
+				} catch (Exception e) {
+					throw new RuntimeException(e);
+				}
 			}
 		};
 	}
@@ -75,27 +79,5 @@ public class Task<T> {
 
 	public static Executor getDefaultExecutor() {
 		return Concurrents.executor();
-	}
-
-	@Deprecated
-	public interface Callback<R> extends Consumer<R> {
-		void callback(final R result);
-
-		@Override
-		default void accept(final R result) {
-			this.accept(result);
-		}
-	}
-
-	@Deprecated
-	public interface Callable<R> extends java.util.concurrent.Callable<R>, Supplier<R> {
-		@Override
-		default public R get() {
-			try {
-				return this.call();
-			} catch (Exception e) {
-				throw new RuntimeException(e);
-			}
-		}
 	}
 }

@@ -13,7 +13,7 @@ import net.butfly.albacore.utils.Texts;
  * 
  * @author butfly
  */
-public class ObjectIdGenerator implements IdGenerator<String> {
+public class ObjectIdGenerator extends IdGenerator<String> {
 	public static final ObjectIdGenerator GEN = new ObjectIdGenerator();
 	private static final AtomicInteger _nextInc = new AtomicInteger((new java.util.Random()).nextInt());
 	private static int _genmachine;

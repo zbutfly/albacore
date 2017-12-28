@@ -3,6 +3,7 @@ package net.butfly.albacore.utils.parallel;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -24,7 +25,6 @@ import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import net.butfly.albacore.Albacore;
-import net.butfly.albacore.lambda.Callable;
 import net.butfly.albacore.utils.Exceptions;
 import net.butfly.albacore.utils.Instances;
 import net.butfly.albacore.utils.Systems;
@@ -37,12 +37,12 @@ public final class Concurrents extends Utils {
 	private static long DEFAULT_WAIT_MS = 100;
 
 	public static List<Object> submitAndWait(ListeningExecutorService ex, Supplier<Runnable> tasking, int parallelism) {
-		List<ListenableFuture<?>> outs = new ArrayList<>();
+		List<ListenableFuture<?>> outs = new ArrayList<ListenableFuture<?>>();
 		for (int i = 0; i < parallelism; i++)
 			outs.add(ex.submit(tasking.get()));
 		try {
 			return Futures.successfulAsList(outs).get();
-		} catch (InterruptedException | ExecutionException e) {
+		} catch (Exception e) {
 			throw new RuntimeException("Task failure", Exceptions.unwrap(e));
 		} finally {
 			ex.shutdown();
@@ -117,11 +117,15 @@ public final class Concurrents extends Utils {
 		return CORE_EXECUTOR.submit(thread);
 	}
 
-	public static ForkJoinWorkerThreadFactory forkjoinFactory(String threadNamePrefix) {
-		return null == threadNamePrefix ? ForkJoinPool.defaultForkJoinWorkerThreadFactory : pool -> {
-			ForkJoinWorkerThread worker = ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread(pool);
-			if (null != threadNamePrefix) worker.setName(threadNamePrefix + "#" + worker.getPoolIndex());
-			return worker;
+	public static ForkJoinWorkerThreadFactory forkjoinFactory(final String threadNamePrefix) {
+		if (null == threadNamePrefix) return ForkJoinPool.defaultForkJoinWorkerThreadFactory;
+		else return new ForkJoinWorkerThreadFactory() {
+			@Override
+			public ForkJoinWorkerThread newThread(ForkJoinPool pool) {
+				ForkJoinWorkerThread worker = ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread(pool);
+				if (null != threadNamePrefix) worker.setName(threadNamePrefix + "#" + worker.getPoolIndex());
+				return worker;
+			}
 		};
 	}
 
@@ -170,14 +174,17 @@ public final class Concurrents extends Utils {
 	 *            0: {@link ForkJoinPool} with SYSTEM parallelism <br>
 	 *            N: {@link ForkJoinPool} with parallelism N
 	 */
-	public static ListeningExecutorService executor(int concurrence, String... name) {
+	public static ListeningExecutorService executor(final int concurrence, final String... name) {
 		boolean forkjoin = Boolean.parseBoolean(System.getProperty(Albacore.Props.PROP_CURRENCE_FORKJOIN, "true"));
 		logger.info("ForkJoin first? " + forkjoin + "!, change it by -Dalbacore.concurrent.forkjoin=false");
-		return Instances.fetch(() -> {
-			String prefix = name == null || name.length == 0 ? "AlbacoreThread" : Joiner.on('-').join(name);
-			ListeningExecutorService e = executor(concurrence, new ThreadFactoryBuilder().setNameFormat(prefix + "-%d").build());
-			logger.info("ExecutorService [" + e.getClass() + "] with name: [" + prefix + "] created.");
-			return e;
+		return Instances.fetch(new Supplier<ListeningExecutorService>() {
+			@Override
+			public ListeningExecutorService get() {
+				String prefix = name == null || name.length == 0 ? "AlbacoreThread" : Joiner.on('-').join(name);
+				ListeningExecutorService e = executor(concurrence, new ThreadFactoryBuilder().setNameFormat(prefix + "-%d").build());
+				logger.info("ExecutorService [" + e.getClass() + "] with name: [" + prefix + "] created.");
+				return e;
+			}
 		}, ListeningExecutorService.class, (Object[]) name);
 	}
 
@@ -239,14 +246,14 @@ public final class Concurrents extends Utils {
 
 	public static <T> List<T> successfulList(List<? extends java.util.concurrent.Callable<T>> tasks, int parallelism) {
 		ListeningExecutorService ex = Concurrents.executor(parallelism);
-		List<ListenableFuture<T>> fl = new ArrayList<>();
+		List<ListenableFuture<T>> fl = new ArrayList<ListenableFuture<T>>();
 		for (java.util.concurrent.Callable<T> t : tasks)
 			fl.add(ex.submit(t));
 		try {
 			return Futures.successfulAsList(fl).get();
 		} catch (InterruptedException e) {
 			logger.error("Concurrent interrupted", e);
-			return new ArrayList<>();
+			return new ArrayList<T>();
 		} catch (ExecutionException e) {
 			logger.error("Concurrent failure (maybe partly)", e.getCause());
 			throw new RuntimeException(e.getCause());
@@ -255,14 +262,14 @@ public final class Concurrents extends Utils {
 
 	public static <T> List<T> successfulList(List<? extends java.util.concurrent.Callable<T>> tasks, long timeout, TimeUnit u) {
 		ListeningExecutorService ex = Concurrents.executor();
-		List<ListenableFuture<T>> fl = new ArrayList<>();
+		List<ListenableFuture<T>> fl = new ArrayList<ListenableFuture<T>>();
 		for (java.util.concurrent.Callable<T> t : tasks)
 			fl.add(ex.submit(t));
 		try {
 			return Futures.successfulAsList(fl).get(timeout, u);
 		} catch (InterruptedException e) {
 			logger.error("Concurrent interrupted", e);
-			return new ArrayList<>();
+			return new ArrayList<T>();
 		} catch (ExecutionException e) {
 			logger.error("Concurrent failure (maybe partly)", e.getCause());
 			throw new RuntimeException(e.getCause());
@@ -275,14 +282,14 @@ public final class Concurrents extends Utils {
 	public static <T> List<T> successfulList(List<? extends java.util.concurrent.Callable<T>> tasks, int parallelism, long timeout,
 			TimeUnit u) {
 		ListeningExecutorService ex = Concurrents.executor(parallelism);
-		List<ListenableFuture<T>> fl = new ArrayList<>();
+		List<ListenableFuture<T>> fl = new ArrayList<ListenableFuture<T>>();
 		for (java.util.concurrent.Callable<T> t : tasks)
 			fl.add(ex.submit(t));
 		try {
 			return Futures.successfulAsList(fl).get(timeout, u);
 		} catch (InterruptedException e) {
 			logger.error("Concurrent interrupted", e);
-			return new ArrayList<>();
+			return new ArrayList<T>();
 		} catch (ExecutionException e) {
 			logger.error("Concurrent failure (maybe partly)", e.getCause());
 			throw new RuntimeException(e.getCause());

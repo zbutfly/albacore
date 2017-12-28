@@ -5,7 +5,7 @@ import java.util.UUID;
 import net.butfly.albacore.utils.Keys;
 import net.butfly.albacore.utils.Texts;
 
-public class UUIDGenerator implements IdGenerator<UUID> {
+public class UUIDGenerator extends IdGenerator<UUID> {
 	public static final UUIDGenerator GEN = new UUIDGenerator();
 
 	@Override

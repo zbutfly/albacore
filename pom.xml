@@ -4,12 +4,12 @@
 	<parent>
 		<groupId>net.butfly</groupId>
 		<artifactId>parent</artifactId>
-		<version>3.0.0-SNAPSHOT</version>
+		<version>3.0.0-JDK6-SNAPSHOT</version>
 		<relativePath>butfly.pom</relativePath>
 	</parent>
 	<groupId>net.butfly.albacore</groupId>
 	<artifactId>albacore</artifactId>
-	<version>3.0.1</version>
+	<version>3.0.1-JDK6</version>
 	<packaging>pom</packaging>
 	<modules>
 		<module>core</module>

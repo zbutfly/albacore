@@ -3,6 +3,7 @@ package net.butfly.albacore.utils;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -62,19 +63,29 @@ public final class Pair<T1, T2> implements Serializable, Entry<T1, T2> {
 	}
 
 	public static <T1, T2> Collector<? super Pair<T1, T2>, ?, Map<T1, T2>> toMap() {
-		return Collectors.toMap(p -> p.v1(), p -> p.v2());
+		return Collectors.toMap(new Function<Pair<T1, T2>, T1>() {
+			@Override
+			public T1 apply(Pair<T1, T2> p) {
+				return p.v1();
+			}
+		}, new Function<Pair<T1, T2>, T2>() {
+			@Override
+			public T2 apply(Pair<T1, T2> p) {
+				return p.v2();
+			}
+		});
 	}
 
 	public static <T1, T2> Map<T1, T2> collect(Stream<Pair<T1, T2>> s) {
-		return s.collect(toMap());
+		return s.collect(Pair.<T1, T2> toMap());
 	}
 
 	public static <T1, T2> Pair<T1, T2> of(T1 v1, T2 v2) {
-		return new Pair<>(v1, v2);
+		return new Pair<T1, T2>(v1, v2);
 	}
 
 	public static <T1, T2> Pair<T1, T2> of(Class<? extends T1> c1, Class<? extends T2> c2) {
-		return new Pair<>(null, null);
+		return new Pair<T1, T2>(null, null);
 	}
 
 	@Override

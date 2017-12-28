@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>net.butfly</groupId>
 	<artifactId>parent</artifactId>
-	<version>3.0.0-SNAPSHOT</version>
+	<version>3.0.0-JDK6-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -11,7 +11,7 @@
 		<project.build.directory>target</project.build.directory>
 		<project.build.configOutputDirectory>${project.build.testOutputDirectory}</project.build.configOutputDirectory>
 		<maven.test.skip.exec>true</maven.test.skip.exec>
-		<maven.props.skip>false</maven.props.skip>
+		<maven.props.skip>true</maven.props.skip>
 		<exec.mainArgs>${exec.arguments}</exec.mainArgs>
 		<mdep.unpack.excludes>META-INF/**</mdep.unpack.excludes>
 		<!-- -->
@@ -22,9 +22,9 @@
 		<version.scala.main>2.10</version.scala.main>
 		<version.scala.suffix>_${version.scala.main}</version.scala.suffix>
 		<version.scala>${version.scala.main}.6</version.scala>
-		<version.spring>4.3.11.RELEASE</version.spring>
+		<version.spring>4.3.13.RELEASE</version.spring>
 		<version.ning>1.9.40</version.ning>
-		<version.netty4>4.1.15.Final</version.netty4>
+		<version.netty4>4.1.19.Final</version.netty4>
 		<version.netty3>3.10.6.Final</version.netty3>
 	</properties>
 	<build>
@@ -92,8 +92,8 @@
 					<artifactId>maven-compiler-plugin</artifactId>
 					<version>3.7.0</version>
 					<configuration>
-						<source>1.8</source>
-						<target>1.8</target>
+						<source>1.6</source>
+						<target>1.6</target>
 						<encoding>${project.build.sourceEncoding}</encoding>
 					</configuration>
 				</plugin>

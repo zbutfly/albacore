@@ -2,11 +2,17 @@ package net.butfly.albacore.utils.logger;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
-public interface Loggable {
-	final static Map<Class<? extends Loggable>, Logger> LOGGERS = new ConcurrentHashMap<>();
+public abstract class Loggable {
+	final static Map<Class<? extends Loggable>, Logger> LOGGERS = new ConcurrentHashMap<Class<? extends Loggable>, Logger>();
 
-	default Logger logger() {
-		return LOGGERS.computeIfAbsent(this.getClass(), c -> Logger.getLogger(c));
+	public Logger logger() {
+		return LOGGERS.computeIfAbsent(this.getClass(), new Function<Class<? extends Loggable>, Logger>() {
+			@Override
+			public Logger apply(Class<? extends Loggable> c) {
+				return Logger.getLogger(c);
+			}
+		});
 	}
 }

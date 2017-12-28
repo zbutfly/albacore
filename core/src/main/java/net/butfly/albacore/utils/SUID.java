@@ -27,8 +27,7 @@ public final class SUID extends Utils {
 
 	/**
 	 * @param len
-	 *            suggestion: 12 (most half of uuid) or 24 (whole of uuid), but
-	 *            should be divided into 4
+	 *            suggestion: 12 (most half of uuid) or 24 (whole of uuid), but should be divided into 4
 	 * @return
 	 */
 	public static String uuid(int len) {
@@ -36,23 +35,27 @@ public final class SUID extends Utils {
 	}
 
 	public static void main(String... args) {
-		ConcurrentSkipListSet<String> ids = new ConcurrentSkipListSet<>();
+		final ConcurrentSkipListSet<String> ids = new ConcurrentSkipListSet<String>();
 		int n = 2;
 		Thread[] t = new Thread[n];
-		long now = System.currentTimeMillis();
-		AtomicLong c = new AtomicLong();
+		final long now = System.currentTimeMillis();
+		final AtomicLong c = new AtomicLong();
 		for (int i = 0; i < n; i++)
-			t[i] = new Thread(() -> {
-				while (true) {
-					String s = snowflake();// uuid(12);
-					if (ids.contains(s)) {
-						System.out.println(Thread.currentThread().getName() + ": " + s + "[" + s.length() + "], duplicated #" + ids.size());
-						Thread.currentThread().interrupt();
-					} else {
-						double sp = ((double) (System.currentTimeMillis() - now)) / c.incrementAndGet();
-						System.out.println(Thread.currentThread().getName() + ": " + s + "[" + s.length() + "] #" + ids.size() + ", avg: "
-								+ sp + " ms/id");
-						ids.add(s);
+			t[i] = new Thread(new Runnable() {
+				@Override
+				public void run() {
+					while (true) {
+						String s = snowflake();// uuid(12);
+						if (ids.contains(s)) {
+							System.out.println(Thread.currentThread().getName() + ": " + s + "[" + s.length() + "], duplicated #" + ids
+									.size());
+							Thread.currentThread().interrupt();
+						} else {
+							double sp = ((double) (System.currentTimeMillis() - now)) / c.incrementAndGet();
+							System.out.println(Thread.currentThread().getName() + ": " + s + "[" + s.length() + "] #" + ids.size()
+									+ ", avg: " + sp + " ms/id");
+							ids.add(s);
+						}
 					}
 				}
 			});

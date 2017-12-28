@@ -3,6 +3,7 @@ package net.butfly.albacore.utils.async;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
@@ -11,9 +12,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import net.butfly.albacore.exception.AggregaedException;
-import net.butfly.albacore.lambda.Callable;
 import net.butfly.albacore.utils.Instances;
 import net.butfly.albacore.utils.Utils;
 import net.butfly.albacore.utils.logger.Logger;
@@ -44,7 +45,12 @@ public final class Tasks extends Utils {
 			final List<? extends Callable<T>> tasks) {
 		List<T> results = new ArrayList<T>();
 		List<Throwable> errors = new ArrayList<Throwable>();
-		CompletionService<T> cs = Instances.fetch(() -> new ExecutorCompletionService<T>(executor), CompletionService.class, executor);
+		CompletionService<T> cs = Instances.fetch(new Supplier<CompletionService<T>>() {
+			@Override
+			public CompletionService<T> get() {
+				return new ExecutorCompletionService<T>(executor);
+			}
+		}, CompletionService.class, executor);
 		for (Callable<T> t : tasks) {
 			cs.submit(t);
 		}

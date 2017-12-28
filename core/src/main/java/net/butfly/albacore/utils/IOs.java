@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import net.butfly.albacore.utils.logger.Logger;
 
@@ -63,24 +64,44 @@ public final class IOs extends Utils {
 		return null;
 	}
 
-	public static <S extends OutputStream> S writeBytes(S out, byte[] b) throws IOException {
+	public static <S extends OutputStream> S writeBytes(S out, final byte[] b) throws IOException {
 		if (null == b) {
 			writeInt(out, -1);
-			logger.trace(() -> "writeBytes: length[-1]");
+			logger.trace(new Supplier<CharSequence>() {
+				@Override
+				public CharSequence get() {
+					return "writeBytes: length[-1]";
+				}
+			});
 		} else {
 			writeInt(out, b.length);
-			logger.trace(() -> "writeBytes: length[" + b.length + "]");
+			logger.trace(new Supplier<CharSequence>() {
+				@Override
+				public CharSequence get() {
+					return "writeBytes: length[" + b.length + "]";
+				}
+			});
 			if (b.length > 0) {
 				out.write(b);
-				logger.trace(() -> "writeBytes: data[" + b.length + "]");
+				logger.trace(new Supplier<CharSequence>() {
+					@Override
+					public CharSequence get() {
+						return "writeBytes: data[" + b.length + "]";
+					}
+				});
 			}
 		}
 		return out;
 	}
 
 	public static byte[] readBytes(InputStream in) throws IOException {
-		int l = readInt(in);
-		logger.trace(() -> "readBytes: length[" + l + "]");
+		final int l = readInt(in);
+		logger.trace(new Supplier<CharSequence>() {
+			@Override
+			public CharSequence get() {
+				return "readBytes: length[" + l + "]";
+			}
+		});
 		if (l < 0) return null;
 		if (l == 0) return new byte[0];
 		byte[] bytes = new byte[l];
@@ -90,12 +111,22 @@ public final class IOs extends Utils {
 				throw new EOFException("not full read but no data remained, need [" + l + ", now [" + i + "]]");
 			else bytes[i] = (byte) b;
 		}
-		logger.trace(() -> "readBytes: data[" + l + "]");
+		logger.trace(new Supplier<CharSequence>() {
+			@Override
+			public CharSequence get() {
+				return "readBytes: data[" + l + "]";
+			}
+		});
 		return bytes;
 	}
 
-	public static <S extends OutputStream> S writeBytes(S out, byte[]... bytes) throws IOException {
-		logger.trace(() -> bytes.length > 1 ? "Write bytes list: " + bytes.length : null);
+	public static <S extends OutputStream> S writeBytes(S out, final byte[]... bytes) throws IOException {
+		logger.trace(new Supplier<CharSequence>() {
+			@Override
+			public CharSequence get() {
+				return bytes.length > 1 ? "Write bytes list: " + bytes.length : null;
+			}
+		});
 		writeInt(out, bytes.length);
 		for (byte[] b : bytes)
 			writeBytes(out, b);
@@ -103,8 +134,13 @@ public final class IOs extends Utils {
 	}
 
 	@SafeVarargs
-	public static <T, S extends OutputStream> S writeBytes(S out, Function<T, byte[]> ser, T... bytes) throws IOException {
-		logger.trace(() -> bytes.length > 1 ? "Write bytes list: " + bytes.length : null);
+	public static <T, S extends OutputStream> S writeBytes(S out, Function<T, byte[]> ser, final T... bytes) throws IOException {
+		logger.trace(new Supplier<CharSequence>() {
+			@Override
+			public CharSequence get() {
+				return bytes.length > 1 ? "Write bytes list: " + bytes.length : null;
+			}
+		});
 		writeInt(out, bytes.length);
 		for (T b : bytes)
 			writeBytes(out, ser.apply(b));
@@ -112,8 +148,13 @@ public final class IOs extends Utils {
 	}
 
 	public static byte[][] readBytesList(InputStream in) throws IOException {
-		int count = readInt(in);
-		logger.trace(() -> count > 1 ? "Read bytes list: " + count : null);
+		final int count = readInt(in);
+		logger.trace(new Supplier<CharSequence>() {
+			@Override
+			public CharSequence get() {
+				return count > 1 ? "Read bytes list: " + count : null;
+			}
+		});
 		byte[][] r = new byte[count][];
 		for (int i = 0; i < count; i++)
 			r[i] = readBytes(in);
@@ -121,9 +162,14 @@ public final class IOs extends Utils {
 	}
 
 	public static <T> List<T> readBytes(InputStream in, Function<byte[], T> der) throws IOException {
-		int count = readInt(in);
-		logger.trace(() -> count > 1 ? "Read bytes list: " + count : null);
-		List<T> r = new ArrayList<>();
+		final int count = readInt(in);
+		logger.trace(new Supplier<CharSequence>() {
+			@Override
+			public CharSequence get() {
+				return count > 1 ? "Read bytes list: " + count : null;
+			}
+		});
+		List<T> r = new ArrayList<T>();
 		for (int i = 0; i < count; i++)
 			r.add(der.apply(readBytes(in)));
 		return r;
@@ -151,11 +197,21 @@ public final class IOs extends Utils {
 		return i;
 	}
 
-	public static <S extends OutputStream> S writeObj(S out, Object obj) throws IOException {
-		logger.trace(() -> "Write object: " + (null == obj ? null : obj.getClass().getName()));
-		try (ByteArrayOutputStream baos = new ByteArrayOutputStream(); ObjectOutputStream is = new ObjectOutputStream(baos)) {
+	public static <S extends OutputStream> S writeObj(S out, final Object obj) throws IOException {
+		logger.trace(new Supplier<CharSequence>() {
+			@Override
+			public CharSequence get() {
+				return "Write object: " + (null == obj ? null : obj.getClass().getName());
+			}
+		});
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		ObjectOutputStream is = new ObjectOutputStream(baos);
+		try {
 			is.writeObject(obj);
 			writeBytes(out, baos.toByteArray());
+		} finally {
+			is.close();
+			baos.close();
 		}
 		return out;
 	}
@@ -164,26 +220,40 @@ public final class IOs extends Utils {
 	public static <T> T readObj(InputStream in) throws IOException {
 		byte[] bytes = readBytes(in);
 		if (null == bytes || bytes.length == 0) return null;
-		try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes); ObjectInputStream is = new ObjectInputStream(bais)) {
-			try {
-				T obj = (T) is.readObject();
-				logger.trace(() -> "Read object: " + (null == obj ? null : obj.getClass().getName()));
-				return obj;
-			} catch (ClassNotFoundException e) {
-				throw new IOException(e);
-			}
+		ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+		ObjectInputStream is = new ObjectInputStream(bais);
+		try {
+			final T obj = (T) is.readObject();
+			logger.trace(new Supplier<CharSequence>() {
+				@Override
+				public CharSequence get() {
+					return "Read object: " + (null == obj ? null : obj.getClass().getName());
+				}
+			});
+			return obj;
+		} catch (ClassNotFoundException e) {
+			throw new IOException(e);
+		} finally {
+			is.close();
+			bais.close();
 		}
 	}
 
 	public static byte[] readAll(final InputStream is) {
 		Reflections.noneNull("null byte array not allow", is);
-		try (ByteArrayOutputStream os = new ByteArrayOutputStream();) {
+		ByteArrayOutputStream os = new ByteArrayOutputStream();
+		try {
 			byte[] buffer = new byte[1024];
 			int n;
 			while (-1 != (n = is.read(buffer)))
 				os.write(buffer, 0, n);
-			byte[] b = os.toByteArray();
-			logger.trace(() -> "Read all: " + b.length);
+			final byte[] b = os.toByteArray();
+			logger.trace(new Supplier<CharSequence>() {
+				@Override
+				public CharSequence get() {
+					return "Read all: " + b.length;
+				}
+			});
 			return b;
 		} catch (IOException e) {
 			throw new RuntimeException(e);
@@ -191,17 +261,28 @@ public final class IOs extends Utils {
 	}
 
 	public static String[] readLines(final InputStream is) {
-		return readLines(is, l -> false);
+		return readLines(is, new Predicate<String>() {
+			@Override
+			public boolean test(String l) {
+				return false;
+			}
+		});
 	}
 
 	public static String[] readLines(final InputStream is, Predicate<String> ignore) {
 		Reflections.noneNull("null byte array not allow", is);
-		List<String> lines = new ArrayList<>();
+		final List<String> lines = new ArrayList<String>();
 		String l = null;
-		try (BufferedReader r = new BufferedReader(new InputStreamReader(is));) {
+		BufferedReader r = new BufferedReader(new InputStreamReader(is));
+		try {
 			while ((l = r.readLine()) != null)
 				if (!ignore.test(l)) lines.add(l);
-			logger.trace(() -> "Read all: " + lines.size());
+			logger.trace(new Supplier<CharSequence>() {
+				@Override
+				public CharSequence get() {
+					return "Read all: " + lines.size();
+				}
+			});
 			return lines.toArray(new String[lines.size()]);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
@@ -224,22 +305,44 @@ public final class IOs extends Utils {
 	}
 
 	public static byte[] toByte(Object obj) {
-		try (ByteArrayOutputStream baos = new ByteArrayOutputStream(); ObjectOutputStream out = new ObjectOutputStream(baos)) {
-			out.writeObject(obj);
-			return baos.toByteArray();
-		} catch (IOException e) {
-			logger.error("bytes converting failure", e);
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		ObjectOutputStream out;
+		try {
+			out = new ObjectOutputStream(baos);
+			try {
+				out.writeObject(obj);
+				return baos.toByteArray();
+			} catch (IOException e) {
+				logger.error("bytes converting failure", e);
+				return null;
+			} finally {
+				out.close();
+				baos.close();
+			}
+		} catch (IOException e1) {
 			return null;
 		}
 	}
 
 	@SuppressWarnings("unchecked")
 	public static <T> T fromByte(byte[] bytes) {
-		try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes); ObjectInputStream in = new ObjectInputStream(bais)) {
-			return (T) in.readObject();
-		} catch (ClassNotFoundException | IOException e) {
-			logger.error("bytes converting failure", e);
+		ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+		ObjectInputStream in;
+		try {
+			in = new ObjectInputStream(bais);
+		} catch (IOException e1) {
 			return null;
+		}
+		try {
+			return (T) in.readObject();
+		} catch (IOException e) {
+			return null;
+		} catch (ClassNotFoundException e) {
+			return null;
+		} finally {
+			try {
+				in.close();
+			} catch (IOException e) {}
 		}
 	}
 }

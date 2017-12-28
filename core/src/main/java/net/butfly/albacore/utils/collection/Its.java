@@ -1,6 +1,5 @@
 package net.butfly.albacore.utils.collection;
 
-import static net.butfly.albacore.utils.collection.Streams.list;
 import static net.butfly.albacore.utils.parallel.Parals.join;
 import static net.butfly.albacore.utils.parallel.Parals.listen;
 
@@ -21,7 +20,7 @@ import java.util.function.Supplier;
 import net.butfly.albacore.utils.Utils;
 
 public final class Its extends Utils {
-	public static <V> Iterator<V> it(Supplier<V> get, Supplier<Boolean> ending) {
+	public static <V> Iterator<V> it(final Supplier<V> get, final Supplier<Boolean> ending) {
 		return new Iterator<V>() {
 			@Override
 			public boolean hasNext() {
@@ -35,7 +34,7 @@ public final class Its extends Utils {
 		};
 	}
 
-	public static <V> Iterator<V> it(Spliterator<V> t) {
+	public static <V> Iterator<V> it(final Spliterator<V> t) {
 		return new Iterator<V>() {
 			@Override
 			public boolean hasNext() {
@@ -44,8 +43,13 @@ public final class Its extends Utils {
 
 			@Override
 			public V next() {
-				AtomicReference<V> ref = new AtomicReference<>();
-				if (!t.tryAdvance(v -> ref.set(v))) return null;
+				AtomicReference<V> ref = new AtomicReference<V>();
+				if (!t.tryAdvance(new Consumer<V>() {
+					@Override
+					public void accept(V v) {
+						ref.set(v);
+					}
+				})) return null;
 				return ref.get();
 			}
 		};

@@ -10,33 +10,29 @@ import java.util.Set;
 
 public final class Annotations extends Utils {
 	/**
-	 * The set of method that annotation classes inherit, and should be avoided
-	 * when toString()ing an annotation class.
+	 * The set of method that annotation classes inherit, and should be avoided when toString()ing an annotation class.
 	 */
-	private static final Set<String> INHERITED_ANNOTATION_METHODS = new HashSet<>(
-			Arrays.asList("toString", "equals", "hashCode", "annotationType", "getClass"));
+	private static final Set<String> INHERITED_ANNOTATION_METHODS = new HashSet<String>(Arrays.asList("toString", "equals", "hashCode",
+			"annotationType", "getClass"));
 
 	/**
 	 * <p>
-	 * A better (more concise) toString method for annotation types that yields
-	 * a String that should look more like the actual usage of the annotation in
-	 * a class. The String produced is similar to that produced by calling
-	 * toString() on the annotation directly, with the following differences:
+	 * A better (more concise) toString method for annotation types that yields a String that should look more like the actual usage of the
+	 * annotation in a class. The String produced is similar to that produced by calling toString() on the annotation directly, with the
+	 * following differences:
 	 * </p>
 	 *
 	 * <ul>
-	 * <li>Uses the classes simple name instead of it's fully qualified name.
-	 * </li>
+	 * <li>Uses the classes simple name instead of it's fully qualified name.</li>
 	 * <li>Only outputs attributes that are set to non-default values.</li>
 	 *
 	 * <p>
-	 * If, for some unforseen reason, an exception is thrown within this method
-	 * it will be caught and the return value will be {@code ann.toString()}.
+	 * If, for some unforseen reason, an exception is thrown within this method it will be caught and the return value will be
+	 * {@code ann.toString()}.
 	 *
 	 * @param ann
 	 *            the annotation to convert to a human readable String
-	 * @return a human readable String form of the annotation and it's
-	 *         attributes
+	 * @return a human readable String form of the annotation and it's attributes
 	 */
 	public static String toString(Annotation ann) {
 		try {
@@ -62,8 +58,8 @@ public final class Annotations extends Utils {
 
 					// Only print an attribute if it isn't set to the default
 					// value
-					if ((defaultArray != null && !Arrays.equals(defaultArray, actualArray))
-							|| (defaultArray == null && !actualValue.equals(defaultValue))) {
+					if ((defaultArray != null && !Arrays.equals(defaultArray, actualArray)) || (defaultArray == null && !actualValue.equals(
+							defaultValue))) {
 						builder.append(appendedAnyParameters ? ", " : "(").append(method.getName()).append("=");
 						builder.append(actualArray != null ? Arrays.toString(actualArray) : actualValue);
 						appendedAnyParameters = true;
@@ -78,7 +74,7 @@ public final class Annotations extends Utils {
 	}
 
 	public static <A extends Annotation> List<A> multipleAnnotation(Class<A> a, Class<? extends Annotation> ma, Class<?>... cc) {
-		List<A> list = new ArrayList<>();
+		List<A> list = new ArrayList<A>();
 		if (null != cc && cc.length > 0) for (Class<?> c : cc) {
 			if (null == c) continue;
 			if (c.isAnnotationPresent(ma)) {

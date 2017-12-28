@@ -3,6 +3,7 @@ package net.butfly.albacore.utils;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.butfly.albacore.io.Openable;
+import net.butfly.albacore.lambda.Runnable;
 import net.butfly.albacore.utils.parallel.Concurrents;
 
 public class OpenableThread extends Thread implements Openable {
@@ -17,8 +18,18 @@ public class OpenableThread extends Thread implements Openable {
 	}
 
 	private void init() {
-		setUncaughtExceptionHandler((t, e) -> logger().error(getName() + " failure", e));
-		opening(super::start);
+		setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+			@Override
+			public void uncaughtException(Thread t, Throwable e) {
+				logger().error(getName() + " failure", e);
+			}
+		});
+		opening(new Runnable() {
+			@Override
+			public void run() {
+				OpenableThread.super.start();
+			}
+		});
 	}
 
 	public OpenableThread(Runnable target) {

@@ -12,8 +12,10 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -99,7 +101,7 @@ public class Configs extends Utils {
 		}
 
 		public Map<String, String> getByPrefix(String prefix) {
-			Map<String, String> sub = new ConcurrentHashMap<>();
+			Map<String, String> sub = new ConcurrentHashMap<String, String>();
 			for (String k : entries.keySet())
 				if (k.startsWith(prefix)) {
 					String subk = k.substring(prefix.length() - 1);
@@ -152,18 +154,47 @@ public class Configs extends Utils {
 				+ "\n\tcustomized: [" + Paths.get("").toAbsolutePath().toString() + File.separator + filename + "]"//
 				+ "\n\tcustomized: [classpath:/" + filename + "]" //
 				+ "\n\t   default: [classpath:/" + defname + "]");
-		Map<String, String> settings = new ConcurrentHashMap<>();
-		fill(settings, null, Configs::filterSystemAndInvalidPrefix, mapProps(System.getProperties()));
-		try (InputStream in = IOs.openFile(filename);) {
-			if (!fill(settings, null, null, in) && null != cl) try (InputStream in2 = IOs.openClasspath(cl, filename);) {
-				fill(settings, null, null, in2);
+		Map<String, String> settings = new ConcurrentHashMap<String, String>();
+		fill(settings, null, new Predicate<String>() {
+			@Override
+			public boolean test(String c) {
+				return Configs.filterSystemAndInvalidPrefix(c);
+			}
+		}, mapProps(System.getProperties()));
+		InputStream in = IOs.openFile(filename);
+		try {
+			if (!fill(settings, null, null, in) && null != cl) {
+				InputStream in2 = IOs.openClasspath(cl, filename);
+				try {
+					fill(settings, null, null, in2);
+				} finally {
+					in2.close();
+				}
+			}
+		} catch (IOException e) {} finally {
+			try {
+				in.close();
 			} catch (IOException e) {}
-		} catch (IOException e) {}
-		fill(settings, s -> CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_DOT, s), Configs::filterSystemAndInvalidPrefix, System
-				.getenv());
-		try (InputStream in = IOs.openClasspath(cl, defname);) {
+		}
+		fill(settings, new Function<String, String>() {
+			@Override
+			public String apply(String s) {
+				return CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_DOT, s);
+			}
+		}, new Predicate<String>() {
+			@Override
+			public boolean test(String c) {
+				return Configs.filterSystemAndInvalidPrefix(c);
+			}
+		}, System.getenv());
+		in = IOs.openClasspath(cl, defname);
+		try {
 			fill(settings, null, null, in);
-		} catch (IOException e) {}
+		} finally {
+			try {
+				in.close();
+			} catch (IOException e) {}
+		}
 		return new Conf(prefix, settings);
 	}
 
@@ -240,15 +271,32 @@ public class Configs extends Utils {
 	// other utils
 
 	public static Map<String, String> mapProps(Properties props) {
-		return props.entrySet().stream().filter(e -> e.getKey() != null && CharSequence.class.isAssignableFrom(e.getKey().getClass()) && e
-				.getValue() != null && CharSequence.class.isAssignableFrom(e.getValue().getClass())).collect(Collectors.toConcurrentMap(
-						e -> e.getKey().toString(), e -> e.getValue().toString()));
+		return props.entrySet().stream().filter(new Predicate<Entry<Object, Object>>() {
+			@Override
+			public boolean test(Entry<Object, Object> e) {
+				return e.getKey() != null && CharSequence.class.isAssignableFrom(e.getKey().getClass()) && e.getValue() != null
+						&& CharSequence.class.isAssignableFrom(e.getValue().getClass());
+			}
+		}).collect(Collectors.toConcurrentMap(new Function<Entry<Object, Object>, String>() {
+			@Override
+			public String apply(Entry<Object, Object> e) {
+				return e.getKey().toString();
+			}
+		}, new Function<Entry<Object, Object>, String>() {
+			@Override
+			public String apply(Entry<Object, Object> e) {
+				return e.getValue().toString();
+			}
+		}));
 	}
 
 	public static Properties propsMap(Map<String, String> settings) {
-		Properties props = new Properties();
-		settings.forEach((k, v) -> {
-			if (null != k && null != v) props.setProperty(k, v);
+		final Properties props = new Properties();
+		settings.forEach(new BiConsumer<String, String>() {
+			@Override
+			public void accept(String k, String v) {
+				if (null != k && null != v) props.setProperty(k, v);
+			}
 		});
 		return props;
 	}

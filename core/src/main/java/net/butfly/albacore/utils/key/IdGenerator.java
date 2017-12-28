@@ -4,16 +4,16 @@ import java.util.Arrays;
 
 import net.butfly.albacore.utils.logger.Loggable;
 
-public interface IdGenerator<K> extends Loggable {
-	byte[] bytes();
+public abstract class IdGenerator<K> extends Loggable {
+	public abstract byte[] bytes();
 
-	K generate();
+	public abstract K generate();
 
-	long machine();
+	public abstract long machine();
 
-	String gen0();
+	public abstract String gen0();
 
-	default char[] encode(byte[] from, int len) {
+	public char[] encode(byte[] from, int len) {
 		char[] n = new char[len];
 		from = Arrays.copyOf(from, len);
 		byte v1, v2;
@@ -41,7 +41,7 @@ public interface IdGenerator<K> extends Loggable {
 		return n;
 	}
 
-	class _ctx {
+	static class _ctx {
 		private static char[] CHARS_64 = new char[64];
 		static {
 			for (int i = 0; i < 26; i++)

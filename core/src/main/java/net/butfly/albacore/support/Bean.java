@@ -2,7 +2,7 @@ package net.butfly.albacore.support;
 
 import net.butfly.albacore.utils.Objects;
 
-public abstract class Bean<T extends Beans<T>> implements Beans<T> {
+public abstract class Bean<T extends Beans<T>> extends Beans<T> {
 	private static final long serialVersionUID = 1L;
 
 	@SuppressWarnings("unchecked")

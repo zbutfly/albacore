@@ -8,19 +8,25 @@ import java.util.Set;
 
 import net.butfly.albacore.lambda.InvocationHandler;
 
-public interface MapEx<K, V> extends Map<K, V> {
-	static <K, V> MapEx<K, V> of(Map<K, V> origin) {
-		return origin instanceof MapEx ? (MapEx<K, V>) origin : InvocationHandler.proxy((proxy, method, args) -> {
-			return Context.MAPEX_METHODS.contains(method) ? method.invoke(proxy, args) : method.invoke(origin, args);
-		}, MapEx.class);
+public abstract class MapEx<K, V> implements Map<K, V> {
+	public static <K, V> MapEx<K, V> of(final Map<K, V> origin) {
+		if (origin instanceof MapEx) return (MapEx<K, V>) origin;
+		else {
+			@SuppressWarnings("unchecked")
+			MapEx<K, V> map = InvocationHandler.proxy(new InvocationHandler() {
+				@Override
+				public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+					return MAPEX_METHODS.contains(method) ? method.invoke(proxy, args) : method.invoke(origin, args);
+				}
+			}, MapEx.class);
+			return map;
+		}
 	}
 
-	default MapEx<K, V> add(K key, V value) {
+	public MapEx<K, V> add(K key, V value) {
 		put(key, value);
 		return this;
 	}
 
-	class Context {
-		private static Set<Method> MAPEX_METHODS = new HashSet<>(Arrays.asList(MapEx.class.getDeclaredMethods()));
-	}
+	private static final Set<Method> MAPEX_METHODS = new HashSet<Method>(Arrays.asList(MapEx.class.getDeclaredMethods()));
 }

@@ -72,29 +72,25 @@ public final class Values extends Utils {
 
 	/**
 	 * <p>
-	 * Collections the specified wrapper class to its corresponding primitive
-	 * class.
+	 * Collections the specified wrapper class to its corresponding primitive class.
 	 * </p>
 	 *
 	 * <p>
-	 * This method is the counter part of {@code primitiveToWrapper()}. If the
-	 * passed in class is a wrapper class for a primitive type, this primitive
-	 * type will be returned (e.g. {@code Integer.TYPE} for
-	 * {@code Integer.class}). For other classes, or if the parameter is
+	 * This method is the counter part of {@code primitiveToWrapper()}. If the passed in class is a wrapper class for a primitive type, this
+	 * primitive type will be returned (e.g. {@code Integer.TYPE} for {@code Integer.class}). For other classes, or if the parameter is
 	 * <b>null</b>, the return value is <b>null</b>.
 	 * </p>
 	 *
 	 * @param cls
 	 *            the class to convert, may be <b>null</b>
-	 * @return the corresponding primitive type if {@code cls} is a wrapper
-	 *         class, <b>null</b> otherwise
+	 * @return the corresponding primitive type if {@code cls} is a wrapper class, <b>null</b> otherwise
 	 * @see #primitiveToWrapper(Class)
 	 * @since 2.4
 	 */
 	public static Class<?> wrapperToPrimitive(final Class<?> cls) {
 		try {
 			return (Class<?>) cls.getField("TYPE").get(null);
-		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+		} catch (Exception e) {
 			return null;
 		}
 	}
@@ -115,24 +111,89 @@ public final class Values extends Utils {
 			/** null **/
 			Void.class };
 
-	private static Map<Class<?>, Function<String, Object>> FROM_STRING_METHOD = new HashMap<>();
+	private static Map<Class<?>, Function<String, Object>> FROM_STRING_METHOD = new HashMap<Class<?>, Function<String, Object>>();
 
 	static {
-		FROM_STRING_METHOD.put(Void.class, s -> NULL_STR);
-		FROM_STRING_METHOD.put(CharSequence.class, s -> s);
-		FROM_STRING_METHOD.put(Character.class, s -> s.toCharArray()[0]);
-		FROM_STRING_METHOD.put(char.class, s -> s.toCharArray()[0]);
+		FROM_STRING_METHOD.put(Void.class, new Function<String, Object>() {
+			@Override
+			public Object apply(String s) {
+				return NULL_STR;
+			}
+		});
+		FROM_STRING_METHOD.put(CharSequence.class, new Function<String, Object>() {
+			@Override
+			public Object apply(String s) {
+				return s;
+			}
+		});
+		FROM_STRING_METHOD.put(Character.class, new Function<String, Object>() {
+			@Override
+			public Object apply(String s) {
+				return s.toCharArray()[0];
+			}
+		});
+		FROM_STRING_METHOD.put(char.class, new Function<String, Object>() {
+			@Override
+			public Object apply(String s) {
+				return s.toCharArray()[0];
+			}
+		});
 
-		FROM_STRING_METHOD.put(byte.class, s -> Byte.valueOf(s).byteValue());
-		FROM_STRING_METHOD.put(short.class, s -> Short.valueOf(s).shortValue());
-		FROM_STRING_METHOD.put(int.class, s -> Integer.valueOf(s).intValue());
-		FROM_STRING_METHOD.put(long.class, s -> Long.valueOf(s).longValue());
-		FROM_STRING_METHOD.put(double.class, s -> Double.valueOf(s).doubleValue());
-		FROM_STRING_METHOD.put(float.class, s -> Float.valueOf(s).floatValue());
+		FROM_STRING_METHOD.put(byte.class, new Function<String, Object>() {
+			@Override
+			public Object apply(String s) {
+				return Byte.valueOf(s).byteValue();
+			}
+		});
+		FROM_STRING_METHOD.put(short.class, new Function<String, Object>() {
+			@Override
+			public Object apply(String s) {
+				return Short.valueOf(s).shortValue();
+			}
+		});
+		FROM_STRING_METHOD.put(int.class, new Function<String, Object>() {
+			@Override
+			public Object apply(String s) {
+				return Integer.valueOf(s).intValue();
+			}
+		});
+		FROM_STRING_METHOD.put(long.class, new Function<String, Object>() {
+			@Override
+			public Object apply(String s) {
+				return Long.valueOf(s).longValue();
+			}
+		});
+		FROM_STRING_METHOD.put(double.class, new Function<String, Object>() {
+			@Override
+			public Object apply(String s) {
+				return Double.valueOf(s).doubleValue();
+			}
+		});
+		FROM_STRING_METHOD.put(float.class, new Function<String, Object>() {
+			@Override
+			public Object apply(String s) {
+				return Float.valueOf(s).floatValue();
+			}
+		});
 
-		FROM_STRING_METHOD.put(boolean.class, s -> Boolean.valueOf(s).booleanValue());
-		FROM_STRING_METHOD.put(Boolean.class, s -> Boolean.valueOf(s));
-		FROM_STRING_METHOD.put(Date.class, s -> new Date(Long.parseLong(s)));
+		FROM_STRING_METHOD.put(boolean.class, new Function<String, Object>() {
+			@Override
+			public Object apply(String s) {
+				return Boolean.valueOf(s).booleanValue();
+			}
+		});
+		FROM_STRING_METHOD.put(Boolean.class, new Function<String, Object>() {
+			@Override
+			public Object apply(String s) {
+				return Boolean.valueOf(s);
+			}
+		});
+		FROM_STRING_METHOD.put(Date.class, new Function<String, Object>() {
+			@Override
+			public Object apply(String s) {
+				return new Date(Long.parseLong(s));
+			}
+		});
 	}
 	private static final Class<?>[] NUMBER_TYPES = new Class[] { //
 			Number.class, int.class, byte.class, short.class, long.class, double.class, float.class };
@@ -168,8 +229,11 @@ public final class Values extends Utils {
 		try {
 			Field f = cl.getField("BYTES");
 			if (Modifier.isStatic(f.getModifiers()) && Modifier.isPublic(f.getModifiers()) && Modifier.isFinal(f.getModifiers())
-					&& int.class.equals(f.getType())) return (int) f.get(null);
-		} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {}
+					&& int.class.equals(f.getType())) {
+				Integer v = (Integer) f.get(null);
+				return null == v ? 0 : v.intValue();
+			}
+		} catch (Exception e) {}
 		return -1;
 	}
 }

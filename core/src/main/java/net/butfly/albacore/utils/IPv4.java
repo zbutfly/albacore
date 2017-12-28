@@ -1,13 +1,21 @@
 package net.butfly.albacore.utils;
 
 import java.util.Arrays;
+import java.util.function.Function;
+import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class IPv4 extends IPAddr {
 	private final int[] segs;
 
 	public IPv4(String spec) {
-		this(Arrays.stream(spec.split(".", 4)).mapToInt(i -> Integer.parseInt(i)).toArray());
+		this(Arrays.stream(spec.split(".", 4)).mapToInt(new ToIntFunction<String>() {
+			@Override
+			public int applyAsInt(String i) {
+				return Integer.parseInt(i);
+			}
+		}).toArray());
 	}
 
 	public IPv4(int... segs) {
@@ -19,6 +27,12 @@ public class IPv4 extends IPAddr {
 
 	@Override
 	public String toString() {
-		return Arrays.stream(segs).boxed().map(i -> Integer.toHexString(i)).collect(Collectors.joining("."));
+		Stream<String> s = Arrays.stream(segs).boxed().map(new Function<Integer, String>() {
+			@Override
+			public String apply(Integer i) {
+				return Integer.toHexString(i);
+			}
+		});
+		return s.collect(Collectors.joining("."));
 	}
 }

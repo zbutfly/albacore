@@ -13,6 +13,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BinaryOperator;
+import java.util.function.Function;
+import java.util.function.IntFunction;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -174,36 +178,78 @@ public final class URISpec implements Serializable {
 	}
 
 	private String[] parseScheme(String scheme) {
-		return Arrays.stream(scheme.split(":")).filter(Texts::notEmpty).toArray(i -> new String[i]);
+		return Arrays.stream(scheme.split(":")).filter(new Predicate<String>() {
+			@Override
+			public boolean test(String t) {
+				return Texts.notEmpty(t);
+			}
+		}).toArray(new IntFunction<String[]>() {
+			@Override
+			public String[] apply(int i) {
+				return new String[i];
+			}
+		});
 	}
 
 	private Pair<String[], String> parsePathFile(String pathfile) {
 		Pair<String, String> divs = split2last(pathfile, SLASH);
 		String f = Texts.orNull(divs.v2() == null ? divs.v1() : divs.v2());
 		String[] ps = divs.v2() == null ? new String[0] : divs.v1().split(SLASHS);
-		return new Pair<>(ps, f);
+		return new Pair<String[], String>(ps, f);
 	}
 
 	private Map<String, String> parseQueryMap(String query) {
-		if (query == null) return new ConcurrentHashMap<>();
-		return Arrays.stream(query.split("&")).parallel().map(q -> q.split("=", 2)).collect(Collectors.toConcurrentMap(kv -> kv[0],
-				kv -> kv.length > 1 ? kv[1] : "", (k1, k2) -> k2));
+		if (query == null) return new ConcurrentHashMap<String, String>();
+		return Arrays.stream(query.split("&")).parallel().map(new Function<String, String[]>() {
+			@Override
+			public String[] apply(String q) {
+				return q.split("=", 2);
+			}
+		}).collect(Collectors.toConcurrentMap(new Function<String[], String>() {
+			@Override
+			public String apply(String[] kv) {
+				return kv[0];
+			}
+		}, new Function<String[], String>() {
+			@Override
+			public String apply(String[] kv) {
+				return kv.length > 1 ? kv[1] : "";
+			}
+		}, new BinaryOperator<String>() {
+			@Override
+			public String apply(String k1, String k2) {
+				return k2;
+			}
+		}));
 	}
 
-	private InetSocketAddress[] parseHostPort(String remain, int defaultPort) {
-		return Arrays.stream(remain.split(",")).map(s -> {
-			String[] hp = s.split(":", 2);
-			String h;
-			int p;
-			try {
-				p = hp.length == 2 ? Integer.parseInt(hp[1]) : defaultPort;
-				h = Texts.orNull(hp[0]);
-			} catch (NumberFormatException e) {
-				p = defaultPort;
-				h = Texts.orNull(s);
+	private InetSocketAddress[] parseHostPort(String remain, final int defaultPort) {
+		return Arrays.stream(remain.split(",")).map(new Function<String, InetSocketAddress>() {
+			@Override
+			public InetSocketAddress apply(String s) {
+				String[] hp = s.split(":", 2);
+				String h;
+				int p;
+				try {
+					p = hp.length == 2 ? Integer.parseInt(hp[1]) : defaultPort;
+					h = Texts.orNull(hp[0]);
+				} catch (NumberFormatException e) {
+					p = defaultPort;
+					h = Texts.orNull(s);
+				}
+				return null == h ? null : new InetSocketAddress(h, p < 0 ? 0 : p);
 			}
-			return null == h ? null : new InetSocketAddress(h, p < 0 ? 0 : p);
-		}).filter(o -> null != o).toArray(i -> new InetSocketAddress[i]);
+		}).filter(new Predicate<InetSocketAddress>() {
+			@Override
+			public boolean test(InetSocketAddress o) {
+				return null != o;
+			}
+		}).toArray(new IntFunction<InetSocketAddress[]>() {
+			@Override
+			public InetSocketAddress[] apply(int i) {
+				return new InetSocketAddress[i];
+			}
+		});
 	}
 
 	public String getScheme() {
@@ -220,7 +266,12 @@ public final class URISpec implements Serializable {
 
 	@Deprecated
 	public List<Pair<String, Integer>> getHosts() {
-		return Arrays.stream(hosts).map(a -> new Pair<>(a.getHostName(), a.getPort())).collect(Collectors.toList());
+		return Arrays.stream(hosts).map(new Function<InetSocketAddress, Pair<String, Integer>>() {
+			@Override
+			public Pair<String, Integer> apply(InetSocketAddress a) {
+				return new Pair<String, Integer>(a.getHostName(), a.getPort());
+			}
+		}).collect(Collectors.<Pair<String, Integer>> toList());
 	}
 
 	public InetSocketAddress[] getInetAddrs() {
@@ -228,8 +279,12 @@ public final class URISpec implements Serializable {
 	}
 
 	public String getHost() {
-		return Arrays.stream(hosts).map(a -> a.getHostName() + (a.getPort() >= 0 ? ":" + a.getPort() : "")).collect(Collectors.joining(
-				","));
+		return Arrays.stream(hosts).map(new Function<InetSocketAddress, String>() {
+			@Override
+			public String apply(InetSocketAddress a) {
+				return a.getHostName() + (a.getPort() >= 0 ? ":" + a.getPort() : "");
+			}
+		}).collect(Collectors.joining(","));
 	}
 
 	public String[] getPaths() {
@@ -276,18 +331,27 @@ public final class URISpec implements Serializable {
 	}
 
 	public String getQuery() {
-		return query.isEmpty() ? null
-				: query.entrySet().parallelStream().map(e -> e.getKey().toString() + "=" + e.getValue().toString()).collect(Collectors
-						.joining("&"));
+		return query.isEmpty() ? null : query.entrySet().parallelStream().map(new Function<Entry<String, String>, String>() {
+			@Override
+			public String apply(Entry<String, String> e) {
+				return e.getKey().toString() + "=" + e.getValue().toString();
+			}
+		}).collect(Collectors.joining("&"));
 	}
 
 	public Map<String, String> getParameters(String... excludeKey) {
 		Stream<Entry<String, String>> s = query.entrySet().parallelStream();
 		if (null != excludeKey && excludeKey.length > 0) {
-			Set<String> ks = new HashSet<>(Arrays.asList(excludeKey));
-			s = s.filter(e -> !ks.contains(e.getKey()));
+			final Set<String> ks = new HashSet<String>(Arrays.asList(excludeKey));
+			s = s.filter(new Predicate<Entry<String, String>>() {
+				@Override
+				public boolean test(Entry<String, String> e) {
+					return !ks.contains(e.getKey());
+				}
+			});
 		}
-		return ImmutableMap.copyOf(s.collect(Collectors.toList()));
+		List<Entry<String, String>> ss = s.collect(Collectors.<Entry<String, String>> toList());
+		return ImmutableMap.<String, String> copyOf(ss);
 	}
 
 	public String getParameter(String name) {
@@ -402,15 +466,25 @@ public final class URISpec implements Serializable {
 		if (null != f) np = np.resolve(f);
 		else if (null != file) np = np.resolve(file);
 		return new URISpec(getScheme(), opaque, username, password, getHost(), defPort, join(StreamSupport.stream(np.normalize()
-				.spliterator(), false).map(s -> s.toString()).toArray(i -> new String[i])), frag, getQuery());
+				.spliterator(), false).map(new Function<Path, String>() {
+					@Override
+					public String apply(Path s) {
+						return s.toString();
+					}
+				}).toArray(new IntFunction<String[]>() {
+					@Override
+					public String[] apply(int i) {
+						return new String[i];
+					}
+				})), frag, getQuery());
 	}
 
 	private Pair<String, String> split2last(String spec, char split) {
-		if (null == spec || spec.isEmpty()) return new Pair<>(spec, null);
+		if (null == spec || spec.isEmpty()) return new Pair<String, String>(spec, null);
 		while (spec.charAt(0) == split)
 			spec = spec.substring(1);
 		int pos = spec.lastIndexOf(split);
-		return pos > 0 ? new Pair<>(spec.substring(0, pos), spec.substring(pos + 1)) : new Pair<>(spec, null);
+		return pos > 0 ? new Pair<String, String>(spec.substring(0, pos), spec.substring(pos + 1)) : new Pair<String, String>(spec, null);
 	}
 
 	public static void main(String... args) throws URISyntaxException {
