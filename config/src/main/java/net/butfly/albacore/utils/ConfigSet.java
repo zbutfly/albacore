@@ -87,7 +87,7 @@ public final class ConfigSet {
 
 	ConfigSet(String filename, String pfx) {
 		cls = null;
-		Class<?> mcls = Configs.mainClass();
+		Class<?> mcls = JVM.current().mainClass;
 		if (!filename.endsWith(Configs.DEFAULT_PROP_EXT)) filename = filename + Configs.DEFAULT_PROP_EXT;
 		Map<String, String> settings = new ConcurrentHashMap<>();
 		fill(settings, null, Configs::isKeyInvalid, mapProps(System.getProperties()));

@@ -10,6 +10,11 @@
 	<dependencies>
 		<dependency>
 			<groupId>net.butfly.albacore</groupId>
+			<artifactId>albacore-nodep</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>net.butfly.albacore</groupId>
 			<artifactId>albacore-logging</artifactId>
 			<version>${project.version}</version>
 		</dependency>

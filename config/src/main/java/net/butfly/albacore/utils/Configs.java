@@ -1,10 +1,7 @@
 package net.butfly.albacore.utils;
 
-import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.jar.Attributes;
-import java.util.jar.JarFile;
 
 import net.butfly.albacore.Albacore;
 
@@ -13,16 +10,16 @@ public final class Configs {
 	private static final Map<Class<?>, ConfigSet> CLS_CONF = new ConcurrentHashMap<>();
 
 	public static ConfigSet of() {
-		return of(mainClass());
+		return of(JVM.current().mainClass);
 	}
 
 	public static ConfigSet of(Class<?> cls) {
-		if (null == cls) cls = mainClass();
+		if (null == cls) cls = JVM.current().mainClass;
 		return CLS_CONF.computeIfAbsent(cls, ConfigSet::new);
 	}
 
 	public static ConfigSet of(Class<?> cls, String prefix) {
-		if (null == cls) cls = mainClass();
+		if (null == cls) cls = JVM.current().mainClass;
 		return CLS_CONF.computeIfAbsent(cls, c -> new ConfigSet(c, prefix));
 	}
 
@@ -83,46 +80,6 @@ public final class Configs {
 
 	static String calcClassConfigFile(Class<?> configed) {
 		return CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_HYPHEN, configed.getSimpleName());
-	}
-
-	private static Thread getMainThread() {
-		for (Thread t : Thread.getAllStackTraces().keySet())
-			if (t.getId() == 1) return t;
-		return null;
-	}
-
-	private static Class<?> MAIN_CLASS = null;
-
-	static Class<?> mainClass() {
-		if (null == MAIN_CLASS) MAIN_CLASS = parseMainClass();
-		return MAIN_CLASS;
-	}
-
-	private static Class<?> parseMainClass() {
-		String n = System.getProperty("exec.mainClass");
-		if (null != n) try {
-			return Class.forName(n);
-		} catch (ClassNotFoundException e) {}
-		Thread t = getMainThread();
-		if (null != t) {
-			StackTraceElement[] s = t.getStackTrace();
-			try {
-				return Class.forName(s[s.length - 1].getClassName());
-			} catch (ClassNotFoundException e) {}
-		}
-		n = System.getProperty("sun.java.command");
-		if (null == n) return null;
-		if (n.endsWith(".jar")) {
-			try (JarFile jar = new JarFile(Thread.currentThread().getContextClassLoader().getResource(n).getPath());) {
-				String mn = jar.getManifest().getMainAttributes().getValue(Attributes.Name.MAIN_CLASS);
-				if (null != mn) try {
-					return Class.forName(mn);
-				} catch (ClassNotFoundException e) {}
-			} catch (IOException e) {}
-		} else try {
-			return Class.forName(n.split(" ")[0]);
-		} catch (ClassNotFoundException e) {}
-		return null;
 	}
 
 	private Configs() {}

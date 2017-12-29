@@ -12,6 +12,7 @@
 	<version>3.0.3-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<modules>
+		<module>nodep</module>
 		<module>logging</module>
 		<module>config</module>
 		<module>core</module>

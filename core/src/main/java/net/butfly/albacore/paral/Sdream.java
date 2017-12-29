@@ -46,6 +46,13 @@ public interface Sdream<E> {
 
 	Sdream<Sdream<E>> batch(int maxBatchSize);
 
+	default Sdream<E> peek(Consumer<E> conv) {
+		return map(e -> {
+			Exeter.of().execute(() -> conv.accept(e));
+			return e;
+		});
+	}
+
 	<R> Sdream<R> map(Function<E, R> conv);
 
 	<R> Sdream<R> map(Function<Sdream<E>, Sdream<R>> conv, int maxBatchSize);
