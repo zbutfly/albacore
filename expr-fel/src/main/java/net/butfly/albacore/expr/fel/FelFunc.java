@@ -40,19 +40,6 @@ public abstract class FelFunc extends CommonFunction {
 		}
 	}
 
-	/**
-	 * rename(oldFieldName, newFieldName)
-	 * 
-	 * @author butfly
-	 */
-	@Func
-	private static class RenameFunc extends FelFunc {
-		@Override
-		public Object call(Object[] args) {
-			return args[0];
-		}
-	}
-
 	@Func
 	private static class SubstrFunc extends FelFunc {
 		@Override
