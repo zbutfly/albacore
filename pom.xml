@@ -21,6 +21,7 @@
 		<module>utils</module>
 		<module>valid</module>
 		<module>scala</module>
+		<module>expr-fel</module>
 		<!--<module>extra</module> -->
 		<!--<module>cache</module> -->
 		<module>test</module>
