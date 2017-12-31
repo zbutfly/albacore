@@ -23,7 +23,13 @@ public class FelEngineer {
 	private final static FelEngine engine = scan();
 
 	private static FelEngine scan() {
-		FelEngineImpl eng = new FelEngineImpl();
+		FelEngineImpl eng;
+		try {
+			eng = new FelEngineImpl();
+		} catch (Exception e) {
+			logger.error("Some fail?", e);
+			eng = null;
+		}
 		for (Class<?> c : Reflections.getClassesAnnotatedWith(Func.class, ""))
 			if (CommonFunction.class.isAssignableFrom(c)) {
 				if (!Modifier.isStatic(c.getModifiers())) {

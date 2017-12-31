@@ -2,6 +2,7 @@ package net.butfly.albacore.utils;
 
 import java.lang.instrument.Instrumentation;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
@@ -11,14 +12,18 @@ import java.util.Map;
 
 public class Syss {
 	public static long sizeOf(Object obj) {
-		// try {
-		// Class<?> c = Class.forName("jdk.nashorn.internal.ir.debug.ObjectSizeCalculator");
-		// Method m = c.getMethod("getObjectSize", Object.class);
-		// if (m.trySetAccessible()) return (long) m.invoke(null, obj);
-		// else return 0;
-		// } catch (Exception ex) {
 		return 0;
-		// }
+//		try {
+//			Class<?> c = Class.forName("jdk.nashorn.internal.ir.debug.ObjectSizeCalculator");
+//			Method m = c.getMethod("getObjectSize", Object.class);
+//			if (m.trySetAccessible()) return (long) m.invoke(null, obj);
+//			else return 0;
+//		} catch (ClassNotFoundException | NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException e) {
+//			return 0;
+//		} catch (InvocationTargetException e) {
+//			e.getTargetException().printStackTrace();
+//			return 0;
+//		}
 	}
 
 	public static void main(String[] args) {

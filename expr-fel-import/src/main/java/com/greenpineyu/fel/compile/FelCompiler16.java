@@ -37,8 +37,8 @@ public class FelCompiler16<T> implements FelCompiler {
 	public FelCompiler16() {
 		compiler = ToolProvider.getSystemJavaCompiler();
 
-		if (compiler == null) { throw new IllegalStateException("Cannot find the system Java compiler. "
-				+ "Check that your class path includes tools.jar"); }
+		if (compiler == null) throw new IllegalStateException("Cannot find the system Java compiler. "
+				+ "Check that your class path includes tools.jar");
 
 		this.classLoader = new FelCompilerClassloader(this.getClass().getClassLoader());
 		diagnostics = new DiagnosticCollector<JavaFileObject>();
@@ -58,21 +58,6 @@ public class FelCompiler16<T> implements FelCompiler {
 			e.printStackTrace();
 		}
 
-		/*
-		 * 
-		 * 
-		 * if (loader instanceof URLClassLoader && (!loader.getClass().getName() .equals("sun.misc.Launcher$AppClassLoader"))) {
-		 * System.out.println("..............................asdfasdf......................"); try { URLClassLoader urlClassLoader =
-		 * (URLClassLoader) loader; List<File> path = new ArrayList<File>(); for (URL url : urlClassLoader.getURLs()) { File file = new
-		 * File(url.getFile()); path.add(file); } fileManager.setLocation(StandardLocation.CLASS_PATH, path); } catch (IOException e) {
-		 * e.printStackTrace(); } } else { Enumeration<URL> resources = null; try { resources = loader.getResources("/"); } catch
-		 * (IOException e) { e.printStackTrace(); } if (resources != null) { List<File> path = new ArrayList<File>(); while
-		 * (resources.hasMoreElements()) { URL resource = resources.nextElement(); File file = new File(resource.getFile()); path.add(file);
-		 * } }
-		 * 
-		 * }
-		 */
-
 		javaFileManager = new ForwardingJavaFileManager<JavaFileManager>(fileManager) {
 			@Override
 			public JavaFileObject getJavaFileForOutput(Location location, String qualifiedName, Kind kind, FileObject outputFile)
@@ -82,13 +67,32 @@ public class FelCompiler16<T> implements FelCompiler {
 				return (JavaFileObject) outputFile;
 			}
 		};
-		this.options = new ArrayList<String>();
+		this.options = options();
+	}
+
+	private List<String> options() {
+		final List<String> options = new ArrayList<String>();
+		options.add("-classpath");
+		final StringBuilder builder = new StringBuilder();
+
+		String cp;
+		cp = System.getProperty("java.class.path");
+		if (null != cp) builder.append(cp).append(File.pathSeparator);
+		cp = System.getProperty("sun.boot.class.path", "");
+		if (null != cp) builder.append(cp).append(File.pathSeparator);
+		// final URLClassLoader urlClassLoader = (URLClassLoader) ClassLoaderResolver.getClassLoader();
+		// for (final URL url : urlClassLoader.getURLs()) {
+		// builder.append(url.getFile()).append(File.pathSeparator);
+		// }
+		final int lastIndexOfColon = builder.lastIndexOf(File.pathSeparator);
+		builder.replace(lastIndexOfColon, lastIndexOfColon + 1, "");
+		options.add(builder.toString());
 		// this.options.add("-O");
+		return options;
 	}
 
 	@Override
 	public Expression compile(JavaSource src) {
-
 		Class<T> compile = compileToClass(src);
 		try {
 			return (Expression) compile.getConstructor().newInstance();
@@ -106,12 +110,9 @@ public class FelCompiler16<T> implements FelCompiler {
 		compileSrcs.add(compileSrc);
 		final CompilationTask task = compiler.getTask(null, javaFileManager, diagnostics, options, null, compileSrcs);
 		final Boolean result = task.call();
-		if (result == null || !result.booleanValue()) {
-			// diagnostics.
+		if (result == null || !result.booleanValue())
 			// 编译失败
-			// diagnostics.getDiagnostics()
 			throw new CompileException(src.getSource() + "\n" + diagnostics.getDiagnostics().toString());
-		}
 		try {
 			return loadClass(src.getName());
 		} catch (ClassNotFoundException e) {

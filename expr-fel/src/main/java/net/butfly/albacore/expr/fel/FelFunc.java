@@ -8,14 +8,22 @@ import java.lang.annotation.Target;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.regex.Pattern;
 
 import com.greenpineyu.fel.function.CommonFunction;
 
 import net.butfly.albacore.utils.CaseFormat;
+import net.butfly.albacore.utils.logger.Logger;
 
-public abstract class FelFunc extends CommonFunction {
+public abstract class FelFunc<R> extends CommonFunction {
+	private final static Logger logger = Logger.getLogger(FelFunc.class);
+
 	@Override
-	public abstract Object call(Object[] args);
+	public final Object call(Object[] args) {
+		return invoke(args);
+	}
+
+	protected abstract R invoke(Object... args);
 
 	@Override
 	public String getName() {
@@ -28,34 +36,70 @@ public abstract class FelFunc extends CommonFunction {
 	}
 
 	/**
-	 * case(value, , re)
+	 * case(value, case1, result1, case2, result2, ... [default])
 	 * 
 	 * @author butfly
 	 */
 	@Func
-	private static class CaseFunc extends FelFunc {
+	private static class CaseFunc extends FelFunc<Object> {
 		@Override
-		public Object call(Object[] args) {
-			return args[0];
+		public Object invoke(Object... args) {
+			if (null == args || args.length == 0) {
+				logger.warn(getName() + "() by illegal arguments");
+				return null;
+			}
+			Object v0 = args[0];
+			int i = 1;
+			while (i < args.length) {
+				Object case1 = args[i++];
+				if (i < args.length) { // pair case/result, test match and process
+					Object value1 = args[i++];
+					if (match(v0, case1)) return value1;
+				} else return case1;// odd args, with default value, match default value
+			}
+			return null; // no matchs and no default
+		}
+
+		private boolean match(Object v, Object cas) {
+			if (null == v && null == cas) return true;
+			if (null != v && null != cas) return v.equals(cas);
+			return false;
+		}
+	}
+
+	/**
+	 * match(value, regularExpression)
+	 * 
+	 * @author butfly
+	 */
+	@Func
+	private static class MatchFunc extends FelFunc<Boolean> {
+		@Override
+		public Boolean invoke(Object... args) {
+			if (null == args || args.length != 2) {
+				logger.warn(getName() + "() by illegal arguments");
+				return false;
+			}
+			return ((Pattern) args[1]).matcher((String) args[0]).find();
 		}
 	}
 
 	@Func
-	private static class SubstrFunc extends FelFunc {
+	private static class SubstrFunc extends FelFunc<String> {
 		@Override
-		public Object call(Object[] args) {
-			String srcField = (String) args[0];
-			int startIndex = (int) args[1];
-			int endIndex = (int) args[2];
-			String dstField = srcField.substring(startIndex, endIndex);
-			return dstField;
+		public String invoke(Object... args) {
+			if (null == args || args.length != 3) {
+				logger.warn(getName() + "() by illegal arguments");
+				return null;
+			}
+			return ((String) args[0]).substring((int) args[1], (int) args[2]);
 		}
 	}
 
 	@Func
-	private static class ConcatFunc extends FelFunc {
+	private static class ConcatFunc extends FelFunc<String> {
 		@Override
-		public Object call(Object[] args) {
+		public String invoke(Object... args) {
 			String result = "";
 			for (Object a : args)
 				result += a.toString();
@@ -64,18 +108,26 @@ public abstract class FelFunc extends CommonFunction {
 	}
 
 	@Func
-	private static class DateToStrFunc extends FelFunc {
+	private static class DateToStrFunc extends FelFunc<String> {
 		@Override
-		public Object call(Object[] args) {
+		public String invoke(Object... args) {
+			if (null == args || args.length != 2) {
+				logger.warn(getName() + "() by illegal arguments");
+				return null;
+			}
 			SimpleDateFormat sdf = new SimpleDateFormat(String.valueOf(args[1]));
 			return sdf.format((Date) args[0]);
 		}
 	}
 
 	@Func
-	private static class StrToDateFunc extends FelFunc {
+	private static class StrToDateFunc extends FelFunc<Date> {
 		@Override
-		public Object call(Object[] args) {
+		public Date invoke(Object... args) {
+			if (null == args || args.length != 2) {
+				logger.warn(getName() + "() by illegal arguments");
+				return null;
+			}
 			SimpleDateFormat sdf = new SimpleDateFormat(String.valueOf(args[1]));
 			try {
 				return sdf.parse(String.valueOf(args[0]));
