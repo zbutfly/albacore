@@ -8,11 +8,13 @@ import java.lang.annotation.Target;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 import com.greenpineyu.fel.function.CommonFunction;
 
 import net.butfly.albacore.utils.CaseFormat;
+import net.butfly.albacore.utils.collection.Maps;
 import net.butfly.albacore.utils.logger.Logger;
 
 public abstract class FelFunc<R> extends CommonFunction {
@@ -74,13 +76,15 @@ public abstract class FelFunc<R> extends CommonFunction {
 	 */
 	@Func
 	private static class MatchFunc extends FelFunc<Boolean> {
+		private static final Map<String, Pattern> patterns = Maps.of();
+
 		@Override
 		public Boolean invoke(Object... args) {
 			if (null == args || args.length != 2) {
 				logger.warn(getName() + "() by illegal arguments");
 				return false;
 			}
-			return ((Pattern) args[1]).matcher((String) args[0]).find();
+			return patterns.computeIfAbsent((String) args[1], Pattern::compile).matcher((String) args[0]).find();
 		}
 	}
 
