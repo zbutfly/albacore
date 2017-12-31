@@ -10,14 +10,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import net.butfly.albacore.utils.collection.Maps;
-import net.butfly.albacore.utils.logger.Logger;
+import org.slf4j.LoggerFactory;
 
-public class Exceptions extends Utils {
-	static final Logger logger = Logger.getLogger(Exceptions.class);
+public class Exceptions {
+	static final org.slf4j.Logger logger = LoggerFactory.getLogger(Exceptions.class);
 
 	public interface Code {
 		// code for system exceptions.
@@ -67,7 +67,11 @@ public class Exceptions extends Utils {
 	public static <T extends Exception> T wrap(Throwable ex, Class<T> expect) {
 		ex = unwrap(ex);
 		if (expect.isAssignableFrom(ex.getClass())) return (T) ex;
-		return Reflections.construct(expect, ex);
+		try {
+			return expect.getConstructor(Throwable.class).newInstance(ex);
+		} catch (Exception e) {
+			throw e instanceof RuntimeException ? (RuntimeException) e : new RuntimeException(e);
+		}
 	}
 
 	@SuppressWarnings("unchecked")
@@ -75,7 +79,11 @@ public class Exceptions extends Utils {
 		if (null == message) return wrap(ex, expect);
 		ex = unwrap(ex);
 		if (expect.isAssignableFrom(ex.getClass())) return (T) ex;
-		return Reflections.construct(expect, message, ex);
+		try {
+			return expect.getConstructor(String.class, Throwable.class).newInstance(message, ex);
+		} catch (Exception e) {
+			throw e instanceof RuntimeException ? (RuntimeException) e : new RuntimeException(e);
+		}
 	}
 
 	private static final ReentrantReadWriteLock METHODS_LOCK = new ReentrantReadWriteLock();
@@ -83,7 +91,7 @@ public class Exceptions extends Utils {
 
 	private static Map<Class<? extends Throwable>, Method> initWrappingMethods() {
 		try {
-			Map<Class<? extends Throwable>, Method> m = Maps.of();
+			Map<Class<? extends Throwable>, Method> m = new ConcurrentHashMap<>();
 			m.put(ExecutionException.class, ExecutionException.class.getMethod("getCause"));
 			m.put(InvocationTargetException.class, InvocationTargetException.class.getMethod("getTargetException"));
 			m.put(UndeclaredThrowableException.class, UndeclaredThrowableException.class.getMethod("getUndeclaredThrowable"));
