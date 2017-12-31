@@ -116,7 +116,7 @@ public class ReflectUtil {
 	}
 
 	public static boolean isPrimitiveNumber(Class<?> c) {
-		if (c == null) { return false; }
+		if (c == null) return false;
 		return c.isPrimitive() && (c != boolean.class);
 		// return numberClassMap.containsKey(c);
 	}
@@ -154,7 +154,7 @@ public class ReflectUtil {
 	 * @return
 	 */
 	public static Method findMethod(Class<?> cls, String attr, Class<?>[] paramTypes) {
-		if (attr == null || "".equals(attr)) { return null; }
+		if (attr == null || "".equals(attr)) return null;
 		String firstUpper = String.valueOf(attr.charAt(0)).toUpperCase() + attr.substring(1);
 		Method[] methods = cls.getMethods();
 
@@ -167,10 +167,6 @@ public class ReflectUtil {
 			}
 		}
 		return finalMethod;
-
-		/*
-		 * String get = "get"; finalMethod = match(get, paramTypes, methods, finalMethod); if(finalMethod!=null){ return finalMethod; }
-		 */
 	}
 
 	public static Method getMethod(Class<?> cls, String methodName, Class<?>[] paramTypes) {
@@ -234,7 +230,7 @@ public class ReflectUtil {
 	}
 
 	static public String getClassName(Class<?> cls) {
-		if (cls == null) { return "null"; }
+		if (cls == null) return "null";
 		return cls.getCanonicalName();
 	}
 

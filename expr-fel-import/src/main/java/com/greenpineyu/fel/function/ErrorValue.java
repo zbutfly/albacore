@@ -40,7 +40,7 @@ public class ErrorValue {
 
 	@Override
 	public String toString() {
-		if (errorMsg != null) { return errorMsg; }
+		if (errorMsg != null) return errorMsg;
 		return "执行脚本出错";
 	}
 

@@ -37,7 +37,7 @@ public class FelCompiler15 extends AbstCompiler {
 		String[] arg = opt.toArray(new String[0]);
 
 		int compile = Main.compile(arg);
-		if (compile != 0) { return null; }
+		if (compile != 0) return null;
 		@SuppressWarnings("unchecked")
 		Class<Expression> c = (Class<Expression>) loader.loadClass(src.getName());
 		return c;

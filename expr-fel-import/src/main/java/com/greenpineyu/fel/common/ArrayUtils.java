@@ -19,47 +19,6 @@ public class ArrayUtils {
 
 	/**
 	 * <p>
-	 * Outputs an array as a String, treating {@code null} as an empty array.
-	 * </p>
-	 *
-	 * <p>
-	 * Multi-dimensional arrays are handled correctly, including multi-dimensional primitive arrays.
-	 * </p>
-	 *
-	 * <p>
-	 * The format is that of Java source code, for example <code>{a,b}</code>.
-	 * </p>
-	 *
-	 * @param array
-	 *            the array to get a toString for, may be {@code null}
-	 * @return a String representation of the array, '{}' if null array input
-	 */
-	// public static String toString(Object array) {
-	//
-	// return toString(array, "{}");
-	// }
-	//
-	// /**
-	// * <p>Outputs an array as a String handling {@code null}s.</p>
-	// *
-	// * <p>Multi-dimensional arrays are handled correctly, including
-	// * multi-dimensional primitive arrays.</p>
-	// *
-	// * <p>The format is that of Java source code, for example <code>{a,b}</code>.</p>
-	// *
-	// * @param array the array to get a toString for, may be {@code null}
-	// * @param stringIfNull the String to return if the array is {@code null}
-	// * @return a String representation of the array
-	// */
-	// public static String toString(Object array, String stringIfNull) {
-	// if (array == null) {
-	// return stringIfNull;
-	// }
-	// return new ToStringBuilder(array, ToStringStyle.SIMPLE_STYLE).append(array).toString();
-	// }
-
-	/**
-	 * <p>
 	 * Produces a new array containing the elements between the start and end indices.
 	 * </p>
 	 *
@@ -89,7 +48,7 @@ public class ArrayUtils {
 	 * @since 2.1
 	 */
 	public static <T> T[] subarray(T[] array, int startIndexInclusive, int endIndexExclusive) {
-		if (array == null) { return null; }
+		if (array == null) return null;
 		if (startIndexInclusive < 0) {
 			startIndexInclusive = 0;
 		}

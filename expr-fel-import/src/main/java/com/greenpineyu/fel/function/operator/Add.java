@@ -51,7 +51,7 @@ public class Add extends StableFunction {
 				}
 			}
 		}
-		if (returnMe instanceof Number) { return NumberUtil.parseNumber(returnMe.toString()); }
+		if (returnMe instanceof Number) return NumberUtil.parseNumber(returnMe.toString());
 		return returnMe;
 	}
 
@@ -122,7 +122,7 @@ public class Add extends StableFunction {
 	 * @return
 	 */
 	public static Object add(Object left, Object right) {
-		if (left == null || right == null) { throw new NullPointerException("调用add()方法出错！,原因：当前参数为空"); }
+		if (left == null || right == null) throw new NullPointerException("调用add()方法出错！,原因：当前参数为空");
 		try {
 			if (left instanceof Object[]) {
 				left = NumberUtil.calArray(left);
@@ -151,7 +151,7 @@ public class Add extends StableFunction {
 
 			if (left instanceof String && right instanceof Date) {
 				return left + Add.DATE_FORMAT.format((Date) right);
-			} else if (left instanceof Date && right instanceof String) { return Add.DATE_FORMAT.format((Date) left) + right; }
+			} else if (left instanceof Date && right instanceof String) return Add.DATE_FORMAT.format((Date) left) + right;
 
 			BigInteger l = NumberUtil.toBigInteger(left);
 			BigInteger r = NumberUtil.toBigInteger(right);

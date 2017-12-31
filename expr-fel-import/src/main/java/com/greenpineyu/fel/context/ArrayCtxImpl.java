@@ -43,7 +43,7 @@ public class ArrayCtxImpl implements ArrayCtx {
 	@Override
 	public Var getVar(String name) {
 		int index = getIndex(name);
-		if (index == -1) { return null; }
+		if (index == -1) return null;
 		return vars[index];
 	}
 
@@ -94,7 +94,7 @@ public class ArrayCtxImpl implements ArrayCtx {
 	private int addToIndexMap(String name) {
 		synchronized (indexMap) {
 			Integer i = indexMap.get(name);
-			if (i != null) { return i; }
+			if (i != null) return i;
 			int newIndex = indexMap.size();
 			indexMap.put(name, newIndex);
 			return newIndex;

@@ -30,7 +30,7 @@ public class VarAstNode extends AbstFelNode {
 	}
 
 	public static boolean isVar(FelNode n) {
-		if (n == null) { return false; }
+		if (n == null) return false;
 		boolean isVar = n instanceof VarAstNode;
 		if (isVar) {
 			if (n instanceof CommonTree) {

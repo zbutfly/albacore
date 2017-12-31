@@ -23,7 +23,7 @@ public class BigMul extends StableFunction {
 	@Override
 	public Object call(FelNode node, FelContext context) {
 		List<FelNode> children = node.getChildren();
-		if (children == null || children.isEmpty()) { return null; }
+		if (children == null || children.isEmpty()) return null;
 		Object left = TolerantFunction.eval(context, children.get(0));
 		Object right = TolerantFunction.eval(context, children.get(1));
 		try {

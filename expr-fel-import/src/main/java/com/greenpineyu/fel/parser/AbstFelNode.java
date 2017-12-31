@@ -171,7 +171,7 @@ public abstract class AbstFelNode extends CommonTree implements FelNode, Interpr
 			// 子节点有一个不是稳定的，就返回false
 			for (int i = 0; i < children.size(); i++) {
 				FelNode child = (FelNode) children.get(i);
-				if (!child.stable()) { return false; }
+				if (!child.stable()) return false;
 			}
 		}
 		return true;

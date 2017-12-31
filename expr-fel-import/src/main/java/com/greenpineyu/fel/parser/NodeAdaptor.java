@@ -103,7 +103,7 @@ public class NodeAdaptor extends CommonTreeAdaptor {
 			// 不能正确解析
 			return CommonTree.INVALID_NODE;
 		}
-		if (returnMe instanceof CommonTree) { return returnMe; }
+		if (returnMe instanceof CommonTree) return returnMe;
 		return new ConstNode(token, returnMe);
 	}
 

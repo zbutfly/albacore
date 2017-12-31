@@ -15,7 +15,7 @@ public class Or extends And {
 	@Override
 	Boolean logic(FelContext context, List<FelNode> children) {
 		Boolean leftValue = toBoolean(context, children.get(0));
-		if (leftValue.booleanValue()) { return leftValue; }
+		if (leftValue.booleanValue()) return leftValue;
 		return toBoolean(context, children.get(1));
 	}
 

@@ -28,7 +28,7 @@ public class AntlrParser implements Parser {
 		@Override
 		public Boolean call(FelNode... node) {
 			FelNode n = node[0];
-			if (n == null) { return false; }
+			if (n == null) return false;
 			boolean isFun = n instanceof FunNode;
 			if (isFun) {
 				if (n instanceof CommonTree) {
@@ -63,7 +63,7 @@ public class AntlrParser implements Parser {
 
 	@Override
 	public FelNode parse(String exp) {
-		if (exp == null || "".equals(exp)) { return null; }
+		if (exp == null || "".equals(exp)) return null;
 		ByteArrayInputStream is = new ByteArrayInputStream(exp.getBytes());
 		ANTLRInputStream input = null;
 		try {

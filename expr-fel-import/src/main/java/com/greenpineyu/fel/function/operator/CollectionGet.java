@@ -34,10 +34,7 @@ public class CollectionGet extends StableFunction {
 			Object coll = TolerantFunction.eval(context, node.getChild(0));
 			Object index = TolerantFunction.eval(context, node.getChild(1));
 			int i = 0;
-			if (index instanceof Number) {
-				i = ((Number) index).intValue();
-			}
-			// System.out.println(coll+":"+index);
+			if (index instanceof Number) i = ((Number) index).intValue();
 			return get(coll, i);
 		}
 		// TODO 说明语法错误。
@@ -57,10 +54,9 @@ public class CollectionGet extends StableFunction {
 		SourceBuilder leftMethod = left.toMethod(ctx);
 		Class<?> leftType = leftMethod.returnType(ctx, left);
 
-		if (!leftType.isArray() && !List.class.isAssignableFrom(leftType)) {
+		if (!leftType.isArray() && !List.class.isAssignableFrom(leftType))
 			// 不是数组，也不是list,直接生成 使用与解释执行相同的代码
 			return InterpreterSourceBuilder.getInstance();
-		}
 		FelNode right = children.get(1);
 		SourceBuilder rightMethod = right.toMethod(ctx);
 		Class<?> rightType = rightMethod.returnType(ctx, right);
@@ -94,40 +90,33 @@ public class CollectionGet extends StableFunction {
 		Class<?>[] cls = new Class<?>[] { Integer.class, Short.class, Character.class, Byte.class, int.class, short.class, char.class,
 				byte.class };
 		boolean isInt = false;
-		for (int i = 0; i < cls.length; i++) {
+		for (int i = 0; i < cls.length; i++)
 			if (cls[i].isAssignableFrom(rightType)) {
 				isInt = true;
 				break;
 			}
-		}
-		if (isInt) {
+
+		if (isInt)
 			// 可以直接转换成int类型，可以直接使用
 			rightSrc = rightMethod.source(ctx, right);
-		} else if (Number.class.isAssignableFrom(rightType)) {
-			rightSrc = "(" + rightMethod.source(ctx, right) + ").intValue()";
-		}
+		else if (Number.class.isAssignableFrom(rightType)) rightSrc = "(" + rightMethod.source(ctx, right) + ").intValue()";
 		return rightSrc;
 	}
 
 	public static Object get(Object object, int index) {
-		if (index < 0) { throw new IndexOutOfBoundsException("Index cannot be negative: " + index); }
+		if (index < 0) throw new IndexOutOfBoundsException("Index cannot be negative: " + index);
 		if (object instanceof Map<?, ?>) {
 			Map<?, ?> map = (Map<?, ?>) object;
 			Iterator<?> iterator = map.entrySet().iterator();
 			return get(iterator, index);
-		} else if (object instanceof List<?>) {
-			return ((List<?>) object).get(index);
-		} else if (object instanceof Object[]) {
-			return ((Object[]) object)[index];
-		} else if (object instanceof Iterator<?>) {
+		} else if (object instanceof List<?>) return ((List<?>) object).get(index);
+		else if (object instanceof Object[]) return ((Object[]) object)[index];
+		else if (object instanceof Iterator<?>) {
 			Iterator<?> it = (Iterator<?>) object;
 			while (it.hasNext()) {
 				index--;
-				if (index == -1) {
-					return it.next();
-				} else {
-					it.next();
-				}
+				if (index == -1) return it.next();
+				else it.next();
 			}
 			throw new IndexOutOfBoundsException("Entry does not exist: " + index);
 		} else if (object instanceof Collection<?>) {
@@ -137,21 +126,15 @@ public class CollectionGet extends StableFunction {
 			Enumeration<?> it = (Enumeration<?>) object;
 			while (it.hasMoreElements()) {
 				index--;
-				if (index == -1) {
-					return it.nextElement();
-				} else {
-					it.nextElement();
-				}
+				if (index == -1) return it.nextElement();
+				else it.nextElement();
 			}
 			throw new IndexOutOfBoundsException("Entry does not exist: " + index);
-		} else if (object == null) {
-			throw new IllegalArgumentException("Unsupported object type: null");
-		} else {
-			try {
-				return Array.get(object, index);
-			} catch (IllegalArgumentException ex) {
-				throw new IllegalArgumentException("Unsupported object type: " + object.getClass().getName());
-			}
+		} else if (object == null) throw new IllegalArgumentException("Unsupported object type: null");
+		else try {
+			return Array.get(object, index);
+		} catch (IllegalArgumentException ex) {
+			throw new IllegalArgumentException("Unsupported object type: " + object.getClass().getName());
 		}
 	}
 

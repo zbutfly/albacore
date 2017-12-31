@@ -21,27 +21,7 @@ public class SecurityMgrImpl implements SecurityMgr {
 	 */
 	@Override
 	public boolean isCallable(Method m) {
-		if (callableSet.isEmpty()) { return !uncallableSet.contains(m); }
+		if (callableSet.isEmpty()) return !uncallableSet.contains(m);
 		return callableSet.contains(m);
 	}
-	/*
-	 * 
-	 * @Override public void addCallable(Method m) { this.callableSet.add(m); }
-	 * 
-	 * @Override public void addUncallable(Method m) { this.uncallableSet.add(m); }
-	 * 
-	 * @Override public void removeCallable(Method m) { this.callableSet.remove(m); }
-	 * 
-	 * @Override public void removeUncallable(Method m) { this.uncallableSet.remove(m);
-	 * 
-	 * }
-	 * 
-	 * @Override public Set<Method> getCallables() { return new HashSet<Method>(this.callableSet); }
-	 * 
-	 * @Override public Set<Method> getUnCallables() { return new HashSet<Method>(this.uncallableSet); }
-	 * 
-	 * public static void main(String[] args) { Object eval = Fel.eval("$(System).getProperty('user.home')"); System.out.println(eval); //
-	 * 会抛出异常 Fel.eval("$(System).exit(1)"); }
-	 */
-
 }

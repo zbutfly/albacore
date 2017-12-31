@@ -39,8 +39,7 @@ public class FelJavaFileObject extends SimpleJavaFileObject {
 
 	@Override
 	public CharSequence getCharContent(final boolean ignoreEncodingErrors) throws UnsupportedOperationException {
-		if (src == null) { throw new UnsupportedOperationException(); }
-
+		if (src == null) throw new UnsupportedOperationException();
 		return src;
 	}
 

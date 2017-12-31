@@ -89,46 +89,14 @@ public class And extends StableFunction {
 	 */
 	Boolean logic(FelContext context, List<FelNode> children) {
 		Boolean leftValue = toBoolean(context, children.get(0));
-		if (!leftValue.booleanValue()) { return leftValue; }
+		if (!leftValue.booleanValue()) return leftValue;
 		return toBoolean(context, children.get(1));
 	}
-
-	// Boolean or(FelContext context, Object[] children) {
-	// Boolean leftValue = toBoolean(context, children[0]);
-	// if (leftValue.booleanValue()) {
-	// return leftValue;
-	// }
-	// return toBoolean(context, children[1]);
-	// }
 
 	Boolean toBoolean(FelContext context, Object node) {
 		node = TolerantFunction.eval(context, node);
 		return NumberUtil.toBooleanObj(node);
 	}
-
-	/**
-	 * AND 和 &&
-	 * 
-	 * @param left
-	 * @param right
-	 * @return
-	 */
-	/*
-	 * private boolean and(Object left, Object right) { boolean l = NumberUtil.toBoolean(left); if (!l) { return false; } boolean r =
-	 * NumberUtil.toBoolean(right); if (!r) { return false; } return true; }
-	 */
-
-	/**
-	 * OR 和 ||
-	 * 
-	 * @param left
-	 * @param right
-	 * @return
-	 */
-	/*
-	 * private boolean or(Object left, Object right) { boolean l = NumberUtil.toBoolean(left); if (l) { return true; } boolean r =
-	 * NumberUtil.toBoolean(right); if (r) { return true; } return false; }
-	 */
 
 	@Override
 	public String getName() {
@@ -139,15 +107,6 @@ public class And extends StableFunction {
 	public FelMethod toMethod(FelNode node, FelContext ctx) {
 		String code = toBoolean(node, ctx, 0) + this.toJavaOper() + toBoolean(node, ctx, 1);
 		return new FelMethod(Boolean.class, code);
-		// List<FelNode> children = node.getChildren();
-		// FelNode left = children.get(0);
-		// FelNode right = children.get(1);
-		// FelMethod lm = left.toMethod(ctx);
-		// FelMethod rm = right.toMethod(ctx);
-		// Class<?> lt = lm.getReturnType();
-		// Class<?> rt = rm.getReturnType();
-		//
-		// return null;
 	}
 
 	public String toBoolean(FelNode node, FelContext ctx, int index) {
@@ -155,9 +114,9 @@ public class And extends StableFunction {
 		FelNode child = children.get(index);
 		SourceBuilder method = child.toMethod(ctx);
 		Class<?> type = method.returnType(ctx, child);
-		if (Boolean.class.isAssignableFrom(type)) { return "(" + method.source(ctx, child) + ")"; }
-		if (String.class.isAssignableFrom(type)) { return "Boolean.valueOf(" + method.source(ctx, child) + ")"; }
-		if (Null.class.isAssignableFrom(type)) { return "false"; }
+		if (Boolean.class.isAssignableFrom(type)) return "(" + method.source(ctx, child) + ")";
+		if (String.class.isAssignableFrom(type)) return "Boolean.valueOf(" + method.source(ctx, child) + ")";
+		if (Null.class.isAssignableFrom(type)) return "false";
 		return "false";
 	}
 

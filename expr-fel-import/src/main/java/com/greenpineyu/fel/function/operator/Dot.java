@@ -82,7 +82,7 @@ public class Dot implements Function {
 			method = findMethod(cls, getMethod, new Class<?>[] { String.class });
 			args = new Object[] { exp.getText() };
 		}
-		if (method != null) { return invoke(left, method, args); }
+		if (method != null) return invoke(left, method, args);
 		return null;
 	}
 
@@ -97,7 +97,7 @@ public class Dot implements Function {
 	}
 
 	private Method getCallableMethod(Method m) {
-		if (m == null || securityMgr.isCallable(m)) { return m; }
+		if (m == null || securityMgr.isCallable(m)) return m;
 		throw new SecurityException("安全管理器[" + securityMgr.getClass().getSimpleName() + "]禁止调用方法[" + m.toString() + "]");
 	}
 

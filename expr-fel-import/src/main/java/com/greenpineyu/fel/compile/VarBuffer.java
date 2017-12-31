@@ -80,7 +80,7 @@ public class VarBuffer {
 	 */
 	public static String pop() {
 		Stack<String> stack = getVarCodes();
-		if (stack.empty()) { return null; }
+		if (stack.empty()) return null;
 		return stack.pop();
 	}
 

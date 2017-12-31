@@ -128,7 +128,7 @@ public class FunMgr {
 		if (funName != null) {
 			String newFunName = getLowerCaseName(funName);
 			Function userFun = userFunMap.get(newFunName);
-			if (userFun != null) { return userFun; }
+			if (userFun != null) return userFun;
 			return funcMap.get(newFunName);
 		}
 		return null;

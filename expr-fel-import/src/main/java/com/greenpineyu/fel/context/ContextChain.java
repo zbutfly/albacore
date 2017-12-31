@@ -41,7 +41,7 @@ public class ContextChain implements FelContext {
 	@Override
 	public Var getVar(String name) {
 		Var object = current.getVar(name);
-		if (object != null) { return object; }
+		if (object != null) return object;
 		return parent.getVar(name);
 	}
 

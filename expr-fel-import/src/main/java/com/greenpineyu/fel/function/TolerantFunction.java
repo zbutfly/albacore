@@ -22,7 +22,7 @@ public abstract class TolerantFunction implements Function {
 	}
 
 	public static Object eval(FelContext context, Object obj) {
-		if (obj != null && obj instanceof Expression) { return ((Expression) obj).eval(context); }
+		if (obj != null && obj instanceof Expression) return ((Expression) obj).eval(context);
 		return obj;
 	}
 

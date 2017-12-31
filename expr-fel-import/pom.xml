@@ -3,12 +3,47 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.eweb4j</groupId>
 	<artifactId>fel</artifactId>
-	<version>0.9</version>
+	<version>0.9.1-SNAPSHOT</version>
 	<properties>
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
+	<name>fel</name>
+	<url>http://code.google.com/p/fast-el/</url>
+	<description>Fast Expression Language</description>
+	<developers>
+		<developer>
+			<id>greenpineyu</id>
+			<name>青松</name>
+			<email>greenpineyu@gmail.com</email>
+			<url>http://code.google.com/p/fast-el/</url>
+			<timezone>8</timezone>
+		</developer>
+	</developers>
+	<issueManagement>
+		<system>Github Issue</system>
+		<url>https://github.com/laiweiwei/fel/issues</url>
+	</issueManagement>
+	<licenses>
+		<license>
+			<name>The Apache Software License, Version 2.0</name>
+			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+		</license>
+	</licenses>
+	<scm>
+		<connection>git@github.com:laiweiwei/fel.git</connection>
+		<url>https://github.com/laiweiwei/fel.git</url>
+	</scm>
+	<reporting>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>2.7</version>
+			</plugin>
+		</plugins>
+	</reporting>
 	<dependencies>
 		<dependency>
 			<groupId>org.antlr</groupId>

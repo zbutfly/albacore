@@ -69,8 +69,8 @@ public class FunNode extends AbstFelNode {
 
 	@Override
 	public SourceBuilder toMethod(FelContext ctx) {
-		if (this.builder != null) { return builder; }
-		if (!this.isDefaultInterpreter()) { return InterpreterSourceBuilder.getInstance(); }
+		if (this.builder != null) return builder;
+		if (!this.isDefaultInterpreter()) return InterpreterSourceBuilder.getInstance();
 		return this.fun.toMethod(this, ctx);
 	}
 

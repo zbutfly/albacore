@@ -25,12 +25,12 @@ public class BigAdd extends StableFunction {
 	@Override
 	public Object call(FelNode node, FelContext context) {
 		List<FelNode> children = node.getChildren();
-		if (children == null || children.isEmpty()) { return null; }
+		if (children == null || children.isEmpty()) return null;
 		Object left = TolerantFunction.eval(context, children.get(0));
-		if (children.size() == 1) { return left; }
+		if (children.size() == 1) return left;
 		Object right = TolerantFunction.eval(context, children.get(1));
 
-		if (left instanceof String || right instanceof String) { return ObjectUtils.toString(left).concat(ObjectUtils.toString(right)); }
+		if (left instanceof String || right instanceof String) return ObjectUtils.toString(left).concat(ObjectUtils.toString(right));
 
 		try {
 			// 浮点型，转换成BigDecimal

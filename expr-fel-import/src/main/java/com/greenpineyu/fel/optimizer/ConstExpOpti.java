@@ -34,7 +34,7 @@ public class ConstExpOpti implements Optimizer {
 				public Class<?> returnType(FelContext ctx, FelNode node) {
 					if (value != null) {
 						Class<?> cls = value.getClass();
-						if (cls.isPrimitive()) { return ReflectUtil.toWrapperClass(cls); }
+						if (cls.isPrimitive()) return ReflectUtil.toWrapperClass(cls);
 						return cls;
 					}
 					return Null.class;

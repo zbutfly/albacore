@@ -132,7 +132,7 @@ public class FelParser extends Parser {
 		CommonTree EOF2_tree = null;
 
 		try {
-			if (state.backtracking > 0 && alreadyParsedRule(input, 1)) { return retval; }
+			if (state.backtracking > 0 && alreadyParsedRule(input, 1)) return retval;
 
 			// E:\\workspace\\Fel\\Fel.g:46:9: ( conditionalExpression EOF !)
 			// E:\\workspace\\Fel\\Fel.g:46:11: conditionalExpression EOF !
@@ -203,7 +203,7 @@ public class FelParser extends Parser {
 		CommonTree char_literal5_tree = null;
 
 		try {
-			if (state.backtracking > 0 && alreadyParsedRule(input, 2)) { return retval; }
+			if (state.backtracking > 0 && alreadyParsedRule(input, 2)) return retval;
 
 			// E:\\workspace\\Fel\\Fel.g:50:5: ( '(' ! expressionList ')' !)
 			// E:\\workspace\\Fel\\Fel.g:50:9: '(' ! expressionList ')' !
@@ -277,7 +277,7 @@ public class FelParser extends Parser {
 		CommonTree char_literal7_tree = null;
 
 		try {
-			if (state.backtracking > 0 && alreadyParsedRule(input, 3)) { return retval; }
+			if (state.backtracking > 0 && alreadyParsedRule(input, 3)) return retval;
 
 			// E:\\workspace\\Fel\\Fel.g:54:5: ( ( conditionalExpression )? (
 			// ',' ! ( conditionalExpression )? )* )
@@ -423,7 +423,7 @@ public class FelParser extends Parser {
 		CommonTree Colon12_tree = null;
 
 		try {
-			if (state.backtracking > 0 && alreadyParsedRule(input, 4)) { return retval; }
+			if (state.backtracking > 0 && alreadyParsedRule(input, 4)) return retval;
 
 			// E:\\workspace\\Fel\\Fel.g:58:5: ( conditionalOrExpression ( Ques
 			// ^ conditionalExpression Colon ! conditionalExpression )? )
@@ -535,7 +535,7 @@ public class FelParser extends Parser {
 		CommonTree Or15_tree = null;
 
 		try {
-			if (state.backtracking > 0 && alreadyParsedRule(input, 5)) { return retval; }
+			if (state.backtracking > 0 && alreadyParsedRule(input, 5)) return retval;
 
 			// E:\\workspace\\Fel\\Fel.g:61:2: ( conditionalAndExpression ( Or ^
 			// conditionalAndExpression )* )
@@ -642,7 +642,7 @@ public class FelParser extends Parser {
 		CommonTree And18_tree = null;
 
 		try {
-			if (state.backtracking > 0 && alreadyParsedRule(input, 6)) { return retval; }
+			if (state.backtracking > 0 && alreadyParsedRule(input, 6)) return retval;
 
 			// E:\\workspace\\Fel\\Fel.g:65:2: ( equalityExpression ( And ^
 			// equalityExpression )* )
@@ -749,7 +749,7 @@ public class FelParser extends Parser {
 		CommonTree Equals21_tree = null;
 
 		try {
-			if (state.backtracking > 0 && alreadyParsedRule(input, 7)) { return retval; }
+			if (state.backtracking > 0 && alreadyParsedRule(input, 7)) return retval;
 
 			// E:\\workspace\\Fel\\Fel.g:69:5: ( relationalExpression ( Equals ^
 			// relationalExpression )* )
@@ -856,7 +856,7 @@ public class FelParser extends Parser {
 		CommonTree Relational24_tree = null;
 
 		try {
-			if (state.backtracking > 0 && alreadyParsedRule(input, 8)) { return retval; }
+			if (state.backtracking > 0 && alreadyParsedRule(input, 8)) return retval;
 
 			// E:\\workspace\\Fel\\Fel.g:73:5: ( additiveExpression ( Relational
 			// ^ additiveExpression )* )
@@ -963,7 +963,7 @@ public class FelParser extends Parser {
 		CommonTree Additive27_tree = null;
 
 		try {
-			if (state.backtracking > 0 && alreadyParsedRule(input, 9)) { return retval; }
+			if (state.backtracking > 0 && alreadyParsedRule(input, 9)) return retval;
 
 			// E:\\workspace\\Fel\\Fel.g:77:5: ( multiplicativeExpression (
 			// Additive ^ multiplicativeExpression )* )
@@ -1070,7 +1070,7 @@ public class FelParser extends Parser {
 		CommonTree Multiplicative30_tree = null;
 
 		try {
-			if (state.backtracking > 0 && alreadyParsedRule(input, 10)) { return retval; }
+			if (state.backtracking > 0 && alreadyParsedRule(input, 10)) return retval;
 
 			// E:\\workspace\\Fel\\Fel.g:81:5: ( unaryExpression (
 			// Multiplicative ^ unaryExpression )* )
@@ -1177,7 +1177,7 @@ public class FelParser extends Parser {
 		CommonTree Additive32_tree = null;
 
 		try {
-			if (state.backtracking > 0 && alreadyParsedRule(input, 11)) { return retval; }
+			if (state.backtracking > 0 && alreadyParsedRule(input, 11)) return retval;
 
 			// E:\\workspace\\Fel\\Fel.g:85:7: ( Additive ^ unaryExpression |
 			// unaryExpressionNotPlusMinus )
@@ -1294,7 +1294,7 @@ public class FelParser extends Parser {
 		CommonTree Dot38_tree = null;
 
 		try {
-			if (state.backtracking > 0 && alreadyParsedRule(input, 12)) { return retval; }
+			if (state.backtracking > 0 && alreadyParsedRule(input, 12)) return retval;
 
 			// E:\\workspace\\Fel\\Fel.g:90:5: ( Not ^
 			// unaryExpressionNotPlusMinus | array ( Dot ^ parDot )* )
@@ -1445,7 +1445,7 @@ public class FelParser extends Parser {
 		CommonTree char_literal43_tree = null;
 
 		try {
-			if (state.backtracking > 0 && alreadyParsedRule(input, 13)) { return retval; }
+			if (state.backtracking > 0 && alreadyParsedRule(input, 13)) return retval;
 
 			// E:\\workspace\\Fel\\Fel.g:95:3: ( primary ( Bracket ^
 			// conditionalExpression ']' !)* )
@@ -1559,7 +1559,7 @@ public class FelParser extends Parser {
 		CommonTree Dot46_tree = null;
 
 		try {
-			if (state.backtracking > 0 && alreadyParsedRule(input, 14)) { return retval; }
+			if (state.backtracking > 0 && alreadyParsedRule(input, 14)) return retval;
 
 			// E:\\workspace\\Fel\\Fel.g:98:5: ( parExpression | parDot ( Dot ^
 			// parDot )* | literal )
@@ -1792,7 +1792,7 @@ public class FelParser extends Parser {
 		CommonTree CharacterLiteral51_tree = null;
 
 		try {
-			if (state.backtracking > 0 && alreadyParsedRule(input, 15)) { return retval; }
+			if (state.backtracking > 0 && alreadyParsedRule(input, 15)) return retval;
 
 			// E:\\workspace\\Fel\\Fel.g:111:5: ( identifierOrFun |
 			// StringLiteral | CharacterLiteral )
@@ -1918,7 +1918,7 @@ public class FelParser extends Parser {
 		CommonTree Identifier53_tree = null;
 
 		try {
-			if (state.backtracking > 0 && alreadyParsedRule(input, 16)) { return retval; }
+			if (state.backtracking > 0 && alreadyParsedRule(input, 16)) return retval;
 
 			// E:\\workspace\\Fel\\Fel.g:117:6: ( Identifier | Identifier ^
 			// arguments )
@@ -2050,7 +2050,7 @@ public class FelParser extends Parser {
 		CommonTree char_literal57_tree = null;
 
 		try {
-			if (state.backtracking > 0 && alreadyParsedRule(input, 17)) { return retval; }
+			if (state.backtracking > 0 && alreadyParsedRule(input, 17)) return retval;
 
 			// E:\\workspace\\Fel\\Fel.g:127:5: ( '(' ! ( expressionList )? ')'
 			// !)
@@ -2154,7 +2154,7 @@ public class FelParser extends Parser {
 		CommonTree BooleanLiteral62_tree = null;
 
 		try {
-			if (state.backtracking > 0 && alreadyParsedRule(input, 18)) { return retval; }
+			if (state.backtracking > 0 && alreadyParsedRule(input, 18)) return retval;
 
 			// E:\\workspace\\Fel\\Fel.g:164:5: ( integerLiteral |
 			// FloatingPointLiteral | CharacterLiteral | StringLiteral |
@@ -2316,7 +2316,7 @@ public class FelParser extends Parser {
 		CommonTree set63_tree = null;
 
 		try {
-			if (state.backtracking > 0 && alreadyParsedRule(input, 19)) { return retval; }
+			if (state.backtracking > 0 && alreadyParsedRule(input, 19)) return retval;
 
 			// E:\\workspace\\Fel\\Fel.g:171:5: ( HexLiteral | OctalLiteral |
 			// DecimalLiteral )

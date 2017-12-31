@@ -32,8 +32,8 @@ public class ConstNode extends AbstFelNode {
 
 	@Override
 	public SourceBuilder toMethod(FelContext ctx) {
-		if (this.builder != null) { return this.builder; }
-		if (!this.isDefaultInterpreter()) { return InterpreterSourceBuilder.getInstance(); }
+		if (this.builder != null) return this.builder;
+		if (!this.isDefaultInterpreter()) return InterpreterSourceBuilder.getInstance();
 		return new FelMethod(this.getValueType(), this.toJavaSrc(ctx));
 	}
 
@@ -48,9 +48,9 @@ public class ConstNode extends AbstFelNode {
 	}
 
 	public String toJavaSrc(FelContext ctx) {
-		if (value == null) { return "null"; }
-		if (value instanceof String) { return "\"" + value + "\""; }
-		if (ReflectUtil.isPrimitiveOrWrapNumber(getValueType())) { return value.toString(); }
+		if (value == null) return "null";
+		if (value instanceof String) return "\"" + value + "\"";
+		if (ReflectUtil.isPrimitiveOrWrapNumber(getValueType())) return value.toString();
 		return VarBuffer.push(value);
 	}
 

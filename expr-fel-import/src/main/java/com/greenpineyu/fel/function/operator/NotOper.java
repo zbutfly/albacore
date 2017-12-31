@@ -18,7 +18,7 @@ public class NotOper extends StableFunction {
 	public Object call(FelNode node, FelContext context) {
 		List<FelNode> children = node.getChildren();
 		Object eval = children.get(0).eval(context);
-		if (eval != null && eval instanceof Boolean) { return !(Boolean) eval; }
+		if (eval != null && eval instanceof Boolean) return !(Boolean) eval;
 		return null;
 	}
 

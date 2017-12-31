@@ -103,10 +103,10 @@ public class StringUtils {
 	 * @return the text with any replacements processed, {@code null} if null String input
 	 */
 	public static String replace(String text, String searchString, String replacement, int max) {
-		if (isEmpty(text) || isEmpty(searchString) || replacement == null || max == 0) { return text; }
+		if (isEmpty(text) || isEmpty(searchString) || replacement == null || max == 0) return text;
 		int start = 0;
 		int end = text.indexOf(searchString, start);
-		if (end == INDEX_NOT_FOUND) { return text; }
+		if (end == INDEX_NOT_FOUND) return text;
 		int replLength = searchString.length();
 		int increase = replacement.length() - replLength;
 		increase = (increase < 0 ? 0 : increase);
@@ -148,7 +148,7 @@ public class StringUtils {
 	 * @since 2.1
 	 */
 	public static String remove(String str, char remove) {
-		if (isEmpty(str) || str.indexOf(remove) == INDEX_NOT_FOUND) { return str; }
+		if (isEmpty(str) || str.indexOf(remove) == INDEX_NOT_FOUND) return str;
 		char[] chars = str.toCharArray();
 		int pos = 0;
 		for (int i = 0; i < chars.length; i++) {

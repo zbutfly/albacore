@@ -81,45 +81,17 @@ public class LessThen implements Stable, Function {
 	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public boolean compare(Object left, Object right) {
-		if (left == right) { return false; }
+		if (left == right) return false;
 
-		if (left == null || right == null) { return false; }
+		if (left == null || right == null) return false;
 
-		if (left instanceof Number && right instanceof Number) { return NumberUtil.toDouble((Number) left) < NumberUtil.toDouble(
-				(Number) right); }
+		if (left instanceof Number && right instanceof Number) return NumberUtil.toDouble((Number) left) < NumberUtil.toDouble(
+				(Number) right);
 
-		if (left instanceof Comparable && right instanceof Comparable) { return ((Comparable) left).compareTo(right) < 0; }
+		if (left instanceof Comparable && right instanceof Comparable) return ((Comparable) left).compareTo(right) < 0;
 		throw new IllegalArgumentException("参数[type:" + left.getClass() + ";value:" + left + "]和参数[type:" + right.getClass() + ";value:"
 				+ right + "]不能进行比较[" + getName() + "]运算");
 	}
-
-	/**
-	 * 小于 <
-	 * 
-	 * @param left
-	 * @param right
-	 * @return
-	 */
-	/*
-	 * public static boolean lessThan(Object left, Object right) { if(left == right){ return false; }
-	 * 
-	 * if(left == null || right == null){ return false; }
-	 * 
-	 * if(left instanceof Number && right instanceof Number){ return NumberUtil.toDouble((Number)left)<NumberUtil.toDouble((Number)right); }
-	 * // TODO 是返回false还是抛出异常? return false; }
-	 */
-	/*
-	 * @SuppressWarnings("unchecked") public static boolean lessThan(Object left, Object right) { if(left != null && right != null){ if
-	 * ((left == right)) { return false; } else if (NumberUtil.isFloatingPointNumber(left) || NumberUtil.isFloatingPointNumber(right)) {
-	 * double leftDouble = NumberUtil.toDouble(left); double rightDouble = NumberUtil.toDouble(right); return leftDouble < rightDouble; }
-	 * else if (left instanceof BigDecimal || right instanceof BigDecimal) { BigDecimal l = NumberUtil.toBigDecimal(left); BigDecimal r =
-	 * NumberUtil.toBigDecimal(right); return l.compareTo(r) < 0; } else if (NumberUtil.isNumberable(left) ||
-	 * NumberUtil.isNumberable(right)) { long leftLong = NumberUtil.toLong(left); long rightLong = NumberUtil.toLong(right); return leftLong
-	 * < rightLong; } else if (left instanceof String || right instanceof String) { String leftString = left.toString(); String rightString
-	 * = right.toString(); return leftString.compareTo(rightString) < 0; } else if (left instanceof Comparable) { final Comparable
-	 * comparable = (Comparable) left; return comparable.compareTo(right) < 0; } else if (right instanceof Comparable) { final Comparable
-	 * comparable = (Comparable) right; return comparable.compareTo(left) > 0; } }else{ return left == null?true:false; } return false; }
-	 */
 
 	public StringBuilder buildRelationExpr(FelNode node, FelContext ctx, String operator) {
 		List<FelNode> child = node.getChildren();
@@ -161,29 +133,6 @@ public class LessThen implements Stable, Function {
 		}
 		return sb;
 	}
-
-	/**
-	 * 小于等于 <=
-	 * 
-	 * @param left
-	 * @param right
-	 * @return
-	 */
-	/*
-	 * private boolean lessThanOrEqual(Object left, Object right) { return EqualsOperator.equals(left, right) || lessThan(left, right); }
-	 */
-
-	/**
-	 * 大于等于 >=
-	 * 
-	 * @param left
-	 * @param right
-	 * @return
-	 */
-	/*
-	 * private boolean greaterThanOrEqual(Object left, Object right) { return EqualsOperator.equals(left, right) || greaterThan(left,
-	 * right); }
-	 */
 
 	@Override
 	public String getName() {

@@ -96,7 +96,7 @@ public class RegexSecurityMgr implements SecurityMgr {
 
 	private boolean isMatch(Map<String, Pattern> m, String input) {
 		for (Map.Entry<String, Pattern> entry : m.entrySet()) {
-			if (entry.getValue().matcher(input).find()) { return true; }
+			if (entry.getValue().matcher(input).find()) return true;
 		}
 		return false;
 	}
@@ -110,8 +110,8 @@ public class RegexSecurityMgr implements SecurityMgr {
 	@Override
 	public boolean isCallable(Method m) {
 		String method = getSignature(m);
-		if (isMatch(uncallableMap, method)) { return false; }
-		if (callableMap.isEmpty()) { return true; }
+		if (isMatch(uncallableMap, method)) return false;
+		if (callableMap.isEmpty()) return true;
 		return isMatch(callableMap, method);
 	}
 

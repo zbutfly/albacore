@@ -29,7 +29,7 @@ public class Cond extends StableFunction {
 		// 当cond是boolean型，并且值是true的,返回result1,否则返回result2
 		if (eval != null && eval instanceof Boolean) {
 			Boolean b = (Boolean) eval;
-			if (b.booleanValue()) { return result1.eval(context); }
+			if (b.booleanValue()) return result1.eval(context);
 		}
 		return result2.eval(context);
 	}
@@ -70,16 +70,13 @@ public class Cond extends StableFunction {
 
 	private List<FelNode> ensureValid(FelNode node) {
 		List<FelNode> args = node.getChildren();
-		if (args == null || args.size() != 3) { throw new ParseException("不合法的三元表达式"); }
+		if (args == null || args.size() != 3) throw new ParseException("不合法的三元表达式");
 		return args;
 	}
 
 	public static void main(String[] args) {
 		String exp = "true?false?2:3:2";
 		System.out.println(!(100 % 3 - 39.0 < 27));
-		// Object a =6.7-100>39.6 ? 5==5? 4+5:6-1 : !(100%3-39.0<27) ? 8*2-199:
-		// 100%3;
-		// System.out.println(a);
 		exp = "6.7-100>39.6 ? 5==5? 4+5:6-1 : !(100%3-39.0<27) ? 8*2-199: 100%3";
 		eval(exp);
 	}

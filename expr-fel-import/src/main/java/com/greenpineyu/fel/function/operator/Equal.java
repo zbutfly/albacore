@@ -41,13 +41,7 @@ public class Equal extends StableFunction {
 			return false;
 		} else if (left.getClass().equals(right.getClass())) {
 			return left.equals(right);
-		} else if (left instanceof Number && right instanceof Number) { return compareNumber(left, right); }
-		/*
-		 * else if (left instanceof Boolean && right instanceof Boolean) { // return NumberUtil.toBoolean(left) ==
-		 * NumberUtil.toBoolean(right); return ((Boolean) left).equals(right); } else if (left instanceof String || right instanceof String)
-		 * { return left.toString().equals(right.toString()); } else if (left instanceof Character || right instanceof Character) { return
-		 * NumberUtil.toLong(left) == NumberUtil.toLong(right); }
-		 */
+		} else if (left instanceof Number && right instanceof Number) return compareNumber(left, right);
 		return left.equals(right);
 	}
 

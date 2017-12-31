@@ -25,8 +25,8 @@ public class BigLessThan extends LessThen {
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@Override
 	public boolean compare(Object left, Object right) {
-		if (left == right) { return equalsReturnValue(); }
-		if (left == null || right == null) { return nullReturnValue(); }
+		if (left == right) return equalsReturnValue();
+		if (left == null || right == null) return nullReturnValue();
 		try {
 			// 浮点型，转换成BigDecimal
 			if (hasFloat(left, right)) {

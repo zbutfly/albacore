@@ -93,7 +93,7 @@ public class Sub extends StableFunction {
 			FelNode right = children.get(0);
 			Object rightValue = right.eval(context);
 			if (rightValue instanceof Number) {
-				if (NumberUtil.isFloatingPoint(rightValue)) { return NumberUtil.toDouble(rightValue) * -1; }
+				if (NumberUtil.isFloatingPoint(rightValue)) return NumberUtil.toDouble(rightValue) * -1;
 				return NumberUtil.parseNumber(((Number) rightValue).longValue() * -1);
 			}
 			throw new EvalException("执行减法出错，参数必须是数值型");

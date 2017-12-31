@@ -42,7 +42,7 @@ public class NumberUtil {
 			return Boolean.FALSE;
 		} else if (val instanceof Boolean) {
 			return ((Boolean) val);
-		} else if (val instanceof String) { return Boolean.valueOf((String) val); }
+		} else if (val instanceof String) return Boolean.valueOf((String) val);
 		return Boolean.FALSE;
 	}
 
@@ -57,13 +57,13 @@ public class NumberUtil {
 		if (val == null) {
 			throw new IllegalArgumentException("Integer coercion exception. arg is null");
 		} else if (val instanceof String) {
-			if ("".equals(val)) { return 0; }
+			if ("".equals(val)) return 0;
 			return Integer.parseInt((String) val);
 		} else if (val instanceof Character) {
 			return ((Character) val).charValue();
 		} else if (val instanceof Boolean) {
 			throw new IllegalArgumentException("Boolean->Integer coercion exception");
-		} else if (val instanceof Number) { return ((Number) val).intValue(); }
+		} else if (val instanceof Number) return ((Number) val).intValue();
 
 		throw new IllegalArgumentException("Integer coercion exception. Can't coerce type: " + val.getClass().getName());
 	}
@@ -79,13 +79,13 @@ public class NumberUtil {
 		if (val == null) {
 			throw new NumberFormatException("Long coercion exception. arg is null");
 		} else if (val instanceof String) {
-			if ("".equals(val)) { return 0; }
+			if ("".equals(val)) return 0;
 			return Long.parseLong((String) val);
 		} else if (val instanceof Character) {
 			return ((Character) val).charValue();
 		} else if (val instanceof Boolean) {
 			throw new NumberFormatException("Boolean->Long coercion exception");
-		} else if (val instanceof Number) { return ((Number) val).longValue(); }
+		} else if (val instanceof Number) return ((Number) val).longValue();
 
 		throw new NumberFormatException("Long coercion exception. Can't coerce type: " + val.getClass().getName());
 	}
@@ -104,7 +104,7 @@ public class NumberUtil {
 			throw new IllegalArgumentException("BigInteger coercion exception. arg is null");
 		} else if (val instanceof String) {
 			String string = (String) val;
-			if ("".equals(string.trim())) { return BigInteger.ZERO; }
+			if ("".equals(string.trim())) return BigInteger.ZERO;
 			return new BigInteger(string);
 		} else if (val instanceof Number) {
 			return new BigInteger(val.toString());
@@ -130,7 +130,7 @@ public class NumberUtil {
 			throw new IllegalArgumentException("BigDecimal coercion exception. arg is null");
 		} else if (val instanceof String) {
 			String string = (String) val;
-			if ("".equals(string.trim())) { return BigDecimal.valueOf(0); }
+			if ("".equals(string.trim())) return BigDecimal.valueOf(0);
 			return new BigDecimal(string);
 			// } else if (val instanceof Double) {
 			// return new BigDecimal((Double) val);
@@ -154,18 +154,16 @@ public class NumberUtil {
 	 * @throws ConvertException
 	 */
 	public static double toDouble(Object val) {
-		if (val == null) {
-			throw new IllegalArgumentException("Double coercion exception. arg is null");
-		} else if (val instanceof String) {
+		if (val == null) throw new IllegalArgumentException("Double coercion exception. arg is null");
+		else if (val instanceof String) {
 			String string = (String) val;
-			if ("".equals(string.trim())) { return 0; }
+			if ("".equals(string.trim())) return 0;
 			return Double.parseDouble(string);
 		} else if (val instanceof Character) {
 			int i = ((Character) val).charValue();
 			return i;
-		} else if (val instanceof Number) {
-			return toDouble((Number) val);
-		} else if (val instanceof Boolean) { throw new IllegalArgumentException("Boolean->Double coercion exception"); }
+		} else if (val instanceof Number) return toDouble((Number) val);
+		else if (val instanceof Boolean) throw new IllegalArgumentException("Boolean->Double coercion exception");
 		throw new IllegalArgumentException("Double coercion exception. Can't coerce type: " + val.getClass().getName());
 	}
 
@@ -190,11 +188,11 @@ public class NumberUtil {
 	// }
 
 	public static Number narrow(Number original) {
-		if (original == null) { return original; }
+		if (original == null) return original;
 		Number result = original;
 		if (original instanceof BigDecimal) {
 			BigDecimal bigd = (BigDecimal) original;
-			if (bigd.compareTo(BIGD_DOUBLE_MAX_VALUE) > 0) { return original; }
+			if (bigd.compareTo(BIGD_DOUBLE_MAX_VALUE) > 0) return original;
 		}
 		if (original instanceof Double || original instanceof Float || original instanceof BigDecimal) {
 			double value = original.doubleValue();
@@ -204,7 +202,7 @@ public class NumberUtil {
 		} else {
 			if (original instanceof BigInteger) {
 				BigInteger bigi = (BigInteger) original;
-				if (bigi.compareTo(BIGI_LONG_MAX_VALUE) > 0 || bigi.compareTo(BIGI_LONG_MIN_VALUE) < 0) { return original; }
+				if (bigi.compareTo(BIGI_LONG_MAX_VALUE) > 0 || bigi.compareTo(BIGI_LONG_MIN_VALUE) < 0) return original;
 			}
 			long value = original.longValue();
 			return parseNumber(value);
@@ -222,25 +220,13 @@ public class NumberUtil {
 	}
 
 	/**
-	 * 测试是否浮点类型
-	 * 
-	 * @param left
-	 * @param right
-	 * @return
-	 */
-	/*
-	 * public static boolean isFloatingPointType(Object left, Object right) { return left instanceof Float || left instanceof Double ||
-	 * right instanceof Float || right instanceof Double; }
-	 */
-
-	/**
 	 * 测试是否浮点数
 	 * 
 	 * @param val
 	 * @return
 	 */
 	public static boolean isFloatingPointNumber(Object val) {
-		if (val instanceof Float || val instanceof Double) { return true; }
+		if (val instanceof Float || val instanceof Double) return true;
 		if (val instanceof String) {
 			String string = (String) val;
 			return string.indexOf('.') != -1 || string.indexOf('e') != -1 || string.indexOf('E') != -1;
@@ -280,8 +266,8 @@ public class NumberUtil {
 		if (!(lhs instanceof BigInteger || rhs instanceof BigInteger) && bigi.compareTo(BIGI_LONG_MAX_VALUE) <= 0 && bigi.compareTo(
 				BIGI_LONG_MIN_VALUE) >= 0) {
 			long l = bigi.longValue();
-			if (!(lhs instanceof Long || rhs instanceof Long) && l <= Integer.MAX_VALUE && l >= Integer.MIN_VALUE) { return Integer.valueOf(
-					l + ""); }
+			if (!(lhs instanceof Long || rhs instanceof Long) && l <= Integer.MAX_VALUE && l >= Integer.MIN_VALUE) return Integer.valueOf(l
+					+ "");
 			return Long.valueOf(l + "");
 		}
 		return bigi;
@@ -309,16 +295,6 @@ public class NumberUtil {
 	}
 
 	/**
-	 * 自动转换为更小类型的对象返回
-	 * 
-	 * @param i
-	 * @return
-	 */
-	/*
-	 * public static Object parseNumber(int i) { short s = (short) i; if (s == i) { return new Short(s); } return new Integer(i); }
-	 */
-
-	/**
 	 * @see parseNumber
 	 */
 	public static Number parseNumber(long l) {
@@ -332,7 +308,7 @@ public class NumberUtil {
 	 */
 	public static Object parseNumber(double d) {
 		long f = (long) d;
-		if (f == d) { return parseNumber(f); }
+		if (f == d) return parseNumber(f);
 		return Double.valueOf(d);
 	}
 
@@ -368,7 +344,7 @@ public class NumberUtil {
 	}
 
 	public static <T extends Comparable<T>> int compare(T a, T b) {
-		if (a != null && b != null) { return a.compareTo(b); }
+		if (a != null && b != null) return a.compareTo(b);
 		return a == null ? -1 : 1;
 	}
 
@@ -398,8 +374,8 @@ public class NumberUtil {
 	 * @return
 	 */
 	public static Class<?> arithmeticClass(Class<?> left, Class<?> right) {
-		if (isDoubleClass(left) || isDoubleClass(right)) { return double.class; }
-		if (isLongClass(left) || isLongClass(right)) { return long.class; }
+		if (isDoubleClass(left) || isDoubleClass(right)) return double.class;
+		if (isLongClass(left) || isLongClass(right)) return long.class;
 		return int.class;
 		// if(isIntClass(left)){
 		// return left;

@@ -43,9 +43,9 @@ public class ConstOpti implements Optimizer {
 						Boolean result = isOr;
 						// if (isOr) {
 						FelNode constNode = toShortCutConst(node, ctx, left, result);
-						if (constNode != null) { return constNode; }
+						if (constNode != null) return constNode;
 						constNode = toShortCutConst(node, ctx, right, result);
-						if (constNode != null) { return constNode; }
+						if (constNode != null) return constNode;
 						// else if (right.stable()) {
 						// Object rightValue = node.getInterpreter()
 						// .interpret(ctx, right);
