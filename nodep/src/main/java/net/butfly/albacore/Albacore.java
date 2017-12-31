@@ -17,5 +17,6 @@ public @interface Albacore {
 		final String PROP_PARALLEL_POOL_SIZE_LOCKER = "albacore.parallel.pool.number.locker";
 		final String PROP_PARALLEL_POOL_SIZE_LOCKER_FAIR = "albacore.parallel.pool.number.locker.fair";
 		final String PROP_TEXT_DATE_FORMAT = "albacore.text.date.format";
+		final String PROP_EXPR_ENGINE_CLASS = "albacore.expr.engine.class";
 	}
 }

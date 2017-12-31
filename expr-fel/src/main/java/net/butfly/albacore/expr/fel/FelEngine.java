@@ -7,22 +7,20 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import com.greenpineyu.fel.Expression;
-import com.greenpineyu.fel.FelEngine;
 import com.greenpineyu.fel.FelEngineImpl;
 import com.greenpineyu.fel.context.ArrayCtxImpl;
 import com.greenpineyu.fel.context.FelContext;
 import com.greenpineyu.fel.function.CommonFunction;
 
+import net.butfly.albacore.expr.Engine;
 import net.butfly.albacore.expr.fel.FelFunc.Func;
 import net.butfly.albacore.utils.Reflections;
 import net.butfly.albacore.utils.collection.Maps;
-import net.butfly.albacore.utils.logger.Logger;
 
-public class FelEngineer {
-	private static final Logger logger = Logger.getLogger(FelEngineer.class);
-	private final static FelEngine engine = scan();
+public class FelEngine implements Engine {
+	private final static com.greenpineyu.fel.FelEngine engine = scan();
 
-	private static FelEngine scan() {
+	private static com.greenpineyu.fel.FelEngine scan() {
 		FelEngineImpl eng;
 		try {
 			eng = new FelEngineImpl();
@@ -55,7 +53,8 @@ public class FelEngineer {
 	private final static Map<String, Expression> exprs = Maps.of();
 
 	@SuppressWarnings("unchecked")
-	public static <T> T eval(String felExpr, Map<String, Object> context) {
+	@Override
+	public <T> T exec(String felExpr, Map<String, Object> context) {
 		FelContext ctx = new ArrayCtxImpl();
 		if (null != context && !context.isEmpty()) for (Entry<String, Object> e : context.entrySet())
 			ctx.set(e.getKey(), e.getValue());
