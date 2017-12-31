@@ -6,7 +6,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -14,6 +13,7 @@ import java.util.regex.Pattern;
 import com.greenpineyu.fel.function.CommonFunction;
 
 import net.butfly.albacore.utils.CaseFormat;
+import net.butfly.albacore.utils.Texts;
 import net.butfly.albacore.utils.collection.Maps;
 import net.butfly.albacore.utils.logger.Logger;
 
@@ -22,10 +22,21 @@ public abstract class FelFunc<R> extends CommonFunction {
 
 	@Override
 	public final Object call(Object[] args) {
-		return invoke(args);
+		if (null != args && valid(args.length)) try {
+			return invoke(args);
+		} catch (Exception e) {
+			logger.debug("Expression eval fail", e);
+			return null;
+		}
+		logger.error(getName() + "() by illegal arguments");
+		return null;
 	}
 
 	protected abstract R invoke(Object... args);
+
+	protected boolean valid(int argl) {
+		return true;
+	}
 
 	@Override
 	public String getName() {
@@ -45,11 +56,12 @@ public abstract class FelFunc<R> extends CommonFunction {
 	@Func
 	private static class CaseFunc extends FelFunc<Object> {
 		@Override
+		protected boolean valid(int argl) {
+			return argl > 0;
+		}
+
+		@Override
 		public Object invoke(Object... args) {
-			if (null == args || args.length == 0) {
-				logger.warn(getName() + "() by illegal arguments");
-				return null;
-			}
 			Object v0 = args[0];
 			int i = 1;
 			while (i < args.length) {
@@ -79,11 +91,12 @@ public abstract class FelFunc<R> extends CommonFunction {
 		private static final Map<String, Pattern> patterns = Maps.of();
 
 		@Override
+		protected boolean valid(int argl) {
+			return argl == 2;
+		}
+
+		@Override
 		public Boolean invoke(Object... args) {
-			if (null == args || args.length != 2) {
-				logger.warn(getName() + "() by illegal arguments");
-				return false;
-			}
 			return patterns.computeIfAbsent((String) args[1], Pattern::compile).matcher((String) args[0]).find();
 		}
 	}
@@ -91,11 +104,12 @@ public abstract class FelFunc<R> extends CommonFunction {
 	@Func
 	private static class SubstrFunc extends FelFunc<String> {
 		@Override
+		protected boolean valid(int argl) {
+			return argl == 3;
+		}
+
+		@Override
 		public String invoke(Object... args) {
-			if (null == args || args.length != 3) {
-				logger.warn(getName() + "() by illegal arguments");
-				return null;
-			}
 			return ((String) args[0]).substring((int) args[1], (int) args[2]);
 		}
 	}
@@ -114,28 +128,29 @@ public abstract class FelFunc<R> extends CommonFunction {
 	@Func
 	private static class DateToStrFunc extends FelFunc<String> {
 		@Override
+		protected boolean valid(int argl) {
+			return argl == 2;
+		}
+
+		@Override
 		public String invoke(Object... args) {
-			if (null == args || args.length != 2) {
-				logger.warn(getName() + "() by illegal arguments");
-				return null;
-			}
-			SimpleDateFormat sdf = new SimpleDateFormat(String.valueOf(args[1]));
-			return sdf.format((Date) args[0]);
+			return Texts.formatDate((String) args[1], (Date) args[0]);
 		}
 	}
 
 	@Func
 	private static class StrToDateFunc extends FelFunc<Date> {
 		@Override
+		protected boolean valid(int argl) {
+			return argl == 2;
+		}
+
+		@Override
 		public Date invoke(Object... args) {
-			if (null == args || args.length != 2) {
-				logger.warn(getName() + "() by illegal arguments");
-				return null;
-			}
-			SimpleDateFormat sdf = new SimpleDateFormat(String.valueOf(args[1]));
 			try {
-				return sdf.parse(String.valueOf(args[0]));
+				return Texts.parseDate(String.valueOf(args[1]), String.valueOf(args[0]));
 			} catch (ParseException e) {
+				logger.debug("Expression eval for date parsing fail", e);
 				return null;
 			}
 		}
@@ -146,4 +161,5 @@ public abstract class FelFunc<R> extends CommonFunction {
 	public @interface Func {
 		String value() default "";
 	}
+
 }
