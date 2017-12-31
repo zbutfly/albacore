@@ -8,12 +8,15 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.greenpineyu.fel.Expression;
 import com.greenpineyu.fel.context.FelContext;
 import com.greenpineyu.fel.parser.FelNode;
 
 public class CompileService {
-
+	private static final Logger logger = LoggerFactory.getLogger(CompileService.class);
 	private SourceGenerator srcGen;
 	private FelCompiler complier;
 
@@ -54,7 +57,7 @@ public class CompileService {
 				try {
 					resources = cl.getResources("/");
 				} catch (IOException e) {
-					e.printStackTrace();
+					logger.error("", e);
 				}
 				if (resources != null) {
 					while (resources.hasMoreElements()) {
@@ -101,7 +104,7 @@ public class CompileService {
 			// System.out.println("****************\n" + src.getSource());
 			return complier.compile(src);
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.error("", e);
 		}
 		return null;
 	}

@@ -7,6 +7,8 @@ import java.util.List;
 import org.antlr.runtime.Token;
 import org.antlr.runtime.tree.CommonTree;
 import org.antlr.runtime.tree.Tree;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.greenpineyu.fel.common.Callable;
 import com.greenpineyu.fel.compile.SourceBuilder;
@@ -14,7 +16,7 @@ import com.greenpineyu.fel.context.FelContext;
 import com.greenpineyu.fel.interpreter.Interpreter;
 
 public abstract class AbstFelNode extends CommonTree implements FelNode, Interpreter {
-
+	private static final Logger logger = LoggerFactory.getLogger(AbstFelNode.class);
 	/**
 	 * 解析器,用于解析节点的值
 	 */
@@ -24,7 +26,6 @@ public abstract class AbstFelNode extends CommonTree implements FelNode, Interpr
 	 * 默认的解析器
 	 */
 	protected Interpreter defaultInter;
-
 	protected SourceBuilder builder;
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
@@ -75,18 +76,7 @@ public abstract class AbstFelNode extends CommonTree implements FelNode, Interpr
 	@Override
 	public Object eval(FelContext context) {
 		return interpreter.interpret(context, this);
-		// if (cached) {
-		// return cacheValue;
-		// }
-		// Object eval = interpreter.interpret(context, this);
-		// if (fixed) {
-		// cacheValue = eval;
-		// cached = true;
-		// }
-		// return eval;
 	}
-
-	// abstract public Object evalWithoutCache(FelContext context);
 
 	public static List<FelNode> getNodes(FelNode node) {
 		List<FelNode> returnMe = new ArrayList<FelNode>();
@@ -102,22 +92,18 @@ public abstract class AbstFelNode extends CommonTree implements FelNode, Interpr
 
 	public static void getNodes(FelNode node, List<FelNode> returnMe, Callable<Boolean, FelNode> filter) {
 		if (node != null) {
-			if (filter == null) {
-				returnMe.add(node);
-			} else if (filter.call(node)) {
-				returnMe.add(node);
-			}
+			if (filter == null) returnMe.add(node);
+			else if (filter.call(node)) returnMe.add(node);
+
 			List<FelNode> nodeChildren = node.getChildren();
-			if (nodeChildren != null) {
-				for (Iterator<FelNode> iterator = nodeChildren.iterator(); iterator.hasNext();) {
-					try {
-						FelNode child = iterator.next();
-						getNodes(child, returnMe, filter);
-					} catch (Exception e) {
-						e.printStackTrace();
-					}
+			if (nodeChildren != null) for (Iterator<FelNode> iterator = nodeChildren.iterator(); iterator.hasNext();)
+				try {
+					FelNode child = iterator.next();
+					getNodes(child, returnMe, filter);
+				} catch (Exception e) {
+					logger.error("", e);
 				}
-			}
+
 		}
 	}
 
@@ -176,9 +162,4 @@ public abstract class AbstFelNode extends CommonTree implements FelNode, Interpr
 		}
 		return true;
 	}
-
-	// public void resetSourceBuilder(){
-	// this.builder = this;
-	// }
-
 }

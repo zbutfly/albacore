@@ -5,7 +5,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class FileClassLoader extends ClassLoader {
+	private static final Logger logger = LoggerFactory.getLogger(FileClassLoader.class);
 	private String dir;
 	public static final String fileType = ".class";
 
@@ -33,14 +37,12 @@ public class FileClassLoader extends ClassLoader {
 			}
 			data = baos.toByteArray();
 		} catch (IOException e) {
-			e.printStackTrace();
+			logger.error("", e);
 		} finally {
-			if (fis != null) {
-				try {
-					fis.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
+			if (fis != null) try {
+				fis.close();
+			} catch (IOException e) {
+				logger.error("", e);
 			}
 		}
 		return data;

@@ -9,6 +9,9 @@ import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.greenpineyu.fel.Expression;
 import com.greenpineyu.fel.FelEngine;
 import com.greenpineyu.fel.context.FelContext;
@@ -21,6 +24,7 @@ import com.sun.tools.javac.Main;
  * 
  */
 public class FelCompiler15 extends AbstCompiler {
+	private static final Logger logger = LoggerFactory.getLogger(FelCompiler15.class);
 
 	@Override
 	Class<Expression> compileToClass(JavaSource src) throws ClassNotFoundException {
@@ -51,17 +55,17 @@ public class FelCompiler15 extends AbstCompiler {
 			write = new OutputStreamWriter(os, "utf-8");
 			write.write(source);
 		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+			logger.error("", e);
 		} catch (UnsupportedEncodingException e) {
-			e.printStackTrace();
+			logger.error("", e);
 		} catch (IOException e) {
-			e.printStackTrace();
+			logger.error("", e);
 		} finally {
 			if (write != null) {
 				try {
 					write.close();
 				} catch (IOException e) {
-					e.printStackTrace();
+					logger.error("", e);
 				}
 			}
 		}

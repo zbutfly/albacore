@@ -9,6 +9,8 @@ import org.antlr.runtime.CommonTokenStream;
 import org.antlr.runtime.ParserRuleReturnScope;
 import org.antlr.runtime.RecognitionException;
 import org.antlr.runtime.tree.CommonTree;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.greenpineyu.fel.FelEngine;
 import com.greenpineyu.fel.common.Callable;
@@ -23,7 +25,7 @@ import com.greenpineyu.fel.function.operator.Dot;
  * 
  */
 public class AntlrParser implements Parser {
-
+	private static final Logger logger = LoggerFactory.getLogger(AntlrParser.class);
 	public static final Callable<Boolean, FelNode> funFilter = new Callable<Boolean, FelNode>() {
 		@Override
 		public Boolean call(FelNode... node) {
@@ -69,7 +71,7 @@ public class AntlrParser implements Parser {
 		try {
 			input = new ANTLRInputStream(is);
 		} catch (IOException e) {
-			e.printStackTrace();
+			logger.error("", e);
 		}
 		FelLexer lexer = new FelLexer(input);
 		CommonTokenStream tokens = new CommonTokenStream(lexer);
@@ -110,10 +112,10 @@ public class AntlrParser implements Parser {
 	public boolean verify(String exp) {
 		try {
 			parse(exp);
+			return true;
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.error("", e);
 			return false;
 		}
-		return true;
 	}
 }

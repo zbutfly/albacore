@@ -14,13 +14,11 @@ public class NodeAdaptor extends CommonTreeAdaptor {
 	@Override
 	public Object create(Token token) {
 		if (token == null) { return new AbstFelNode(token) {
-
 			@Override
 			public SourceBuilder toMethod(FelContext ctx) {
 				return null;
 			}
 		}; }
-		// System.out.println(token.getText());
 
 		/*
 		 * Dot LikeIn Logical Equals Relational Additive Multiplicative Identifier FloatingPointLiteral CharacterLiteral StringLiteral
@@ -77,13 +75,9 @@ public class NodeAdaptor extends CommonTreeAdaptor {
 
 		case FelParser.FloatingPointLiteral:
 			// 浮点型
-			// System.out.println("text :" + text);
 			// returnMe = new Double(text);
-			// System.out.println("double:" + returnMe);
 			returnMe = newFloatNumber(text);
 			// returnMe = narrowBigDecimal(text);
-			// System.out.println("BigDec:" + returnMe);
-			// System.out.println();
 			break;
 		case FelParser.BooleanLiteral:
 			// 布尔值

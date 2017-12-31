@@ -100,25 +100,4 @@ public class ArrayCtxImpl implements ArrayCtx {
 			return newIndex;
 		}
 	}
-	/*
-	 * public static void main(String[] args) { // int times = 10000*10000; // ac(times); // mc(times); // testAc(); testAc2();
-	 * 
-	 * }
-	 * 
-	 * public static void testAc(){ ArrayCtx ac = new ArrayCtxImpl(); ac.set("a","aValue"); long begin = System.currentTimeMillis(); int
-	 * times = 1000*1000; for(int i = 0;i<times ;i++){ String name = "a"+i++; String value = name; ac.set(name,value);
-	 * if(value!=ac.get(ac.getIndex(name))){ System.out.println("error"); } if(value!=ac.get(name)){ System.out.println("error"); }
-	 * 
-	 * } long end = System.currentTimeMillis(); System.out.println("array:"+(end-begin)); } public static void testAc2(){ FelEngine e = new
-	 * FelEngineImpl(); FelContext ctx = e.getContext(); ctx.set("num",1); e.compile("+num", ctx).eval(ctx);
-	 * 
-	 * }
-	 * 
-	 * public static void ac(int times){ ArrayCtx ac = new ArrayCtxImpl(); ac.set("a","aValue"); long begin = System.currentTimeMillis(); //
-	 * int index = ac.getIndex("a"); for(int i = 0;i<times;i++){ // ac.set("a","aValue"); // ac.get(index); ac.get("a"); } long end =
-	 * System.currentTimeMillis(); System.out.println("array:"+(end-begin)); } public static void mc(int times){ FelContext mc = new
-	 * MapContext(); mc.set("a","aValue"); long begin = System.currentTimeMillis(); for(int i = 0;i<times;i++){ // mc.set("a","aValue");
-	 * mc.get("a"); } long end = System.currentTimeMillis(); System.out.println("map:"+(end-begin)); }
-	 */
-
 }

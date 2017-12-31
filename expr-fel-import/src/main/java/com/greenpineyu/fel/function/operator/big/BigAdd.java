@@ -86,35 +86,16 @@ public class BigAdd extends StableFunction {
 	public static void main(String[] args) {
 		BigInteger left = new BigInteger("1000000000000000000");
 		calc(left);
-		// System.out.println(Math.random());
-		// calc(Double.MAX_VALUE);
 	}
 
 	/**
 	 * @param left
 	 */
-	/*
-	 * private static void calc(Double left) { FelEngine engine = FelBuilder.bigNumberEngine(); BigDecimal result = new BigDecimal(left);
-	 * engine.getContext().set("a", result); Object value = engine.eval("a+a"); System.out.println("excep:" + result.add(result));
-	 * System.out.println("equals:" + value.equals(result.add(result)) + ";value:" + value); }
-	 */
-
-	/**
-	 * @param left
-	 */
 	private static void calc(BigInteger left) {
-		// String exp = left.toString() + "+" + left.toString();
-		// Object value = FelBuilder.highAccuracyEngine().eval(exp);
-
-		// System.out.println("equals:" + value.equals(left.add(left)) +
-		// ";value:" + value);
 		String exp2 = "(-9484950.4f)+(-188132624.1)-(-10645.84)*(-196528.43)/(-109190992.2)+(-12353902.38)+(-502721396.8)";
 		String exp3 = "(-822091040.15)==(0)+(0)+(-9484950.4f)+(-188132624.1)+(-10645.84)+(-196528.43)+(-109190992.2)+(-12353902.38)+(0)+(0)+(-502721396.8)";
 		exp2 = "(0)+(0)+(-9484950.4f)+(-188132624.1)+(-10645.84)+(-196528.43)+(-109190992.2)+(-12353902.38)+(0)+(0)+(-502721396.8)";
-		// Object r = FelEngine.instance
-		// .eval(exp2);
-		// exp2 =
-		// "(-1111000000000000000000.123456789)*(-1000000000000000000000000000123123123123.123456789)";
+
 		FelEngine eng = FelBuilder.bigNumberEngine();
 		Object value = eng.eval("1.666+2323.7777");
 		System.out.println("1.666+2323.7777:" + value);

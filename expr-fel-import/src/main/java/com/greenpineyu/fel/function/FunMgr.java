@@ -6,6 +6,9 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.greenpineyu.fel.function.operator.Add;
 import com.greenpineyu.fel.function.operator.And;
 import com.greenpineyu.fel.function.operator.CollectionGet;
@@ -25,8 +28,7 @@ import com.greenpineyu.fel.function.operator.Or;
 import com.greenpineyu.fel.function.operator.Sub;
 
 public class FunMgr {
-
-	// private static FunMgr instance = new FunMgr();
+	private static final Logger logger = LoggerFactory.getLogger(FunMgr.class);
 
 	public FunMgr() {
 		userFunMap = new HashMap<String, Function>();
@@ -105,8 +107,7 @@ public class FunMgr {
 				System.out.println(nex.getFile());
 			}
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			logger.error("", e);
 		}
 	}
 

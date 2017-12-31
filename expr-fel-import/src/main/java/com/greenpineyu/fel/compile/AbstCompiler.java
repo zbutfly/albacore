@@ -110,7 +110,6 @@ public abstract class AbstCompiler implements FelCompiler {
 
 	void deleteFile(String src) {
 		File file = new File(src);
-		// System.out.println("delete file:"+src);
 		if (file.exists()) {
 			file.delete();
 		}

@@ -2,6 +2,9 @@ package com.greenpineyu.fel.function;
 
 import java.lang.reflect.InvocationTargetException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.greenpineyu.fel.FelEngine;
 import com.greenpineyu.fel.common.StringUtils;
 import com.greenpineyu.fel.compile.FelMethod;
@@ -16,6 +19,7 @@ import com.greenpineyu.fel.parser.FelNode;
  * 
  */
 public class Dollar implements Function {
+	private static final Logger logger = LoggerFactory.getLogger(Function.class);
 
 	@Override
 	public String getName() {
@@ -68,7 +72,7 @@ public class Dollar implements Function {
 			Class<?> clz = Class.forName(className);
 			return clz;
 		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
+			logger.error("", e);
 		}
 		return null;
 	}

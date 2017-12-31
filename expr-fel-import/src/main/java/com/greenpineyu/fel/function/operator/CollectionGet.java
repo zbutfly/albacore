@@ -158,16 +158,6 @@ public class CollectionGet extends StableFunction {
 	}
 
 	public static void main(String[] args) throws SecurityException, NoSuchMethodException {
-		// FelEngine engine = new FelEngineImpl();
-		// FelContext ctx = engine.getContext();
-		// ctx.set("t", new CollectionValue() );
-		// String e = "-t.num[0][1]";
-		//// e = "-1";
-		// Object value = engine.eval(e);
-		// Expression exp = engine.compile(e,ctx);
-		//
-		// System.out.println(value);
-		// System.out.println(exp.eval(ctx));
 		test();
 
 	}

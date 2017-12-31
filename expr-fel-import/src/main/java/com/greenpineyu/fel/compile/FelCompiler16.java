@@ -20,18 +20,18 @@ import javax.tools.StandardJavaFileManager;
 import javax.tools.StandardLocation;
 import javax.tools.ToolProvider;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.greenpineyu.fel.Expression;
 import com.greenpineyu.fel.exception.CompileException;
 
 public class FelCompiler16<T> implements FelCompiler {
+	private static final Logger logger = LoggerFactory.getLogger(FelCompiler16.class);
 	private final FelCompilerClassloader classLoader;
-
 	private final JavaCompiler compiler;
-
 	private final List<String> options;
-
 	private DiagnosticCollector<JavaFileObject> diagnostics;
-
 	private final JavaFileManager javaFileManager;
 
 	public FelCompiler16() {
@@ -55,7 +55,7 @@ public class FelCompiler16<T> implements FelCompiler {
 		try {
 			fileManager.setLocation(StandardLocation.CLASS_PATH, cpFiles);
 		} catch (IOException e) {
-			e.printStackTrace();
+			logger.error("", e);
 		}
 
 		javaFileManager = new ForwardingJavaFileManager<JavaFileManager>(fileManager) {
@@ -98,7 +98,7 @@ public class FelCompiler16<T> implements FelCompiler {
 			return (Expression) compile.getConstructor().newInstance();
 		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
 				| NoSuchMethodException | SecurityException e) {
-			e.printStackTrace();
+			logger.error("", e);
 		}
 		return null;
 	}
@@ -116,7 +116,7 @@ public class FelCompiler16<T> implements FelCompiler {
 		try {
 			return loadClass(src.getName());
 		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
+			logger.error("", e);
 		}
 		return null;
 	}

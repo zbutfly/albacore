@@ -129,11 +129,6 @@ public class ReflectUtil {
 		return primitiveCls.get(c);
 	}
 
-	/*
-	 * public static void main(String[] args) { System.out.println((1+"2"+3)); int[] a = new int[]{5,4,3,2,10,100,1}; sort(a);
-	 * System.out.println(Arrays.toString(a)); }
-	 */
-
 	public static void sort(int[] array) {
 		for (int i = 1; i < array.length; i++) {
 			int j = i - 1;

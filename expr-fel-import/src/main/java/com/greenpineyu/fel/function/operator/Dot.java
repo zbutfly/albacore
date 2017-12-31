@@ -7,6 +7,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.greenpineyu.fel.Expression;
 import com.greenpineyu.fel.common.ArrayUtils;
 import com.greenpineyu.fel.common.Null;
@@ -20,7 +23,7 @@ import com.greenpineyu.fel.parser.FelNode;
 import com.greenpineyu.fel.security.SecurityMgr;
 
 public class Dot implements Function {
-
+	private static final Logger logger = LoggerFactory.getLogger(Dot.class);
 	private SecurityMgr securityMgr;
 
 	public SecurityMgr getSecurityMgr() {
@@ -112,12 +115,10 @@ public class Dot implements Function {
 	public static Object invoke(Object obj, Method method, Object[] args) {
 		try {
 			return method.invoke(obj, args);
-		} catch (IllegalArgumentException e) {
-			e.printStackTrace();
-		} catch (IllegalAccessException e) {
-			e.printStackTrace();
+		} catch (IllegalArgumentException | IllegalAccessException e) {
+			logger.error("", e);
 		} catch (InvocationTargetException e) {
-			e.printStackTrace();
+			logger.error("", e.getTargetException());
 		}
 		return null;
 	}

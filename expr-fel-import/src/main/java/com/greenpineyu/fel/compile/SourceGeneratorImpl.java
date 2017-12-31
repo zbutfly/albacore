@@ -10,6 +10,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.greenpineyu.fel.Expression;
 import com.greenpineyu.fel.FelEngine;
 import com.greenpineyu.fel.FelEngineImpl;
@@ -26,13 +29,10 @@ import com.greenpineyu.fel.parser.FelNode;
 import com.greenpineyu.fel.parser.VarAstNode;
 
 public class SourceGeneratorImpl implements SourceGenerator {
-
+	private static final Logger logger = LoggerFactory.getLogger(SourceGenerator.class);
 	private List<Optimizer> opt;
-
 	private static String template;
-
 	private static int count = 0;
-
 	private Map<String, StringKeyValue> localvars;
 
 	/**
@@ -55,18 +55,16 @@ public class SourceGeneratorImpl implements SourceGenerator {
 		BufferedReader reader = new BufferedReader(new InputStreamReader(in));
 		String line = null;
 		try {
-			while ((line = reader.readLine()) != null) {
+			while ((line = reader.readLine()) != null)
 				sb.append(line).append("\r\n");
-			}
 		} catch (IOException e) {
-			e.printStackTrace();
+			logger.error("", e);
 		}
 		template = sb.toString();
 	}
 
 	@Override
 	public JavaSource getSource(FelContext ctx, FelNode node) {
-
 		String src = "";
 		String className = getClassName();
 		synchronized (this) {
@@ -80,7 +78,6 @@ public class SourceGeneratorImpl implements SourceGenerator {
 			src = buildsource(exp, className);
 			this.localvars.clear();
 		}
-		// System.out.println("****************\n" + src);
 		JavaSource returnMe = new JavaSource();
 		returnMe.setSimpleName(className);
 		returnMe.setSource(src);
