@@ -95,7 +95,6 @@ public class FunMgr {
 		// funcMap.put(LogicalOperator.OR2_STR, LogicalOperator.OR2);// ||
 		// funcMap.put(Like.getInstance().getName(), Like.getInstance());// like
 		// funcMap.put(In.getInstance().getName(), In.getInstance());// in
-
 	}
 
 	public void autoLoad() {
@@ -117,6 +116,7 @@ public class FunMgr {
 
 	private void addFun(Function fun) {
 		funcMap.put(fun.getName(), fun);
+		logger.debug("FelEngine function initialized: " + fun.getClass().getSimpleName() + ": " + fun.getName());
 	}
 
 	/**
@@ -145,14 +145,10 @@ public class FunMgr {
 	 * @param fun
 	 */
 	public void add(Function fun) {
-		if (fun != null) {
-			String name = fun.getName();
-			if (name == null || "".equals(name)) {
-				throw new IllegalArgumentException("函数名称不能为空");
-			} else {
-				userFunMap.put(getLowerCaseName(name), fun);
-			}
-		}
+		if (fun == null) return;
+		String name = fun.getName();
+		if (name == null || "".equals(name)) throw new IllegalArgumentException("函数名称不能为空");
+		else userFunMap.put(getLowerCaseName(name), fun);
 	}
 
 	/**

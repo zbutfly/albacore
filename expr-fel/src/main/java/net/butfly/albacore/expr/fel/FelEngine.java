@@ -10,6 +10,7 @@ import com.greenpineyu.fel.Expression;
 import com.greenpineyu.fel.FelEngineImpl;
 import com.greenpineyu.fel.context.ArrayCtxImpl;
 import com.greenpineyu.fel.context.FelContext;
+import com.greenpineyu.fel.exception.ParseException;
 import com.greenpineyu.fel.function.CommonFunction;
 
 import net.butfly.albacore.expr.Engine;
@@ -38,7 +39,7 @@ public class FelEngine implements Engine {
 					Constructor<?> cc = c.getDeclaredConstructor();
 					if (cc.trySetAccessible()) {
 						CommonFunction f = (CommonFunction) cc.newInstance();
-						logger.info("FelFunc found func [" + f.getName() + "].");
+						logger.debug("FelEngine function scaned: " + f.getClass().getSimpleName() + "(" + f.getName() + ")");
 						eng.addFun(f);
 					}
 				} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
@@ -58,6 +59,14 @@ public class FelEngine implements Engine {
 		FelContext ctx = new ArrayCtxImpl();
 		if (null != context && !context.isEmpty()) for (Entry<String, Object> e : context.entrySet())
 			ctx.set(e.getKey(), e.getValue());
-		return (T) exprs.computeIfAbsent(felExpr, expr -> engine.compile(felExpr, ctx)).eval(ctx);
+		Expression ex = exprs.computeIfAbsent(felExpr, expr -> {
+			try {
+				return engine.compile(felExpr, ctx);
+			} catch (ParseException e) {
+				logger.error("Expression parsing fail", e);
+				return null;
+			}
+		});
+		return null == ex ? null : (T) ex.eval(ctx);
 	}
 }

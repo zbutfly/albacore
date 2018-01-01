@@ -10,6 +10,10 @@
 		<level value="debug" />
 		<appender-ref ref="log-console-stdout" />
 	</logger>
+	<logger additivity="false" name="com.greenpineyu.fel">
+		<level value="debug" />
+		<appender-ref ref="log-console-stdout" />
+	</logger>
 	<root>
 		<level value="info" />
 		<appender-ref ref="log-console-stdout" />

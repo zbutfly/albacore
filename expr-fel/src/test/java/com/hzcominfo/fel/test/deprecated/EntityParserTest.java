@@ -1,3 +1,4 @@
+package com.hzcominfo.fel.test.deprecated;
 //package com.hzcominfo.fel.test;
 //
 //import java.util.Date;
