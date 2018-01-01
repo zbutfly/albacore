@@ -10,6 +10,5 @@ import com.greenpineyu.fel.parser.FelNode;
  *
  */
 public interface Optimizer {
-
 	FelNode call(FelContext ctx, FelNode node);
 }

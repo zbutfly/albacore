@@ -13,7 +13,6 @@ import com.greenpineyu.fel.parser.FelNode;
  *
  */
 public class NotOper extends StableFunction {
-
 	@Override
 	public Object call(FelNode node, FelContext context) {
 		List<FelNode> children = node.getChildren();
@@ -30,7 +29,6 @@ public class NotOper extends StableFunction {
 	@Override
 	public SourceBuilder toMethod(FelNode node, FelContext ctx) {
 		return new SourceBuilder() {
-
 			@Override
 			public String source(FelContext ctx, FelNode node) {
 				List<FelNode> children = node.getChildren();
@@ -60,5 +58,4 @@ public class NotOper extends StableFunction {
 		Object r = fel.compile("!b", ctx).eval(ctx);
 		System.out.println(r);
 	}
-
 }

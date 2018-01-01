@@ -13,12 +13,12 @@ import com.greenpineyu.fel.context.FelContext;
 public class NodeAdaptor extends CommonTreeAdaptor {
 	@Override
 	public Object create(Token token) {
-		if (token == null) { return new AbstFelNode(token) {
+		if (token == null) return new AbstFelNode(token) {
 			@Override
 			public SourceBuilder toMethod(FelContext ctx) {
 				return null;
 			}
-		}; }
+		};
 
 		/*
 		 * Dot LikeIn Logical Equals Relational Additive Multiplicative Identifier FloatingPointLiteral CharacterLiteral StringLiteral
@@ -29,14 +29,11 @@ public class NodeAdaptor extends CommonTreeAdaptor {
 		String text = token.getText();
 		switch (type) {
 		case FelParser.Identifier:
-			if ("null".equals(text)) {
+			if ("null".equals(text))
 				// returnMe = AbstFelNode.NULL;
 				returnMe = new ConstNode(token, null);
-			} else {
-				returnMe = new VarAstNode(token);
-			}
+			else returnMe = new VarAstNode(token);
 			break;
-
 		/* 函数、操作符 开始 */
 		case FelParser.Dot:// .
 		case FelParser.Additive:// +、-
@@ -61,9 +58,7 @@ public class NodeAdaptor extends CommonTreeAdaptor {
 		case FelParser.HexLiteral:
 			// 数字-16进制
 			String num = text;
-			if (text.startsWith("0x") || text.startsWith("0X")) {
-				num = text.substring(2);
-			}
+			if (text.startsWith("0x") || text.startsWith("0X")) num = text.substring(2);
 			// returnMe = NumberUtil.parseNumber(Long.parseLong(num, 16));
 			returnMe = narrowBigInteger(num, 16);
 			break;
@@ -93,10 +88,10 @@ public class NodeAdaptor extends CommonTreeAdaptor {
 		default:
 			break;
 		}
-		if (returnMe == null) {
+		if (returnMe == null)
 			// 不能正确解析
 			return CommonTree.INVALID_NODE;
-		}
+
 		if (returnMe instanceof CommonTree) return returnMe;
 		return new ConstNode(token, returnMe);
 	}
@@ -115,5 +110,4 @@ public class NodeAdaptor extends CommonTreeAdaptor {
 	protected Number newFloatNumber(String text) {
 		return Double.valueOf(text);
 	}
-
 }

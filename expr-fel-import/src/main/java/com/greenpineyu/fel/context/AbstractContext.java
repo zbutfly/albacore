@@ -3,7 +3,6 @@ package com.greenpineyu.fel.context;
 import com.greenpineyu.fel.common.ReflectUtil;
 
 public abstract class AbstractContext implements FelContext {
-
 	// @Override
 	// public Object get(String name) {
 	// Var var = this.getVar(name);
@@ -53,5 +52,4 @@ public abstract class AbstractContext implements FelContext {
 		}
 		return type;
 	}
-
 }

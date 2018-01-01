@@ -1,7 +1,6 @@
 package com.greenpineyu.fel.function.operator;
 
 public class NotEqual extends Equal {
-
 	@Override
 	boolean compare(Object left, Object right) {
 		return equals(left, right) == false;
@@ -16,5 +15,4 @@ public class NotEqual extends Equal {
 	public String getName() {
 		return "!=";
 	}
-
 }

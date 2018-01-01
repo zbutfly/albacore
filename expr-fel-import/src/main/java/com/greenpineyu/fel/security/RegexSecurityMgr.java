@@ -9,7 +9,6 @@ import java.util.regex.Pattern;
 import com.greenpineyu.fel.Fel;
 
 public class RegexSecurityMgr implements SecurityMgr {
-
 	private Map<String, Pattern> callableMap;
 	private Map<String, Pattern> uncallableMap;
 
@@ -122,5 +121,4 @@ public class RegexSecurityMgr implements SecurityMgr {
 		// 会抛出异常
 		Fel.eval("$(System).exit(1)");
 	}
-
 }

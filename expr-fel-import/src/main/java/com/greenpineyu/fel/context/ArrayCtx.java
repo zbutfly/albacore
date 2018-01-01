@@ -1,7 +1,6 @@
 package com.greenpineyu.fel.context;
 
 public interface ArrayCtx extends FelContext {
-
 	/**
 	 * 根据索引获取变量值
 	 * 
@@ -17,5 +16,4 @@ public interface ArrayCtx extends FelContext {
 	 * @return
 	 */
 	int getIndex(String name);
-
 }

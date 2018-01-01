@@ -36,5 +36,4 @@ public class Interpreters implements Optimizer {
 	}
 
 	public static void main(String[] args) {}
-
 }

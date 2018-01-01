@@ -27,5 +27,4 @@ public abstract class AbstFelParser extends Parser {
 		String msg = getErrorMessage(e, tokenNames);
 		emitErrorMessage("解析表达式[" + e.input.toString() + "]出错:" + hdr + " " + msg);
 	}
-
 }

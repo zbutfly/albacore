@@ -14,7 +14,6 @@ import com.greenpineyu.fel.function.TolerantFunction;
 import com.greenpineyu.fel.parser.FelNode;
 
 public class BigSub extends StableFunction {
-
 	/*
 	 * 大数值加法运算（并保证精度）
 	 * 
@@ -70,5 +69,4 @@ public class BigSub extends StableFunction {
 	}
 
 	public static void main(String[] args) {}
-
 }

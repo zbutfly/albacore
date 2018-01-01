@@ -5,7 +5,6 @@ package com.greenpineyu.fel.compile;
  * 
  */
 public class ConstExpSrc extends JavaSource {
-
 	public ConstExpSrc(Object o) {
 		this.value = new ConstExp(o);
 	}
@@ -15,5 +14,4 @@ public class ConstExpSrc extends JavaSource {
 	public ConstExp getValue() {
 		return value;
 	}
-
 }

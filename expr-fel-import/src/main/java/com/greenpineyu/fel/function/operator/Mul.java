@@ -71,5 +71,4 @@ public class Mul extends StableFunction {
 	public boolean stable() {
 		return true;
 	}
-
 }

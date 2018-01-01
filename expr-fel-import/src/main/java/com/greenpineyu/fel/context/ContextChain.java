@@ -7,7 +7,6 @@ package com.greenpineyu.fel.context;
  * 
  */
 public class ContextChain implements FelContext {
-
 	/**
 	 * 上级context
 	 */
@@ -49,5 +48,4 @@ public class ContextChain implements FelContext {
 	public void setVar(Var var) {
 		current.setVar(var);
 	}
-
 }

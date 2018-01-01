@@ -1,7 +1,6 @@
 package com.greenpineyu.fel.function.operator.big;
 
 public class BigGreaterThan extends BigLessThan {
-
 	@Override
 	public String getName() {
 		return ">";
@@ -21,5 +20,4 @@ public class BigGreaterThan extends BigLessThan {
 	protected boolean equalsReturnValue() {
 		return false;
 	}
-
 }

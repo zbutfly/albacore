@@ -27,7 +27,6 @@ import com.greenpineyu.fel.parser.FelNode;
  * 
  */
 public class CollectionGet extends StableFunction {
-
 	@Override
 	public Object call(FelNode node, FelContext context) {
 		if (node.getChildCount() >= 2) {

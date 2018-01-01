@@ -109,5 +109,4 @@ public class Dollar implements Function {
 		Object eval = FelEngine.instance.eval(exp);
 		System.out.println(eval);
 	}
-
 }

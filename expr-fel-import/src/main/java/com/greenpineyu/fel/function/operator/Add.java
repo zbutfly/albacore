@@ -20,7 +20,6 @@ import com.greenpineyu.fel.function.TolerantFunction;
 import com.greenpineyu.fel.parser.FelNode;
 
 public class Add extends StableFunction {
-
 	public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
 
 	@Override
@@ -161,5 +160,4 @@ public class Add extends StableFunction {
 			return ObjectUtils.toString(left).concat(ObjectUtils.toString(right));
 		}
 	}
-
 }

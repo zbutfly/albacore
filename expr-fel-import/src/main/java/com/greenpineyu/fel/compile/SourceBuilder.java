@@ -10,7 +10,6 @@ import com.greenpineyu.fel.parser.FelNode;
  *
  */
 public interface SourceBuilder {
-
 	/**
 	 * 类型
 	 * 
@@ -30,5 +29,4 @@ public interface SourceBuilder {
 	 * @return
 	 */
 	String source(FelContext ctx, FelNode node);
-
 }

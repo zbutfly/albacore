@@ -11,7 +11,6 @@ import com.greenpineyu.fel.common.Null;
  *            变量的类型
  */
 public class Var {
-
 	public Var(String name, Object value, Class<?> type) {
 		this.name = name;
 		this.value = value;
@@ -71,5 +70,4 @@ public class Var {
 	}
 
 	public static void main(String[] args) {}
-
 }

@@ -16,7 +16,6 @@ import com.greenpineyu.fel.interpreter.Interpreter;
  *
  */
 public interface FelNode extends Expression, Tree, Stable {
-
 	/**
 	 * 获取子节点
 	 */
@@ -44,5 +43,4 @@ public interface FelNode extends Expression, Tree, Stable {
 	void setSourcebuilder(SourceBuilder builder);
 
 	SourceBuilder toMethod(FelContext ctx);
-
 }

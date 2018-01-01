@@ -22,5 +22,4 @@ public class ProxyInterpreter implements Interpreter {
 	public Object interpret(FelContext context, FelNode node) {
 		return inte.interpret(context, this.node);
 	}
-
 }

@@ -10,5 +10,4 @@ public interface Expression {
 	 * @return
 	 */
 	Object eval(FelContext context);
-
 }

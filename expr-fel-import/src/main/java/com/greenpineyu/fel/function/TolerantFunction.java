@@ -36,5 +36,4 @@ public abstract class TolerantFunction implements Function {
 	public String toJavaSrc(FelNode node, FelContext context) {
 		throw new UnsupportedOperationException("还没有实现");
 	}
-
 }

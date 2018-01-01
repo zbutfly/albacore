@@ -8,7 +8,6 @@ import com.greenpineyu.fel.parser.FelNode;
  * @uml.dependency supplier=".script.context.ScriptContext"
  */
 public interface Function {
-
 	/**
 	 * 获取函数的名称
 	 * 
@@ -25,5 +24,4 @@ public interface Function {
 	Object call(FelNode node, FelContext context);
 
 	SourceBuilder toMethod(FelNode node, FelContext ctx);
-
 }

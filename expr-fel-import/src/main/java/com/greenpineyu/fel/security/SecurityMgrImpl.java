@@ -5,7 +5,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class SecurityMgrImpl implements SecurityMgr {
-
 	private Set<Method> callableSet;
 	private Set<Method> uncallableSet;
 

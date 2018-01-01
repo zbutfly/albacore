@@ -20,7 +20,6 @@ import com.greenpineyu.fel.parser.FunNode;
  * 
  */
 public class ConstOpti implements Optimizer {
-
 	@Override
 	public FelNode call(FelContext ctx, FelNode node) {
 		if (node.stable()) {
@@ -41,45 +40,15 @@ public class ConstOpti implements Optimizer {
 						boolean isOr = fun instanceof Or;
 						// 短路的判断值，or使用True来判断，and使用false来判断
 						Boolean result = isOr;
-						// if (isOr) {
 						FelNode constNode = toShortCutConst(node, ctx, left, result);
 						if (constNode != null) return constNode;
 						constNode = toShortCutConst(node, ctx, right, result);
 						if (constNode != null) return constNode;
-						// else if (right.stable()) {
-						// Object rightValue = node.getInterpreter()
-						// .interpret(ctx, right);
-						// if (result.equals(right)) {
-						// isLogicOptimized = true;
-						// return newConstNode(node, rightValue);
-						// }
-						// }
-						// }else{
-						// if(left.stable()){
-						// Object leftValue =
-						// node.getInterpreter().interpret(ctx,
-						// left);
-						// if (Boolean.FALSE.equals(leftValue)) {
-						// children.remove(1);
-						// children.set(0, newConstNode(left, leftValue));
-						// }
-						// }else if(right.stable()){
-						// Object rightValue =
-						// node.getInterpreter().interpret(ctx,
-						// right);
-						// if(Boolean.FALSE.equals(right)) {
-						// children.remove(1);
-						// children.set(0, newConstNode(right, rightValue));
-						// }
-						// }
-						// }
 					}
 				}
-				if (!isLogicOptimized) {
-					for (int i = 0; i < children.size(); i++) {
-						FelNode c = children.get(i);
-						children.set(i, this.call(ctx, c));
-					}
+				if (!isLogicOptimized) for (int i = 0; i < children.size(); i++) {
+					FelNode c = children.get(i);
+					children.set(i, this.call(ctx, c));
 				}
 			}
 			return node;
@@ -90,9 +59,7 @@ public class ConstOpti implements Optimizer {
 		FelNode constNode = null;
 		if (left.stable()) {
 			Object leftValue = node.getInterpreter().interpret(ctx, left);
-			if (result.equals(leftValue)) {
-				constNode = newConstNode(node, leftValue);
-			}
+			if (result.equals(leftValue)) constNode = newConstNode(node, leftValue);
 		}
 		return constNode;
 	}
@@ -108,7 +75,6 @@ public class ConstOpti implements Optimizer {
 		token.setText(node.getText());
 		return new ConstNode(token, value);
 	}
-
 }
 
 /**

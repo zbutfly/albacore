@@ -17,7 +17,6 @@ import com.greenpineyu.fel.context.FelContext;
  * 
  */
 public class ConstNode extends AbstFelNode {
-
 	private Object value;
 
 	public ConstNode(Token token, Object value) {
@@ -58,5 +57,4 @@ public class ConstNode extends AbstFelNode {
 	public boolean stable() {
 		return true;
 	}
-
 }

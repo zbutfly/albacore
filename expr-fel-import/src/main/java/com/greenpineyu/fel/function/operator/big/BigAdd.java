@@ -16,7 +16,6 @@ import com.greenpineyu.fel.function.TolerantFunction;
 import com.greenpineyu.fel.parser.FelNode;
 
 public class BigAdd extends StableFunction {
-
 	/*
 	 * 大数值加法运算（并保证精度）
 	 * 
@@ -110,5 +109,4 @@ public class BigAdd extends StableFunction {
 		System.out.println((-9484950.4f) + (-188132624.1) + (-10645.84) + (-196528.43) + (-109190992.2) + (-12353902.38) + (0) + (0)
 				+ (-502721396.8));
 	}
-
 }

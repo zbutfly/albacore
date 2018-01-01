@@ -41,5 +41,4 @@ public class Fel {
 		System.out.println(eval);
 		System.out.println(0.1 + 0.19);
 	}
-
 }

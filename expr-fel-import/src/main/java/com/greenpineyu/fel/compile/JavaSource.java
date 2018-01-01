@@ -1,7 +1,6 @@
 package com.greenpineyu.fel.compile;
 
 public class JavaSource {
-
 	/**
 	 * 类名，不包含包名
 	 */
@@ -44,5 +43,4 @@ public class JavaSource {
 	public void setSource(String source) {
 		this.source = source;
 	}
-
 }

@@ -13,7 +13,6 @@ import com.greenpineyu.fel.Expression;
 import com.greenpineyu.fel.common.StringUtils;
 
 public abstract class AbstCompiler implements FelCompiler {
-
 	/**
 	 * class文件夹
 	 */
@@ -143,5 +142,4 @@ public abstract class AbstCompiler implements FelCompiler {
 		return StringUtils.replace(packageName, ".", sep);
 		// return packageName.replaceAll("\\.", sep);
 	}
-
 }

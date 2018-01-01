@@ -6,7 +6,6 @@ import com.greenpineyu.fel.parser.FelNode;
  * 包名 .script.function 类名 ERRORVALUE.java 创建日期 Oct 27, 20108:56:26 AM 作者 版权
  */
 public class ErrorValue {
-
 	/**
 	 * 错误节点
 	 */
@@ -43,5 +42,4 @@ public class ErrorValue {
 		if (errorMsg != null) return errorMsg;
 		return "执行脚本出错";
 	}
-
 }

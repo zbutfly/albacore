@@ -5,7 +5,6 @@ import com.greenpineyu.fel.optimizer.Optimizer;
 import com.greenpineyu.fel.parser.FelNode;
 
 public interface SourceGenerator {
-
 	/**
 	 * 获取表达式JAVA源代码
 	 * 
@@ -16,5 +15,4 @@ public interface SourceGenerator {
 	JavaSource getSource(FelContext ctx, FelNode node);
 
 	void addOpti(Optimizer opti);
-
 }

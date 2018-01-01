@@ -14,7 +14,6 @@ import com.greenpineyu.fel.function.operator.LessThen;
 import com.greenpineyu.fel.parser.FelNode;
 
 public class BigLessThan extends LessThen {
-
 	/**
 	 * 大于 >
 	 * 
@@ -77,5 +76,4 @@ public class BigLessThan extends LessThen {
 	public SourceBuilder toMethod(FelNode node, FelContext ctx) {
 		return InterpreterSourceBuilder.getInstance();
 	}
-
 }

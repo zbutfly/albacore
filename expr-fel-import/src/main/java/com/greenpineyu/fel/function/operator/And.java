@@ -16,7 +16,6 @@ import com.greenpineyu.fel.parser.FelNode;
  * 逻辑操作符
  */
 public class And extends StableFunction {
-
 	// private final String operator;
 	//
 	// private LogicalOperator(String operator) {
@@ -119,5 +118,4 @@ public class And extends StableFunction {
 		if (Null.class.isAssignableFrom(type)) return "false";
 		return "false";
 	}
-
 }

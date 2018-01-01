@@ -14,5 +14,4 @@ public class ConstInterpreter implements Interpreter {
 	public Object interpret(FelContext context, FelNode node) {
 		return value;
 	}
-
 }

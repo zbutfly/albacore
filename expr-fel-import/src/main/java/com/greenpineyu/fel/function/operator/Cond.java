@@ -17,7 +17,6 @@ import com.greenpineyu.fel.parser.FelNode;
  * 
  */
 public class Cond extends StableFunction {
-
 	@Override
 	public Object call(FelNode node, FelContext context) {
 		List<FelNode> args = ensureValid(node);
@@ -88,5 +87,4 @@ public class Cond extends StableFunction {
 		result = fel.compile(exp, null).eval(null);
 		System.out.println(result);
 	}
-
 }

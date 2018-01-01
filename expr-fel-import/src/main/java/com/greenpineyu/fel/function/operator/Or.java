@@ -6,7 +6,6 @@ import com.greenpineyu.fel.context.FelContext;
 import com.greenpineyu.fel.parser.FelNode;
 
 public class Or extends And {
-
 	/**
 	 * 求逻辑或(||)
 	 * 

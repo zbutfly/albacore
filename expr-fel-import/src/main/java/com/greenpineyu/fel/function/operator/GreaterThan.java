@@ -3,7 +3,6 @@ package com.greenpineyu.fel.function.operator;
 import com.greenpineyu.fel.common.NumberUtil;
 
 public class GreaterThan extends LessThen {
-
 	@Override
 	public String getName() {
 		return ">";
@@ -30,5 +29,4 @@ public class GreaterThan extends LessThen {
 		// TODO 是返回false还是抛出异常?
 		return false;
 	}
-
 }

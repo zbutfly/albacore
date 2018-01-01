@@ -13,7 +13,6 @@ import com.greenpineyu.fel.function.StableFunction;
 import com.greenpineyu.fel.parser.FelNode;
 
 public class Sub extends StableFunction {
-
 	private void appendArg(StringBuilder sb, SourceBuilder argMethod, FelContext ctx, FelNode node) {
 		Class<?> t = argMethod.returnType(ctx, node);
 		sb.append("(");
@@ -105,5 +104,4 @@ public class Sub extends StableFunction {
 		int a = -(1);
 		System.out.println(a);
 	}
-
 }

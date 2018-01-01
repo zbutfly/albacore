@@ -95,7 +95,6 @@ public class VarBuffer {
 		ExecutorService pool = Executors.newFixedThreadPool(i);
 		for (int j = 0; j < i; j++) {
 			pool.submit(new Runnable() {
-
 				@Override
 				public void run() {
 					String name = Thread.currentThread().getName();

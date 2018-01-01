@@ -17,7 +17,6 @@ import com.greenpineyu.fel.parser.Stable;
  * 包名 .script.function.operator 类名 RelationalOperator.java 创建日期 Oct 26, 20103:04:25 PM 作者 版权
  */
 public class LessThen implements Stable, Function {
-
 	// private final String operator;
 
 	// private RelationalOperator(String operator) {
@@ -155,5 +154,4 @@ public class LessThen implements Stable, Function {
 		System.out.println(engine.eval("6>=5"));
 
 	}
-
 }

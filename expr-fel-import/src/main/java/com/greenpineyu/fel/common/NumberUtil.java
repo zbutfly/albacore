@@ -9,7 +9,6 @@ import com.greenpineyu.fel.function.operator.Add;
  * 包名 .common 类名 NumberUtil.java 创建日期 Oct 26, 20109:14:28 AM 作者 版权
  */
 public class NumberUtil {
-
 	/** Double.MAX_VALUE as BigDecimal. */
 	public static final BigDecimal BIGD_DOUBLE_MAX_VALUE = BigDecimal.valueOf(Double.MAX_VALUE);
 	/** Double.MIN_VALUE as BigDecimal. */
@@ -451,5 +450,4 @@ public class NumberUtil {
 		System.out.println(equals(d, f));
 		System.out.println(equals(d, d));
 	}
-
 }

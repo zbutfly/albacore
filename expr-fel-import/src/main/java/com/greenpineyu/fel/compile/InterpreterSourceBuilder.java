@@ -6,7 +6,6 @@ import com.greenpineyu.fel.interpreter.Interpreter;
 import com.greenpineyu.fel.parser.FelNode;
 
 public class InterpreterSourceBuilder implements SourceBuilder {
-
 	private static final SourceBuilder instance;
 
 	public static SourceBuilder getInstance() {
@@ -46,5 +45,4 @@ public class InterpreterSourceBuilder implements SourceBuilder {
 		}
 		return code;
 	}
-
 }

@@ -125,7 +125,6 @@ public class Dot implements Function {
 
 	@Override
 	public FelMethod toMethod(FelNode node, FelContext context) {
-
 		StringBuilder sb = new StringBuilder();
 		List<FelNode> children = node.getChildren();
 		FelNode l = children.get(0);
@@ -225,5 +224,4 @@ public class Dot implements Function {
 		}
 		return paramCode;
 	}
-
 }

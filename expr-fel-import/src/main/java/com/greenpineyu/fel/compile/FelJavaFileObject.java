@@ -15,7 +15,6 @@ import javax.tools.SimpleJavaFileObject;
  * 
  */
 public class FelJavaFileObject extends SimpleJavaFileObject {
-
 	// If kind == CLASS, this stores byte code from openOutputStream
 	private final ByteArrayOutputStream byteCodeOs = new ByteArrayOutputStream();
 
@@ -56,5 +55,4 @@ public class FelJavaFileObject extends SimpleJavaFileObject {
 	byte[] getByteCode() {
 		return byteCodeOs.toByteArray();
 	}
-
 }

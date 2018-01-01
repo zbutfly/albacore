@@ -15,5 +15,4 @@ public abstract class StableFunction implements Function, Stable {
 	public boolean stable() {
 		return true;
 	}
-
 }

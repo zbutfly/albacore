@@ -67,5 +67,4 @@ public class MapContext extends HashMap<String, Var> implements FelContext {
 	public void setVar(Var var) {
 		super.put(var.getName(), var);
 	}
-
 }

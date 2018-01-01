@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 
 public class BigMod extends BigMul {
-
 	@Override
 	public String getName() {
 		return "%";

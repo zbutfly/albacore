@@ -25,5 +25,4 @@ public final class FelCompilerClassloader extends ClassLoader {
 	public void add(String qualifiedClassName, final FileObject javaFile) {
 		compileFileMap.put(qualifiedClassName, javaFile);
 	}
-
 }

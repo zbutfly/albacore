@@ -6,7 +6,6 @@ import java.math.MathContext;
 import java.math.RoundingMode;
 
 public class BigDiv extends BigMul {
-
 	public BigDiv(int setPrecision) {
 		mc = new MathContext(setPrecision, RoundingMode.HALF_DOWN);
 	}
@@ -31,5 +30,4 @@ public class BigDiv extends BigMul {
 	Object calc(BigInteger left, BigInteger right) {
 		return left.divide(right);
 	}
-
 }

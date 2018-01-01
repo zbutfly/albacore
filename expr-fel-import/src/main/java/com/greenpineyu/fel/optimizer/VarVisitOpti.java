@@ -22,7 +22,6 @@ import com.greenpineyu.fel.parser.VarAstNode;
  * 
  */
 public class VarVisitOpti implements Optimizer {
-
 	/**
 	 * 用于保存变量
 	 */
@@ -70,7 +69,6 @@ public class VarVisitOpti implements Optimizer {
 
 	private SourceBuilder createVarSourceBuilder(final VarAstNode n) {
 		return new SourceBuilder() {
-
 			private String src = null;
 			private Class<?> returnType = null;
 
@@ -106,5 +104,4 @@ public class VarVisitOpti implements Optimizer {
 		}
 		return var;
 	}
-
 }

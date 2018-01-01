@@ -15,7 +15,6 @@ import com.greenpineyu.fel.security.SecurityMgr;
  * @author yqs
  */
 public interface FelEngine {
-
 	/**
 	 * 默认实例
 	 */
@@ -133,5 +132,4 @@ public interface FelEngine {
 	 * @param mgr
 	 */
 	void setSecurityMgr(SecurityMgr mgr);
-
 }

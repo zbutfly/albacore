@@ -4,7 +4,6 @@ import com.greenpineyu.fel.context.FelContext;
 import com.greenpineyu.fel.parser.FelNode;
 
 public class FelMethod implements SourceBuilder {
-
 	private Class<?> returnType;
 
 	private String code;
@@ -31,5 +30,4 @@ public class FelMethod implements SourceBuilder {
 	public void setCode(String code) {
 		this.code = code;
 	}
-
 }

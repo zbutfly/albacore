@@ -15,7 +15,6 @@ import com.greenpineyu.fel.parser.FelNode;
  * 
  */
 public class ConstExpOpti implements Optimizer {
-
 	@Override
 	public FelNode call(FelContext ctx, FelNode node) {
 		if (node instanceof ConstNode) {
@@ -23,7 +22,6 @@ public class ConstExpOpti implements Optimizer {
 
 			// 重新构建常量节点的java源码
 			node.setSourcebuilder(new SourceBuilder() {
-
 				@Override
 				public String source(FelContext ctx, FelNode node) {
 					// Class<?> type = returnType(ctx, node);
@@ -43,5 +41,4 @@ public class ConstExpOpti implements Optimizer {
 		}
 		return node;
 	}
-
 }

@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class ReflectUtil {
-
 	/**
 	 * key为基本类型及其包装类型，value为包装类型
 	 */
@@ -228,5 +227,4 @@ public class ReflectUtil {
 		if (cls == null) return "null";
 		return cls.getCanonicalName();
 	}
-
 }

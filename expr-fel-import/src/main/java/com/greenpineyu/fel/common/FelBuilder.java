@@ -23,7 +23,6 @@ import com.greenpineyu.fel.security.RegexSecurityMgr;
 import com.greenpineyu.fel.security.SecurityMgr;
 
 public class FelBuilder {
-
 	/**
 	 * 构建安全管理器
 	 * 
@@ -41,13 +40,6 @@ public class FelBuilder {
 		return new RegexSecurityMgr(null, disables);
 	}
 
-	public static void main(String[] args) {
-		System.out.println(System.class.getCanonicalName());
-		System.out.println(Long.toBinaryString(0xFFFFFFFFl));
-		System.out.println(Long.toBinaryString(Long.MAX_VALUE).length());
-		System.out.println(Long.MAX_VALUE);
-	}
-
 	public static FelEngine bigNumberEngine() {
 		return bigNumberEngine(100);
 	}
@@ -56,6 +48,8 @@ public class FelBuilder {
 		return new FelEngineImpl();
 	}
 
+	private final static char[] LAST_CHARS = { 'l', 'L', 'd', 'D', 'f', 'F' };
+
 	public static FelEngine bigNumberEngine(int setPrecision) {
 		FelEngine engine = new FelEngineImpl();
 		FunMgr funMgr = engine.getFunMgr();
@@ -63,9 +57,11 @@ public class FelBuilder {
 			@Override
 			protected Number newFloatNumber(String text) {
 				char lastChar = text.charAt(text.length() - 1);
-				if (lastChar == 'l' || lastChar == 'L' || lastChar == 'd' || lastChar == 'D' || lastChar == 'f' || lastChar == 'F') {
-					text = text.substring(0, text.length() - 1);
-				}
+				for (char c : LAST_CHARS)
+					if (lastChar == c) {
+						text = text.substring(0, text.length() - 1);
+						break;
+					}
 				return new BigDecimal(text);
 			}
 		}));
@@ -81,4 +77,10 @@ public class FelBuilder {
 		return engine;
 	}
 
+	public static void main(String[] args) {
+		System.out.println(System.class.getCanonicalName());
+		System.out.println(Long.toBinaryString(0xFFFFFFFFl));
+		System.out.println(Long.toBinaryString(Long.MAX_VALUE).length());
+		System.out.println(Long.MAX_VALUE);
+	}
 }

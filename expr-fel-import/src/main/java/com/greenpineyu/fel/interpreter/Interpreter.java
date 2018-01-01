@@ -10,11 +10,9 @@ import com.greenpineyu.fel.parser.FelNode;
  *
  */
 public interface Interpreter {
-
 	/**
 	 * @param context
 	 * @return
 	 */
 	Object interpret(FelContext context, FelNode node);
-
 }

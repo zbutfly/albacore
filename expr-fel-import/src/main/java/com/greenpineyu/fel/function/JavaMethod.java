@@ -18,7 +18,6 @@ import com.greenpineyu.fel.parser.FelNode;
  * 
  */
 public class JavaMethod implements Function {
-
 	/**
 	 * 方法名称
 	 */
@@ -97,7 +96,5 @@ public class JavaMethod implements Function {
 	}
 
 	public static void main(String[] args) throws SecurityException, NoSuchMethodException {
-
 	}
-
 }

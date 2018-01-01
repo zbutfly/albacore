@@ -257,9 +257,7 @@ public class SourceGeneratorImpl implements SourceGenerator {
 			}
 
 			private SourceBuilder getVarSrcBuilder(final SourceBuilder old) {
-
 				return new SourceBuilder() {
-
 					@Override
 					public String source(FelContext ctx, FelNode node) {
 						String text = node.getText();

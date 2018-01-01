@@ -25,7 +25,6 @@ public class FunNode extends AbstFelNode {
 	}
 
 	private static final Function NOT_FOUND_FUN = new Function() {
-
 		@Override
 		public String getName() {
 			return "未知函数";
@@ -51,10 +50,6 @@ public class FunNode extends AbstFelNode {
 
 	}
 
-	// {
-	// initFun();
-	// }
-
 	@Override
 	public Object interpret(FelContext context, FelNode node) {
 		return fun.call(this, context);
@@ -62,9 +57,7 @@ public class FunNode extends AbstFelNode {
 
 	public void initFun(FunMgr funMgr) {
 		fun = funMgr.getFun(getText());
-		if (fun == null) {
-			fun = NOT_FOUND_FUN;
-		}
+		if (fun == null) fun = NOT_FOUND_FUN;
 	}
 
 	@Override
@@ -76,10 +69,9 @@ public class FunNode extends AbstFelNode {
 
 	@Override
 	public boolean stable() {
-		if (this.fun instanceof Stable) {
+		if (this.fun instanceof Stable)
 			// 函数是稳定的，并且参数是稳定的
 			return ((Stable) fun).stable() && this.isChildrenStable();
-		}
 		return false;
 	}
 }

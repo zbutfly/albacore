@@ -14,7 +14,6 @@ import com.greenpineyu.fel.function.operator.Equal;
 import com.greenpineyu.fel.parser.FelNode;
 
 public class BigEqual extends Equal {
-
 	@Override
 	protected boolean compareNumber(Object left, Object right) {
 		try {
@@ -48,5 +47,4 @@ public class BigEqual extends Equal {
 	}
 
 	public static void main(String[] args) {}
-
 }

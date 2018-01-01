@@ -3,7 +3,6 @@ package com.greenpineyu.fel.context;
 import com.greenpineyu.fel.common.Null;
 
 public interface FelContext {
-
 	Null NULL = new Null();
 
 	/**
@@ -28,5 +27,4 @@ public interface FelContext {
 	Var getVar(String name);
 
 	void setVar(Var var);
-
 }

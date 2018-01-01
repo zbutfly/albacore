@@ -13,7 +13,6 @@ import com.greenpineyu.fel.function.TolerantFunction;
 import com.greenpineyu.fel.parser.FelNode;
 
 public class Equal extends StableFunction {
-
 	@Override
 	public String getName() {
 		return "==";
@@ -136,5 +135,4 @@ public class Equal extends StableFunction {
 	 * 当type是Boolean时，使用toString sb.append(src); } else if (String.class.isAssignableFrom(type)) { // 当type是字符型时，转成double型
 	 * sb.append("Boolean.valueOf(" + src + ")"); } else { // 当type是Object时，this.equals // FIXME } }
 	 */
-
 }

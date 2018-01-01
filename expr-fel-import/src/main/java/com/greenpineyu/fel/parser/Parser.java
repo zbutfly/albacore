@@ -7,7 +7,6 @@ package com.greenpineyu.fel.parser;
  * 
  */
 public interface Parser {
-
 	/**
 	 * 将表达式解析成节点
 	 * 
@@ -23,5 +22,4 @@ public interface Parser {
 	 * @return
 	 */
 	boolean verify(String exp);
-
 }
