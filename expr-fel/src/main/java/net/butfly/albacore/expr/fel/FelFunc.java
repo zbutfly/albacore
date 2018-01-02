@@ -8,6 +8,7 @@ import java.lang.annotation.Target;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.Map;
+import java.util.UUID;
 import java.util.regex.Pattern;
 
 import com.greenpineyu.fel.function.CommonFunction;
@@ -46,6 +47,37 @@ public abstract class FelFunc<R> extends CommonFunction {
 		if (name.endsWith("Func")) name = name.substring(0, name.length() - 4);
 		else if (name.endsWith("Function")) name = name.substring(0, name.length() - 8);
 		return CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, name);
+	}
+
+	/**
+	 * uuid()
+	 * 
+	 * @author butfly
+	 */
+	@Func
+	private static class UuidFunc extends FelFunc<Object> {
+		@Override
+		public Object invoke(Object... args) {
+			return UUID.randomUUID().toString();
+		}
+	}
+
+	/**
+	 * strrev('1234567')
+	 * 
+	 * @author butfly
+	 */
+	@Func
+	private static class StrrevFunc extends FelFunc<Object> {
+		@Override
+		protected boolean valid(int argl) {
+			return argl == 1;
+		}
+
+		@Override
+		public Object invoke(Object... args) {
+			return null == args[0] ? null : new StringBuilder(args[0].toString()).reverse().toString();
+		}
 	}
 
 	/**
@@ -114,6 +146,7 @@ public abstract class FelFunc<R> extends CommonFunction {
 		}
 	}
 
+	@Deprecated
 	@Func
 	private static class ConcatFunc extends FelFunc<String> {
 		@Override

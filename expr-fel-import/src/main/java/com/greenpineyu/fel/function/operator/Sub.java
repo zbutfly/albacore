@@ -16,10 +16,10 @@ public class Sub extends StableFunction {
 	private void appendArg(StringBuilder sb, SourceBuilder argMethod, FelContext ctx, FelNode node) {
 		Class<?> t = argMethod.returnType(ctx, node);
 		sb.append("(");
-		if (ReflectUtil.isPrimitiveOrWrapNumber(t)) {
+		if (ReflectUtil.isPrimitiveOrWrapNumber(t))
 			// 数值型和字符型时，直接添加
 			sb.append(argMethod.source(ctx, node));
-		} else if (CharSequence.class.isAssignableFrom(t)) {
+		else if (CharSequence.class.isAssignableFrom(t)) {
 			// FIXME 处理1-"1"的
 		}
 		sb.append(")");
@@ -45,21 +45,17 @@ public class Sub extends StableFunction {
 			appendArg(sb, rm, ctx, right);
 
 			// returnType
-			if (ReflectUtil.isPrimitiveOrWrapNumber(leftType) && ReflectUtil.isPrimitiveOrWrapNumber(rightType)) {
-				type = NumberUtil.arithmeticClass(leftType, rightType);
-			} else {
-				throw new CompileException("不支持的类型[" + ReflectUtil.getClassName(leftType) + "、" + ReflectUtil.getClassName(rightType)
-						+ "]。减[-]运算只支持数值类型");
-			}
+			if (ReflectUtil.isPrimitiveOrWrapNumber(leftType) && ReflectUtil.isPrimitiveOrWrapNumber(rightType)) type = NumberUtil
+					.arithmeticClass(leftType, rightType);
+			else throw new CompileException("不支持的类型[" + ReflectUtil.getClassName(leftType) + "、" + ReflectUtil.getClassName(rightType)
+					+ "]。减[-]运算只支持数值类型");
 		} else if (children.size() == 1) {
 			FelNode right = children.get(0);
 			SourceBuilder rm = right.toMethod(ctx);
 			Class<?> rightType = rm.returnType(ctx, right);
 			sb.append("-");
 			appendArg(sb, rm, ctx, right);
-			if (ReflectUtil.isPrimitiveOrWrapNumber(rightType)) {
-				type = rightType;
-			}
+			if (ReflectUtil.isPrimitiveOrWrapNumber(rightType)) type = rightType;
 		}
 		// sb.append("-");
 		// SourceBuilder rm = right.toMethod(ctx);

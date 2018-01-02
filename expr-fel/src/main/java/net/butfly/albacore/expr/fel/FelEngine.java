@@ -31,22 +31,22 @@ public class FelEngine implements Engine {
 		}
 		for (Class<?> c : Reflections.getClassesAnnotatedWith(Func.class, ""))
 			if (CommonFunction.class.isAssignableFrom(c)) {
-				if (!Modifier.isStatic(c.getModifiers())) {
+				if (!Modifier.isStatic(c.getModifiers())) //
 					logger.error("FelFunc found func class [" + c.getName() + "] but not static, ignore.");
-					continue;
-				}
-				try {
+				else try {
 					Constructor<?> cc = c.getDeclaredConstructor();
 					if (cc.trySetAccessible()) {
 						CommonFunction f = (CommonFunction) cc.newInstance();
 						logger.debug("FelEngine function scaned: " + f.getClass().getSimpleName() + "(" + f.getName() + ")");
+						if (c.isAnnotationPresent(Deprecated.class)) //
+							logger.warn("FelEngine function scaned: " + f.getClass().getSimpleName() + "(" + f.getName()
+									+ ") but marked as Deprecated, don't use it.");
 						eng.addFun(f);
 					}
 				} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
 						| SecurityException | NoSuchMethodException e) {
 					logger.error("FelFunc found func class [" + c.getName() + "] but instantial fail", e);
 				}
-
 			} else logger.error("FelFunc found func class [" + c.getName() + "] annotated by @Func is not a FelFunc");
 		return eng;
 	}
