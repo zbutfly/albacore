@@ -135,30 +135,45 @@ public class JVM {
 	}
 
 	private static Class<?> parseMainClass() {
-		String n = System.getProperty("exec.mainClass");
-		if (null != n) try {
-			return Class.forName(n);
-		} catch (ClassNotFoundException e) {}
-		Thread t = getMainThread();
-		if (null != t) {
-			StackTraceElement[] s = t.getStackTrace();
-			try {
-				return Class.forName(s[s.length - 1].getClassName());
-			} catch (ClassNotFoundException e) {}
-		}
-		n = System.getProperty("sun.java.command");
-		if (null == n) return null;
-		if (n.endsWith(".jar")) {
-			try (JarFile jar = new JarFile(Thread.currentThread().getContextClassLoader().getResource(n).getPath());) {
+		Class<?> c = guessMainClassByMaven();
+		if (null != c) return c;
+		c = guessMainClassByJava();
+		if (null != c) return c;
+		throw new RuntimeException(new ClassNotFoundException("Can't find main class. It can be define manully by -Dexec.mainClass=..."));
+	}
+
+	static Class<?> guessMainClassByJava() {
+		String[] argus = System.getProperty("sun.java.command").split("[\\s]+");
+		if ("-jar".equals(argus[0])) {
+			try (JarFile jar = new JarFile(Thread.currentThread().getContextClassLoader().getResource(argus[1]).getPath());) {
 				String mn = jar.getManifest().getMainAttributes().getValue(Attributes.Name.MAIN_CLASS);
 				if (null != mn) try {
 					return Class.forName(mn);
 				} catch (ClassNotFoundException e) {}
 			} catch (IOException e) {}
 		} else try {
-			return Class.forName(n.split(" ")[0]);
+			return Class.forName(argus[0]);
+		} catch (ClassNotFoundException e1) {}
+		return null;
+	}
+
+	static Class<?> guessMainClassByMaven() {
+		String n = System.getProperty("exec.mainClass");
+		if (null != n) try {
+			return Class.forName(n);
 		} catch (ClassNotFoundException e) {}
 		return null;
+	}
+
+	static Class<?> guessMainClassByThread() {
+		Thread t = getMainThread();
+		if (null == t) return null;
+		StackTraceElement[] s = t.getStackTrace();
+		try {
+			return Class.forName(s[s.length - 1].getClassName());
+		} catch (ClassNotFoundException e) {
+			return null;
+		}
 	}
 
 	private static Thread getMainThread() {
