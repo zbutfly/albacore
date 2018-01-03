@@ -10,7 +10,7 @@ import net.butfly.albacore.utils.collection.Maps;
 
 public interface FuncForStr {
 	/**
-	 * strrev('1234567')
+	 * strlen(str)：长度
 	 * 
 	 * @author butfly
 	 */
@@ -124,6 +124,11 @@ public interface FuncForStr {
 		}
 	}
 
+	/**
+	 * strpadl(str, len, char)：左填充字符c直到结果字符串长度为l
+	 * 
+	 * @author butfly
+	 */
 	@Func
 	class StrpadlFunc extends FelFunc<String> {
 		@Override
@@ -141,6 +146,11 @@ public interface FuncForStr {
 		}
 	}
 
+	/**
+	 * strpadr(str, len, char)：右填充字符c直到结果字符串长度为l
+	 * 
+	 * @author butfly
+	 */
 	@Func
 	class StrpadrFunc extends FelFunc<String> {
 		@Override
@@ -158,6 +168,11 @@ public interface FuncForStr {
 		}
 	}
 
+	/**
+	 * strfil(n, char)：重复字符n次创建字符串
+	 * 
+	 * @author butfly
+	 */
 	@Func
 	class StrfilFunc extends FelFunc<String> {
 		@Override
