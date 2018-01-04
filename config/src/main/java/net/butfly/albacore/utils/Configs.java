@@ -66,9 +66,10 @@ public final class Configs {
 	// ================================
 
 	private static final String[] SYS_ENV_IGNORED = { //
-			"os", "processor", "user", "file", "path", "line", "home", "hostname", "shell", "lang", "ssh", //
-			"fps", "openssl", "grep", "vbox", "userdomain", "fp", "number.of", //
-			"sun", "jdk", "java", "jre", "awt", "android", "lc", "scala", "hadoop", "spark", "git", "m2" };
+			"awt", "file", "java", "jdk", "line", "os", "path", "sun", "user", //
+			"android", "fp", "fps", "git", "grep", "hadoop", "home", "hostname", //
+			"jre", "lang", "lc", "m2", "number.of", "openssl", "processor", "scala", //
+			"shell", "spark", "ssh", "userdomain", "vbox" };
 
 	static boolean isKeyInvalid(String key) {
 		char first = key.charAt(0);
