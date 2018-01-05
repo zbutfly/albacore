@@ -77,10 +77,6 @@ public interface FuncForStr {
 		@Override
 		public Object invoke(Object... args) {
 			Object v0 = args[0];
-
-			if (!isNull(v0) && v0.toString().endsWith("20001")) // debug
-				logger.error("");
-
 			int i = 1;
 			while (i < args.length) {
 				Object case1 = args[i++];

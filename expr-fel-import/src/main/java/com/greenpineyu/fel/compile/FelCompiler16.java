@@ -47,11 +47,9 @@ public class FelCompiler16<T> implements FelCompiler {
 		ClassLoader loader = this.classLoader.getParent();
 		List<String> paths = CompileService.getClassPath(loader);
 		List<File> cpFiles = new ArrayList<File>();
-		if (paths != null && (!paths.isEmpty())) {
-			for (String file : paths) {
-				cpFiles.add(new File(file));
-			}
-		}
+		if (paths != null && (!paths.isEmpty())) for (String file : paths)
+			cpFiles.add(new File(file));
+
 		try {
 			fileManager.setLocation(StandardLocation.CLASS_PATH, cpFiles);
 		} catch (IOException e) {
@@ -64,6 +62,7 @@ public class FelCompiler16<T> implements FelCompiler {
 					throws IOException {
 				// 由于编译成功后的bytecode需要放到file中，所以需要将file放到classloader中，以便读取bytecode生成Class对象.
 				classLoader.add(qualifiedName, outputFile);
+				logger.trace("Dynamic code [" + qualifiedName + "] compiled and append to classpath.");
 				return (JavaFileObject) outputFile;
 			}
 		};
@@ -110,9 +109,9 @@ public class FelCompiler16<T> implements FelCompiler {
 		compileSrcs.add(compileSrc);
 		final CompilationTask task = compiler.getTask(null, javaFileManager, diagnostics, options, null, compileSrcs);
 		final Boolean result = task.call();
-		if (result == null || !result.booleanValue())
-			// 编译失败
+		if (result == null || !result.booleanValue()) // 编译失败
 			throw new CompileException(src.getSource() + "\n" + diagnostics.getDiagnostics().toString());
+		else logger.trace("Dynamic source [" + src.getName() + "] compiled successfully: \n" + src.getSource());
 		try {
 			return loadClass(src.getName());
 		} catch (ClassNotFoundException e) {

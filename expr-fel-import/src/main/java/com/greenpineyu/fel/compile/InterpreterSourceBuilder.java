@@ -33,16 +33,19 @@ public class InterpreterSourceBuilder implements SourceBuilder {
 		// 用户设置了解释器
 		// Interpreter inte = new ProxyInterpreter(node.getInterpreter(), node);
 		Interpreter inte = node.getInterpreter();
-		SourceBuilder nodeBuilder = node.toMethod(ctx);
-		Class<?> type = nodeBuilder.returnType(ctx, node);
-		String code = "(" + type.getName() + ")";
+		// SourceBuilder nodeBuilder = node.toMethod(ctx);
+		// Class<?> type;
+		// if (node instanceof FunNode) {
+		// type = Object.class;
+		// // Function fun = ((FunNode) node).getFun();
+		// } else type = nodeBuilder.returnType(ctx, node);
+		// String code = "(" + type.getName() + ")";
 		String varName = VarBuffer.push(inte, Interpreter.class);
 		String nodeVarName = VarBuffer.push(node, FelNode.class);
-		code += varName + ".interpret(context," + nodeVarName + ")";
-		boolean isNumber = Number.class.isAssignableFrom(type);
-		if (isNumber) {
-			code = "(" + code + ")";
-		}
+		String code = varName + ".interpret(context," + nodeVarName + ")";
+		// boolean isNumber = Number.class.isAssignableFrom(type);
+		// if (isNumber)
+		code = "(" + code + ")";
 		return code;
 	}
 }

@@ -36,26 +36,7 @@ public class SourceGeneratorImpl implements SourceGenerator {
 	private static String template;
 	private static int count = 0;
 	private Map<String, StringKeyValue> localvars = new ConcurrentHashMap<String, StringKeyValue>();;
-
-	/**
-	 * 包名
-	 */
 	static final String PACKAGE;
-
-	public SourceGeneratorImpl() {
-		// 进行常量优化(计算表达式中的常量节点)
-		Optimizer constOpti = new ConstOpti();
-		this.addOpti(constOpti);
-
-		// 如果整个表达式是一个常量，再进行一次优化(可以减少装包拆包花费的时间)
-		Optimizer constExpOpti = new ConstExpOpti();
-
-		this.addOpti(constExpOpti);
-
-		// 进行变量优化
-		Optimizer optimizVars = getVarOpti();
-		this.addOpti(optimizVars);
-	}
 
 	static {
 		String fullName = SourceGeneratorImpl.class.getName();
@@ -72,6 +53,18 @@ public class SourceGeneratorImpl implements SourceGenerator {
 			logger.error("", e);
 		}
 		template = sb.toString();
+	}
+
+	public SourceGeneratorImpl() {
+		// 进行常量优化(计算表达式中的常量节点)
+		Optimizer constOpti = new ConstOpti();
+		this.addOpti(constOpti);
+		// 如果整个表达式是一个常量，再进行一次优化(可以减少装包拆包花费的时间)
+		Optimizer constExpOpti = new ConstExpOpti();
+		this.addOpti(constExpOpti);
+		// 进行变量优化
+		Optimizer optimizVars = getVarOpti();
+		this.addOpti(optimizVars);
 	}
 
 	@Override
