@@ -13,12 +13,24 @@ public interface Engine {
 
 	<T> T exec(String expr, Map<String, Object> context);
 
+	static <T> T eval(String expr) {
+		return eval(expr, null);
+	}
+
 	static <T> T eval(String expr, Map<String, Object> context) {
-		return Default.def.exec(expr, context);
+		try {
+			return Default.def.exec(expr, context);
+		} catch (Exception e) {
+			String err = "Expression [" + expr + "] eval fail on context";
+			if (null != context && !context.isEmpty()) err += ": \n\t" + context.toString();
+			else err += " with empty context.";
+			logger.error(err, e);
+			return null;
+		}
 	}
 
 	static class Default {
-		private static final Engine def = scan();
+		static final Engine def = scan();
 
 		private static Engine scan() {
 			String cname = Configs.of().gets(Albacore.Props.PROP_EXPR_ENGINE_CLASS, FelEngine.class.getName());

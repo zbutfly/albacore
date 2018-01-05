@@ -1,9 +1,13 @@
 package net.butfly.albacore.expr.fel;
 
+import static net.butfly.albacore.expr.fel.Fels.isNull;
+
 import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
+
+import com.greenpineyu.fel.common.Null;
 
 import net.butfly.albacore.expr.fel.FelFunc.Func;
 import net.butfly.albacore.utils.collection.Maps;
@@ -23,7 +27,7 @@ public interface FuncForStr {
 
 		@Override
 		public Integer invoke(Object... args) {
-			return null == args[0] ? 0 : args[0].toString().length();
+			return isNull(args[0]) ? 0 : args[0].toString().length();
 		}
 	}
 
@@ -54,7 +58,7 @@ public interface FuncForStr {
 
 		@Override
 		public Object invoke(Object... args) {
-			return null == args[0] ? null : new StringBuilder(args[0].toString()).reverse().toString();
+			return isNull(args[0]) ? new Null() : new StringBuilder(args[0].toString()).reverse().toString();
 		}
 	}
 
@@ -73,6 +77,10 @@ public interface FuncForStr {
 		@Override
 		public Object invoke(Object... args) {
 			Object v0 = args[0];
+
+			if (!isNull(v0) && v0.toString().endsWith("20001")) // debug
+				logger.error("");
+
 			int i = 1;
 			while (i < args.length) {
 				Object case1 = args[i++];
@@ -81,12 +89,13 @@ public interface FuncForStr {
 					if (match(v0, case1)) return value1;
 				} else return case1;// odd args, with default value, match default value
 			}
-			return null; // no matchs and no default
+			return new Null(); // no matchs and no default
 		}
 
 		private boolean match(Object v, Object cas) {
-			if (null == v && null == cas) return true;
-			if (null != v && null != cas) return v.equals(cas);
+			boolean nv = isNull(v), nc = isNull(cas);
+			if (nv && nc) return true;
+			if (!nv && !nc) return v.equals(cas);
 			return false;
 		}
 	}
@@ -138,11 +147,11 @@ public interface FuncForStr {
 
 		@Override
 		public String invoke(Object... args) {
-			String s = null == args[0] ? "" : args[0].toString();
-			int l = null == args[1] ? 0 : ((Number) args[1]).intValue();
+			String s = isNull(args[0]) ? "" : args[0].toString();
+			int l = isNull(args[1]) ? 0 : ((Number) args[1]).intValue();
 			if (l <= s.length()) return s;
 			char c = 3 == args.length ? StrfilFunc.checkChar(args[2]) : ' ';
-			return s + StrfilFunc.fill(c, s.length() - l);
+			return StrfilFunc.fill(c, l - s.length()) + s;
 		}
 	}
 
@@ -160,11 +169,11 @@ public interface FuncForStr {
 
 		@Override
 		public String invoke(Object... args) {
-			String s = null == args[0] ? "" : args[0].toString();
-			int l = null == args[1] ? 0 : ((Number) args[1]).intValue();
+			String s = isNull(args[0]) ? "" : args[0].toString();
+			int l = isNull(args[1]) ? 0 : ((Number) args[1]).intValue();
 			if (l <= s.length()) return s;
 			char c = 3 == args.length ? StrfilFunc.checkChar(args[2]) : ' ';
-			return s + StrfilFunc.fill(c, s.length() - l);
+			return s + StrfilFunc.fill(c, l - s.length());
 		}
 	}
 
@@ -188,7 +197,7 @@ public interface FuncForStr {
 		}
 
 		static char checkChar(Object object) {
-			if (null == object) return ' ';
+			if (isNull(object)) return ' ';
 			Class<?> cl = object.getClass();
 			if (Character.class.isAssignableFrom(cl)) return ((Character) object).charValue();
 			else if (char.class.isAssignableFrom(cl)) return (char) object;

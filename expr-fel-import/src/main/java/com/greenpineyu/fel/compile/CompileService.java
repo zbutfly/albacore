@@ -17,8 +17,8 @@ import com.greenpineyu.fel.parser.FelNode;
 
 public class CompileService {
 	private static final Logger logger = LoggerFactory.getLogger(CompileService.class);
-	private SourceGenerator srcGen;
-	private FelCompiler complier;
+	private SourceGenerator srcGen = new SourceGeneratorImpl();
+	private FelCompiler complier = newCompiler(getCompilerClassName());
 
 	public SourceGenerator getSrcGen() {
 		return srcGen;
@@ -34,13 +34,6 @@ public class CompileService {
 
 	public void setComplier(FelCompiler complier) {
 		this.complier = complier;
-	}
-
-	{
-		srcGen = new SourceGeneratorImpl();
-		String name = getCompilerClassName();
-		FelCompiler comp = newCompiler(name);
-		complier = comp;
 	}
 
 	public static List<String> getClassPath(ClassLoader cl) {
@@ -85,11 +78,8 @@ public class CompileService {
 	private String getCompilerClassName() {
 		String version = System.getProperty("java.version");
 		String compileClassName = FelCompiler.class.getName();
-		if (version != null && version.startsWith("1.5")) {
-			compileClassName += "15";
-		} else {
-			compileClassName += "16";
-		}
+		if (version != null && version.startsWith("1.5")) compileClassName += "15";
+		else compileClassName += "16";
 		return compileClassName;
 	}
 

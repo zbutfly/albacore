@@ -9,6 +9,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,20 +32,29 @@ import com.greenpineyu.fel.parser.VarAstNode;
 
 public class SourceGeneratorImpl implements SourceGenerator {
 	private static final Logger logger = LoggerFactory.getLogger(SourceGenerator.class);
-	private List<Optimizer> opt;
+	private List<Optimizer> opt = new CopyOnWriteArrayList<>();;
 	private static String template;
 	private static int count = 0;
-	private Map<String, StringKeyValue> localvars;
+	private Map<String, StringKeyValue> localvars = new ConcurrentHashMap<String, StringKeyValue>();;
 
 	/**
 	 * 包名
 	 */
 	static final String PACKAGE;
 
-	{
-		opt = new ArrayList<Optimizer>();
-		localvars = new HashMap<String, StringKeyValue>();
-		initOpti();
+	public SourceGeneratorImpl() {
+		// 进行常量优化(计算表达式中的常量节点)
+		Optimizer constOpti = new ConstOpti();
+		this.addOpti(constOpti);
+
+		// 如果整个表达式是一个常量，再进行一次优化(可以减少装包拆包花费的时间)
+		Optimizer constExpOpti = new ConstExpOpti();
+
+		this.addOpti(constExpOpti);
+
+		// 进行变量优化
+		Optimizer optimizVars = getVarOpti();
+		this.addOpti(optimizVars);
 	}
 
 	static {
@@ -169,21 +180,6 @@ public class SourceGeneratorImpl implements SourceGenerator {
 			node = o.call(ctx, node);
 		}
 		return node;
-	}
-
-	private void initOpti() {
-		// 进行常量优化(计算表达式中的常量节点)
-		Optimizer constOpti = new ConstOpti();
-		this.addOpti(constOpti);
-
-		// 如果整个表达式是一个常量，再进行一次优化(可以减少装包拆包花费的时间)
-		Optimizer constExpOpti = new ConstExpOpti();
-
-		this.addOpti(constExpOpti);
-
-		// 进行变量优化
-		Optimizer optimizVars = getVarOpti();
-		this.addOpti(optimizVars);
 	}
 
 	public static final Callable<Boolean, FelNode> varsFilter = new Callable<Boolean, FelNode>() {

@@ -31,10 +31,9 @@ public interface FuncForDate {
 		@Override
 		public Date invoke(Object... args) {
 			try {
-				return Texts.parseDate(String.valueOf(args[1]), String.valueOf(args[0]));
+				return Texts.parseDate((String) args[1], (String) args[0]);
 			} catch (ParseException e) {
-				logger.debug("Expression eval for date parsing fail", e);
-				return null;
+				throw new RuntimeException("Expression eval for date parsing fail", e);
 			}
 		}
 	}
