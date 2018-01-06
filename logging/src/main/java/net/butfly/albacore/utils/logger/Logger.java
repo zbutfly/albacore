@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -57,6 +58,16 @@ public class Logger implements Serializable {
 			logex = null;
 		}
 	}
+
+	public static boolean logexec(Runnable r) {
+		try {
+			logex.execute(r);
+			return true;
+		} catch (RejectedExecutionException e) {
+			return false;
+		}
+	}
+
 	private final org.slf4j.Logger logger;
 
 	private Logger(org.slf4j.Logger logger) {

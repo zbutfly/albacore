@@ -46,9 +46,12 @@ public interface Sdream<E> {
 
 	Sdream<Sdream<E>> batch(int maxBatchSize);
 
+	/**
+	 * for debugging / logging ONLY, since it is not stable.
+	 */
 	default Sdream<E> peek(Consumer<E> conv) {
 		return map(e -> {
-			Exeter.of().execute(() -> conv.accept(e));
+			Logger.logexec(() -> conv.accept(e));
 			return e;
 		});
 	}
