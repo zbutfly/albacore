@@ -47,6 +47,7 @@ public class Statistic<E> {
 		this.sizing = Syss::sizeOf;
 		this.detailing = DEFAULT_EMPTY_DETAILING;
 		this.stepping = e -> 1L;
+		this.logger.warn("Statistic [" + logger + "] registered, do you enable the logging level DEBUG?");
 	}
 
 	public Statistic(Class<?> cls) {
