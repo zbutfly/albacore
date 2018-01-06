@@ -58,8 +58,14 @@ public class Statistic<E> {
 		this(obj.getClass().getName() + (obj instanceof Named ? ".Stats" : "." + ((Named) obj).name()));
 	}
 
+	/**
+	 * @param step
+	 *            <li>0: count but print manually
+	 *            <li>less than 0: do not change anything
+	 */
 	public final Statistic<E> step(long step) {
-		this.packsStep = new AtomicLong(step - 1);
+		if (step == 0) packsStep.set(Long.MAX_VALUE);
+		else if (step > 0) packsStep.set(step - 1);
 		return this;
 	}
 
@@ -80,6 +86,7 @@ public class Statistic<E> {
 
 	public E stats(E v) {
 		Logger.logexec(() -> {
+			if (packsStep.get() < 0) return;
 			if (null == v) return;
 			long size;
 			if (sizing == null) size = 0;
@@ -96,6 +103,7 @@ public class Statistic<E> {
 
 	public <C extends Iterable<E>> C stats(C i) {
 		Logger.logexec(() -> {
+			if (packsStep.get() < 0) return;
 			if (null == i) return;
 			Iterator<E> it = i.iterator();
 			if (!it.hasNext()) return;
@@ -108,6 +116,7 @@ public class Statistic<E> {
 
 	public <C extends Collection<E>> C stats(C c) {
 		Logger.logexec(() -> {
+			if (packsStep.get() < 0) return;
 			if (null == c || c.isEmpty()) return;
 			for (E e : c)
 				if (null != e) stats(e);
@@ -116,6 +125,7 @@ public class Statistic<E> {
 	}
 
 	private void stats(long steps, long bytes) {
+		if (packsStep.get() < 0) return;
 		packsInTotal.addAndGet(steps);
 		bytesInTotal.addAndGet(bytes < 0 ? 0 : bytes);
 		bytesInStep.addAndGet(bytes < 0 ? 0 : bytes);
@@ -126,7 +136,7 @@ public class Statistic<E> {
 		}
 	}
 
-	private void trace() {
+	public void trace() {
 		long now = System.currentTimeMillis();
 		Result step, total;
 		step = new Result(packsInStep.getAndSet(0), bytesInStep.getAndSet(0), now - statsed.getAndSet(now));
