@@ -6,5 +6,5 @@ import net.butfly.albacore.paral.Sdream;
 
 @FunctionalInterface
 public interface Dequeuer<V> {
-	void dequeue(Consumer<Sdream<V>> using, int batchSize);
+	void dequeue(Consumer<Sdream<V>> using);
 }
