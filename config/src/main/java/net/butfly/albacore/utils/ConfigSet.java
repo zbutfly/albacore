@@ -117,10 +117,12 @@ public final class ConfigSet {
 	}
 
 	public String gets(String key) {
+		Configs.logger.debug("Config fetch by key [" + key + "]");
 		return entries.get(key);
 	}
 
 	public String gets(String key, String... def) {
+		Configs.logger.debug("Config fetch by key [" + key + "]");
 		return entries.getOrDefault(key, first(def));
 	}
 
@@ -147,6 +149,7 @@ public final class ConfigSet {
 	}
 
 	public Map<String, String> getByPrefix(String prefix) {
+		Configs.logger.debug("Config sub fetch by prefix [" + prefix + "]");
 		Map<String, String> sub = new ConcurrentHashMap<>();
 		for (String k : entries.keySet())
 			if (k.startsWith(prefix)) {

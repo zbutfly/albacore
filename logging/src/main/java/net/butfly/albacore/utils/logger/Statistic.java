@@ -60,7 +60,8 @@ public class Statistic<E> {
 	}
 
 	public Statistic(Object obj) {
-		this(obj.getClass().getName() + (obj instanceof Named ? ".Stats" : "." + ((Named) obj).name()));
+		this(obj.getClass().getName());
+		if (obj instanceof Named) name(((Named) obj).name());
 	}
 
 	public final Statistic<E> name(String name) {
@@ -161,7 +162,7 @@ public class Statistic<E> {
 	private String traceDetail(Result step, Result total) {
 		String stepAvg = step.millis > 0 ? Long.toString(step.packs * 1000 / step.millis) : "no_time";
 		String totalAvg = total.millis > 0 ? Long.toString(total.packs * 1000 / total.millis) : "no_time";
-		String info = MessageFormat.format(": [Step: {0}/objs,{1},{2},{6} objs/s], [Total: {3}/objs,{4},{5},{7} objs/s]", //
+		String info = MessageFormat.format(": \n\t[Step: {0}/objs,{1},{2},{6} objs/s], [Total: {3}/objs,{4},{5},{7} objs/s]", //
 				step.packs, formatKilo(step.bytes, "B"), formatMillis(step.millis), //
 				total.packs, formatKilo(total.bytes, "B"), formatMillis(total.millis), //
 				stepAvg, totalAvg);
@@ -175,6 +176,6 @@ public class Statistic<E> {
 		if (null == detailing) return info;
 		String ss = detailing.get();
 		if (null == ss) return info;
-		return info + ", [" + ss + "]";
+		return info + "\n\t[" + ss + "]";
 	}
 }

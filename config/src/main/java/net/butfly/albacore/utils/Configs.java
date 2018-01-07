@@ -4,9 +4,11 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import net.butfly.albacore.Albacore;
+import net.butfly.albacore.utils.logger.Logger;
 
 public final class Configs {
 	static String DEFAULT_PROP_EXT = "." + System.getProperty(Albacore.Props.PROP_CONFIG_EXTENSION, "properties");
+	static final Logger logger = Logger.getLogger(Configs.class);
 	private static final Map<Class<?>, ConfigSet> CLS_CONF = new ConcurrentHashMap<>();
 
 	public static ConfigSet of() {

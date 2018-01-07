@@ -19,23 +19,17 @@ public interface Statistical {
 		return e;
 	}
 
-	default <I extends Iterable<E>, E> I stats(I i) {
-		Logger.logexec(() -> {
-			@SuppressWarnings("unchecked")
-			Statistic<E> s = (Statistic<E>) Stats.IO_STATS.get(this);
-			if (null == s) return;
-			s.stats(i);
-		});
+	default <E, I extends Iterable<E>> I stats(I i) {
+		@SuppressWarnings("unchecked")
+		Statistic<E> s = (Statistic<E>) Stats.IO_STATS.get(this);
+		if (null != s) Logger.logexec(() -> s.stats(i));
 		return i;
 	}
 
-	default <C extends Collection<E>, E> C stats(C i) {
-		Logger.logexec(() -> {
-			@SuppressWarnings("unchecked")
-			Statistic<E> s = (Statistic<E>) Stats.IO_STATS.get(this);
-			if (null == s) return;
-			s.stats(i);
-		});
+	default <E, C extends Collection<E>> C stats(C i) {
+		@SuppressWarnings("unchecked")
+		Statistic<E> s = (Statistic<E>) Stats.IO_STATS.get(this);
+		if (null != s) Logger.logexec(() -> s.stats(i));
 		return i;
 	}
 
