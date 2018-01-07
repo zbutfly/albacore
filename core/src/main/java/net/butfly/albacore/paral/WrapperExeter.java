@@ -24,7 +24,7 @@ class WrapperExeter implements Exeter {
 
 	@Override
 	public String toString() {
-		return String.valueOf(realExector(impl));
+		return Exeter.tracePool(realExector(impl));
 	}
 
 	@Override

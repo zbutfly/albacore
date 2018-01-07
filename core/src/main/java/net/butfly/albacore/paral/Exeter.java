@@ -162,21 +162,20 @@ public interface Exeter extends ExecutorService {
 				new ThreadPoolExecutor(0, Integer.MAX_VALUE, 10L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(), factory, rejected) : //
 				new ThreadPoolExecutor(-parallelism, -parallelism, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(), factory,
 						rejected);
-		tp.setRejectedExecutionHandler((r, ex) -> logger.error(tracePool(tp, "Task rejected")));
+		tp.setRejectedExecutionHandler((r, ex) -> logger.error("Task rejected, " + tracePool(tp)));
 		return new WrapperExeter(tp);
 	}
 
-	static String tracePool(ExecutorService exec, String prefix) {
+	static String tracePool(ExecutorService exec) {
 		if (exec instanceof ForkJoinPool) {
 			ForkJoinPool ex = (ForkJoinPool) exec;
-			return MessageFormat.format("{5}, Fork/Join: tasks={4}, threads(active/running)={1}/{2}, steals={3}, pool size={0}", ex
-					.getPoolSize(), ex.getActiveThreadCount(), ex.getRunningThreadCount(), ex.getStealCount(), ex.getQueuedTaskCount(),
-					prefix);
+			return MessageFormat.format("Fork/Join: tasks={4}, threads(active/running)={1}/{2}, steals={3}, pool size={0}", ex
+					.getPoolSize(), ex.getActiveThreadCount(), ex.getRunningThreadCount(), ex.getStealCount(), ex.getQueuedTaskCount());
 		} else if (exec instanceof ThreadPoolExecutor) {
 			ThreadPoolExecutor ex = (ThreadPoolExecutor) exec;
-			return MessageFormat.format("{3}, ThreadPool: tasks={2}, threads(active)={1}, pool size={0}", ex.getPoolSize(), ex
-					.getActiveCount(), ex.getTaskCount(), prefix);
-		} else return prefix + ": " + exec.toString();
+			return MessageFormat.format("ThreadPool: tasks={2}, threads(active)={1}, pool size={0}", ex.getPoolSize(), ex.getActiveCount(),
+					ex.getTaskCount());
+		} else return exec.toString();
 	}
 
 	static ForkJoinWorkerThreadFactory forkjoinFactory(String threadNamePrefix) {
