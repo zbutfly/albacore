@@ -21,32 +21,37 @@ public class Statistic<E> {
 	private final ReentrantLock lock;
 
 	protected final Logger logger;
-	private AtomicLong packsStep;
+	private AtomicLong stepSize;
 	private Supplier<String> detailing;
 	private Function<E, Long> sizing;
 	private Function<E, Long> stepping;
+	private String name;
 
 	private final long begin;
-	private final AtomicLong statsed;
 
-	private final AtomicLong packsInStep;
-	private final AtomicLong bytesInStep;
-	private final AtomicLong packsInTotal;
-	private final AtomicLong bytesInTotal;
+	private final AtomicLong statsed;
+	private final AtomicLong packStep;
+	private final AtomicLong byteStep;
+	private final AtomicLong packTotal;
+	private final AtomicLong byteTotal;
+
+	private final AtomicLong batchs;
 
 	protected Statistic(String logger) {
 		lock = new ReentrantLock();
 		this.logger = Logger.getLogger(logger);
-		packsStep = new AtomicLong(DEFAULT_STEP - 1);
-		packsInStep = new AtomicLong(0);
-		bytesInStep = new AtomicLong(0);
-		packsInTotal = new AtomicLong(0);
-		bytesInTotal = new AtomicLong(0);
+		stepSize = new AtomicLong(DEFAULT_STEP - 1);
+		packStep = new AtomicLong(0);
+		byteStep = new AtomicLong(0);
+		packTotal = new AtomicLong(0);
+		byteTotal = new AtomicLong(0);
+		batchs = new AtomicLong(0);
 		begin = System.currentTimeMillis();
 		statsed = new AtomicLong(begin);
 		this.sizing = Syss::sizeOf;
 		this.detailing = DEFAULT_EMPTY_DETAILING;
 		this.stepping = e -> 1L;
+		this.name = "[STATISTIC]";
 		this.logger.warn("Statistic [" + logger + "] registered, do you enable the logging level DEBUG?");
 	}
 
@@ -58,14 +63,19 @@ public class Statistic<E> {
 		this(obj.getClass().getName() + (obj instanceof Named ? ".Stats" : "." + ((Named) obj).name()));
 	}
 
+	public final Statistic<E> name(String name) {
+		this.name = "[STATS: " + name + "]";
+		return this;
+	}
+
 	/**
 	 * @param step
 	 *            <li>0: count but print manually
 	 *            <li>less than 0: do not change anything
 	 */
 	public final Statistic<E> step(long step) {
-		if (step == 0) packsStep.set(Long.MAX_VALUE);
-		else if (step > 0) packsStep.set(step - 1);
+		if (step == 0) stepSize.set(Long.MAX_VALUE);
+		else if (step > 0) stepSize.set(step - 1);
 		return this;
 	}
 
@@ -86,7 +96,7 @@ public class Statistic<E> {
 
 	public E stats(E v) {
 		Logger.logexec(() -> {
-			if (packsStep.get() < 0) return;
+			if (stepSize.get() < 0) return;
 			if (null == v) return;
 			long size;
 			if (sizing == null) size = 0;
@@ -96,40 +106,44 @@ public class Statistic<E> {
 			} catch (Throwable t) {
 				size = 0;
 			}
-			stats(stepping.apply(v), size);
+			long s = stepping.apply(v);
+			if (s > 1) batchs.incrementAndGet();
+			stats(s, size);
 		});
 		return v;
 	}
 
 	public <C extends Iterable<E>> C stats(C i) {
 		Logger.logexec(() -> {
-			if (packsStep.get() < 0) return;
+			if (stepSize.get() < 0) return;
 			if (null == i) return;
 			Iterator<E> it = i.iterator();
 			if (!it.hasNext()) return;
 			E e;
 			while (it.hasNext())
 				if (null != (e = it.next())) stats(e);
+			batchs.incrementAndGet();
 		});
 		return i;
 	}
 
 	public <C extends Collection<E>> C stats(C c) {
 		Logger.logexec(() -> {
-			if (packsStep.get() < 0) return;
+			if (stepSize.get() < 0) return;
 			if (null == c || c.isEmpty()) return;
 			for (E e : c)
 				if (null != e) stats(e);
+			batchs.incrementAndGet();
 		});
 		return c;
 	}
 
 	private void stats(long steps, long bytes) {
-		if (packsStep.get() < 0) return;
-		packsInTotal.addAndGet(steps);
-		bytesInTotal.addAndGet(bytes < 0 ? 0 : bytes);
-		bytesInStep.addAndGet(bytes < 0 ? 0 : bytes);
-		if (packsInStep.addAndGet(steps) > packsStep.get() && logger.isInfoEnabled() && lock.tryLock()) try {
+		if (stepSize.get() < 0) return;
+		packTotal.addAndGet(steps);
+		byteTotal.addAndGet(bytes < 0 ? 0 : bytes);
+		byteStep.addAndGet(bytes < 0 ? 0 : bytes);
+		if (packStep.addAndGet(steps) > stepSize.get() && logger.isInfoEnabled() && lock.tryLock()) try {
 			trace();
 		} finally {
 			lock.unlock();
@@ -139,20 +153,28 @@ public class Statistic<E> {
 	public void trace() {
 		long now = System.currentTimeMillis();
 		Result step, total;
-		step = new Result(packsInStep.getAndSet(0), bytesInStep.getAndSet(0), now - statsed.getAndSet(now));
-		total = new Result(packsInTotal.get(), bytesInTotal.get(), System.currentTimeMillis() - begin);
+		step = new Result(packStep.getAndSet(0), byteStep.getAndSet(0), now - statsed.getAndSet(now));
+		total = new Result(packTotal.get(), byteTotal.get(), System.currentTimeMillis() - begin);
 		logger.debug(() -> traceDetail(step, total));
 	}
 
 	private String traceDetail(Result step, Result total) {
-		String ss = null;
-		if (null == detailing) ss = detailing.get();
-		ss = null == ss ? "" : ", [" + ss + "]";
 		String stepAvg = step.millis > 0 ? Long.toString(step.packs * 1000 / step.millis) : "no_time";
 		String totalAvg = total.millis > 0 ? Long.toString(total.packs * 1000 / total.millis) : "no_time";
-		return MessageFormat.format("Statistic: [Step: {0}/objs,{1},{2},{7} objs/s], [Total: {3}/objs,{4},{5},{8} objs/s] {6}.", //
+		String info = MessageFormat.format(": [Step: {0}/objs,{1},{2},{6} objs/s], [Total: {3}/objs,{4},{5},{7} objs/s]", //
 				step.packs, formatKilo(step.bytes, "B"), formatMillis(step.millis), //
 				total.packs, formatKilo(total.bytes, "B"), formatMillis(total.millis), //
-				ss, stepAvg, totalAvg);
+				stepAvg, totalAvg);
+		info = name + appendDetail(info);
+		long b;
+		if ((b = batchs.get()) > 0) info += ", [Batch: " + total.packs / b + "]";
+		return info;
+	}
+
+	private String appendDetail(String info) {
+		if (null == detailing) return info;
+		String ss = detailing.get();
+		if (null == ss) return info;
+		return info + ", [" + ss + "]";
 	}
 }
