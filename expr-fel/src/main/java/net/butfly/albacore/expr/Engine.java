@@ -2,6 +2,7 @@ package net.butfly.albacore.expr;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 import net.butfly.albacore.Albacore;
 import net.butfly.albacore.expr.fel.FelEngine;
@@ -18,6 +19,7 @@ public interface Engine {
 	}
 
 	static <T> T eval(String expr, Map<String, Object> context) {
+		long now = System.currentTimeMillis();
 		try {
 			return Default.def.exec(expr, context);
 		} catch (Exception e) {
@@ -26,11 +28,22 @@ public interface Engine {
 			else err += " with empty context.";
 			logger.error(err, e);
 			return null;
+		} finally {
+			if (logger.isDebugEnabled() && Default.STATS_STEP > 0) {
+				long spent = Default.execSpent.addAndGet(System.currentTimeMillis() - now);
+				long count = Default.execCount.incrementAndGet();
+				logger.debug(() -> "Express [" + Default.STATS_CLASS + "] exec [" + count + "] times, average spent [" + spent * 1.0 / count
+						+ " ms].");
+			}
 		}
 	}
 
 	static class Default {
 		static final Engine def = scan();
+		private static final int STATS_STEP = Integer.parseInt(Configs.gets("albacore.expr.stats.step", "0"));
+		private static final String STATS_CLASS = Default.def.getClass().getSimpleName();
+		private static final AtomicLong execCount = new AtomicLong();
+		private static final AtomicLong execSpent = new AtomicLong();
 
 		private static Engine scan() {
 			String cname = Configs.of().gets(Albacore.Props.PROP_EXPR_ENGINE_CLASS, FelEngine.class.getName());
