@@ -19,7 +19,7 @@ public class FilteredSpliterator<E> extends WrapperSpliterator<E> {
 	public boolean tryAdvance(Consumer<? super E> using) {
 		Optional<E> op;
 		while (null != (op = next())) {
-			E e = op.isPresent() ? op.get() : null;
+			E e = op.orElse(null);
 			if (filter.test(e)) {
 				using.accept(e);
 				return true;
