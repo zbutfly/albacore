@@ -32,8 +32,9 @@ public interface Engine {
 			if (logger.isDebugEnabled() && Default.STATS_STEP > 0) {
 				long spent = Default.execSpent.addAndGet(System.currentTimeMillis() - now);
 				long count = Default.execCount.incrementAndGet();
-				logger.debug(() -> "Express [" + Default.STATS_CLASS + "] exec [" + count + "] times, "//
-						+ "average [" + spent * 1.0 / count + " ms].");
+				if (count % Default.STATS_STEP == 0) //
+					logger.debug(() -> "Express [" + Default.STATS_CLASS + "] exec [" + count + "] times, "//
+							+ "average [" + spent * 1.0 / count + " ms].");
 			}
 		}
 	}
