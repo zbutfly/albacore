@@ -33,8 +33,8 @@ public interface Statistical {
 		return i;
 	}
 
-	@SuppressWarnings("unchecked")
-	default <E> Statistic<E> trace(Class<E> cls) {
-		return (Statistic<E>) Stats.IO_STATS.computeIfAbsent(this, Statistic<E>::new);
+	default void statistic(Statistic<?> s) {
+		if (null == s) Stats.IO_STATS.remove(this);
+		else Stats.IO_STATS.put(this, s);
 	}
 }

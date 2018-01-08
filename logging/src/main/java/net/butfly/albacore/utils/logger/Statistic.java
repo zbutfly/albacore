@@ -37,9 +37,9 @@ public class Statistic<E> {
 
 	private final AtomicLong batchs;
 
-	protected Statistic(String logger) {
+	protected Statistic(String loggerName) {
 		lock = new ReentrantLock();
-		this.logger = Logger.getLogger(logger);
+		logger = Logger.getLogger(loggerName);
 		stepSize = new AtomicLong(DEFAULT_STEP - 1);
 		packStep = new AtomicLong(0);
 		byteStep = new AtomicLong(0);
@@ -48,24 +48,24 @@ public class Statistic<E> {
 		batchs = new AtomicLong(0);
 		begin = System.currentTimeMillis();
 		statsed = new AtomicLong(begin);
-		this.sizing = Syss::sizeOf;
-		this.detailing = DEFAULT_EMPTY_DETAILING;
-		this.stepping = e -> 1L;
-		this.name = "[STATISTIC]";
-		this.logger.warn("Statistic [" + logger + "] registered, do you enable the logging level DEBUG?");
+		sizing = Syss::sizeOf;
+		detailing = DEFAULT_EMPTY_DETAILING;
+		stepping = e -> 1L;
+		name = "[STATISTIC]";
+		logger.warn("Statistic [" + loggerName + "] registered, do you enable the logging level DEBUG?");
 	}
 
-	public Statistic(Class<?> cls) {
-		this(cls.getName() + ".stats");
+	public Statistic(Class<?> ownerClass) {
+		this(ownerClass.getName());
 	}
 
-	public Statistic(Object obj) {
-		this(obj.getClass().getName());
-		if (obj instanceof Named) name(((Named) obj).name());
+	public Statistic(Object owner) {
+		this(owner.getClass().getName());
+		if (owner instanceof Named) name(((Named) owner).name());
 	}
 
-	public final Statistic<E> name(String name) {
-		this.name = "[STATS: " + name + "]";
+	public final Statistic<E> name(String ownerName) {
+		this.name = "[STATS: " + ownerName + "]";
 		return this;
 	}
 
@@ -168,7 +168,7 @@ public class Statistic<E> {
 				stepAvg, totalAvg);
 		info = name + appendDetail(info);
 		long b;
-		if ((b = batchs.get()) > 0) info += ", [Batch: " + total.packs / b + "]";
+		if ((b = batchs.get()) > 0) info += ", [Avg Batch Size: " + total.packs / b + "]";
 		return info;
 	}
 
