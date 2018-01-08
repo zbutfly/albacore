@@ -13,6 +13,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import com.google.common.base.Joiner;
+
 import net.butfly.albacore.utils.logger.Logger;
 
 public final class ConfigSet {
@@ -117,13 +119,16 @@ public final class ConfigSet {
 	}
 
 	public String gets(String key) {
-		Configs.logger.debug("Config fetch by key [" + key + "]");
-		return entries.get(key);
+		String v = entries.get(key);
+		Configs.logger.debug("Config by key [" + key + "], returned: [" + v + "].");
+		return v;
 	}
 
 	public String gets(String key, String... def) {
-		Configs.logger.debug("Config fetch by key [" + key + "]");
-		return entries.getOrDefault(key, first(def));
+		String v = entries.getOrDefault(key, first(def));
+		Configs.logger.debug("Config by key [" + key + "] with default value [" + Joiner.on(',').join(def) + "]"//
+				+ ", returned: [" + v + "].");
+		return v;
 	}
 
 	public String getn(String priority, String key) {
