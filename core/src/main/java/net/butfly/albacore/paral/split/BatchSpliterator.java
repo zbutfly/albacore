@@ -7,6 +7,7 @@ import java.util.function.Consumer;
 import net.butfly.albacore.paral.Sdream;
 import net.butfly.albacore.utils.collection.Colls;
 
+@Deprecated
 public class BatchSpliterator<E> extends ConvedSpliteratorBase<Sdream<E>, E> {
 	private int batchSize;
 

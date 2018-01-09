@@ -58,6 +58,7 @@ public final class Splidream<E, SELF extends Sdream<E>> extends WrapperSpliterat
 	}
 
 	@Override
+	@Deprecated
 	public Sdream<Sdream<E>> batch(int maxBatchSize) {
 		return of(new BatchSpliterator<>(impl, maxBatchSize));
 	}
@@ -68,6 +69,7 @@ public final class Splidream<E, SELF extends Sdream<E>> extends WrapperSpliterat
 	}
 
 	@Override
+	@Deprecated
 	public <R> Sdream<R> map(Function<Sdream<E>, Sdream<R>> conv, int maxBatchSize) {
 		return of(new BatchSpliterator<E>(impl, maxBatchSize)).map(conv).mapFlat(r -> r);
 	}

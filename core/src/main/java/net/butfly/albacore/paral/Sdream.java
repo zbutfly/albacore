@@ -58,6 +58,7 @@ public interface Sdream<E> {
 
 	<R> Sdream<R> map(Function<E, R> conv);
 
+	@Deprecated
 	<R> Sdream<R> map(Function<Sdream<E>, Sdream<R>> conv, int maxBatchSize);
 
 	<R> Sdream<R> mapFlat(Function<E, Sdream<R>> flat);
@@ -161,11 +162,6 @@ public interface Sdream<E> {
 		return of(Colls.<V> list().spliterator());
 	}
 
-	// public static <V> Sdream<V> of(Supplier<V> get, long size, Supplier<Boolean> ending) {
-	// return of(new Suppliterator<>(get, size, ending));
-	// }
-
-	// ==================
 	List<Sdream<E>> partition(int minPartNum);
 
 	<K, V> Map<K, List<V>> partition(Function<E, K> keying, Function<E, V> valuing);
