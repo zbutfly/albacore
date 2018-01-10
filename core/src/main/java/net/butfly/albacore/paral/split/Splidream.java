@@ -238,7 +238,6 @@ public final class Splidream<E, SELF extends Sdream<E>> extends WrapperSpliterat
 				logger.debug("Splidream advance error: " + ex.getMessage());
 			}
 		} while (advanced);
-		while (s0.tryAdvance(using)) {}
 	}
 
 	/** Using spliterator parallelly with trySplit() */
