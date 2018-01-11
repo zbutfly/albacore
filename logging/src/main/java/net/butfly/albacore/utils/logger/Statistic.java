@@ -133,7 +133,7 @@ public class Statistic {
 		return v;
 	}
 
-	public <E> E stats(Supplier<E> get) {
+	public <E> E statsIn(Supplier<E> get) {
 		long now = System.currentTimeMillis();
 		E vv = null;
 		try {
@@ -141,6 +141,31 @@ public class Statistic {
 		} finally {
 			long spent = System.currentTimeMillis() - now;
 			E v = vv;
+			tryStats(() -> {
+				if (stepSize.get() < 0) return;
+				if (null == v) return;
+				spentTotal.addAndGet(spent);
+				long size;
+				if (sizing == null) size = 0;
+				else try {
+					Long s = sizing.apply(v);
+					size = null == s ? 0 : s.longValue();
+				} catch (Throwable t) {
+					size = 0;
+				}
+				long s = stepping.apply(v);
+				if (s > 1) batchs.incrementAndGet();
+				stats(s, size);
+			});
+		}
+	}
+
+	public <E, R> R statsOut(E v, Function<E, R> use) {
+		long now = System.currentTimeMillis();
+		try {
+			return use.apply(v);
+		} finally {
+			long spent = System.currentTimeMillis() - now;
 			tryStats(() -> {
 				if (stepSize.get() < 0) return;
 				if (null == v) return;
@@ -190,7 +215,7 @@ public class Statistic {
 		return c;
 	}
 
-	public <E, C extends Collection<E>> C statsTiming(Supplier<C> get) {
+	public <E, C extends Collection<E>> C statsIns(Supplier<C> get) {
 		long now = System.currentTimeMillis();
 		C vv = null;
 		try {
@@ -198,6 +223,27 @@ public class Statistic {
 		} finally {
 			long spent = System.currentTimeMillis() - now;
 			C c = vv;
+			tryStats(() -> {
+				if (stepSize.get() < 0) return;
+				if (null == c || c.isEmpty()) return;
+				spentTotal.addAndGet(spent);
+				int b = 0;
+				for (E e : c)
+					if (null != e) {
+						stats(e);
+						b++;
+					}
+				if (b > 0) batchs.incrementAndGet();
+			});
+		}
+	}
+
+	public <E, R> R statsOuts(Collection<E> c, Function<Collection<E>, R> use) {
+		long now = System.currentTimeMillis();
+		try {
+			return use.apply(c);
+		} finally {
+			long spent = System.currentTimeMillis() - now;
 			tryStats(() -> {
 				if (stepSize.get() < 0) return;
 				if (null == c || c.isEmpty()) return;
@@ -238,8 +284,8 @@ public class Statistic {
 	private CharSequence traceDetail(Result step, Result total) {
 		String stepAvg = step.millis > 0 ? Long.toString(step.packs * 1000 / step.millis) : "no_time";
 		String totalAvg = total.millis > 0 ? Long.toString(total.packs * 1000 / total.millis) : "no_time";
-		StringBuilder info = new StringBuilder("[").append(name)//
-				.append("]:[Step:").append(step.packs).append("/objs,").append(formatKilo(step.bytes, "B")).append(",").append(formatMillis(
+		StringBuilder info = new StringBuilder(name)//
+				.append(":[Step:").append(step.packs).append("/objs,").append(formatKilo(step.bytes, "B")).append(",").append(formatMillis(
 						step.millis)).append(",").append(stepAvg).append(" objs/s], ")//
 				.append("[Total: ").append(total.packs).append("/objs,").append(formatKilo(total.bytes, "B")).append(",").append(
 						formatMillis(total.millis)).append(",").append(totalAvg).append(" objs/s]");
