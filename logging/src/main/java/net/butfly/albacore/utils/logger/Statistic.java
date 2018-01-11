@@ -292,7 +292,7 @@ public class Statistic {
 		appendDetail(info);
 		long b;
 		if ((b = batchs.get()) > 0) info.append(", [Average batch size: ").append(total.packs / b).append("]");
-		if ((b = spentTotal.get()) > 0) info.append(", [Average obj spent: ").append(b / total.packs).append(" ms]");
+		if ((b = spentTotal.get()) > 0) info.append(", [Average 1000 obj spent: ").append(b * 1000 / total.packs).append(" ms]");
 		if ((b = ignoreTotal.get()) > 0) info.append(", [Logger ignore: ").append(b).append("]");
 		return info;
 	}

@@ -23,13 +23,13 @@ final class StatsUtils {
 		if (null == f) f = new DecimalFormat("#.##");
 		try {
 			// double d = n;
-			if (d > T) return f.format(d / T) + "T" + unit;
+			if (d > T) return f.format(d / T) + " T" + unit;
 			// +"+" + formatBytes(bytes % T);
-			if (d > G) return f.format(d / G) + "G" + unit;
+			if (d > G) return f.format(d / G) + " G" + unit;
 			// +"+" + formatBytes(bytes % G);
-			if (d > M) return f.format(d / M) + "M" + unit;
+			if (d > M) return f.format(d / M) + " M" + unit;
 			// +"+" + formatBytes(bytes % M);
-			if (d > K) return f.format(d / K) + "K" + unit;
+			if (d > K) return f.format(d / K) + " K" + unit;
 			// +"+" + formatBytes(bytes % K);
 			return f.format(d) + unit;
 		} finally {
@@ -43,7 +43,7 @@ final class StatsUtils {
 		try {
 			if (millis > HOUR) return f.format(millis / HOUR) + " Hours";
 			// + "+" + formatMillis(millis % HOUR);
-			if (millis > MINUTE) return f.format(millis / MINUTE) + " Minutes";
+			if (millis > MINUTE) return f.format(millis / MINUTE) + " Mins";
 			// + "+" + formatMillis(millis % MINUTE);
 			if (millis > SECOND) return f.format(millis / SECOND) + " Secs";
 			// + "+" + formatMillis(millis % SECOND);
