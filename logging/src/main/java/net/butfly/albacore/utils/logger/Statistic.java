@@ -143,8 +143,8 @@ public class Statistic {
 			E v = vv;
 			tryStats(() -> {
 				if (stepSize.get() < 0) return;
-				spentTotal.addAndGet(spent);
 				if (null == v) return;
+				spentTotal.addAndGet(spent);
 				long size;
 				if (sizing == null) size = 0;
 				else try {
@@ -188,6 +188,29 @@ public class Statistic {
 			if (b > 0) batchs.incrementAndGet();
 		});
 		return c;
+	}
+
+	public <E, C extends Collection<E>> C statsTiming(Supplier<C> get) {
+		long now = System.currentTimeMillis();
+		C vv = null;
+		try {
+			return vv = get.get();
+		} finally {
+			long spent = System.currentTimeMillis() - now;
+			C c = vv;
+			tryStats(() -> {
+				if (stepSize.get() < 0) return;
+				if (null == c || c.isEmpty()) return;
+				spentTotal.addAndGet(spent);
+				int b = 0;
+				for (E e : c)
+					if (null != e) {
+						stats(e);
+						b++;
+					}
+				if (b > 0) batchs.incrementAndGet();
+			});
+		}
 	}
 
 	private void stats(long steps, long bytes) {
