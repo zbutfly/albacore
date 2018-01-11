@@ -7,6 +7,7 @@ import static net.butfly.albacore.utils.logger.StatsUtils.formatMillis;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -69,6 +70,7 @@ public class Statistic {
 		if (owner instanceof Named) name(((Named) owner).name());
 	}
 
+	// configurating the stats
 	public final Statistic name(String ownerName) {
 		this.name = "[STATS: " + ownerName + "]";
 		return this;
@@ -114,6 +116,7 @@ public class Statistic {
 		return this;
 	}
 
+	// stating
 	public <E> E stats(E v) {
 		tryStats(() -> {
 			if (stepSize.get() < 0) return;
@@ -131,58 +134,6 @@ public class Statistic {
 			stats(s, size);
 		});
 		return v;
-	}
-
-	public <E> E statsIn(Supplier<E> get) {
-		long now = System.currentTimeMillis();
-		E vv = null;
-		try {
-			return vv = get.get();
-		} finally {
-			long spent = System.currentTimeMillis() - now;
-			E v = vv;
-			tryStats(() -> {
-				if (stepSize.get() < 0) return;
-				if (null == v) return;
-				spentTotal.addAndGet(spent);
-				long size;
-				if (sizing == null) size = 0;
-				else try {
-					Long s = sizing.apply(v);
-					size = null == s ? 0 : s.longValue();
-				} catch (Throwable t) {
-					size = 0;
-				}
-				long s = stepping.apply(v);
-				if (s > 1) batchs.incrementAndGet();
-				stats(s, size);
-			});
-		}
-	}
-
-	public <E, R> R statsOut(E v, Function<E, R> use) {
-		long now = System.currentTimeMillis();
-		try {
-			return use.apply(v);
-		} finally {
-			long spent = System.currentTimeMillis() - now;
-			tryStats(() -> {
-				if (stepSize.get() < 0) return;
-				if (null == v) return;
-				spentTotal.addAndGet(spent);
-				long size;
-				if (sizing == null) size = 0;
-				else try {
-					Long s = sizing.apply(v);
-					size = null == s ? 0 : s.longValue();
-				} catch (Throwable t) {
-					size = 0;
-				}
-				long s = stepping.apply(v);
-				if (s > 1) batchs.incrementAndGet();
-				stats(s, size);
-			});
-		}
 	}
 
 	public <E, C extends Iterable<E>> C stats(C i) {
@@ -215,6 +166,33 @@ public class Statistic {
 		return c;
 	}
 
+	public <E> E statsIn(Supplier<E> get) {
+		long now = System.currentTimeMillis();
+		E vv = null;
+		try {
+			return vv = get.get();
+		} finally {
+			long spent = System.currentTimeMillis() - now;
+			E v = vv;
+			tryStats(() -> {
+				if (stepSize.get() < 0) return;
+				if (null == v) return;
+				spentTotal.addAndGet(spent);
+				long size;
+				if (sizing == null) size = 0;
+				else try {
+					Long s = sizing.apply(v);
+					size = null == s ? 0 : s.longValue();
+				} catch (Throwable t) {
+					size = 0;
+				}
+				long s = stepping.apply(v);
+				if (s > 1) batchs.incrementAndGet();
+				stats(s, size);
+			});
+		}
+	}
+
 	public <E, C extends Collection<E>> C statsIns(Supplier<C> get) {
 		long now = System.currentTimeMillis();
 		C vv = null;
@@ -238,6 +216,44 @@ public class Statistic {
 		}
 	}
 
+	public <E, R> R statsOut(E v, Function<E, R> use) {
+		long now = System.currentTimeMillis();
+		try {
+			return use.apply(v);
+		} finally {
+			timing(v, now);
+		}
+	}
+
+	public <E> void statsOut(E v, Consumer<E> use) {
+		long now = System.currentTimeMillis();
+		try {
+			use.accept(v);
+		} finally {
+			timing(v, now);
+		}
+	}
+
+	private <E> void timing(E v, long start) {
+		long spent = System.currentTimeMillis() - start;
+		tryStats(() -> {
+			if (stepSize.get() < 0) return;
+			if (null == v) return;
+			spentTotal.addAndGet(spent);
+			long size;
+			if (sizing == null) size = 0;
+			else try {
+				Long s = sizing.apply(v);
+				size = null == s ? 0 : s.longValue();
+			} catch (Throwable t) {
+				size = 0;
+			}
+			long s = stepping.apply(v);
+			if (s > 1) batchs.incrementAndGet();
+			stats(s, size);
+		});
+	}
+
 	public <E, R> R statsOuts(Collection<E> c, Function<Collection<E>, R> use) {
 		long now = System.currentTimeMillis();
 		try {
@@ -259,15 +275,24 @@ public class Statistic {
 		}
 	}
 
-	private void stats(long steps, long bytes) {
-		if (stepSize.get() < 0) return;
-		packTotal.addAndGet(steps);
-		byteTotal.addAndGet(bytes < 0 ? 0 : bytes);
-		byteStep.addAndGet(bytes < 0 ? 0 : bytes);
-		if (packStep.addAndGet(steps) > stepSize.get() && logger.isInfoEnabled() && lock.tryLock()) try {
-			trace();
+	public <E> void statsOuts(Collection<E> c, Consumer<Collection<E>> use) {
+		long now = System.currentTimeMillis();
+		try {
+			use.accept(c);
 		} finally {
-			lock.unlock();
+			long spent = System.currentTimeMillis() - now;
+			tryStats(() -> {
+				if (stepSize.get() < 0) return;
+				if (null == c || c.isEmpty()) return;
+				spentTotal.addAndGet(spent);
+				int b = 0;
+				for (E e : c)
+					if (null != e) {
+						stats(e);
+						b++;
+					}
+				if (b > 0) batchs.incrementAndGet();
+			});
 		}
 	}
 
@@ -279,6 +304,18 @@ public class Statistic {
 		step = new Result(packStep.getAndSet(0), byteStep.getAndSet(0), now - statsed.getAndSet(now));
 		if (step.packs <= 0) return;
 		logger.debug(() -> traceDetail(step, total));
+	}
+
+	private void stats(long steps, long bytes) {
+		if (stepSize.get() < 0) return;
+		packTotal.addAndGet(steps);
+		byteTotal.addAndGet(bytes < 0 ? 0 : bytes);
+		byteStep.addAndGet(bytes < 0 ? 0 : bytes);
+		if (packStep.addAndGet(steps) > stepSize.get() && logger.isInfoEnabled() && lock.tryLock()) try {
+			trace();
+		} finally {
+			lock.unlock();
+		}
 	}
 
 	private CharSequence traceDetail(Result step, Result total) {
