@@ -1,5 +1,6 @@
 package net.butfly.albacore.paral;
 
+import static net.butfly.albacore.utils.logger.LogExec.tryExec;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -51,7 +52,7 @@ public interface Sdream<E> {
 	 */
 	default Sdream<E> peek(Consumer<E> conv) {
 		return map(e -> {
-			Logger.logexec(() -> conv.accept(e));
+			tryExec(() -> conv.accept(e));
 			return e;
 		});
 	}

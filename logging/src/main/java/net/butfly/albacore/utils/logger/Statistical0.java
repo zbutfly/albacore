@@ -7,6 +7,7 @@ import java.util.function.Supplier;
 
 import net.butfly.albacore.utils.JVM;
 import net.butfly.albacore.utils.Syss;
+import static net.butfly.albacore.utils.logger.LogExec.tryExec;
 
 @Deprecated
 public interface Statistical0<T extends Statistical0<T>> {
@@ -53,10 +54,10 @@ public interface Statistical0<T extends Statistical0<T>> {
 	default <V> void stats(Iterable<V> vv) {
 		Statistic1 s = Statistic1.STATISTICS.get(this);
 		if (null != s) for (V v : vv)
-			Logger.logex.execute(() -> s.stats(v));
+			tryExec(() -> s.stats(v));
 	}
 
-	class Statistic1 extends Statistic<Object> {
+	class Statistic1 extends Statistic {
 		static Map<Statistical0<?>, Statistic1> STATISTICS = new ConcurrentHashMap<>();
 
 		Statistic1(String logname, long step, Function<Object, Long> sizing, Supplier<String> detailing) {

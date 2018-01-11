@@ -1,14 +1,10 @@
 package net.butfly.albacore.utils.logger;
 
+import static net.butfly.albacore.utils.logger.LogExec.tryExec;
+
 import java.io.Serializable;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import org.slf4j.LoggerFactory;
@@ -34,39 +30,7 @@ import org.slf4j.event.Level;
  * @author butfly
  */
 public class Logger implements Serializable {
-	public static final String PROP_LOGGER_ASYNC = "albacore.logger.async.enable";// true
-	public static final String PROP_LOGGER_PARALLELISM = "albacore.logger.parallelism";// true
-	public static final String PROP_LOGGER_QUEUE_SIZE = "albacore.logger.queue.size";// true
 	private static final long serialVersionUID = -1940330974751419775L;
-
-	public static final ExecutorService logex;
-	static {
-		if (Boolean.parseBoolean(System.getProperty(PROP_LOGGER_ASYNC, "true"))) {
-			int parallelism = Integer.parseInt(System.getProperty(PROP_LOGGER_PARALLELISM, "8"));
-			int queueSize = Integer.parseInt(System.getProperty(PROP_LOGGER_QUEUE_SIZE, "1024"));
-			AtomicInteger tn = new AtomicInteger();
-			ThreadGroup g = new ThreadGroup("AlbacoreLoggerThread");
-			logex = new ThreadPoolExecutor(parallelism, parallelism, 0L, TimeUnit.MILLISECONDS, //
-					new LinkedBlockingQueue<Runnable>(queueSize), r -> {
-						Thread t = new Thread(g, r, "AlbacoreLoggerThread#" + tn.getAndIncrement());
-						t.setDaemon(true);
-						return t;
-					}, (r, ex) -> {
-						// process rejected...ignore
-					});
-		} else {
-			logex = null;
-		}
-	}
-
-	public static boolean logexec(Runnable r) {
-		try {
-			logex.execute(r);
-			return true;
-		} catch (RejectedExecutionException e) {
-			return false;
-		}
-	}
 
 	private final org.slf4j.Logger logger;
 
@@ -144,17 +108,15 @@ public class Logger implements Serializable {
 
 	public boolean trace(CharSequence msg) {
 		if (null == msg) return false;
-		logex.execute(() -> logger.trace(msg.toString()));
-		return true;
+		return tryExec(() -> logger.trace(msg.toString()));
 	}
 
 	public boolean trace(Supplier<CharSequence> msg) {
 		if (null == msg) return false;
-		logex.execute(() -> {
+		return tryExec(() -> {
 			CharSequence s = msg.get();
 			if (null != s) logger.trace(s.toString());
 		});
-		return true;
 	}
 
 	public boolean isDebugEnabled() {
@@ -163,17 +125,15 @@ public class Logger implements Serializable {
 
 	public boolean debug(CharSequence msg) {
 		if (null == msg) return false;
-		logex.execute(() -> logger.debug(msg.toString()));
-		return true;
+		return tryExec(() -> logger.debug(msg.toString()));
 	}
 
 	public boolean debug(Supplier<CharSequence> msg) {
 		if (null == msg) return false;
-		logex.execute(() -> {
+		return tryExec(() -> {
 			CharSequence s = msg.get();
 			if (null != s) logger.debug(s.toString());
 		});
-		return true;
 	}
 
 	public boolean isInfoEnabled() {
@@ -182,17 +142,15 @@ public class Logger implements Serializable {
 
 	public boolean info(CharSequence msg) {
 		if (null == msg) return false;
-		logex.execute(() -> logger.info(msg.toString()));
-		return true;
+		return tryExec(() -> logger.info(msg.toString()));
 	}
 
 	public boolean info(Supplier<CharSequence> msg) {
 		if (null == msg) return false;
-		logex.execute(() -> {
+		return tryExec(() -> {
 			CharSequence s = msg.get();
 			if (null != s) logger.info(s.toString());
 		});
-		return true;
 	}
 
 	public boolean isWarnEnabled() {
@@ -201,17 +159,15 @@ public class Logger implements Serializable {
 
 	public boolean warn(CharSequence msg) {
 		if (null == msg) return false;
-		logex.execute(() -> logger.warn(msg.toString()));
-		return true;
+		return tryExec(() -> logger.warn(msg.toString()));
 	}
 
 	public boolean warn(Supplier<CharSequence> msg) {
 		if (null == msg) return false;
-		logex.execute(() -> {
+		return tryExec(() -> {
 			CharSequence s = msg.get();
 			if (null != s) logger.warn(s.toString());
 		});
-		return true;
 	}
 
 	public boolean isErrorEnabled() {
@@ -220,17 +176,15 @@ public class Logger implements Serializable {
 
 	public boolean error(CharSequence msg) {
 		if (null == msg) return false;
-		logex.execute(() -> logger.error(msg.toString()));
-		return true;
+		return tryExec(() -> logger.error(msg.toString()));
 	}
 
 	public boolean error(Supplier<CharSequence> msg) {
 		if (null == msg) return false;
-		logex.execute(() -> {
+		return tryExec(() -> {
 			CharSequence s = msg.get();
 			if (null != s) logger.error(s.toString());
 		});
-		return true;
 	}
 
 	// extends args
@@ -253,32 +207,27 @@ public class Logger implements Serializable {
 
 	public boolean trace(CharSequence msg, Throwable t) {
 		if (null == msg) return false;
-		logex.execute(() -> logger.trace(msg.toString(), t));
-		return true;
+		return tryExec(() -> logger.trace(msg.toString(), t));
 	}
 
 	public boolean debug(CharSequence msg, Throwable t) {
 		if (null == msg) return false;
-		logex.execute(() -> logger.debug(msg.toString(), t));
-		return true;
+		return tryExec(() -> logger.debug(msg.toString(), t));
 	}
 
 	public boolean info(CharSequence msg, Throwable t) {
 		if (null == msg) return false;
-		logex.execute(() -> logger.info(msg.toString(), t));
-		return true;
+		return tryExec(() -> logger.info(msg.toString(), t));
 	}
 
 	public boolean warn(CharSequence msg, Throwable t) {
 		if (null == msg) return false;
-		logex.execute(() -> logger.warn(msg.toString(), t));
-		return true;
+		return tryExec(() -> logger.warn(msg.toString(), t));
 	}
 
 	public boolean error(CharSequence msg, Throwable t) {
 		if (null == msg) return false;
-		logex.execute(() -> logger.error(msg.toString(), t));
-		return true;
+		return tryExec(() -> logger.error(msg.toString(), t));
 	}
 
 	public boolean log(Level level, Supplier<CharSequence> msg, Throwable t) {
@@ -300,47 +249,42 @@ public class Logger implements Serializable {
 
 	public boolean trace(Supplier<CharSequence> msg, Throwable t) {
 		if (null == msg) return false;
-		logex.execute(() -> {
+		return tryExec(() -> {
 			CharSequence s = msg.get();
 			if (null != s) logger.trace(s.toString(), t);
 		});
-		return true;
 	}
 
 	public boolean debug(Supplier<CharSequence> msg, Throwable t) {
 		if (null == msg) return false;
-		logex.execute(() -> {
+		return tryExec(() -> {
 			CharSequence s = msg.get();
 			if (null != s) logger.debug(s.toString(), t);
 		});
-		return true;
 	}
 
 	public boolean info(Supplier<CharSequence> msg, Throwable t) {
 		if (null == msg) return false;
-		logex.execute(() -> {
+		return tryExec(() -> {
 			CharSequence s = msg.get();
 			if (null != s) logger.info(s.toString(), t);
 		});
-		return true;
 	}
 
 	public boolean warn(Supplier<CharSequence> msg, Throwable t) {
 		if (null == msg) return false;
-		logex.execute(() -> {
+		return tryExec(() -> {
 			CharSequence s = msg.get();
 			if (null != s) logger.warn(s.toString(), t);
 		});
-		return true;
 	}
 
 	public boolean error(Supplier<CharSequence> msg, Throwable t) {
 		if (null == msg) return false;
-		logex.execute(() -> {
+		return tryExec(() -> {
 			CharSequence s = msg.get();
 			if (null != s) logger.error(s.toString(), t);
 		});
-		return true;
 	}
 
 	// /** Old style */
