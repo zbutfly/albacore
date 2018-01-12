@@ -1,13 +1,12 @@
 package net.butfly.albacore.expr.fel;
 
+import static net.butfly.albacore.expr.fel.Fels.NULL;
 import static net.butfly.albacore.expr.fel.Fels.isNull;
 
 import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
-
-import com.greenpineyu.fel.common.Null;
 
 import net.butfly.albacore.expr.fel.FelFunc.Func;
 import net.butfly.albacore.utils.collection.Maps;
@@ -50,15 +49,15 @@ public interface FuncForStr {
 	 * @author butfly
 	 */
 	@Func
-	class StrrevFunc extends FelFunc<Object> {
+	class StrrevFunc extends FelFunc<String> {
 		@Override
 		protected boolean valid(int argl) {
 			return argl == 1;
 		}
 
 		@Override
-		public Object invoke(Object... args) {
-			return isNull(args[0]) ? new Null() : new StringBuilder(args[0].toString()).reverse().toString();
+		public String invoke(Object... args) {
+			return isNull(args[0]) ? null : new StringBuilder(args[0].toString()).reverse().toString();
 		}
 	}
 
@@ -85,7 +84,7 @@ public interface FuncForStr {
 					if (match(v0, case1)) return value1;
 				} else return case1;// odd args, with default value, match default value
 			}
-			return new Null(); // no matchs and no default
+			return NULL; // no matchs and no default
 		}
 
 		private boolean match(Object v, Object cas) {
@@ -125,7 +124,7 @@ public interface FuncForStr {
 
 		@Override
 		public String invoke(Object... args) {
-			return ((String) args[0]).substring((int) args[1], (int) args[2]);
+			return isNull(args[0]) ? null : args[0].toString().substring((int) args[1], (int) args[2]);
 		}
 	}
 
@@ -226,18 +225,17 @@ public interface FuncForStr {
 
 		@Override
 		public String invoke(Object... args) {
-			String s = isNull(args[0]) ? "" : args[0].toString();
-			return s.trim();
+			return isNull(args[0]) ? null : args[0].toString().trim();
 		}
 	}
 
 	/**
-	 * strreplace(inputString, oldcharArr, newcharArr)：替换字符串中的特定字符
+	 * StrreplaceFunc(inputString, oldcharArr, newcharArr)：替换字符串中的特定字符
 	 * 
 	 * @author lilz
 	 */
 	@Func
-	class strreplace extends FelFunc<String> {
+	class StrreplaceFunc extends FelFunc<String> {
 		@Override
 		protected boolean valid(int argl) {
 			return argl == 3;
@@ -245,20 +243,20 @@ public interface FuncForStr {
 
 		@Override
 		public String invoke(Object... args) {
-			String s = isNull(args[0]) ? "" : args[0].toString();
-			String p = isNull(args[1]) ? "" : args[1].toString();
-			String r = args[2].toString();
-			return s.replace(p, r);
+			if (isNull(args[0])) return null;
+			if (isNull(args[1])) return args[0].toString();
+			String r = isNull(args[2]) ? args[2].toString() : "";
+			return args[0].toString().replaceAll(args[1].toString(), r);
 		}
 	}
 
 	/**
-	 * strtriml(str)：去除字符串前面部份空格或者tab
+	 * StrtrimlFunc(str)：去除字符串前面部份空格或者tab
 	 * 
 	 * @author lilz
 	 */
 	@Func
-	class strtriml extends FelFunc<String> {
+	class StrtrimlFunc extends FelFunc<String> {
 		@Override
 		protected boolean valid(int argl) {
 			return argl == 1;
@@ -266,8 +264,14 @@ public interface FuncForStr {
 
 		@Override
 		public String invoke(Object... args) {
-			String s = isNull(args[0]) ? "" : args[0].toString();
-			return s.replaceAll("^\\s+", "");
+			if (isNull(args[0])) return null;
+			String s = args[0].toString();
+			int i = 0;
+			for (; i < s.length(); i++) {
+				char c = s.charAt(i);
+				if (c != '\t' && c != ' ') break;
+			}
+			return s.substring(i);
 		}
 	}
 
@@ -277,7 +281,7 @@ public interface FuncForStr {
 	 * @author lilz
 	 */
 	@Func
-	class strtrimr extends FelFunc<String> {
+	class StrtrimrFunc extends FelFunc<String> {
 		@Override
 		protected boolean valid(int argl) {
 			return argl == 1;
@@ -285,8 +289,14 @@ public interface FuncForStr {
 
 		@Override
 		public String invoke(Object... args) {
-			String s = isNull(args[0]) ? "" : args[0].toString();
-			return s.replaceAll("\\s+$", "");
+			if (isNull(args[0])) return null;
+			String s = args[0].toString();
+			int i = s.length() - 1;
+			for (; i >= 0; i--) {
+				char c = s.charAt(i);
+				if (c != '\t' && c != ' ') break;
+			}
+			return s.substring(0, i + 1);
 		}
 	}
 
@@ -304,8 +314,7 @@ public interface FuncForStr {
 
 		@Override
 		public String invoke(Object... args) {
-			String s = isNull(args[0]) ? "" : args[0].toString();
-			return s.toUpperCase();
+			return isNull(args[0]) ? null : args[0].toString().toUpperCase();
 		}
 	}
 
@@ -323,8 +332,7 @@ public interface FuncForStr {
 
 		@Override
 		public String invoke(Object... args) {
-			String s = isNull(args[0]) ? "" : args[0].toString();
-			return s.toLowerCase();
+			return isNull(args[0]) ? null : args[0].toString().toLowerCase();
 		}
 	}
 
@@ -333,10 +341,10 @@ public interface FuncForStr {
 	class ConcatFunc extends FelFunc<String> {
 		@Override
 		public String invoke(Object... args) {
-			String result = "";
+			StringBuilder result = new StringBuilder();
 			for (Object a : args)
-				result += a.toString();
-			return result;
+				result.append(a);
+			return result.toString();
 		}
 	}
 }

@@ -14,6 +14,8 @@ import net.butfly.albacore.expr.fel.FelFunc.Func;
 import net.butfly.albacore.utils.Reflections;
 
 public final class Fels {
+	static final Null NULL = new Null();
+
 	static com.greenpineyu.fel.FelEngine scan() {
 		FelEngineImpl eng;
 		try {

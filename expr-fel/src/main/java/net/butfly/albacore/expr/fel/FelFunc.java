@@ -6,7 +6,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import com.greenpineyu.fel.common.Null;
 import com.greenpineyu.fel.function.CommonFunction;
 
 import net.butfly.albacore.utils.CaseFormat;
@@ -17,11 +16,12 @@ public abstract class FelFunc<R> extends CommonFunction {
 
 	@Override
 	public final Object call(Object[] args) {
+		Object r;
 		if (null != args && valid(args.length)) try {
-			return invoke(args);
+			return null == (r = invoke(args)) ? Fels.NULL : r;
 		} catch (Exception e) {
 			logger.debug("Expression eval fail", e);
-			return new Null();
+			return Fels.NULL;
 		}
 		logger.error(getName() + "() by illegal arguments");
 		return null;
