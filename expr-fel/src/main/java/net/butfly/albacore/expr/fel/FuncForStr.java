@@ -212,6 +212,122 @@ public interface FuncForStr {
 		}
 	}
 
+	/**
+	 * strtrim(str)：去除前后空格
+	 * 
+	 * @author lilz
+	 */
+	@Func
+	class StrtrimFunc extends FelFunc<String> {
+		@Override
+		protected boolean valid(int argl) {
+			return argl == 1;
+		}
+
+		@Override
+		public String invoke(Object... args) {
+			String s = isNull(args[0]) ? "" : args[0].toString();
+			return s.trim();
+		}
+	}
+
+	/**
+	 * strreplace(inputString, oldcharArr, newcharArr)：替换字符串中的特定字符
+	 * 
+	 * @author lilz
+	 */
+	@Func
+	class strreplace extends FelFunc<String> {
+		@Override
+		protected boolean valid(int argl) {
+			return argl == 3;
+		}
+
+		@Override
+		public String invoke(Object... args) {
+			String s = isNull(args[0]) ? "" : args[0].toString();
+			String p = isNull(args[1]) ? "" : args[1].toString();
+			String r = args[2].toString();
+			return s.replace(p, r);
+		}
+	}
+
+	/**
+	 * strtriml(str)：去除字符串前面部份空格或者tab
+	 * 
+	 * @author lilz
+	 */
+	@Func
+	class strtriml extends FelFunc<String> {
+		@Override
+		protected boolean valid(int argl) {
+			return argl == 1;
+		}
+
+		@Override
+		public String invoke(Object... args) {
+			String s = isNull(args[0]) ? "" : args[0].toString();
+			return s.replaceAll("^\\s+", "");
+		}
+	}
+
+	/**
+	 * strtrimr(str)：去除字符串后面部份空格或者tab
+	 * 
+	 * @author lilz
+	 */
+	@Func
+	class strtrimr extends FelFunc<String> {
+		@Override
+		protected boolean valid(int argl) {
+			return argl == 1;
+		}
+
+		@Override
+		public String invoke(Object... args) {
+			String s = isNull(args[0]) ? "" : args[0].toString();
+			return s.replaceAll("\\s+$", "");
+		}
+	}
+
+	/**
+	 * strupper(str)：字符串转大写
+	 * 
+	 * @author lilz
+	 */
+	@Func
+	class strupper extends FelFunc<String> {
+		@Override
+		protected boolean valid(int argl) {
+			return argl == 1;
+		}
+
+		@Override
+		public String invoke(Object... args) {
+			String s = isNull(args[0]) ? "" : args[0].toString();
+			return s.toUpperCase();
+		}
+	}
+
+	/**
+	 * strlower(str)：字符串转小写
+	 * 
+	 * @author lilz
+	 */
+	@Func
+	class strlower extends FelFunc<String> {
+		@Override
+		protected boolean valid(int argl) {
+			return argl == 1;
+		}
+
+		@Override
+		public String invoke(Object... args) {
+			String s = isNull(args[0]) ? "" : args[0].toString();
+			return s.toLowerCase();
+		}
+	}
+
 	@Deprecated
 	@Func
 	class ConcatFunc extends FelFunc<String> {
