@@ -306,7 +306,7 @@ public interface FuncForStr {
 	 * @author lilz
 	 */
 	@Func
-	class strupper extends FelFunc<String> {
+	class StrupperFunc extends FelFunc<String> {
 		@Override
 		protected boolean valid(int argl) {
 			return argl == 1;
@@ -324,7 +324,7 @@ public interface FuncForStr {
 	 * @author lilz
 	 */
 	@Func
-	class strlower extends FelFunc<String> {
+	class StrlowerFunc extends FelFunc<String> {
 		@Override
 		protected boolean valid(int argl) {
 			return argl == 1;
