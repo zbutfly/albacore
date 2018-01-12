@@ -19,6 +19,7 @@ import java.util.Set;
 import com.google.common.base.Joiner;
 
 import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
+import net.butfly.albacore.support.Values;
 import net.butfly.albacore.utils.logger.Logger;
 
 public final class Reflections extends Utils {
@@ -56,12 +57,12 @@ public final class Reflections extends Utils {
 	}
 
 	public static <T> T construct(final Class<T> cls, Object[] args, Class<?>[] parameterTypes) {
-		final Constructor<T> ctor = Refs.getMatchingConstructors(cls, parameterTypes);
+		final Constructor<T> ctor = Values.getMatchingConstructors(cls, parameterTypes);
 		if (ctor == null) {
 			logger.error("No such constructor on object: " + cls.getName());
 			return null;
 		}
-		if (!ctor.isAccessible()) ctor.setAccessible(true);
+		if (!Refs.accessible(ctor)) ctor.setAccessible(true);
 		try {
 			return ctor.newInstance(args);
 		} catch (Exception e) {
@@ -82,14 +83,14 @@ public final class Reflections extends Utils {
 		final Class<?>[] parameterTypes = Refs.toClass(parameters);
 		boolean isStatic = Class.class.equals(targetOrClass.getClass());
 		final Class<?> targetClass = isStatic ? (Class<?>) targetOrClass : targetOrClass.getClass();
-		final Method method = Refs.getMatchingAccessibleMethod(targetClass, methodName, parameterTypes);
+		final Method method = Values.getMatchingAccessibleMethod(targetClass, methodName, parameterTypes);
 		if (method == null) throw new NoSuchMethodException("No such accessible method: " + methodName + "() on object: " + targetClass
 				.getName());
 		return (T) method.invoke(isStatic ? null : targetOrClass, parameters);
 	}
 
 	public static void set(Object owner, Field field, Object value) {
-		boolean accessible = field.isAccessible();
+		boolean accessible = Refs.accessible(field);
 		try {
 			field.setAccessible(true);
 			field.set(owner, value);
@@ -106,7 +107,7 @@ public final class Reflections extends Utils {
 
 	@SuppressWarnings("unchecked")
 	public static <T> T get(Object obj, Field field) {
-		boolean flag = field.isAccessible();
+		boolean flag = Refs.accessible(field);
 		if (!flag) field.setAccessible(true);
 		try {
 			return (T) field.get(obj);

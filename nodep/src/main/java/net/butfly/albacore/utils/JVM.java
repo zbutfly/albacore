@@ -92,7 +92,7 @@ public class JVM {
 
 		Method mm = findMain(mn, new LinkedBlockingQueue<>(Arrays.asList(mc)));
 		if (null == mm) throw new RuntimeException("No main method found in class [" + mc.getName() + "] and its parents.");
-		if (!mm.isAccessible()) mm.setAccessible(true);
+		if (!Refs.accessible(mm)) mm.setAccessible(true);
 		logger.fine("Wrapped main method found and to be invoked: " + mm.toString());
 		try {
 			mm.invoke(null, (Object) ma);

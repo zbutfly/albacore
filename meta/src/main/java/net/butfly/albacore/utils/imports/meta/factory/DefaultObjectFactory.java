@@ -29,6 +29,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import net.butfly.albacore.exception.ReflectionException;
+import net.butfly.albacore.utils.Refs;
 
 public class DefaultObjectFactory implements ObjectFactory, Serializable {
 	private static final long serialVersionUID = -8855120656740914948L;
@@ -57,13 +58,13 @@ public class DefaultObjectFactory implements ObjectFactory, Serializable {
 			Constructor<T> constructor;
 			if (constructorArgTypes == null || constructorArgs == null) {
 				constructor = type.getDeclaredConstructor();
-				if (!constructor.isAccessible()) {
+				if (!Refs.accessible(constructor)) {
 					constructor.setAccessible(true);
 				}
 				return constructor.newInstance();
 			}
 			constructor = type.getDeclaredConstructor(constructorArgTypes.toArray(new Class[constructorArgTypes.size()]));
-			if (!constructor.isAccessible()) {
+			if (!Refs.accessible(constructor)) {
 				constructor.setAccessible(true);
 			}
 			return constructor.newInstance(constructorArgs.toArray(new Object[constructorArgs.size()]));

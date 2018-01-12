@@ -30,6 +30,7 @@ import java.util.Map;
 
 import net.butfly.albacore.exception.ReflectionException;
 import net.butfly.albacore.utils.Instances;
+import net.butfly.albacore.utils.Refs;
 import net.butfly.albacore.utils.imports.meta.invoker.GetFieldInvoker;
 import net.butfly.albacore.utils.imports.meta.invoker.Invoker;
 import net.butfly.albacore.utils.imports.meta.invoker.MethodInvoker;
@@ -83,7 +84,7 @@ public class Reflector {
 						// can do.
 					}
 				}
-				if (constructor.isAccessible()) {
+				if (Refs.accessible(constructor)) {
 					this.defaultConstructor = constructor;
 				}
 			}
@@ -223,7 +224,7 @@ public class Reflector {
 					// do.
 				}
 			}
-			if (field.isAccessible()) {
+			if (Refs.accessible(field)) {
 				int modifiers = field.getModifiers();
 				boolean add = !(Modifier.isFinal(modifiers) && Modifier.isStatic(modifiers));
 				// issue #379 - removed the check for final because JDK 1.5

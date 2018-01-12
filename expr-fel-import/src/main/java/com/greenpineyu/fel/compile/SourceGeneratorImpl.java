@@ -32,10 +32,10 @@ import com.greenpineyu.fel.parser.VarAstNode;
 
 public class SourceGeneratorImpl implements SourceGenerator {
 	private static final Logger logger = LoggerFactory.getLogger(SourceGenerator.class);
-	private List<Optimizer> opt = new CopyOnWriteArrayList<>();;
+	private List<Optimizer> opt = new CopyOnWriteArrayList<>();
 	private static String template;
 	private static int count = 0;
-	private Map<String, StringKeyValue> localvars = new ConcurrentHashMap<String, StringKeyValue>();;
+	private Map<String, StringKeyValue> localvars = new ConcurrentHashMap<String, StringKeyValue>();
 	static final String PACKAGE;
 
 	static {
