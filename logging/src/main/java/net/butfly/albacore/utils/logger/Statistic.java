@@ -119,8 +119,7 @@ public class Statistic {
 	// stating
 	public <E> E stats(E v) {
 		tryStats(() -> {
-			if (stepSize.get() < 0) return;
-			if (null == v) return;
+			if (stepSize.get() < 0 || null == v) return;
 			long size;
 			if (sizing == null) size = 0;
 			else try {
@@ -136,10 +135,24 @@ public class Statistic {
 		return v;
 	}
 
+	@SafeVarargs
+	public final <E> E[] stats(E... v) {
+		tryStats(() -> {
+			if (stepSize.get() < 0 || null == v || v.length == 0) return;
+			int b = 0;
+			for (E e : v)
+				if (null != e) {
+					stats(e);
+					b++;
+				}
+			if (b > 0) batchs.incrementAndGet();
+		});
+		return v;
+	}
+
 	public <E, C extends Iterable<E>> C stats(C i) {
 		tryStats(() -> {
-			if (stepSize.get() < 0) return;
-			if (null == i) return;
+			if (stepSize.get() < 0 || null == i) return;
 			int b = 0;
 			for (E e : i)
 				if (null != e) {
@@ -153,8 +166,7 @@ public class Statistic {
 
 	public <E, C extends Collection<E>> C stats(C c) {
 		tryStats(() -> {
-			if (stepSize.get() < 0) return;
-			if (null == c || c.isEmpty()) return;
+			if (stepSize.get() < 0 || null == c || c.isEmpty()) return;
 			int b = 0;
 			for (E e : c)
 				if (null != e) {
@@ -175,20 +187,23 @@ public class Statistic {
 			long spent = System.currentTimeMillis() - now;
 			E v = vv;
 			tryStats(() -> {
-				if (stepSize.get() < 0) return;
-				if (null == v) return;
 				spentTotal.addAndGet(spent);
-				long size;
-				if (sizing == null) size = 0;
-				else try {
-					Long s = sizing.apply(v);
-					size = null == s ? 0 : s.longValue();
-				} catch (Throwable t) {
-					size = 0;
-				}
-				long s = stepping.apply(v);
-				if (s > 1) batchs.incrementAndGet();
-				stats(s, size);
+				stats(v);
+			});
+		}
+	}
+
+	public <E> E[] statsInA(Supplier<E[]> get) {
+		long now = System.currentTimeMillis();
+		E[] vv = null;
+		try {
+			return vv = get.get();
+		} finally {
+			long spent = System.currentTimeMillis() - now;
+			E[] c = vv;;
+			tryStats(() -> {
+				spentTotal.addAndGet(spent);
+				stats(c);
 			});
 		}
 	}
@@ -202,16 +217,8 @@ public class Statistic {
 			long spent = System.currentTimeMillis() - now;
 			C c = vv;
 			tryStats(() -> {
-				if (stepSize.get() < 0) return;
-				if (null == c || c.isEmpty()) return;
 				spentTotal.addAndGet(spent);
-				int b = 0;
-				for (E e : c)
-					if (null != e) {
-						stats(e);
-						b++;
-					}
-				if (b > 0) batchs.incrementAndGet();
+				stats(c);
 			});
 		}
 	}
@@ -237,20 +244,8 @@ public class Statistic {
 	private <E> void timing(E v, long start) {
 		long spent = System.currentTimeMillis() - start;
 		tryStats(() -> {
-			if (stepSize.get() < 0) return;
-			if (null == v) return;
 			spentTotal.addAndGet(spent);
-			long size;
-			if (sizing == null) size = 0;
-			else try {
-				Long s = sizing.apply(v);
-				size = null == s ? 0 : s.longValue();
-			} catch (Throwable t) {
-				size = 0;
-			}
-			long s = stepping.apply(v);
-			if (s > 1) batchs.incrementAndGet();
-			stats(s, size);
+			stats(v);
 		});
 	}
 
@@ -261,8 +256,7 @@ public class Statistic {
 		} finally {
 			long spent = System.currentTimeMillis() - now;
 			tryStats(() -> {
-				if (stepSize.get() < 0) return;
-				if (null == c || c.isEmpty()) return;
+				if (stepSize.get() < 0 || null == c || c.isEmpty()) return;
 				spentTotal.addAndGet(spent);
 				int b = 0;
 				for (E e : c)
@@ -282,8 +276,7 @@ public class Statistic {
 		} finally {
 			long spent = System.currentTimeMillis() - now;
 			tryStats(() -> {
-				if (stepSize.get() < 0) return;
-				if (null == c || c.isEmpty()) return;
+				if (stepSize.get() < 0 || null == c || c.isEmpty()) return;
 				spentTotal.addAndGet(spent);
 				int b = 0;
 				for (E e : c)
