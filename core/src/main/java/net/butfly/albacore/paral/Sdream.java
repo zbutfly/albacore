@@ -6,8 +6,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.Spliterator;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
@@ -93,6 +95,14 @@ public interface Sdream<E> {
 
 	default List<E> list() {
 		List<E> l = Colls.list();
+		eachs(e -> {
+			if (null != e) l.add(e);
+		});
+		return l;
+	}
+
+	default BlockingQueue<E> queue() {
+		BlockingQueue<E> l = new LinkedBlockingQueue<>();
 		eachs(e -> {
 			if (null != e) l.add(e);
 		});
