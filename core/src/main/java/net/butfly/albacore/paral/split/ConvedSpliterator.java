@@ -1,6 +1,7 @@
 package net.butfly.albacore.paral.split;
 
 import java.util.Spliterator;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -14,7 +15,21 @@ public class ConvedSpliterator<E, E0> extends ConvedSpliteratorBase<E, E0> {
 
 	@Override
 	public boolean tryAdvance(Consumer<? super E> using) {
-		return impl.tryAdvance(e0 -> using.accept(conv.apply(e0)));
+		AtomicBoolean notUsed = new AtomicBoolean(true);
+		boolean advanced = false;
+		while (notUsed.get() && (advanced = impl.tryAdvance(e0 -> {
+			if (null != e0) {
+				E e = conv.apply(e0);
+				if (null != e) {
+					try {
+						using.accept(e);
+					} finally {
+						notUsed.set(false);
+					}
+				}
+			}
+		})));
+		return advanced;
 	}
 
 	@Override
