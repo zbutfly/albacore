@@ -24,7 +24,8 @@ public class Statistic {
 	private AtomicLong stepSize;
 	private Supplier<String> detailing;
 	private Function<Object, Long> sizing;
-	private Function<Object, Long> stepping;
+	private Function<Object, Long> batchSizing;
+	private Function<Object, String> sampling;
 	private String name;
 
 	private final long begin;
@@ -55,8 +56,9 @@ public class Statistic {
 		begin = System.currentTimeMillis();
 		statsed = new AtomicLong(begin);
 		sizing = Syss::sizeOf;
+		sampling = e -> null;
 		detailing = DEFAULT_EMPTY_DETAILING;
-		stepping = e -> 1L;
+		batchSizing = e -> 1L;
 		name = "[STATISTIC]";
 		logger.warn("Statistic [" + loggerName + "] registered, do you enable the logging level DEBUG?");
 	}
@@ -100,13 +102,26 @@ public class Statistic {
 	}
 
 	@SuppressWarnings("unchecked")
-	public final <E> Statistic stepping(Function<E, Long> stepping) {
-		this.stepping = o -> {
+	public final <E> Statistic batchSizeCalcing(Function<E, Long> batchSizing) {
+		this.batchSizing = o -> {
 			try {
-				return stepping.apply((E) o);
-			} catch (ClassCastException e) {
+				return batchSizing.apply((E) o);
+			} catch (Exception e) {
 				return 1L;
 			}
+		};
+		return this;
+	}
+
+	@SuppressWarnings("unchecked")
+	public final <E> Statistic sampling(Function<E, String> sampling) {
+		this.sampling = o -> {
+			try {
+				return sampling.apply((E) o);
+			} catch (Exception e) {
+				return null;
+			}
+
 		};
 		return this;
 	}
@@ -128,9 +143,9 @@ public class Statistic {
 			} catch (Throwable t) {
 				size = 0;
 			}
-			long s = stepping.apply(v);
+			long s = batchSizing.apply(v);
 			if (s > 1) batchs.incrementAndGet();
-			stats(s, size);
+			stats(v, s, size);
 		});
 		return v;
 	}
@@ -289,29 +304,29 @@ public class Statistic {
 		}
 	}
 
-	public void trace() {
+	public void trace(String sampling) {
 		long now = System.currentTimeMillis();
 		Result step, total;
 		total = new Result(packTotal.get(), byteTotal.get(), System.currentTimeMillis() - begin);
 		if (total.packs <= 0) return;
 		step = new Result(packStep.getAndSet(0), byteStep.getAndSet(0), now - statsed.getAndSet(now));
 		if (step.packs <= 0) return;
-		logger.debug(() -> traceDetail(step, total));
+		logger.debug(() -> traceDetail(step, total, sampling));
 	}
 
-	private void stats(long steps, long bytes) {
+	private void stats(Object v, long steps, long bytes) {
 		if (stepSize.get() < 0) return;
 		packTotal.addAndGet(steps);
 		byteTotal.addAndGet(bytes < 0 ? 0 : bytes);
 		byteStep.addAndGet(bytes < 0 ? 0 : bytes);
 		if (packStep.addAndGet(steps) > stepSize.get() && logger.isInfoEnabled() && lock.tryLock()) try {
-			trace();
+			trace(sampling.apply(v));
 		} finally {
 			lock.unlock();
 		}
 	}
 
-	private CharSequence traceDetail(Result step, Result total) {
+	private CharSequence traceDetail(Result step, Result total, String sampling) {
 		String stepAvg = step.millis > 0 ? Long.toString(step.packs * 1000 / step.millis) : "no_time";
 		String totalAvg = total.millis > 0 ? Long.toString(total.packs * 1000 / total.millis) : "no_time";
 		StringBuilder info = new StringBuilder(name)//
@@ -320,10 +335,9 @@ public class Statistic {
 				.append("[Total: ").append(total.packs).append("/objs,").append(formatKilo(total.bytes, "B")).append(",").append(
 						formatMillis(total.millis)).append(",").append(totalAvg).append(" objs/s]");
 		appendDetail(info);
-		long b;
-		if ((b = batchs.get()) > 0) info.append(", [Average batch size: ").append(total.packs / b).append("]");
-		if ((b = spentTotal.get()) > 0) info.append(", [Average 1000 obj spent: ").append(b * 1000 / total.packs).append(" ms]");
-		if ((b = ignoreTotal.get()) > 0) info.append(", [Logger ignore: ").append(b).append("]");
+		CharSequence extra = appendExtra(total);
+		if (extra.length() > 0) info.append("\n\t").append(extra);
+		if (null != sampling && sampling.length() > 0) info.append("\n\t[Sample: ").append(sampling);
 		return info;
 	}
 
@@ -332,6 +346,21 @@ public class Statistic {
 		String ss = detailing.get();
 		if (null == ss) return;
 		info.append("\n\t[").append(ss).append("]");
+	}
+
+	private CharSequence appendExtra(Result total) {
+		StringBuilder info = new StringBuilder();
+		long b;
+		if ((b = batchs.get()) > 0) info.append("[Average batch size: ").append(total.packs / b).append("]");
+		if ((b = spentTotal.get()) > 0) {
+			if (info.length() > 0) info.append(", ");
+			info.append("[Average 1000 obj spent: ").append(b * 1000 / total.packs).append(" ms]");
+		}
+		if ((b = ignoreTotal.get()) > 0) {
+			if (info.length() > 0) info.append(", ");
+			info.append("[Logger ignore: ").append(b).append("]");
+		}
+		return info;
 	}
 
 	private void tryStats(Runnable r) {

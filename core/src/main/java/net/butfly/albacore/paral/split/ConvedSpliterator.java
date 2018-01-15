@@ -24,7 +24,7 @@ public class ConvedSpliterator<E, E0> extends ConvedSpliteratorBase<E, E0> {
 					try {
 						using.accept(e);
 					} finally {
-						notUsed.set(false);
+						notUsed.lazySet(false);
 					}
 				}
 			}
