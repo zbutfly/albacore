@@ -1,5 +1,6 @@
 package net.butfly.albacore.utils.collection;
 
+import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -8,6 +9,8 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import net.butfly.albacore.utils.Pair;
 
@@ -53,8 +56,11 @@ public class Maps {
 
 	public static <K, V> Set<Pair<K, V>> pairs(Map<K, V> map) {
 		Set<Pair<K, V>> s = Colls.distinct();
-		map.entrySet().forEach(e -> s.add(new Pair<>(e.getKey(), e.getValue())));
+		map.entrySet().forEach(
+
+				e -> s.add(new Pair<>(e.getKey(), e.getValue())));
 		return s;
+
 	}
 
 	@SuppressWarnings("unchecked")
@@ -62,5 +68,91 @@ public class Maps {
 		if (null == kvs || kvs.length <= 1) return new Pair<>(null, null);
 		else return new Pair<>((K) kvs[0], Arrays.copyOfRange(kvs, 1, kvs.length));
 
+	}
+
+	private static Pattern indexed = Pattern.compile("^(.*)\\[(\\d+)\\]$");
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public static <T> T getFlat(Map<String, Object> map, String... key) {
+		Object v = map;
+		for (int i = 0; i < key.length; i++) {
+			if (!(v instanceof Map)) throw new RuntimeException("embedded entry not found for [" + key[i] + "] in: " + v.toString());
+			Map<String, Object> ss = (Map<String, Object>) v;
+			Matcher m = indexed.matcher(key[i]);
+			if (m.find()) {
+				int index = Integer.parseInt(m.group(2));
+				Object l = ss.get(m.group(1));
+				if (l instanceof List) v = ((List) l).get(index);
+				else if (l.getClass().isArray()) v = Array.get(l, index);
+				else throw new RuntimeException("indexed entry not found for [" + key[i] + "] in: " + v.toString());
+			} else v = ((Map<String, Object>) v).get(key[i]);
+		}
+		return (T) v;
+	}
+
+	public static <T> T getFlat(Map<String, Object> map, String key) {
+		return getFlat(map, key.split("\\."));
+	}
+
+	@SuppressWarnings("unchecked")
+	public static Map<String, Object> dimensionize(Map<String, Object> map) {
+		Map<String, Object> r = Maps.of();
+		for (String key : map.keySet()) {
+			Object v0 = map.get(key);
+			if (null == v0) continue;
+			Object v = dimensionize(v0);
+			String[] ks = key.split("\\.");
+			if (ks.length == 1) {
+				Matcher m = indexed.matcher(key);
+				if (!m.find()) r.put(key, v);
+				else r.compute(m.group(1), (k, orig) -> {
+					if (null == orig) orig = Colls.list();
+					else if (orig instanceof Iterable && !(orig instanceof List)) orig = Colls.list((Iterable<Object>) orig);
+					((List<Object>) orig).set(Integer.parseInt(m.group(2)), v);
+					return orig;
+				});
+			} else {
+				Matcher m = indexed.matcher(ks[0]);
+				if (!m.find()) r.compute(ks[0], (k, orig) -> {
+					if (null == orig) orig = Maps.of();
+					else if (!(orig instanceof Map)) orig = Maps.of("", orig);
+					((Map<String, Object>) orig).put(key.substring(ks[0].length() + 1), v);
+					return orig;
+				});
+				else r.compute(m.group(1), (k, orig) -> {
+					if (null == orig) orig = Colls.list();
+					else if (orig instanceof Iterable && !(orig instanceof List)) orig = Colls.list((Iterable<Object>) orig);
+					((List<Object>) orig).set(Integer.parseInt(m.group(2)), v);
+					return orig;
+				});
+			}
+		}
+		return r;
+	}
+
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	private static Object dimensionize(Object v) {
+		if (v instanceof Map) return dimensionize((Map<String, Object>) v);
+		else if (v instanceof Iterable) return dimensionize((Iterable) v);
+		else return v;
+	}
+
+	@SuppressWarnings("unchecked")
+	private static List<Object> dimensionize(Iterable<Object> v) {
+		List<Object> l = Colls.list();
+		for (Object e : v) {
+			if (null == e) continue;
+			if (e instanceof Map) l.add(dimensionize((Map<String, Object>) e));
+			else if (e instanceof Iterable) l.add(dimensionize((Iterable<Object>) e));
+			else if (e.getClass().isArray()) {
+				List<Object> sub = Colls.list();
+				for (int i = 0; i < Array.getLength(e); i++) {
+					Object vv = Array.get(e, i);
+					if (null != vv) sub.add(vv);
+				}
+				l.add(e);
+			}
+		}
+		return l;
 	}
 }

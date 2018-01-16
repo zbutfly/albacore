@@ -215,7 +215,7 @@ public class Statistic {
 			return vv = get.get();
 		} finally {
 			long spent = System.currentTimeMillis() - now;
-			E[] c = vv;;
+			E[] c = vv;
 			tryStats(() -> {
 				spentTotal.addAndGet(spent);
 				stats(c);
