@@ -4,18 +4,18 @@ import static net.butfly.albacore.expr.fel.Fels.NULL;
 import static net.butfly.albacore.expr.fel.Fels.isNull;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
 import net.butfly.albacore.expr.fel.FelFunc.Func;
+import net.butfly.albacore.utils.collection.Colls;
 import net.butfly.albacore.utils.collection.Maps;
 
 public interface FuncForStr {
 	/**
 	 * strlen(str)：长度
-	 * 
-	 * @author butfly
 	 */
 	@Func
 	class StrlenFunc extends FelFunc<Integer> {
@@ -32,8 +32,6 @@ public interface FuncForStr {
 
 	/**
 	 * uuid()
-	 * 
-	 * @author butfly
 	 */
 	@Func
 	class UuidFunc extends FelFunc<Object> {
@@ -45,8 +43,6 @@ public interface FuncForStr {
 
 	/**
 	 * strrev('1234567')
-	 * 
-	 * @author butfly
 	 */
 	@Func
 	class StrrevFunc extends FelFunc<String> {
@@ -63,8 +59,6 @@ public interface FuncForStr {
 
 	/**
 	 * case(value, case1, result1, case2, result2, ... [default])
-	 * 
-	 * @author butfly
 	 */
 	@Func
 	class CaseFunc extends FelFunc<Object> {
@@ -97,8 +91,6 @@ public interface FuncForStr {
 
 	/**
 	 * match(value, regularExpression)
-	 * 
-	 * @author butfly
 	 */
 	@Func
 	class MatchFunc extends FelFunc<Boolean> {
@@ -130,8 +122,6 @@ public interface FuncForStr {
 
 	/**
 	 * strpadl(str, len, char)：左填充字符c直到结果字符串长度为l
-	 * 
-	 * @author butfly
 	 */
 	@Func
 	class StrpadlFunc extends FelFunc<String> {
@@ -152,8 +142,6 @@ public interface FuncForStr {
 
 	/**
 	 * strpadr(str, len, char)：右填充字符c直到结果字符串长度为l
-	 * 
-	 * @author butfly
 	 */
 	@Func
 	class StrpadrFunc extends FelFunc<String> {
@@ -174,8 +162,6 @@ public interface FuncForStr {
 
 	/**
 	 * strfil(n, char)：重复字符n次创建字符串
-	 * 
-	 * @author butfly
 	 */
 	@Func
 	class StrfilFunc extends FelFunc<String> {
@@ -212,12 +198,10 @@ public interface FuncForStr {
 	}
 
 	/**
-	 * strtrim(str)：去除前后空格
-	 * 
-	 * @author lilz
+	 * trim(str)：去除前后空格
 	 */
 	@Func
-	class StrtrimFunc extends FelFunc<String> {
+	class TrimFunc extends FelFunc<String> {
 		@Override
 		protected boolean valid(int argl) {
 			return argl == 1;
@@ -230,12 +214,10 @@ public interface FuncForStr {
 	}
 
 	/**
-	 * StrreplaceFunc(inputString, oldcharArr, newcharArr)：替换字符串中的特定字符
-	 * 
-	 * @author lilz
+	 * replace(inputString, oldcharArr, newcharArr)：替换字符串中的特定字符
 	 */
 	@Func
-	class StrreplaceFunc extends FelFunc<String> {
+	class ReplaceFunc extends FelFunc<String> {
 		@Override
 		protected boolean valid(int argl) {
 			return argl == 3;
@@ -251,12 +233,10 @@ public interface FuncForStr {
 	}
 
 	/**
-	 * StrtrimlFunc(str)：去除字符串前面部份空格或者tab
-	 * 
-	 * @author lilz
+	 * triml(str)：去除字符串前面部份空格或者tab
 	 */
 	@Func
-	class StrtrimlFunc extends FelFunc<String> {
+	class TrimlFunc extends FelFunc<String> {
 		@Override
 		protected boolean valid(int argl) {
 			return argl == 1;
@@ -276,12 +256,10 @@ public interface FuncForStr {
 	}
 
 	/**
-	 * strtrimr(str)：去除字符串后面部份空格或者tab
-	 * 
-	 * @author lilz
+	 * trimr(str)：去除字符串后面部份空格或者tab
 	 */
 	@Func
-	class StrtrimrFunc extends FelFunc<String> {
+	class TrimrFunc extends FelFunc<String> {
 		@Override
 		protected boolean valid(int argl) {
 			return argl == 1;
@@ -301,12 +279,10 @@ public interface FuncForStr {
 	}
 
 	/**
-	 * strupper(str)：字符串转大写
-	 * 
-	 * @author lilz
+	 * upper(str)：字符串转大写
 	 */
 	@Func
-	class StrupperFunc extends FelFunc<String> {
+	class UpperFunc extends FelFunc<String> {
 		@Override
 		protected boolean valid(int argl) {
 			return argl == 1;
@@ -319,12 +295,10 @@ public interface FuncForStr {
 	}
 
 	/**
-	 * strlower(str)：字符串转小写
-	 * 
-	 * @author lilz
+	 * lower(str)：字符串转小写
 	 */
 	@Func
-	class StrlowerFunc extends FelFunc<String> {
+	class LowerFunc extends FelFunc<String> {
 		@Override
 		protected boolean valid(int argl) {
 			return argl == 1;
@@ -333,6 +307,25 @@ public interface FuncForStr {
 		@Override
 		public String invoke(Object... args) {
 			return isNull(args[0]) ? null : args[0].toString().toLowerCase();
+		}
+	}
+
+	/**
+	 * split(str, splitter)：字符串切分
+	 */
+	@Func
+	class SplitFunc extends FelFunc<List<String>> {
+		@Override
+		protected boolean valid(int argl) {
+			return argl == 2;
+		}
+
+		@Override
+		public List<String> invoke(Object... args) {
+			if (isNull(args[0])) return null;
+			String s = args[0].toString();
+			if (isNull(args[1])) return Colls.list(s);
+			return Colls.list(s.split(args[1].toString()));
 		}
 	}
 

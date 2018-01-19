@@ -7,7 +7,6 @@ import net.butfly.albacore.expr.fel.FelFunc.Func;
 import net.butfly.albacore.utils.Texts;
 
 public interface FuncForDate {
-
 	@Func
 	class DateToStrFunc extends FelFunc<String> {
 		@Override

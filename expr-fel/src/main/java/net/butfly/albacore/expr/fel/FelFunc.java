@@ -2,7 +2,7 @@ package net.butfly.albacore.expr.fel;
 
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
+import static net.butfly.albacore.expr.fel.Fels.isNull;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
@@ -47,5 +47,31 @@ public abstract class FelFunc<R> extends CommonFunction {
 	@Retention(RUNTIME)
 	public @interface Func {
 		String value() default "";
+	}
+
+	@Func
+	class IsNullFunc extends FelFunc<Boolean> {
+		@Override
+		protected boolean valid(int argl) {
+			return argl == 1;
+		}
+
+		@Override
+		public Boolean invoke(Object... args) {
+			return isNull(args[0]);
+		}
+	}
+
+	@Func
+	class EqualFunc extends FelFunc<Boolean> {
+		@Override
+		protected boolean valid(int argl) {
+			return argl == 2;
+		}
+
+		@Override
+		public Boolean invoke(Object... args) {
+			return isNull(args[0]) ? isNull(args[1]) : args[0].equals(args[1]);
+		}
 	}
 }
