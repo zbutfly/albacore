@@ -1,6 +1,8 @@
 package net.butfly.albacore.utils.collection;
 
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
+import java.net.URLDecoder;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -13,8 +15,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import net.butfly.albacore.utils.Pair;
+import net.butfly.albacore.utils.logger.Logger;
 
 public class Maps {
+	private static final Logger logger = Logger.getLogger(Maps.class);
+
 	public static <K, V> ConcurrentMap<K, V> of() {
 		return new ConcurrentHashMap<>();
 	}
@@ -154,5 +159,35 @@ public class Maps {
 			}
 		}
 		return l;
+	}
+
+	public static Map<String, String> ofQueryString(String qs) {
+		return ofQueryString(qs, "");
+	}
+
+	public static Map<String, String> ofQueryString(String qs, String defaultKey) {
+		Map<String, String> map = Maps.of();
+		for (String kv : qs.split("&")) {
+			String[] kvs = kv.split("=", 2);
+			String k, v;
+			try {
+				if (kvs.length < 2) {
+					k = defaultKey;
+					v = URLDecoder.decode(kvs[0], "utf-8");
+				} else {
+					k = URLDecoder.decode(kvs[0], "utf-8");
+					v = URLDecoder.decode(kvs[1], "utf-8");
+				}
+			} catch (UnsupportedEncodingException e) {
+				throw new RuntimeException(e);
+			}
+			map.compute(k, (key, orig) -> {
+				if (orig == null) return v;
+				logger.warn("Duplication key [" + (key.isEmpty() ? "EMPTY" : key) + "] in query string, new value [" + v
+						+ "], original value [" + orig + "] lost.");
+				return v;
+			});
+		}
+		return map;
 	}
 }
