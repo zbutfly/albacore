@@ -160,7 +160,7 @@ public class Statistic {
 					stats(e);
 					b++;
 				}
-			if (b > 0) batchs.incrementAndGet();
+			if (b > 1) batchs.incrementAndGet();
 		});
 		return v;
 	}
@@ -174,7 +174,7 @@ public class Statistic {
 					stats(e);
 					b++;
 				}
-			if (b > 0) batchs.incrementAndGet();
+			if (b > 1) batchs.incrementAndGet();
 		});
 		return i;
 	}
@@ -188,7 +188,7 @@ public class Statistic {
 					stats(e);
 					b++;
 				}
-			if (b > 0) batchs.incrementAndGet();
+			if (b > 1) batchs.incrementAndGet();
 		});
 		return c;
 	}
@@ -283,7 +283,7 @@ public class Statistic {
 								stats(e);
 								b++;
 							}
-						batchs.incrementAndGet();
+						if (b > 1) batchs.incrementAndGet();
 					}
 				});
 			}
@@ -306,7 +306,7 @@ public class Statistic {
 							stats(e);
 							b++;
 						}
-					batchs.incrementAndGet();
+					if (b > 1) batchs.incrementAndGet();
 				}
 			});
 		}
