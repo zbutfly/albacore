@@ -1,8 +1,6 @@
 package net.butfly.albacore.utils;
 
 import java.io.PrintStream;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.UndeclaredThrowableException;
@@ -31,19 +29,35 @@ public class Exceptions {
 	}
 
 	public static String getStackTrace(Throwable e) {
-		// to avoid JDK BUG, u can not invoke e.printStackTrace directly.
-		StringWriter s = new StringWriter();
-		PrintWriter w = new PrintWriter(s);
-		w.println(e);
-		StackTraceElement[] trace = e.getStackTrace();
-		for (int i = 0; i < trace.length; i++)
-			w.println("\tat " + trace[i]);
-		Throwable cause = e.getCause();
-		if (cause != null && cause != e) {
-			w.println("Caused by " + cause);
-			w.println(cause);
+		return getStackTrace(e, Integer.MAX_VALUE);
+	}
+
+	public static String getStackTrace(Throwable e, int lines) {
+		StringBuilder s = new StringBuilder(e.toString());
+		int l = 1;
+		l += append(s, e, lines);
+		Throwable cause;
+		while (null != (cause = e.getCause()) && !cause.equals(e) && l <= lines) {
+			s.append("\nCaused by " + cause);
+			l += append(s, cause, lines) + 1;
+			e = cause;
 		}
 		return s.toString();
+	}
+
+	private static int append(StringBuilder s, Throwable t, int lines) {
+		String[] l = stackTraces(t, lines);
+		if (l.length > 0) s.append("\n\tat ").append(String.join("\n\tat ", l));
+		return l.length;
+	}
+
+	public static String[] stackTraces(Throwable e, int lines) {
+		// to avoid JDK BUG, u can not invoke e.printStackTrace directly.
+		List<String> l = new ArrayList<>();
+		StackTraceElement[] trace = e.getStackTrace();
+		for (int i = 0; i < trace.length && i < lines; i++)
+			l.add(trace[i].toString());
+		return l.toArray(new String[l.size()]);
 	}
 
 	public static String getStackTrace() {
