@@ -203,7 +203,7 @@ public class Statistic {
 			E v = vv;
 			tryStats(() -> {
 				spentTotal.addAndGet(spent);
-				stats(v);
+				if (null != v) stats(v);
 			});
 		}
 	}
@@ -218,7 +218,7 @@ public class Statistic {
 			E[] c = vv;
 			tryStats(() -> {
 				spentTotal.addAndGet(spent);
-				stats(c);
+				if (null != c && c.length > 0) stats(c);
 			});
 		}
 	}
@@ -229,11 +229,12 @@ public class Statistic {
 		try {
 			return vv = get.get();
 		} finally {
+			if (null == vv || vv.isEmpty()) return vv;
 			long spent = System.currentTimeMillis() - now;
 			C c = vv;
 			tryStats(() -> {
 				spentTotal.addAndGet(spent);
-				stats(c);
+				if (null != c && !c.isEmpty()) stats(c);
 			});
 		}
 	}
@@ -257,10 +258,11 @@ public class Statistic {
 	}
 
 	private <E> void timing(E v, long start) {
+		if (null == v) return;
 		long spent = System.currentTimeMillis() - start;
 		tryStats(() -> {
 			spentTotal.addAndGet(spent);
-			stats(v);
+			if (null != v) stats(v);
 		});
 	}
 
@@ -269,18 +271,22 @@ public class Statistic {
 		try {
 			return use.apply(c);
 		} finally {
-			long spent = System.currentTimeMillis() - now;
-			tryStats(() -> {
-				if (stepSize.get() < 0 || null == c || c.isEmpty()) return;
-				spentTotal.addAndGet(spent);
-				int b = 0;
-				for (E e : c)
-					if (null != e) {
-						stats(e);
-						b++;
+			if (null != c && !c.isEmpty()) {
+				long spent = System.currentTimeMillis() - now;
+				tryStats(() -> {
+					if (stepSize.get() < 0 || null == c || c.isEmpty()) return;
+					spentTotal.addAndGet(spent);
+					if (null != c && !c.isEmpty()) {
+						int b = 0;
+						for (E e : c)
+							if (null != e) {
+								stats(e);
+								b++;
+							}
+						batchs.incrementAndGet();
 					}
-				if (b > 0) batchs.incrementAndGet();
-			});
+				});
+			}
 		}
 	}
 
@@ -293,13 +299,15 @@ public class Statistic {
 			tryStats(() -> {
 				if (stepSize.get() < 0 || null == c || c.isEmpty()) return;
 				spentTotal.addAndGet(spent);
-				int b = 0;
-				for (E e : c)
-					if (null != e) {
-						stats(e);
-						b++;
-					}
-				if (b > 0) batchs.incrementAndGet();
+				if (null != c && !c.isEmpty()) {
+					int b = 0;
+					for (E e : c)
+						if (null != e) {
+							stats(e);
+							b++;
+						}
+					batchs.incrementAndGet();
+				}
 			});
 		}
 	}
