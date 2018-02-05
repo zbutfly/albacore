@@ -66,10 +66,18 @@ class WrapperExeter implements Exeter {
 	}
 
 	@Override
-	public <T> Future<?> submit(T in, List<Consumer<T>> tasks) {
+	public <T> Future<?> submit(T in, Iterable<Consumer<T>> tasks) {
 		final List<Future<?>> fs = new ArrayList<>();
 		for (Consumer<T> t : tasks)
 			if (null != t) fs.add(submit(() -> t.accept(in)));
+		return submit(() -> get(fs.toArray(new Future<?>[fs.size()])));
+	}
+
+	@Override
+	public <T> Future<?> submit(Consumer<T> task, Iterable<T> ins) {
+		final List<Future<?>> fs = new ArrayList<>();
+		for (T t : ins)
+			if (null != t) fs.add(submit(() -> task.accept(t)));
 		return submit(() -> get(fs.toArray(new Future<?>[fs.size()])));
 	}
 
@@ -91,6 +99,11 @@ class WrapperExeter implements Exeter {
 	@Override
 	public <T> void join(T in, List<Consumer<T>> tasks) {
 		get(submit(in, tasks));
+	}
+
+	@Override
+	public <T> void join(Consumer<T> task, Iterable<T> ins) {
+		get(submit(task, ins));
 	}
 
 	@Override

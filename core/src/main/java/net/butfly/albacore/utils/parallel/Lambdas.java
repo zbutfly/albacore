@@ -14,9 +14,12 @@ public final class Lambdas extends Utils {
 	@SuppressWarnings("unchecked")
 	public final static <N extends Number> BinaryOperator<N> sumInt() {
 		return (i1, i2) -> {
-			int v1 = null == i1 ? 0 : i1.intValue();
-			int v2 = null == i1 ? 0 : i1.intValue();
-			return (N) (Integer.valueOf(v1 + v2));
+			int i;
+			if (null == i1 && null == i2) i = 0;
+			else if (null == i1) i = i2.intValue();
+			else if (null == i2) i = i1.intValue();
+			else i = i1.intValue() + i2.intValue();
+			return (N) Integer.valueOf(i);
 		};
 	}
 

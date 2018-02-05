@@ -20,12 +20,10 @@ public class ConvedSpliterator<E, E0> extends ConvedSpliteratorBase<E, E0> {
 		while (notUsed.get() && (advanced = impl.tryAdvance(e0 -> {
 			if (null != e0) {
 				E e = conv.apply(e0);
-				if (null != e) {
-					try {
-						using.accept(e);
-					} finally {
-						notUsed.lazySet(false);
-					}
+				if (null != e) try {
+					using.accept(e);
+				} finally {
+					notUsed.lazySet(false);
 				}
 			}
 		}))) {}
