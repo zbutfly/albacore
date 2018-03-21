@@ -50,7 +50,7 @@ public abstract class FelFunc<R> extends CommonFunction {
 	}
 
 	@Func
-	class IsNullFunc extends FelFunc<Boolean> {
+	static class IsNullFunc extends FelFunc<Boolean> {
 		@Override
 		protected boolean valid(int argl) {
 			return argl == 1;
@@ -63,7 +63,7 @@ public abstract class FelFunc<R> extends CommonFunction {
 	}
 
 	@Func
-	class EqualFunc extends FelFunc<Boolean> {
+	static class EqualFunc extends FelFunc<Boolean> {
 		@Override
 		protected boolean valid(int argl) {
 			return argl == 2;
