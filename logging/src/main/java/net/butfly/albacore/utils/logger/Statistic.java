@@ -60,7 +60,7 @@ public class Statistic {
 		detailing = DEFAULT_EMPTY_DETAILING;
 		batchSizing = e -> 1L;
 		name = "[STATISTIC]";
-		logger.warn("Statistic [" + loggerName + "] registered, do you enable the logging level DEBUG?");
+		if (!logger.isDebugEnabled()) logger.warn("Statistic [" + loggerName + "] registered but the logging level DEBUG disabled!!");
 	}
 
 	public Statistic(Class<?> ownerClass) {
