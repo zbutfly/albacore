@@ -36,4 +36,23 @@ public interface FuncForDate {
 			}
 		}
 	}
+
+	@Func
+	class MillsToDateFunc extends FelFunc<Date> {
+		@Override
+		protected boolean valid(int argl) {
+			return argl == 2 || argl == 1;
+		}
+
+		@Override
+		public Date invoke(Object... args) {
+			long ms;
+			if (null == args[0]) throw new RuntimeException("Mills long should not be null");
+			if (args[0] instanceof CharSequence) ms = Long.parseLong(args[0].toString());
+			else if (args[0] instanceof Number) ms = ((Number) args[0]).longValue();
+			else throw new RuntimeException("Mills long should be string or number, but [" + args[0].getClass() + "] found.");
+			if (args.length > 1) ms += ((Number) args[1]).intValue() * 3600000;// 60 * 60 * 1000
+			return new Date(ms);
+		}
+	}
 }

@@ -50,6 +50,13 @@
 - 调用参数：strToDate(date, format)
 - 返回类型：Date
 
+#### millsToDate
+
+> 毫秒转日期，可以带时区。毫秒数接受字符串类型或数字类型长整数，时区为带符号的整数，例如：北京时区为+8
+
+- 调用参数：strToDate(ms<, timezone>)
+- 返回类型：Date
+
 ### 字符串函数
 
 #### ~~concat~~
