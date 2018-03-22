@@ -42,6 +42,22 @@ public interface FuncForStr {
 	}
 
 	/**
+	 * str2l('1234567')
+	 */
+	@Func
+	class Str2lFun extends FelFunc<Long> {
+		@Override
+		protected boolean valid(int argl) {
+			return argl == 1;
+		}
+
+		@Override
+		public Long invoke(Object... args) {
+			return isNull(args[0]) ? 0 : Long.parseLong(args[0].toString());
+		}
+	}
+
+	/**
 	 * strrev('1234567')
 	 */
 	@Func

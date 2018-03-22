@@ -47,7 +47,7 @@ public interface FuncForDate {
 		@Override
 		public Date invoke(Object... args) {
 			long ms;
-			if (null == args[0]) throw new RuntimeException("Mills long should not be null");
+			if (Fels.isNull(args[0])) throw new RuntimeException("Mills long should not be null");
 			if (args[0] instanceof CharSequence) ms = Long.parseLong(args[0].toString());
 			else if (args[0] instanceof Number) ms = ((Number) args[0]).longValue();
 			else throw new RuntimeException("Mills long should be string or number, but [" + args[0].getClass() + "] found.");
