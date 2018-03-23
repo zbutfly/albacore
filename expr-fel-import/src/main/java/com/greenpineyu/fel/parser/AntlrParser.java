@@ -65,7 +65,7 @@ public class AntlrParser implements Parser {
 
 	@Override
 	public FelNode parse(String exp) {
-		if (exp == null || "".equals(exp)) return null;
+		if (exp == null || "".equals(exp)) throw new ParseException("Empty exception");
 		ByteArrayInputStream is = new ByteArrayInputStream(exp.getBytes());
 		ANTLRInputStream input = null;
 		try {
@@ -90,7 +90,7 @@ public class AntlrParser implements Parser {
 				return (FelNode) tree;
 			}
 		}
-		return null;
+		throw new ParseException("Expression [" + exp + "] parsed fail.");
 	}
 
 	public void initFun(FelNode node) {

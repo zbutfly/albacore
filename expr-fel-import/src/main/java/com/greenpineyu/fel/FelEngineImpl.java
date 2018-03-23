@@ -5,6 +5,7 @@ import com.greenpineyu.fel.compile.CompileService;
 import com.greenpineyu.fel.context.ArrayCtxImpl;
 import com.greenpineyu.fel.context.FelContext;
 import com.greenpineyu.fel.context.Var;
+import com.greenpineyu.fel.exception.ParseException;
 import com.greenpineyu.fel.function.FunMgr;
 import com.greenpineyu.fel.function.Function;
 import com.greenpineyu.fel.optimizer.Optimizer;
@@ -81,17 +82,11 @@ public class FelEngineImpl implements FelEngine {
 
 	@Override
 	public Expression compile(String exp, FelContext ctx, Optimizer... opts) {
-		if (ctx == null) {
-			ctx = this.context;
-		}
+		if (ctx == null) ctx = this.context;
 		FelNode node = parse(exp);
-		if (opts != null) {
-			for (Optimizer opt : opts) {
-				if (opt != null) {
-					node = opt.call(ctx, node);
-				}
-			}
-		}
+		if (null == node) throw new ParseException("Expression [" + exp + "] parsing fail");
+		if (opts != null) for (Optimizer opt : opts)
+			if (opt != null) node = opt.call(ctx, node);
 		return compiler.compile(ctx, node, exp);
 	}
 

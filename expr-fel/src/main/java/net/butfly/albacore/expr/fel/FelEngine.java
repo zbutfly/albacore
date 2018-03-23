@@ -22,16 +22,20 @@ public class FelEngine implements Engine {
 		FelContext ctx = new ArrayCtxImpl();
 		if (null != context && !context.isEmpty()) for (Entry<String, Object> e : context.entrySet())
 			ctx.set(e.getKey(), e.getValue());
-		Expression ex = exprs.computeIfAbsent(felExpr, expr -> {
-			try {
-				return engine.compile(felExpr, ctx);
-			} catch (ParseException e) {
-				logger.error("Expression parsing fail", e);
-				return null;
-			}
-		});
-		if (null == ex) return null;
-		Object r = ex.eval(ctx);
+		Expression ex = exprs.computeIfAbsent(felExpr, expr -> engine.compile(expr, ctx));
+		if (null == ex) throw new IllegalArgumentException("Expression [" + felExpr + "] " + "from context [" + context + "] compile fail");
+		Object r;
+		try {
+			r = ex.eval(ctx);
+		} catch (Exception e) {
+			throw new IllegalArgumentException("Expression [" + felExpr + "] " + "from context [" + context + "] compile fail");
+		}
 		return Fels.isNull(r) ? null : (T) r;
+	}
+
+	public static final void main(String... args) {
+		FelEngine e = new FelEngine();
+		Object v1 = e.exec("", Map.of("B040001", "1030001", "B040002", "VALUE"));
+		System.out.println(v1);
 	}
 }

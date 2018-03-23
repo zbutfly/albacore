@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import com.greenpineyu.fel.Expression;
 import com.greenpineyu.fel.context.FelContext;
+import com.greenpineyu.fel.exception.ParseException;
 import com.greenpineyu.fel.parser.FelNode;
 
 public class CompileService {
@@ -86,17 +87,14 @@ public class CompileService {
 	public Expression compile(FelContext ctx, FelNode node, String originalExp) {
 		try {
 			JavaSource src = srcGen.getSource(ctx, node);
-			if (src instanceof ConstExpSrc) {
-				ConstExpSrc s = (ConstExpSrc) src;
-				return s.getValue();
-			}
+			if (src instanceof ConstExpSrc) return ((ConstExpSrc) src).getValue();
 			src.setSource("// 表达式:" + originalExp + "\n" + src.getSource());
 			// System.out.println("****************\n" + src.getSource());
 			return complier.compile(src);
 		} catch (Exception e) {
-			logger.error("", e);
+			if (e instanceof RuntimeException) throw e;
+			else throw new ParseException("Expretion [" + originalExp + "] compile failed.", e);
 		}
-		return null;
 	}
 
 	public static void main(String[] args) {
