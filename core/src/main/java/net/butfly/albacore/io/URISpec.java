@@ -8,6 +8,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -18,7 +19,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 
 import net.butfly.albacore.utils.Objects;
@@ -38,7 +38,6 @@ import net.butfly.albacore.utils.collection.Maps;
 public final class URISpec implements Serializable {
 	private static final long serialVersionUID = -2912181622902556535L;
 	public static final int UNDEFINED_DEFAULT_PORT = -1;
-	private static final char SLASH = '/';
 	private static final String SLASHS = "/";
 	private final String[] schemes;
 	private final boolean opaque;
@@ -127,8 +126,8 @@ public final class URISpec implements Serializable {
 		}
 
 		if ((segs = remain.split(SLASHS, 2)).length == 2) {
-			Pair<String[], String> pf = parsePathFile(segs[1]);
-			paths = pf.v1();
+			Pair<List<String>, String> pf = parsePathFile(segs[1]);
+			paths = pf.v1().toArray(new String[pf.v1().size()]);
 			file = pf.v2();
 		} else {
 			file = null;
@@ -166,8 +165,8 @@ public final class URISpec implements Serializable {
 			paths = new String[0];
 			file = null;
 		} else {
-			Pair<String[], String> pf = parsePathFile(pathfile);
-			paths = pf.v1();
+			Pair<List<String>, String> pf = parsePathFile(pathfile);
+			paths = pf.v1().toArray(new String[pf.v1().size()]);
 			file = pf.v2();
 		}
 		query = parseQueryMap(queryString);
@@ -179,11 +178,19 @@ public final class URISpec implements Serializable {
 		return of(scheme.split(":")).filter(Texts::notEmpty).array(i -> new String[i]);
 	}
 
-	private Pair<String[], String> parsePathFile(String pathfile) {
-		Pair<String, String> divs = split2last(pathfile, SLASH);
-		String f = Texts.orNull(divs.v2() == null ? divs.v1() : divs.v2());
-		String[] ps = divs.v2() == null ? new String[0] : divs.v1().split(SLASHS);
-		return new Pair<>(ps, f);
+	private Pair<List<String>, String> parsePathFile(String pathfile) {
+		String[] segs = pathfile.split(SLASHS + "+");
+		if (pathfile.endsWith("/")) {
+			segs = Arrays.copyOf(segs, segs.length + 1);
+			segs[segs.length - 1] = "";
+		}
+		List<String> paths = new ArrayList<>();
+		if (segs.length == 0) return new Pair<>(paths, null);
+		String file = segs[segs.length - 1];
+		if (file.isEmpty()) file = null;
+		for (int i = 0; i < segs.length - 1; i++)
+			if (!segs[i].isEmpty()) paths.add(segs[i]);
+		return new Pair<>(paths, file);
 	}
 
 	private Map<String, String> parseQueryMap(String query) {
@@ -243,7 +250,7 @@ public final class URISpec implements Serializable {
 	}
 
 	private String join(String[] segs) {
-		return segs == null || segs.length == 0 ? "" : Joiner.on(SLASH).join(segs);
+		return segs == null || segs.length == 0 ? "" : String.join(SLASHS, segs);
 	}
 
 	public String getPathAt(int index, String... defaults) {
@@ -400,22 +407,27 @@ public final class URISpec implements Serializable {
 	public URISpec resolve(String rel) {
 		if (rel == null) return this;
 		Path p = Paths.get(rel);
-		Path f = null;
-		if (!rel.endsWith(SLASHS) && !rel.endsWith("..") && !rel.endsWith(".")) {
-			f = p.getFileName();
+		// Path f = null;
+		if (!rel.endsWith(SLASHS) && !rel.endsWith("..") && !rel.endsWith("."))
+			// f = p.getFileName();
 			p = p.getParent();
-		}
 		Path np = Paths.get(getPathOnly());
 		if (null != p) np = np.resolve(p);
-		if (null != f) np = np.resolve(f);
-		else if (null != file) np = np.resolve(file);
-		return new URISpec(getScheme(), opaque, username, password, getHost(), defPort, join(StreamSupport.stream(np.normalize()
-				.spliterator(), false).map(s -> s.toString()).toArray(i -> new String[i])), frag, getQuery());
+		// if (null != f) np = np.resolve(f);
+		// else if (null != file) np = np.resolve(file);
+		String pp = join(StreamSupport.stream(np.normalize().spliterator(), false).map(s -> s.toString()).toArray(i -> new String[i]))
+				+ SLASHS;
+		return new URISpec(getScheme(), opaque, username, password, getHost(), defPort, pp, frag, getQuery());
+	}
+
+	public URISpec setFile(String file) {
+		return new URISpec(getScheme(), opaque, username, password, getHost(), defPort, (null == file ? getPathOnly()
+				: getPathOnly() + file), frag, getQuery());
 	}
 
 	private Pair<String, String> split2last(String spec, char split) {
 		if (null == spec || spec.isEmpty()) return new Pair<>(spec, null);
-		while (spec.charAt(0) == split)
+		while (!spec.isEmpty() && spec.charAt(0) == split)
 			spec = spec.substring(1);
 		int pos = spec.lastIndexOf(split);
 		return pos > 0 ? new Pair<>(spec.substring(0, pos), spec.substring(pos + 1)) : new Pair<>(spec, null);
