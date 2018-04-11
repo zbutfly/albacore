@@ -60,7 +60,7 @@ public class Statistic {
 		detailing = DEFAULT_EMPTY_DETAILING;
 		batchSizing = e -> 1L;
 		name = "[STATISTIC]";
-		if (!logger.isDebugEnabled()) logger.warn("Statistic [" + loggerName + "] registered but the logging level DEBUG disabled!!");
+		if (!enabled()) logger.warn("Statistic [" + loggerName + "] registered but the logging level DEBUG disabled!!");
 	}
 
 	public Statistic(Class<?> ownerClass) {
@@ -136,7 +136,7 @@ public class Statistic {
 		tryStats(() -> {
 			if (stepSize.get() < 0 || null == v) return;
 			long size;
-			if (sizing == null) size = 0;
+			if (sizing == null || !enabledMore()) size = 0;
 			else try {
 				Long s = sizing.apply(v);
 				size = null == s ? 0 : s.longValue();
@@ -328,7 +328,7 @@ public class Statistic {
 		byteTotal.addAndGet(bytes < 0 ? 0 : bytes);
 		byteStep.addAndGet(bytes < 0 ? 0 : bytes);
 		if (packStep.addAndGet(steps) > stepSize.get() && logger.isInfoEnabled() && lock.tryLock()) try {
-			trace(sampling.apply(v));
+			trace(enabledMore() ? sampling.apply(v) : null);
 		} finally {
 			lock.unlock();
 		}
@@ -373,5 +373,13 @@ public class Statistic {
 
 	private void tryStats(Runnable r) {
 		if (!tryExec(r)) ignoreTotal.incrementAndGet();
+	}
+
+	public boolean enabled() {
+		return logger.isDebugEnabled();
+	}
+
+	public boolean enabledMore() {
+		return logger.isTraceEnabled();
 	}
 }
