@@ -350,7 +350,7 @@ public class Statistic {
 	}
 
 	private void appendDetail(StringBuilder info) {
-		if (null == detailing) return;
+		if (null == detailing || !enabledMore()) return;
 		String ss = detailing.get();
 		if (null == ss) return;
 		info.append("\n\t[").append(ss).append("]");
