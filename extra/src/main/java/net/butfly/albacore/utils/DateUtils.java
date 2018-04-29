@@ -1,6 +1,5 @@
 package net.butfly.albacore.utils;
 
-import java.text.DateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -16,33 +15,32 @@ public final class DateUtils extends Utils {
 	protected static final long DIFF_OF_CST_GMT = 8 * 60 * 60 * 1000;
 	protected static final long MILLISECONDS_OF_DAY = 24 * 60 * 60 * 1000;
 
-	public static DateFormat httpFormat = Texts.dateFormat("EEE, dd MMM yyyy HH:mm:ss z");
-
-	public static DateFormat defaultDateFromat = Texts.dateFormat("yyyy-MM-dd");
-	public static DateFormat detaultTimeFromat = Texts.dateFormat("HH:mm:ss");
-	public static DateFormat shortTimeFromat = Texts.dateFormat("HH:mm");
-	public static DateFormat databaseTimeFromat = Texts.dateFormat("HHmm");
-	public static DateFormat db2TimeFromat = Texts.dateFormat("yyyy-MM-dd HH:mm:ss.SSSSSS");
+	// public static DateFormat httpFormat = Texts.formatDate("EEE, dd MMM yyyy HH:mm:ss z");
+	public static String defaultDateFromat = "yyyy-MM-dd";
+	// public static DateFormat detaultTimeFromat = Texts.dateFormat("HH:mm:ss");
+	// public static DateFormat shortTimeFromat = Texts.dateFormat("HH:mm");
+	public static String databaseTimeFromat = "HHmm";
+	public static String db2TimeFromat = "yyyy-MM-dd HH:mm:ss.SSSSSS";
 
 	public static String formatForDB2(Date date) {
-		return db2TimeFromat.format(null == date ? new Date() : date);
+		return Texts.formatDate(db2TimeFromat, null == date ? new Date() : date);
 	}
 
 	// format hhmm (0000 ~ 2359) to a int value 10000 ~ 12359 for comparing
 	public static int format(String time) {
-		if (time.length() != 4) { throw new SystemException(
-				"TimeFormater : Format of time String is not right! actual(" + time + "), expected format(hhmm)"); }
+		if (time.length() != 4) { throw new SystemException("TimeFormater : Format of time String is not right! actual(" + time
+				+ "), expected format(hhmm)"); }
 		return Integer.valueOf(PREFIX + time).intValue();
 	}
 
 	// format the time field of Date to format hhmm
 	public static String extractTime(Date date) {
-		return databaseTimeFromat.format(null == date ? new Date() : date);
+		return Texts.formatDate(databaseTimeFromat, null == date ? new Date() : date);
 	}
 
 	// format the date field of Date to format YYYY-MM-DD
 	public static String extractDate(Date date) {
-		return defaultDateFromat.format(null == date ? new Date() : date);
+		return Texts.formatDate(defaultDateFromat, null == date ? new Date() : date);
 	}
 
 	// compose a date(YYYY-MM-DD) and a String represented time(HHMM)

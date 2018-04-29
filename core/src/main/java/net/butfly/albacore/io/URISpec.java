@@ -3,9 +3,12 @@ package net.butfly.albacore.io;
 import static net.butfly.albacore.paral.Sdream.of;
 
 import java.io.Serializable;
+import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLDecoder;
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -106,7 +109,7 @@ public final class URISpec implements Serializable {
 		String[] segs;
 		Pair<String, String> divs;
 
-		frag = (divs = split2last(remain, '#')).v2();
+		frag = tryDecodeUrl((divs = split2last(remain, '#')).v2());
 		remain = divs.v1();
 
 		query = parseQueryMap((divs = split2last(remain, '?')).v2());
@@ -145,12 +148,22 @@ public final class URISpec implements Serializable {
 			segs[1] = temp.substring(position + 1, temp.length());
 			segs[0] = temp.substring(0, position);
 			remain = segs[1];
-			password = (segs = segs[0].split(":", 2)).length == 2 ? segs[1] : null;
-			username = Texts.orNull(segs[0]);
+			password = (segs = segs[0].split(":", 2)).length == 2 ? tryDecodeUrl(segs[1]) : null;
+			username = tryDecodeUrl(Texts.orNull(segs[0]));
 		}
 
 		hosts = parseHostPort(remain, defaultPort);
 		defPort = defaultPort;
+	}
+
+	private static String tryDecodeUrl(String v) {
+		if (null == v) return null;
+		try {
+			return URLDecoder.decode(v, Charset.defaultCharset().name());
+		} catch (UnsupportedEncodingException e) {
+			return v;
+		}
+
 	}
 
 	private URISpec(String scheme, boolean opaque, String username, String password, String host, int defPort, String pathfile, String frag,
@@ -189,8 +202,8 @@ public final class URISpec implements Serializable {
 		String file = segs[segs.length - 1];
 		if (file.isEmpty()) file = null;
 		for (int i = 0; i < segs.length - 1; i++)
-			if (!segs[i].isEmpty()) paths.add(segs[i]);
-		return new Pair<>(paths, file);
+			if (!segs[i].isEmpty()) paths.add(tryDecodeUrl(segs[i]));
+		return new Pair<>(paths, tryDecodeUrl(file));
 	}
 
 	private Map<String, String> parseQueryMap(String query) {
@@ -198,7 +211,7 @@ public final class URISpec implements Serializable {
 		Map<String, String> m = Maps.of();
 		for (String param : query.split("&")) {
 			String[] kv = param.split("=", 2);
-			m.put(kv[0], kv.length > 1 ? kv[1] : "");
+			m.put(kv[0], kv.length > 1 ? tryDecodeUrl(kv[1]) : "");
 		}
 		return m;
 	}

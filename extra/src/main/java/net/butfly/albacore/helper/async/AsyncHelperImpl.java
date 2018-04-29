@@ -4,13 +4,14 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.core.task.AsyncTaskExecutor;
+
 import net.butfly.albacore.exception.SystemException;
 import net.butfly.albacore.helper.AsyncHelper;
 import net.butfly.albacore.helper.HelperBase;
-import net.butfly.albacore.utils.Objects;
+import net.butfly.albacore.utils.Reflections;
 import net.butfly.albacore.utils.imports.meta.MetaObject;
-
-import org.springframework.core.task.AsyncTaskExecutor;
+import net.butfly.albacore.utils.imports.utils.meta.MetaUtils;
 
 public class AsyncHelperImpl extends HelperBase implements AsyncHelper {
 	private static final long serialVersionUID = 6262380628765238950L;
@@ -45,13 +46,10 @@ public class AsyncHelperImpl extends HelperBase implements AsyncHelper {
 	}
 
 	protected final AsyncTaskExecutor getExecutor(Class<? extends AsyncTaskExecutor> executorClass, Map<String, Object> params) {
-		AsyncTaskExecutor executor;
-		try {
-			executor = (AsyncTaskExecutor) executorClass.newInstance();
-		} catch (Exception ex) {
-			throw new SystemException("ALC_000", "Unable to create instance of call executor of class: " + executorClass.getName(), ex);
-		}
-		MetaObject bm = Objects.createMeta(executor);
+		AsyncTaskExecutor executor = Reflections.construct(executorClass);
+		if (null == executorClass) throw new SystemException("ALC_000", "Unable to create instance of call executor of class: "
+				+ executorClass);
+		MetaObject bm = MetaUtils.createMeta(executor);
 		for (String name : params.keySet())
 			if (bm.hasSetter(name)) bm.setValue(name, params.get(name));
 

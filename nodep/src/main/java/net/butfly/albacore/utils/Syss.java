@@ -2,33 +2,38 @@ package net.butfly.albacore.utils;
 
 import java.lang.instrument.Instrumentation;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Syss {
+	private static AtomicBoolean moduleErrorLogged = new AtomicBoolean(false);
+
 	public static long sizeOf(Object obj) {
-		return 0;
-//		try {
-//			Class<?> c = Class.forName("jdk.nashorn.internal.ir.debug.ObjectSizeCalculator");
-//			Method m = c.getMethod("getObjectSize", Object.class);
-//			if (m.trySetAccessible()) return (long) m.invoke(null, obj);
-//			else return 0;
-//		} catch (ClassNotFoundException | NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException e) {
-//			return 0;
-//		} catch (InvocationTargetException e) {
-//			e.getTargetException().printStackTrace();
-//			return 0;
-//		}
+		try {
+			return ((Long) Class.forName("jdk.nashorn.internal.ir.debug.ObjectSizeCalculator").getMethod("getObjectSize", Object.class)
+					.invoke(null, obj)).longValue();
+		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException
+				| ClassNotFoundException e) {
+			if (!moduleErrorLogged.getAndSet(true)) System.err.print(
+					"WARNING: sizeOf not work on java 9+, add jvm argument if you want: \n\t--add-opens java.base/java.util=jdk.scripting.nashorn --add-opens java.base/java.lang=jdk.scripting.nashorn");
+			return 0;
+		}
 	}
 
 	public static void main(String[] args) {
 		Map<String, String> m = new HashMap<>();
 		for (int i = 0; i < 10; i++)
 			m.put(String.valueOf(Math.random()), String.valueOf(Math.random()));
-		System.out.println(m + ":\n" + sizeOf(m));
+		// --add-opens java.base/java.util=jdk.scripting.nashorn --add-opens java.base/java.lang=jdk.scripting.nashorn
+		System.out.println("Map: " + m + ":\nSize of map: " + sizeOf(m) + " bytes.");
+		System.out.println("Map: " + m + ":\nSize of map: " + sizeOf(m) + " bytes.");
+		System.out.println("Map: " + m + ":\nSize of map: " + sizeOf(m) + " bytes.");
+		System.out.println("Map: " + m + ":\nSize of map: " + sizeOf(m) + " bytes.");
 	}
 
 	/**

@@ -10,14 +10,19 @@
 	<dependencies>
 		<dependency>
 			<groupId>net.butfly.albacore</groupId>
+			<artifactId>albacore-meta</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>net.butfly.albacore</groupId>
 			<artifactId>albacore-frame</artifactId>
-			<version>${deps.version.albacore}</version>
+			<version>${project.version}</version>
 		</dependency>
 		<!-- async (spring executor) -->
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-beans</artifactId>
-			<version>${deps.version.spring}</version>
+			<version>${version.spring}</version>
 		</dependency>
 		<!-- swift -->
 		<dependency>
@@ -29,23 +34,19 @@
 		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>
 			<artifactId>httpcore</artifactId>
-			<version>4.4</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>
 			<artifactId>httpclient</artifactId>
-			<version>4.3.6</version>
-		</dependency>
+			</dependency>
 		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>
 			<artifactId>httpmime</artifactId>
-			<version>4.3.6</version>
-		</dependency>
+			</dependency>
 		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>
 			<artifactId>httpclient-cache</artifactId>
-			<version>4.3.6</version>
-		</dependency>
+			</dependency>
 		<dependency>
 			<groupId>com.ning</groupId>
 			<artifactId>async-http-client</artifactId>
@@ -61,13 +62,12 @@
 		<dependency>
 			<groupId>log4j</groupId>
 			<artifactId>log4j</artifactId>
-			<version>1.2.17</version>
-		</dependency>
+			</dependency>
 		<!-- encryption -->
 		<dependency>
 			<groupId>org.bouncycastle</groupId>
 			<artifactId>bcprov-jdk15on</artifactId>
-			<version>1.52</version>
+			<version>1.59</version>
 		</dependency>
 	</dependencies>
 </project>
