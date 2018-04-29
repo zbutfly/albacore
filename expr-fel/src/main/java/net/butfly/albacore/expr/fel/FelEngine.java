@@ -6,7 +6,6 @@ import java.util.Map.Entry;
 import com.greenpineyu.fel.Expression;
 import com.greenpineyu.fel.context.ArrayCtxImpl;
 import com.greenpineyu.fel.context.FelContext;
-import com.greenpineyu.fel.exception.ParseException;
 
 import net.butfly.albacore.expr.Engine;
 import net.butfly.albacore.utils.collection.Maps;

@@ -1,7 +1,6 @@
 package com.lmax;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.lmax.disruptor.BlockingWaitStrategy;
@@ -56,11 +55,10 @@ public class DisruptorTest {
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	public long run(int numTH, int numSlice, int numIter) throws InterruptedException {
 		PiEventFac fac = new PiEventFac();
-		ExecutorService executor = Executors.newCachedThreadPool();
-		Disruptor<PiJob> disruptor = new Disruptor<PiJob>(fac, 16384, executor, ProducerType.SINGLE, new BlockingWaitStrategy());
+		Disruptor<PiJob> disruptor = new Disruptor<PiJob>(fac, 16384, (ThreadFactory) Thread::new, ProducerType.SINGLE,
+				new BlockingWaitStrategy());
 		PiEventProcessor procs[] = new PiEventProcessor[numTH];
 		PiResultReclaimer res = new PiResultReclaimer();
 
@@ -90,7 +88,6 @@ public class DisruptorTest {
 		System.out.println(numTH + ": tim: " + timTest + " Pi: " + res.result);
 
 		disruptor.shutdown();
-		executor.shutdownNow();
 		return timTest;
 	}
 
