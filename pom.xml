@@ -4,12 +4,12 @@
 	<parent>
 		<groupId>net.butfly</groupId>
 		<artifactId>parent</artifactId>
-		<version>3.0.0-SNAPSHOT</version>
+		<version>3.1.0-SNAPSHOT</version>
 		<relativePath>butfly.pom</relativePath>
 	</parent>
 	<groupId>net.butfly.albacore</groupId>
 	<artifactId>albacore</artifactId>
-	<version>3.0.3</version>
+	<version>3.1.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<modules>
 		<module>nodep</module>

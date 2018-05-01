@@ -3,12 +3,12 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>net.butfly</groupId>
 	<artifactId>parent</artifactId>
-	<version>3.0.0-SNAPSHOT</version>
+	<version>3.1.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<properties>
 		<!-- <maven.compiler.release>8</maven.compiler.release> -->
-		<maven.compiler.source>1.8</maven.compiler.source>
-		<maven.compiler.target>1.8</maven.compiler.target>
+		<maven.compiler.source>1.9</maven.compiler.source>
+		<maven.compiler.target>1.9</maven.compiler.target>
 		<maven.test.skip.exec>true</maven.test.skip.exec>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.build.finalName>${project.artifactId}</project.build.finalName>
@@ -96,8 +96,8 @@
 					<artifactId>maven-compiler-plugin</artifactId>
 					<version>3.7.0</version>
 					<configuration>
-						<source>${maven.compiler.source}</source>
-						<target>${maven.compiler.target}</target>
+						<source>9</source>
+						<target>9</target>
 						<encoding>${project.build.sourceEncoding}</encoding>
 					</configuration>
 				</plugin>
