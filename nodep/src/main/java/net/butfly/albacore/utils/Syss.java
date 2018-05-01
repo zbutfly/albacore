@@ -2,38 +2,41 @@ package net.butfly.albacore.utils;
 
 import java.lang.instrument.Instrumentation;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Syss {
-	private static AtomicBoolean moduleErrorLogged = new AtomicBoolean(false);
+	private static boolean SIZE_OF_INACCESSIBLE_FAILED = false;
 
 	public static long sizeOf(Object obj) {
+		if (SIZE_OF_INACCESSIBLE_FAILED) return 0;
 		try {
-			return ((Long) Class.forName("jdk.nashorn.internal.ir.debug.ObjectSizeCalculator").getMethod("getObjectSize", Object.class)
-					.invoke(null, obj)).longValue();
-		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException
-				| ClassNotFoundException e) {
-			if (!moduleErrorLogged.getAndSet(true)) System.err.print(
-					"WARNING: sizeOf not work on java 9+, add jvm argument if you want: \n\t--add-opens java.base/java.util=jdk.scripting.nashorn --add-opens java.base/java.lang=jdk.scripting.nashorn");
+			// --add-opens java.base/java.util=jdk.scripting.nashorn --add-opens java.base/java.lang=jdk.scripting.nashorn
+			// --add-exports jdk.scripting.nashorn/jdk.nashorn.internal.ir.debug=ALL-UNNAMED
+			return jdk.nashorn.internal.ir.debug.ObjectSizeCalculator.getObjectSize(obj);
+		} catch (java.lang.reflect.InaccessibleObjectException e) {
+			if (!SIZE_OF_INACCESSIBLE_FAILED) {
+				SIZE_OF_INACCESSIBLE_FAILED = true;
+				System.err.println("WARNING: sizeOf() in java 9 needs vm args: " + //
+						"--add-opens java.base/java.util=jdk.scripting.nashorn --add-opens java.base/java.lang=jdk.scripting.nashorn\n" + //
+						"or it return 0 for [" + e.getClass() + "]:\n\t" + e.getMessage() + //
+						"\n(@butfly: maybe I will migrate to full module support on migrating to java 10...)");
+			}
 			return 0;
 		}
 	}
 
 	public static void main(String[] args) {
 		Map<String, String> m = new HashMap<>();
-		for (int i = 0; i < 10; i++)
+		for (int i = 0; i < 10; i++) {
 			m.put(String.valueOf(Math.random()), String.valueOf(Math.random()));
-		// --add-opens java.base/java.util=jdk.scripting.nashorn --add-opens java.base/java.lang=jdk.scripting.nashorn
-		System.out.println("Map: " + m + ":\nSize of map: " + sizeOf(m) + " bytes.");
-		System.out.println("Map: " + m + ":\nSize of map: " + sizeOf(m) + " bytes.");
-		System.out.println("Map: " + m + ":\nSize of map: " + sizeOf(m) + " bytes.");
-		System.out.println("Map: " + m + ":\nSize of map: " + sizeOf(m) + " bytes.");
+			long s = sizeOf(m);
+			if (s == 0) return;
+			System.out.println("Map: " + m + ":\nSize of map: " + sizeOf(m) + " bytes.");
+		}
 	}
 
 	/**
