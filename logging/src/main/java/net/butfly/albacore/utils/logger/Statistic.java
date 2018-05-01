@@ -12,7 +12,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import net.butfly.albacore.base.Named;
-import net.butfly.albacore.utils.Syss;
+import net.butfly.albacore.utils.Sizeable;
 import net.butfly.albacore.utils.logger.StatsUtils.Result;
 
 public class Statistic {
@@ -55,7 +55,7 @@ public class Statistic {
 		batchs = new AtomicLong(0);
 		begin = System.currentTimeMillis();
 		statsed = new AtomicLong(begin);
-		sizing = Syss::sizeOf;
+		sizing = o -> o instanceof Sizeable ? ((Sizeable) o)._sizeOf() : Sizeable.sizeOf(o);
 		sampling = e -> null;
 		detailing = DEFAULT_EMPTY_DETAILING;
 		batchSizing = e -> 1L;
