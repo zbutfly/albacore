@@ -1,81 +1,81 @@
-package com.greenpineyu.fel.compile;
-
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
-import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.greenpineyu.fel.Expression;
-import com.greenpineyu.fel.FelEngine;
-import com.greenpineyu.fel.context.FelContext;
-import com.sun.tools.javac.Main;
-
-/**
- * jdk1.5环境的编译器实现类
- * 
- * @author yuqingsong
- * 
- */
-public class FelCompiler15 extends AbstCompiler {
-	private static final Logger logger = LoggerFactory.getLogger(FelCompiler15.class);
-
-	@Override
-	Class<Expression> compileToClass(JavaSource src) throws ClassNotFoundException {
-		String className = src.getSimpleName();
-		String pack = src.getPackageName();
-		String srcPackageDir = getSrcPackageDir(pack);
-		String file = srcPackageDir + className + ".java";
-		new File(srcPackageDir).mkdirs();
-		String source = src.getSource();
-		writeJavaFile(file, source);
-
-		List<String> opt = getCompileOption();
-		opt.add(file);
-		String[] arg = opt.toArray(new String[0]);
-
-		int compile = Main.compile(arg);
-		if (compile != 0) return null;
-		@SuppressWarnings("unchecked")
-		Class<Expression> c = (Class<Expression>) loader.loadClass(src.getName());
-		return c;
-	}
-
-	void writeJavaFile(String file, String source) {
-		OutputStreamWriter write = null;
-		try {
-			BufferedOutputStream os;
-			os = new BufferedOutputStream(new FileOutputStream(file), 500);
-			write = new OutputStreamWriter(os, "utf-8");
-			write.write(source);
-		} catch (FileNotFoundException e) {
-			logger.error("", e);
-		} catch (UnsupportedEncodingException e) {
-			logger.error("", e);
-		} catch (IOException e) {
-			logger.error("", e);
-		} finally {
-			if (write != null) {
-				try {
-					write.close();
-				} catch (IOException e) {
-					logger.error("", e);
-				}
-			}
-		}
-	}
-
-	public static void main(String[] args) throws InstantiationException, IllegalAccessException {
-		FelEngine engine = FelEngine.instance;
-		Integer num = Integer.valueOf(5);
-		FelContext jc = engine.getContext();
-		jc.set("num", num);
-		System.out.println(engine.compile("num+1", jc).eval(jc));
-	}
-}
+//package com.greenpineyu.fel.compile;
+//
+//import java.io.BufferedOutputStream;
+//import java.io.File;
+//import java.io.FileNotFoundException;
+//import java.io.FileOutputStream;
+//import java.io.IOException;
+//import java.io.OutputStreamWriter;
+//import java.io.UnsupportedEncodingException;
+//import java.util.List;
+//
+//import org.slf4j.Logger;
+//import org.slf4j.LoggerFactory;
+//
+//import com.greenpineyu.fel.Expression;
+//import com.greenpineyu.fel.FelEngine;
+//import com.greenpineyu.fel.context.FelContext;
+//import com.sun.tools.javac.Main;
+//
+///**
+// * jdk1.5环境的编译器实现类
+// * 
+// * @author yuqingsong
+// * 
+// */
+//public class FelCompiler15 extends AbstCompiler {
+//	private static final Logger logger = LoggerFactory.getLogger(FelCompiler15.class);
+//
+//	@Override
+//	Class<Expression> compileToClass(JavaSource src) throws ClassNotFoundException {
+//		String className = src.getSimpleName();
+//		String pack = src.getPackageName();
+//		String srcPackageDir = getSrcPackageDir(pack);
+//		String file = srcPackageDir + className + ".java";
+//		new File(srcPackageDir).mkdirs();
+//		String source = src.getSource();
+//		writeJavaFile(file, source);
+//
+//		List<String> opt = getCompileOption();
+//		opt.add(file);
+//		String[] arg = opt.toArray(new String[0]);
+//
+//		int compile = Main.compile(arg);
+//		if (compile != 0) return null;
+//		@SuppressWarnings("unchecked")
+//		Class<Expression> c = (Class<Expression>) loader.loadClass(src.getName());
+//		return c;
+//	}
+//
+//	void writeJavaFile(String file, String source) {
+//		OutputStreamWriter write = null;
+//		try {
+//			BufferedOutputStream os;
+//			os = new BufferedOutputStream(new FileOutputStream(file), 500);
+//			write = new OutputStreamWriter(os, "utf-8");
+//			write.write(source);
+//		} catch (FileNotFoundException e) {
+//			logger.error("", e);
+//		} catch (UnsupportedEncodingException e) {
+//			logger.error("", e);
+//		} catch (IOException e) {
+//			logger.error("", e);
+//		} finally {
+//			if (write != null) {
+//				try {
+//					write.close();
+//				} catch (IOException e) {
+//					logger.error("", e);
+//				}
+//			}
+//		}
+//	}
+//
+//	public static void main(String[] args) throws InstantiationException, IllegalAccessException {
+//		FelEngine engine = FelEngine.instance;
+//		Integer num = Integer.valueOf(5);
+//		FelContext jc = engine.getContext();
+//		jc.set("num", num);
+//		System.out.println(engine.compile("num+1", jc).eval(jc));
+//	}
+//}

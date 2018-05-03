@@ -34,7 +34,7 @@ public class FelEngine implements Engine {
 
 	public static final void main(String... args) {
 		FelEngine e = new FelEngine();
-		Object v1 = e.exec("", Map.of("B040001", "1030001", "B040002", "VALUE"));
+		Object v1 = e.exec("", Maps.of("B040001", "1030001", "B040002", "VALUE"));
 		System.out.println(v1);
 	}
 }

@@ -28,19 +28,22 @@ public final class Fels {
 			if (CommonFunction.class.isAssignableFrom(c)) {
 				if (!Modifier.isStatic(c.getModifiers())) //
 					logger.error("FelFunc found func class [" + c.getName() + "] but not static, ignore.");
-				else try {
-					Constructor<?> cc = c.getDeclaredConstructor();
-					if (cc.trySetAccessible()) {
-						CommonFunction f = (CommonFunction) cc.newInstance();
-						logger.debug("FelEngine function scaned: " + f.getClass().getSimpleName() + "(" + f.getName() + ")");
-						if (c.isAnnotationPresent(Deprecated.class)) //
-							logger.warn("FelEngine function scaned: " + f.getClass().getSimpleName() + "(" + f.getName()
-									+ ") but marked as Deprecated, don't use it.");
-						eng.addFun(f);
+				else {
+					CommonFunction f;
+					try {
+						Constructor<?> cc = c.getDeclaredConstructor();
+						cc.setAccessible(true);
+						f = (CommonFunction) cc.newInstance();
+					} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
+							| NoSuchMethodException | SecurityException e) {
+						logger.error("FelFunc found func class [" + c.getName() + "] but instantial fail", e);
+						continue;
 					}
-				} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
-						| SecurityException | NoSuchMethodException e) {
-					logger.error("FelFunc found func class [" + c.getName() + "] but instantial fail", e);
+					if (c.isAnnotationPresent(Deprecated.class)) //
+						logger.warn("FelEngine function scaned: " + f.getClass().getSimpleName() + "(" + f.getName()
+								+ ") but marked as Deprecated, don't use it.");
+					else logger.debug("FelEngine function scaned: " + f.getClass().getSimpleName() + "(" + f.getName() + ")");
+					eng.addFun(f);
 				}
 			} else logger.error("FelFunc found func class [" + c.getName() + "] annotated by @Func is not a FelFunc");
 		return eng;

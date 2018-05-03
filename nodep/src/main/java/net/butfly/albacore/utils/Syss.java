@@ -17,7 +17,7 @@ public class Syss {
 			// --add-opens java.base/java.util=jdk.scripting.nashorn --add-opens java.base/java.lang=jdk.scripting.nashorn
 			// --add-exports jdk.scripting.nashorn/jdk.nashorn.internal.ir.debug=ALL-UNNAMED
 			return jdk.nashorn.internal.ir.debug.ObjectSizeCalculator.getObjectSize(obj);
-		} catch (java.lang.reflect.InaccessibleObjectException e) {
+		} catch (Exception e) {
 			if (!SIZE_OF_INACCESSIBLE_FAILED) {
 				SIZE_OF_INACCESSIBLE_FAILED = true;
 				System.err.println("WARNING: sizeOf() in java 9 needs vm args: " + //
