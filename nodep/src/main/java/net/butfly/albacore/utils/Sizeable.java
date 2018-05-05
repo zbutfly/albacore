@@ -7,10 +7,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import com.carrotsearch.sizeof.RamUsageEstimator;
+
 /**
  * Needs vm args on compile (javac):<br>
- * <blockquote>{@code --add-exports jdk.scripting.nashorn/jdk.nashorn.internal.ir.debug=ALL-UNNAMED}</blockquote>
- * Needs vm args on runtime (java):<br>
+ * <blockquote>{@code --add-exports jdk.scripting.nashorn/jdk.nashorn.internal.ir.debug=ALL-UNNAMED}</blockquote> Needs vm args on runtime
+ * (java):<br>
  * <blockquote>{@code --add-opens java.base/java.util=jdk.scripting.nashorn --add-opens java.base/java.lang=jdk.scripting.nashorn}</blockquote>
  * 
  * @author zx
@@ -39,9 +41,10 @@ public interface Sizeable {
 	}
 
 	public static long sizeOf(Object obj) {
+
 		if (_Internal.SIZE_OF_INACCESSIBLE_FAILED) return 0;
 		try {
-			return jdk.nashorn.internal.ir.debug.ObjectSizeCalculator.getObjectSize(obj);
+			return RamUsageEstimator.sizeOf(obj);
 		} catch (java.lang.reflect.InaccessibleObjectException e) {
 			if (!_Internal.SIZE_OF_INACCESSIBLE_FAILED) {
 				_Internal.SIZE_OF_INACCESSIBLE_FAILED = true;
