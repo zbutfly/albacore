@@ -4,10 +4,10 @@ import java.lang.instrument.Instrumentation;
 
 /**
  * Add the following to your MANIFEST.MF: <br>
- * <blockquote> Premain-Class: {@code net.butfly.albacore.utils.InstruSizeable.Instrument} </blockquote>
+ * <blockquote> Premain-Class: {@code net.butfly.albacore.utils.InstrumentalSizeOf.Instrument} </blockquote>
  */
 @Deprecated
-public interface InstrumentalSizeable extends Sizeable {
+public interface InstrumentalSizeOf extends SizeOfSupport {
 	public static long sizeOf(Object obj) {
 		try {
 			return Instrument.instrumentation.getObjectSize(obj);

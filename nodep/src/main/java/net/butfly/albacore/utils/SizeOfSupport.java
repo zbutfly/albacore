@@ -17,7 +17,7 @@ import com.carrotsearch.sizeof.RamUsageEstimator;
  * 
  * @author zx
  */
-public interface Sizeable {
+public interface SizeOfSupport {
 	public static int sizeOf(Class<?> c) {
 		List<Field> instanceFields = new LinkedList<Field>();
 		do {

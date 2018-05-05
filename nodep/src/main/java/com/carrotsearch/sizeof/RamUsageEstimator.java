@@ -263,6 +263,7 @@ public final class RamUsageEstimator {
 
 	// Object with just one field to determine the object header size by getting the offset of the dummy field:
 	private static final class DummyOneFieldObject {
+		@SuppressWarnings("unused")
 		public byte base;
 	}
 
