@@ -4,8 +4,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import com.greenpineyu.fel.Expression;
-import com.greenpineyu.fel.context.ArrayCtxImpl;
 import com.greenpineyu.fel.context.FelContext;
+import com.greenpineyu.fel.context.MapContext;
 
 import net.butfly.albacore.expr.Engine;
 import net.butfly.albacore.utils.collection.Maps;
@@ -18,7 +18,7 @@ public class FelEngine implements Engine {
 	@SuppressWarnings("unchecked")
 	@Override
 	public <T> T exec(String felExpr, Map<String, Object> context) {
-		FelContext ctx = new ArrayCtxImpl();
+		FelContext ctx = new MapContext();
 		if (null != context && !context.isEmpty()) for (Entry<String, Object> e : context.entrySet())
 			ctx.set(e.getKey(), e.getValue());
 		Expression ex = exprs.computeIfAbsent(felExpr, expr -> engine.compile(expr, ctx));
