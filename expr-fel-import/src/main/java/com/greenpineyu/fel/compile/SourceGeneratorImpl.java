@@ -77,9 +77,7 @@ public class SourceGeneratorImpl implements SourceGenerator {
 				ConstNode n = (ConstNode) node;
 				return new ConstExpSrc(n.interpret(null, null));
 			}
-			SourceBuilder builder = node.toMethod(ctx);
-			String exp = builder.source(ctx, node);
-			src = buildsource(exp, className);
+			src = buildsource(node.toMethod(ctx).source(ctx, node), className);
 			this.localvars.clear();
 		}
 		JavaSource returnMe = new JavaSource();
