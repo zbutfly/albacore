@@ -46,18 +46,11 @@ public final class ConfigSet {
 	 * @return
 	 * @throws ClassNotFoundException
 	 */
-	ConfigSet(Class<?> cl) {
-		this(cl, null);
-	}
+	ConfigSet(Class<?> cl, String... prefix) {
+		cls = Objects.requireNonNull(cl);
 
-	public ConfigSet(Class<?> cl, String prefix) {
-		this.cls = Objects.requireNonNull(cl);
 		String cname = Configs.calcClassConfigFile(cl);
 		Config ann = findAnnedParent(cl);
-		String pfx;
-		if (Texts.notEmpty(prefix)) pfx = prefix;
-		else pfx = null == ann ? null : ann.prefix();
-		if (Config.NOT_DEFINE.equals(pfx)) pfx = null;
 		String fname = null == ann ? null : ann.value();
 		if (Texts.isEmpty(fname)) fname = cname;
 		if (!fname.endsWith(Configs.DEFAULT_PROP_EXT)) fname += Configs.DEFAULT_PROP_EXT;
@@ -65,49 +58,70 @@ public final class ConfigSet {
 		if (fnameDef.length() > 0) fnameDef += "/";
 		fnameDef += cname + "-default" + Configs.DEFAULT_PROP_EXT;
 
-		Map<String, String> settings = new ConcurrentHashMap<>();
-		fill(settings, null, Configs::isKeyInvalid, mapProps(System.getProperties()));
-		try (InputStream in = IOs.openFile(fname);) {
-			if (!fill0(settings, in) && null != cl) try (InputStream in2 = IOs.openClasspath(cl, fname);) {
-				fill0(settings, in2);
-			} catch (IOException e) {}
-		} catch (IOException e) {}
-		fill(settings, s -> CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_DOT, s), Configs::isKeyInvalid, System.getenv());
+		String pfx;
+		if (null != prefix && prefix.length > 0) pfx = String.join(".", prefix).replaceAll("\\.\\.", "\\.");
+		else pfx = null == ann ? null : ann.prefix();
+		if (Config.NOT_DEFINE.equals(pfx)) pfx = null;
+
+		Map<String, String> settings = normalSettings(cl, fname);
+
 		try (InputStream in = IOs.openClasspath(cl, fnameDef);) {
-			fill0(settings, in);
+			if (fill0(settings, in)) settings.put("...CP.DEF", settings.get("") + "1");
 		} catch (IOException e) {}
+		if (null != pfx && !pfx.endsWith(".")) pfx += ".";
 		Logger.getLogger(cl).info("Config class"//
 				+ (null == pfx ? " with prefix [" + pfx + "]:" : ":")//
-				+ "\n\tcustomized: [" + Paths.get("").toAbsolutePath().toString() + File.separator + fname + "]"//
-				+ "\n\tcustomized: [classpath:/" + fname + "]" //
-				+ "\n\t   default: [classpath:/" + fnameDef + "]");
-		if (null != pfx && !pfx.endsWith(".")) pfx += ".";
+				+ "\n\tcustomized" + status(settings, "...CWD") + ": [" //
+				+ Paths.get("").toAbsolutePath().toString() + File.separator + fname + "]"//
+				+ "\n\tcustomized" + status(settings, "...CP") + ": [classpath:/" + fname + "]" //
+				+ "\n\t   default" + status(settings, "...CP.DEF") + ": [classpath:/" + fnameDef + "]");
 		this.prefix = pfx;
 		this.file = null;
 		this.entries = settings;
 	}
 
-	ConfigSet(String filename, String pfx) {
-		cls = null;
-		Class<?> mcls = JVM.current().mainClass;
-		if (!filename.endsWith(Configs.DEFAULT_PROP_EXT)) filename = filename + Configs.DEFAULT_PROP_EXT;
-		Map<String, String> settings = new ConcurrentHashMap<>();
-		fill(settings, null, Configs::isKeyInvalid, mapProps(System.getProperties()));
-		try (InputStream in = IOs.openFile(filename);) {
-			if (!fill0(settings, in)) try (InputStream in2 = IOs.openClasspath(mcls, filename);) {
-				fill0(settings, in2);
-			} catch (IOException e) {}
-		} catch (IOException e) {}
-		fill(settings, s -> CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_DOT, s), Configs::isKeyInvalid, System.getenv());
-		Logger.getLogger(mcls).info("Config from file"//
-				+ (null == pfx ? " with prefix [" + pfx + "]:" : ":")//
-				+ "\n\tcustomized: [" + Paths.get("").toAbsolutePath().toString() + File.separator + filename + "]"//
-				+ "\n\tcustomized: [classpath:/" + filename + "]" //
-		);
+	ConfigSet(String fname, Class<?> cl, String... prefix) {
+		cls = Objects.requireNonNull(cl);
+
+		if (!fname.endsWith(Configs.DEFAULT_PROP_EXT)) fname = fname + Configs.DEFAULT_PROP_EXT;
+
+		String pfx;
+		if (null != prefix && prefix.length > 0) pfx = String.join(".", prefix).replaceAll("\\.\\.", "\\.");
+		else pfx = null;
+
+		Map<String, String> settings = normalSettings(cl, fname);
+
 		if (null != pfx && !pfx.endsWith(".")) pfx += ".";
+		Logger.getLogger(cl).info("Config from file"//
+				+ (null != pfx ? " with prefix [" + pfx + "]:" : ":")//
+				+ "\n\tcustomized" + status(settings, "...CWD") + ": [" //
+				+ Paths.get("").toAbsolutePath().toString() + File.separator + fname + "]"//
+				+ "\n\tcustomized" + status(settings, "...CP") + ": [classpath:/" + fname + "]" //
+		);
 		this.prefix = pfx;
 		this.file = null;
 		this.entries = settings;
+	}
+
+	ConfigSet(String fname, String... prefix) {
+		this(fname, JVM.current().mainClass, prefix);
+	}
+
+	private static String status(Map<String, String> s, String k) {
+		return "1".equals(s.remove(k)) ? "(loaded)   " : "(not found)";
+	}
+
+	private static Map<String, String> normalSettings(Class<?> cl, String fname) {
+		Map<String, String> settings = new ConcurrentHashMap<>();
+		fill(settings, null, Configs::isKeyInvalid, mapProps(System.getProperties()));
+		try (InputStream in = IOs.openFile(fname);) {
+			if (fill0(settings, in)) settings.put("...CWD", "1");
+			else try (InputStream in2 = IOs.openClasspath(cl, fname);) {
+				if (fill0(settings, in2)) settings.put("...CP", "1");
+			} catch (IOException e) {}
+		} catch (IOException e) {}
+		fill(settings, s -> CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_DOT, s), Configs::isKeyInvalid, System.getenv());
+		return settings;
 	}
 
 	public String get(String key) {
@@ -118,13 +132,15 @@ public final class ConfigSet {
 		return gets(keyWithPrefix(key), def);
 	}
 
-	public String gets(String key) {
+	@Deprecated
+	String gets(String key) {
 		String v = entries.get(key);
 		Configs.logger.debug("Config by key [" + key + "], returned: [" + v + "].");
 		return v;
 	}
 
-	public String gets(String key, String... def) {
+	@Deprecated
+	String gets(String key, String... def) {
 		String v = entries.getOrDefault(key, first(def));
 		Configs.logger.debug("Config by key [" + key + "] with default value [" + Joiner.on(',').join(def) + "]"//
 				+ ", returned: [" + v + "].");
@@ -153,7 +169,7 @@ public final class ConfigSet {
 		return new ConfigSet(prefixed() ? this.prefix + prefix : prefix, entries);
 	}
 
-	public Map<String, String> getByPrefix(String prefix) {
+	public Map<String, String> prefixed(String prefix) {
 		Configs.logger.debug("Config sub fetch by prefix [" + prefix + "]");
 		Map<String, String> sub = new ConcurrentHashMap<>();
 		for (String k : entries.keySet())

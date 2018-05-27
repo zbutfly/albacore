@@ -27,7 +27,7 @@ public class FileNameEnc {
 			String l;
 			while (null != (l = r.readLine()))
 				c++;
-			// System.out.println(l);
+			System.out.println(l);
 			System.out.println("Total lines: " + c);
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();

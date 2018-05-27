@@ -181,4 +181,12 @@ public class JVM {
 			if (t.getId() == 1) return t;
 		return null;
 	}
+
+	public static Class<?> getCurrentClass(int offset) {
+		try {
+			return Class.forName(Thread.currentThread().getStackTrace()[2 - offset].getClassName());
+		} catch (ClassNotFoundException e) {
+			return null;
+		}
+	}
 }

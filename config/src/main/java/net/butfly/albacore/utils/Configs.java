@@ -16,39 +16,35 @@ public final class Configs {
 	}
 
 	public static ConfigSet of(Class<?> cls) {
-		if (null == cls) cls = JVM.current().mainClass;
 		return CLS_CONF.computeIfAbsent(cls, ConfigSet::new);
 	}
 
 	public static ConfigSet of(Class<?> cls, String prefix) {
-		if (null == cls) cls = JVM.current().mainClass;
 		return CLS_CONF.computeIfAbsent(cls, c -> new ConfigSet(c, prefix));
 	}
 
-	public static ConfigSet of(String filename) {
-		return of(filename, null);
+	public static <T> ConfigSet of(String filename, String prefix) {
+		return of(filename, JVM.current().mainClass, prefix);
 	}
 
-	public static <T> ConfigSet of(String filename, String prefix) {
-		return new ConfigSet(filename, prefix);
+	public static <T> ConfigSet of(String filename, Class<?> cls, String prefix) {
+		return CLS_CONF.computeIfAbsent(cls, c -> new ConfigSet(filename, c, prefix));
 	}
 
 	public static String get(String key) {
 		return of().get(key);
 	}
 
-	public static Map<String, String> getByPrefix(String prefix) {
-		return of().getByPrefix(prefix);
-	}
-
 	public static String get(String key, String... def) {
 		return of().get(key, def);
 	}
 
+	@Deprecated
 	public static String gets(String key) {
 		return of().gets(key);
 	}
 
+	@Deprecated
 	public static String gets(String key, String... def) {
 		return of().gets(key, def);
 	}
@@ -63,6 +59,10 @@ public final class Configs {
 
 	public static boolean has(String key) {
 		return of().has(key);
+	}
+
+	public static Map<String, String> prefixize(String prefix) {
+		return of().prefixed(prefix);
 	}
 
 	// ================================
