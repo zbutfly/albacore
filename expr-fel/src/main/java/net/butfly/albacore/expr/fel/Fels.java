@@ -14,7 +14,7 @@ import net.butfly.albacore.expr.fel.FelFunc.Func;
 import net.butfly.albacore.utils.Reflections;
 
 public final class Fels {
-	static final Null NULL = new Null();
+	public static final Null NULL = new Null();
 
 	static com.greenpineyu.fel.FelEngine scan() {
 		FelEngineImpl eng;
@@ -49,7 +49,7 @@ public final class Fels {
 		return eng;
 	}
 
-	static boolean isNull(Object arg) {
+	public static boolean isNull(Object arg) {
 		return null == arg || Null.class.isAssignableFrom(arg.getClass());
 	}
 }

@@ -6,7 +6,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import net.butfly.albacore.Albacore;
 import net.butfly.albacore.expr.fel.FelEngine;
-import net.butfly.albacore.utils.Configs;
 import net.butfly.albacore.utils.logger.Logger;
 
 public interface Engine {
@@ -41,13 +40,13 @@ public interface Engine {
 
 	static class Default {
 		static final Engine def = scan();
-		private static final int STATS_STEP = Integer.parseInt(Configs.gets("albacore.expr.stats.step", "0"));
+		private static final int STATS_STEP = Integer.parseInt(System.getProperty("albacore.expr.stats.step", "0"));
 		private static final String STATS_CLASS = Default.def.getClass().getSimpleName();
 		private static final AtomicLong execCount = new AtomicLong();
 		private static final AtomicLong execSpent = new AtomicLong();
 
 		private static Engine scan() {
-			String cname = Configs.of().gets(Albacore.Props.PROP_EXPR_ENGINE_CLASS, FelEngine.class.getName());
+			String cname = System.getProperty(Albacore.Props.PROP_EXPR_ENGINE_CLASS, FelEngine.class.getName());
 			logger.info("Expression engine [" + cname + "] loaded.");
 			try {
 				return (Engine) Class.forName(cname).getConstructor().newInstance();
