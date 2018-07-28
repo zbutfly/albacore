@@ -28,8 +28,9 @@ public interface Colls {
 	static <E> List<E> list(Iterable<E> eles) {
 		if (null == eles) return list();
 		List<E> l = list();
-		for (E e : eles)
+		eles.forEach(e -> {
 			if (null != e) l.add(e);
+		});
 		return l;
 	}
 
