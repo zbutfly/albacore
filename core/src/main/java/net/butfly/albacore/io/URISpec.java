@@ -320,6 +320,10 @@ public final class URISpec implements Serializable {
 		return query.get(name);
 	}
 
+	public String setParameter(String name, String value) {
+		return query.put(name, value);
+	}
+
 	public String getParameter(String name, String defaultValue) {
 		return query.getOrDefault(name, defaultValue);
 	}
