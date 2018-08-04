@@ -1,6 +1,8 @@
 package net.butfly.albacore.paral;
 
 import static net.butfly.albacore.utils.logger.LogExec.tryExec;
+
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -10,12 +12,12 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.function.BiConsumer;
-import java.util.function.BinaryOperator;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.IntFunction;
-import java.util.function.Predicate;
+import net.butfly.albacore.io.lambda.BiConsumer;
+import net.butfly.albacore.io.lambda.BinaryOperator;
+import net.butfly.albacore.io.lambda.Consumer;
+import net.butfly.albacore.io.lambda.Function;
+import net.butfly.albacore.io.lambda.IntFunction;
+import net.butfly.albacore.io.lambda.Predicate;
 import java.util.stream.Stream;
 
 import com.google.common.base.Joiner;
@@ -26,7 +28,7 @@ import net.butfly.albacore.utils.collection.Colls;
 import net.butfly.albacore.utils.logger.Logger;
 import net.butfly.albacore.utils.parallel.Lambdas;
 
-public interface Sdream<E> {
+public interface Sdream<E> extends Serializable {
 	static final Logger logger = Logger.getLogger(Sdream.class);
 
 	default Sdream<E> ex(ExecutorService ex) {

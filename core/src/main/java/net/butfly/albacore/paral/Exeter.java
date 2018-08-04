@@ -48,7 +48,7 @@ public interface Exeter extends ExecutorService {
 
 	<T> Future<?> submit(Consumer<T> task, Iterable<T> ins);
 
-	<T> Future<?> submit(T s, Iterable<Consumer<T>> tasks);
+	<T> Future<?> submit(T s, Iterable<? extends Consumer<T>> tasks);
 
 	<T> T joins(Supplier<T> task);
 
@@ -60,7 +60,7 @@ public interface Exeter extends ExecutorService {
 
 	void join(Runnable... tasks);
 
-	<T> void join(T in, List<Consumer<T>> tasks);
+	<T> void join(T in, List<? extends Consumer<T>> tasks);
 
 	<T> void join(Consumer<T> task, Iterable<T> ins);
 

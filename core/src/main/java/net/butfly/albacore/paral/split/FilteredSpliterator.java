@@ -4,8 +4,8 @@ import static net.butfly.albacore.paral.Sdream.of;
 
 import java.util.Optional;
 import java.util.Spliterator;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
+
+import net.butfly.albacore.io.lambda.Predicate;
 
 public class FilteredSpliterator<E> extends WrapperSpliterator<E> {
 	private final Predicate<E> filter;
@@ -16,7 +16,7 @@ public class FilteredSpliterator<E> extends WrapperSpliterator<E> {
 	}
 
 	@Override
-	public boolean tryAdvance(Consumer<? super E> using) {
+	public boolean tryAdvance(java.util.function.Consumer<? super E> using) {
 		Optional<E> op;
 		while (null != (op = next())) {
 			E e = op.orElse(null);

@@ -14,14 +14,12 @@ import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
-import java.util.function.BinaryOperator;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
 
-import net.butfly.albacore.paral.Exeter;
-import net.butfly.albacore.paral.Sdream;
+import net.butfly.albacore.io.lambda.BiConsumer;
+import net.butfly.albacore.io.lambda.BinaryOperator;
+import net.butfly.albacore.io.lambda.Consumer;
+import net.butfly.albacore.io.lambda.Function;
+import net.butfly.albacore.io.lambda.Predicate;
 import net.butfly.albacore.paral.split.BatchSpliterator;
 import net.butfly.albacore.paral.split.ConcatSpliterator;
 import net.butfly.albacore.paral.split.ConvedSpliterator;
@@ -32,6 +30,7 @@ import net.butfly.albacore.utils.collection.Colls;
 import net.butfly.albacore.utils.collection.Maps;
 
 public final class Lisdream<E, SELF extends Sdream<E>> implements Sdream<E>/* , List<E> */ {
+	private static final long serialVersionUID = -4918238882462226640L;
 	protected final BlockingQueue<E> undly;
 	protected Exeter ex;
 

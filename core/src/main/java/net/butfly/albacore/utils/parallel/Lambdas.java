@@ -2,11 +2,11 @@ package net.butfly.albacore.utils.parallel;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BinaryOperator;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
+import net.butfly.albacore.io.lambda.BinaryOperator;
+import net.butfly.albacore.io.lambda.Consumer;
+import net.butfly.albacore.io.lambda.Function;
+import net.butfly.albacore.io.lambda.Predicate;
+import net.butfly.albacore.io.lambda.Supplier;
 
 import net.butfly.albacore.utils.Utils;
 
