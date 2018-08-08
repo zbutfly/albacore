@@ -50,16 +50,16 @@
 			<artifactId>junit</artifactId>
 		</dependency>
 	</dependencies>
-	<build>
-		<plugins>
-			<plugin>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<configuration>
-					<compilerArgs>
-						<arg>--add-exports</arg><arg>java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED</arg>
-					</compilerArgs>
-				</configuration>
-			</plugin>
-		</plugins>
-	</build>
+<!-- 	<build> -->
+<!-- 		<plugins> -->
+<!-- 			<plugin> -->
+<!-- 				<artifactId>maven-compiler-plugin</artifactId> -->
+<!-- 				<configuration> -->
+<!-- 					<compilerArgs> -->
+<!-- 						<arg>++add-exports</arg><arg>java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED</arg> -->
+<!-- 					</compilerArgs> -->
+<!-- 				</configuration> -->
+<!-- 			</plugin> -->
+<!-- 		</plugins> -->
+<!-- 	</build> -->
 </project>

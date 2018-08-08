@@ -39,7 +39,7 @@ public interface SizeOfSupport {
 		if (_Internal.SIZE_OF_INACCESSIBLE_FAILED) return 0;
 		try {
 			return RamUsageEstimator.sizeOf(obj);
-		} catch (java.lang.reflect.InaccessibleObjectException e) {
+		} catch (Exception e) { //java.lang.reflect.InaccessibleObjectException
 			if (!_Internal.SIZE_OF_INACCESSIBLE_FAILED) {
 				_Internal.SIZE_OF_INACCESSIBLE_FAILED = true;
 				System.err.println("WARNING: sizeOf() in java 9 needs vm args: " + //
