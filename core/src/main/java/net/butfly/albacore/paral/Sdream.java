@@ -3,25 +3,24 @@ package net.butfly.albacore.paral;
 import static net.butfly.albacore.utils.logger.LogExec.tryExec;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.stream.Stream;
+
+import com.google.common.base.Joiner;
+
 import net.butfly.albacore.io.lambda.BiConsumer;
 import net.butfly.albacore.io.lambda.BinaryOperator;
 import net.butfly.albacore.io.lambda.Consumer;
 import net.butfly.albacore.io.lambda.Function;
 import net.butfly.albacore.io.lambda.IntFunction;
 import net.butfly.albacore.io.lambda.Predicate;
-import java.util.stream.Stream;
-
-import com.google.common.base.Joiner;
-
 import net.butfly.albacore.paral.split.Splidream;
 import net.butfly.albacore.utils.Pair;
 import net.butfly.albacore.utils.collection.Colls;
@@ -64,7 +63,9 @@ public interface Sdream<E> extends Serializable {
 	<R> Sdream<R> map(Function<E, R> conv);
 
 	@Deprecated
-	<R> Sdream<R> map(Function<Sdream<E>, Sdream<R>> conv, int maxBatchSize);
+	default <R> Sdream<R> map(Function<Sdream<E>, Sdream<R>> conv, int maxBatchSize) {
+		return conv.apply(this);
+	}
 
 	<R> Sdream<R> mapFlat(Function<E, Sdream<R>> flat);
 
@@ -84,8 +85,6 @@ public interface Sdream<E> extends Serializable {
 	Sdream<E> union(Sdream<E> another);
 
 	// ==================
-	Optional<E> next();
-
 	default List<E> collect() {
 		return list();
 	}
@@ -104,11 +103,7 @@ public interface Sdream<E> extends Serializable {
 	}
 
 	default BlockingQueue<E> queue() {
-		BlockingQueue<E> l = new LinkedBlockingQueue<>();
-		eachs(e -> {
-			if (null != e) l.add(e);
-		});
-		return l;
+		return new LinkedBlockingQueue<>(list());
 	}
 
 	default Set<E> distinct() {
@@ -134,23 +129,29 @@ public interface Sdream<E> extends Serializable {
 		return map(e -> 1L).reduce(Lambdas.sumLong());
 	}
 
-	void partition(Consumer<Sdream<E>> using, int minPartNum);
+	default void partition(Consumer<Sdream<E>> using, int minPartNum) {
+		using.accept(this);
+	}
 
 	<K> void partition(BiConsumer<K, E> using, Function<E, K> keying);
 
 	<K> void partition(BiConsumer<K, Sdream<E>> using, Function<E, K> keying, int maxBatchSize);
 
-	void batch(Consumer<Sdream<E>> using, int maxBatchSize);
+	default void batch(Consumer<Sdream<E>> using, int maxBatchSize) {
+		using.accept(this);
+	}
 
 	static <E, S> Sdream<E> of(Spliterator<E> impl) {
 		return new Splidream<>(impl);
 	}
 
 	static <K, V> Sdream<Map.Entry<K, V>> of(Map<K, V> map) {
-		return new Splidream<>(map.entrySet().spliterator());
+		return of(map.entrySet());
 	}
 
 	static <E, S> Sdream<E> of(Iterable<E> impl) {
+		if (!impl.iterator().hasNext()) return of();
+		if (impl instanceof Collection) return new Lisdream<>(impl);
 		return new Splidream<>(impl.spliterator());
 	}
 
@@ -161,18 +162,18 @@ public interface Sdream<E> extends Serializable {
 	}
 
 	static <V> Sdream<V> of1(V t) {
-		CopyOnWriteArrayList<V> l = new CopyOnWriteArrayList<>();
-		l.add(t);
-		return of(l.spliterator());
+		return null == t ? of() : new Oddream<>(t);
 	}
 
 	@SafeVarargs
 	static <V> Sdream<V> of(V... t) {
-		return of(Colls.list(t).spliterator());
+		if (null == t || t.length == 0) return of();
+		if (t.length == 1) return of1(t[0]);
+		return new Lisdream<>(Colls.list(t));
 	}
 
 	static <V> Sdream<V> of() {
-		return of(Colls.<V> list().spliterator());
+		return new Emdream<>();
 	}
 
 	List<Sdream<E>> partition(int minPartNum);

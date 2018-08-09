@@ -27,7 +27,7 @@ public interface Refs {
 		return classes;
 	}
 
-	@SuppressWarnings("deprecation")
+	// @SuppressWarnings("deprecation")
 	static boolean accessible(AccessibleObject o) {
 		return null == o ? false : o.isAccessible();
 	}

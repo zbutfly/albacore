@@ -1,19 +1,13 @@
 package net.butfly.albacore.paral;
 
-import static net.butfly.albacore.paral.Exeter.getn;
 import static net.butfly.albacore.paral.Sdream.of;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.Spliterator;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import net.butfly.albacore.io.lambda.BiConsumer;
 import net.butfly.albacore.io.lambda.BinaryOperator;
@@ -22,21 +16,21 @@ import net.butfly.albacore.io.lambda.Function;
 import net.butfly.albacore.io.lambda.Predicate;
 import net.butfly.albacore.paral.split.BatchSpliterator;
 import net.butfly.albacore.paral.split.ConcatSpliterator;
-import net.butfly.albacore.paral.split.ConvedSpliterator;
-import net.butfly.albacore.paral.split.FilteredSpliterator;
-import net.butfly.albacore.paral.split.FlatedSpliterator;
 import net.butfly.albacore.utils.Pair;
 import net.butfly.albacore.utils.collection.Colls;
 import net.butfly.albacore.utils.collection.Maps;
 
-public final class Lisdream<E, SELF extends Sdream<E>> implements Sdream<E>/* , List<E> */ {
+public final class Lisdream<E> implements Sdream<E>/* , List<E> */ {
 	private static final long serialVersionUID = -4918238882462226640L;
 	protected final BlockingQueue<E> undly;
-	protected Exeter ex;
 
 	public Lisdream(Iterable<E> impl) {
 		undly = constr(impl);
-		ex = Exeter.of();
+	}
+
+	@Override
+	public List<E> list() {
+		return Colls.list(undly);
 	}
 
 	@Override
@@ -46,7 +40,6 @@ public final class Lisdream<E, SELF extends Sdream<E>> implements Sdream<E>/* , 
 
 	@Override
 	public Sdream<E> ex(Exeter ex) {
-		this.ex = ex;
 		return this;
 	}
 
@@ -54,40 +47,64 @@ public final class Lisdream<E, SELF extends Sdream<E>> implements Sdream<E>/* , 
 
 	@Override
 	public E reduce(BinaryOperator<E> accumulator) {
-		return reduce(ex, spliterator(), accumulator);
+		if (undly.isEmpty()) return null;
+		E first = undly.poll();
+		E next;
+		while (null != (next = undly.poll()))
+			first = accumulator.apply(first, next);
+		return first;
 	}
 
 	// conving =======================================
 	@Override
 	public Sdream<E> filter(Predicate<E> checking) {
-		return of(new FilteredSpliterator<>(spliterator(), checking));
+		List<E> l = Colls.list();
+		undly.forEach(e -> {
+			if (checking.test(e)) l.add(e);
+		});
+		return new Lisdream<>(l);
 	}
 
 	@Override
-	@Deprecated
 	public Sdream<Sdream<E>> batch(int maxBatchSize) {
 		return of(new BatchSpliterator<>(spliterator(), maxBatchSize));
 	}
 
 	@Override
 	public <R> Sdream<R> map(Function<E, R> conv) {
-		return of(new ConvedSpliterator<>(spliterator(), conv));
+		List<R> l = Colls.list();
+		undly.forEach(e -> {
+			R r = conv.apply(e);
+			if (null != r) l.add(r);
+		});
+		return new Lisdream<>(l);
 	}
 
 	@Override
 	@Deprecated
 	public <R> Sdream<R> map(Function<Sdream<E>, Sdream<R>> conv, int maxBatchSize) {
-		return of(new BatchSpliterator<E>(spliterator(), maxBatchSize)).map(conv).mapFlat(r -> r);
+		return conv.apply(this);
 	}
 
 	@Override
 	public <R> Sdream<R> mapFlat(Function<E, Sdream<R>> flat) {
-		return of(new FlatedSpliterator<>(map(flat).spliterator()));
+		List<R> l = Colls.list();
+		undly.forEach(e -> {
+			flat.apply(e).eachs(r -> {
+				if (null != r) l.add(r);
+			});
+		});
+		return new Lisdream<>(l);
 	}
 
 	@Override
 	public Sdream<E> union(Sdream<E> another) {
-		return of(new ConcatSpliterator<>(spliterator(), another.spliterator()));
+		if (another instanceof Lisdream) {
+			List<E> l = Colls.list();
+			l.addAll(undly);
+			l.addAll(((Lisdream<E>) another).undly);
+			return new Lisdream<>(l);
+		} else return of(new ConcatSpliterator<>(spliterator(), another.spliterator()));
 	}
 
 	@Override
@@ -99,7 +116,7 @@ public final class Lisdream<E, SELF extends Sdream<E>> implements Sdream<E>/* , 
 	/** Using spliterator sequencially */
 	@Override
 	public void eachs(Consumer<E> using) {
-		eachs(spliterator(), using);
+		undly.forEach(using);
 	}
 
 	/**
@@ -109,208 +126,59 @@ public final class Lisdream<E, SELF extends Sdream<E>> implements Sdream<E>/* , 
 	 */
 	@Override
 	public void each(Consumer<E> using) {
-		each(ex, spliterator(), using);
-	}
-
-	@Override
-	public void batch(Consumer<Sdream<E>> using, int maxBatchSize) {
-		batch(maxBatchSize).each(using);
-		Spliterator<E> sp = spliterator();
-		BlockingQueue<Future<?>> fs = new LinkedBlockingQueue<>();
-		while (sp.estimateSize() > maxBatchSize) {
-			Spliterator<E> ss = sp.trySplit();
-			if (null != ss) fs.offer(ex.submit(() -> using.accept(of(ss))));
-			else break;
-		}
-		fs.offer(ex.submit(() -> using.accept(of(sp))));
-	}
-
-	@Override
-	public void partition(Consumer<Sdream<E>> using, int minPartNum) {
-		partition(ex, spliterator(), using, minPartNum);
-	}
-
-	private <K> void batch1(K k, BlockingQueue<E> l, BiConsumer<K, Sdream<E>> using, int batchSize) {
-		List<E> batch = Colls.list();
-		l.drainTo(batch, batchSize);
-		ex.execute(() -> using.accept(k, Sdream.of(batch)));
+		undly.forEach(using);
 	}
 
 	@Override
 	public <K> void partition(BiConsumer<K, Sdream<E>> using, Function<E, K> keying, int maxBatchSize) {
-		// partition(ex, impl, using, keying, maxBatchSize);
-		List<E> all = list();
-		if (all.isEmpty()) return;
-		Map<K, BlockingQueue<E>> map = Maps.of();
-		List<Future<BlockingQueue<E>>> fs = Colls.list();
-		for (E e : all)
-			fs.add(ex.submit(() -> map.compute(keying.apply(e), (k, l) -> {
-				if (null == l) l = new LinkedBlockingQueue<>();
-				l.offer(e);
-				if (l.size() >= maxBatchSize) batch1(k, l, using, maxBatchSize);
-				return l;
-			})));
-		Exeter.get(fs);
-		for (Map.Entry<K, BlockingQueue<E>> e : map.entrySet()) {
-			BlockingQueue<E> l = e.getValue();
-			while (!l.isEmpty())
-				batch1(e.getKey(), e.getValue(), using, maxBatchSize);
-		}
+		Map<K, List<E>> m = Maps.of();
+		undly.forEach(e -> {
+			K k = keying.apply(e);
+			m.computeIfAbsent(k, kk -> Colls.list()).add(e);
+		});
+		m.forEach((k, l) -> using.accept(k, new Lisdream<>(l)));
 	}
 
 	@Override
 	public List<Sdream<E>> partition(int minPartNum) {
-		List<Sdream<E>> l = Colls.list();
-		getn(partition(ex, spliterator(), l::add, minPartNum));
-		return l;
+		int s = undly.size() / minPartNum;
+		List<Sdream<E>> ll = Colls.list();
+		List<E> l = Colls.list();
+		for (E e : undly) {
+			l.add(e);
+			if (l.size() > s) {
+				ll.add(new Lisdream<>(l));
+				l = Colls.list();
+			}
+		}
+		if (!l.isEmpty()) ll.add(new Lisdream<>(l));
+		return ll;
 	}
 
 	@Override
 	public <K> void partition(BiConsumer<K, E> using, Function<E, K> keying) {
-		partition(ex, spliterator(), using, keying);
+		undly.forEach(e -> using.accept(keying.apply(e), e));
 	}
 
 	@Override
 	public <K, V> Map<K, List<V>> partition(Function<E, K> keying, Function<E, V> valuing) {
 		Map<K, List<V>> m = Maps.of();
-		List<Future<?>> fs = Colls.list();
-		for (Spliterator<E> s : split(spliterator()))
-			fs.add(ex.submit((Runnable) () -> {
-				eachs(s, e -> {
-					if (null == e) return;
-					K key = keying.apply(e);
-					if (null == key) return;
-					m.compute(key, (k, l) -> {
-						if (null == l) l = Colls.list();
-						V v = valuing.apply(e);
-						if (null != v) l.add(v);
-						return l;
-					});
-				});
-			}));
-		getn(fs);
+		undly.forEach(e -> m.computeIfAbsent(keying.apply(e), k -> Colls.list()).add(valuing.apply(e)));
 		return m;
 	}
 
 	@Override
 	public <K, V> Map<K, V> partition(Function<E, K> keying, Function<E, V> valuing, BinaryOperator<V> reducing) {
-		Map<K, V> m = Maps.of();
-		List<Future<?>> fs = Colls.list();
-		for (Spliterator<E> s : split(spliterator()))
-			fs.add(ex.submit((Runnable) () -> eachs(s, e -> {
-				if (null == e) return;
-				K key = keying.apply(e);
-				if (null == key) return;
-				m.compute(key, (k, v) -> {
-					V vv = valuing.apply(e);
-					if (null == vv) return v;
-					if (null == v) return vv;
-					return reducing.apply(v, vv);
-				});
-			})));
-		getn(fs);
-		return m;
-	}
-
-	// internal =============================
-	/** Using spliterator sequencially */
-	static <E> void eachs(Spliterator<E> s, Consumer<E> using) {
-		Spliterator<E> s0 = Objects.requireNonNull(s);
-		boolean advanced = false;
-		do {
-			try {
-				advanced = s0.tryAdvance(using);
-			} catch (ArrayIndexOutOfBoundsException ex) {
-				logger.debug("Splidream advance error: " + ex.getMessage());
-			}
-		} while (advanced);
-	}
-
-	/** Using spliterator parallelly with trySplit() */
-	static <E> void each(Exeter ex, Spliterator<E> s, Consumer<E> using) {
-		ex.submit(() -> {
-			for (Spliterator<E> ss : split(Objects.requireNonNull(s)))
-				ex.submit((Runnable) () -> eachs(ss, using));
-		});
-	}
-
-	static <E, K> void partition(Exeter ex, Spliterator<E> s, BiConsumer<K, E> using, Function<E, K> keying) {
-		each(ex, Objects.requireNonNull(s), e -> {
-			using.accept(keying.apply(e), e);
-		});
-	}
-
-	@Deprecated
-	static <E, K> void partition(Exeter ex, Spliterator<E> s, BiConsumer<K, Sdream<E>> using, Function<E, K> keying, int maxBatchSize) {
-		Map<K, BlockingQueue<E>> map = Maps.of();
-		each(ex, Objects.requireNonNull(s), e -> map.compute(keying.apply(e), (k, l) -> {
-			if (null == l) l = new LinkedBlockingQueue<>();
-			l.offer(e);
-			return checkBatch(ex, l, batch -> using.accept(k, of(batch)), maxBatchSize);
-		}));
-	}
-
-	@Deprecated
-	static <E> BlockingQueue<E> checkBatch(Exeter ex, BlockingQueue<E> l, Consumer<Collection<E>> using, int maxBatchSize) {
-		List<E> batch = Colls.list();
-		l.drainTo(batch, maxBatchSize);
-		if (batch.size() >= maxBatchSize) {
-			logger.error("INFO: Start a batch part with " + batch.size());
-			ex.submit(() -> using.accept(batch));
-		} else l.addAll(batch);
-		return l.isEmpty() ? null : l;
-	}
-
-	static <E> E reduce(Exeter ex, Spliterator<E> s, BinaryOperator<E> accumulator) {
-		AtomicReference<E> r = new AtomicReference<>();
-		List<Future<?>> fs = Colls.list();
-		for (Spliterator<E> ss : split(Objects.requireNonNull(s)))
-			fs.add(ex.submit((Runnable) () -> eachs(ss, e -> r.accumulateAndGet(e, accumulator::apply))));
-		getn(fs);
-		return r.get();
-	}
-
-	static <E> List<Spliterator<E>> split(Spliterator<E> origin) {
-		List<Spliterator<E>> l = Colls.list(origin);
-		l.add(origin);
-		Spliterator<E> s;
-		while (origin.estimateSize() < 1000 && null != (s = origin.trySplit()))
-			// if (s.estimateSize() < Long.MAX_VALUE) logger.error("Splited: " + s.estimateSize());
-			l.add(s);
-
-		return l;
-	}
-
-	static <E> List<Spliterator<E>> split(Spliterator<E> origin, int partNum) {
-		List<Spliterator<E>> l = Colls.list(origin);
-		if (partNum > 1) {
-			AtomicInteger parts = new AtomicInteger();
-			l.add(origin);
-			Spliterator<E> s;
-			while (parts.incrementAndGet() < partNum) {
-				if (null == (s = origin.trySplit())) return l;
-				l.add(s);
-			}
-		}
-		return l;
-	}
-
-	static <E> BlockingQueue<Future<?>> partition(Exeter ex, Spliterator<E> s, Consumer<Sdream<E>> using, int minPartNum) {
-		BlockingQueue<Future<?>> fs = new LinkedBlockingQueue<>();
-		for (Spliterator<E> ss : split(Objects.requireNonNull(s), minPartNum))
-			fs.offer(ex.submit(() -> using.accept(of(ss))));
-		return fs;
+		Map<K, List<V>> m = Maps.of();
+		undly.forEach(e -> m.computeIfAbsent(keying.apply(e), k -> Colls.list()).add(valuing.apply(e)));
+		Map<K, V> mm = Maps.of();
+		m.forEach((k, l) -> mm.put(k, new Lisdream<>(l).reduce(reducing)));
+		return mm;
 	}
 
 	private static <E> BlockingQueue<E> constr(Iterable<E> impl) {
 		if (impl instanceof BlockingQueue) return (BlockingQueue<E>) impl;
 		if (impl instanceof Collection) return new LinkedBlockingQueue<E>((Collection<E>) impl);
 		return new LinkedBlockingQueue<E>(Colls.list(impl));
-	}
-
-	@Override
-	public Optional<E> next() {
-		// TODO Auto-generated method stub
-		return null;
 	}
 }
