@@ -23,9 +23,8 @@
 		<version.slf4j>1.7.25</version.slf4j>
 		<version.log4j2>2.9.1</version.log4j2>
 		<!-- -->
-		<version.scala.main>2.10</version.scala.main>
-		<version.scala.suffix>_${version.scala.main}</version.scala.suffix>
-		<version.scala>${version.scala.main}.6</version.scala>
+		<version.scala.main>2.11</version.scala.main>
+		<version.scala>${version.scala.main}.12</version.scala>
 		<version.spring>4.3.16.RELEASE</version.spring>
 		<version.ning>1.9.40</version.ning>
 		<version.netty4>4.1.19.Final</version.netty4>
