@@ -474,4 +474,16 @@ public final class URISpec implements Serializable {
 		System.out.println(u + "\n\tAuthority: " + u.getAuthority() + "\n\tPath: " + u.getPath());
 	}
 
+	// ====
+	public final transient Map<String, String> extras = Maps.of();
+
+	public URISpec extra(String key, String value) {
+		extras.put(key, value);
+		return this;
+	}
+
+	public URISpec extra(Map<String, String> extras) {
+		extras.putAll(extras);
+		return this;
+	}
 }

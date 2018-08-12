@@ -4,10 +4,12 @@ import static net.butfly.albacore.utils.logger.LogExec.tryExec;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -147,6 +149,11 @@ public interface Sdream<E> extends Serializable {
 
 	static <K, V> Sdream<Map.Entry<K, V>> of(Map<K, V> map) {
 		return of(map.entrySet());
+	}
+
+	static <E, S> Sdream<E> of(Iterator<E> itor) {
+		if (!itor.hasNext()) return of();
+		return of(Spliterators.spliteratorUnknownSize(itor, Spliterator.ORDERED));
 	}
 
 	static <E, S> Sdream<E> of(Iterable<E> impl) {
