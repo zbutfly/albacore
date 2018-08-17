@@ -162,9 +162,7 @@ public final class Lisdream<E> implements Sdream<E>/* , List<E> */ {
 
 	@Override
 	public <K, V> Map<K, List<V>> partition(Function<E, K> keying, Function<E, V> valuing) {
-		Map<K, List<V>> m = Maps.of();
-		undly.forEach(e -> m.computeIfAbsent(keying.apply(e), k -> Colls.list()).add(valuing.apply(e)));
-		return m;
+		return Maps.of(undly, keying, valuing);
 	}
 
 	@Override

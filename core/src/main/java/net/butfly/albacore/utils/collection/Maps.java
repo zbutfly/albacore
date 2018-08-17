@@ -9,11 +9,15 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import net.butfly.albacore.io.lambda.Function;
+import net.butfly.albacore.paral.Sdream;
 import net.butfly.albacore.utils.Pair;
 import net.butfly.albacore.utils.logger.Logger;
 
@@ -38,6 +42,52 @@ public class Maps {
 	public static <K, V> Map<K, V> of(K fieldName, V fieldValue) {
 		Map<K, V> map = of();
 		if (null != fieldName && null != fieldValue) map.put(fieldName, fieldValue);
+		return map;
+	}
+
+	public static <K, V> Map<K, BlockingQueue<V>> ofQ(Iterable<V> values, Function<V, K> keying) {
+		Map<K, BlockingQueue<V>> map = of();
+		values.forEach(v -> {
+			if (null == v) return;
+			K k = keying.apply(v);
+			if (null == k) return;
+			map.computeIfAbsent(k, kk -> new LinkedBlockingQueue<>()).add(v);
+		});
+		return map;
+	}
+
+	public static <K, V> Map<K, List<V>> of(Iterable<V> values, Function<V, K> keying) {
+		Map<K, List<V>> map = of();
+		values.forEach(v -> {
+			if (null == v) return;
+			K k = keying.apply(v);
+			if (null == k) return;
+			map.computeIfAbsent(k, kk -> Colls.list()).add(v);
+		});
+		return map;
+	}
+
+	public static <K, V> Map<K, List<V>> of(Sdream<V> values, Function<V, K> keying) {
+		Map<K, List<V>> map = of();
+		values.eachs(v -> {
+			if (null == v) return;
+			K k = keying.apply(v);
+			if (null == k) return;
+			map.computeIfAbsent(k, kk -> Colls.list()).add(v);
+		});
+		return map;
+	}
+
+	public static <K, V, V1> Map<K, List<V1>> of(Iterable<V> values, Function<V, K> keying, Function<V, V1> valuing) {
+		Map<K, List<V1>> map = of();
+		values.forEach(v -> {
+			if (null == v) return;
+			K k = keying.apply(v);
+			if (null == k) return;
+			V1 v1 = valuing.apply(v);
+			if (null == v1) return;
+			map.computeIfAbsent(k, kk -> Colls.list()).add(v1);
+		});
 		return map;
 	}
 
