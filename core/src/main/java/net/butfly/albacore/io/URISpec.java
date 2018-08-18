@@ -254,7 +254,7 @@ public final class URISpec implements Serializable {
 	}
 
 	public String getHost() {
-		return Arrays.stream(hosts).map(a -> a.getHostName() + (a.getPort() >= 0 ? ":" + a.getPort() : "")).collect(Collectors.joining(
+		return Arrays.stream(hosts).map(a -> a.getHostName() + (a.getPort() > 0 ? ":" + a.getPort() : "")).collect(Collectors.joining(
 				","));
 	}
 

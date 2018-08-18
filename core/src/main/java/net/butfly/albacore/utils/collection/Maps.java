@@ -56,6 +56,17 @@ public class Maps {
 		return map;
 	}
 
+	public static <K, V> Map<K, BlockingQueue<V>> ofQ(Sdream<V> values, Function<V, K> keying) {
+		Map<K, BlockingQueue<V>> map = of();
+		values.eachs(v -> {
+			if (null == v) return;
+			K k = keying.apply(v);
+			if (null == k) return;
+			map.computeIfAbsent(k, kk -> new LinkedBlockingQueue<>()).add(v);
+		});
+		return map;
+	}
+
 	public static <K, V> Map<K, List<V>> of(Iterable<V> values, Function<V, K> keying) {
 		Map<K, List<V>> map = of();
 		values.forEach(v -> {
