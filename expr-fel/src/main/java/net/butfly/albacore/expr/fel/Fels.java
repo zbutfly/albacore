@@ -27,7 +27,7 @@ public final class Fels {
 		for (Class<?> c : Reflections.getClassesAnnotatedWith(Func.class, ""))
 			if (CommonFunction.class.isAssignableFrom(c)) {
 				if (!Modifier.isStatic(c.getModifiers())) //
-					logger.error("FelFunc found func class [" + c.getName() + "] but not static, ignore.");
+					logger.error("FelEngine function scaned [" + c.getName() + "] but not static, ignore.");
 				else {
 					CommonFunction f;
 					try {
@@ -36,7 +36,7 @@ public final class Fels {
 						f = (CommonFunction) cc.newInstance();
 					} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
 							| NoSuchMethodException | SecurityException e) {
-						logger.error("FelFunc found func class [" + c.getName() + "] but instantial fail", e);
+						logger.error("FelEngine function scaned [" + c.getName() + "] but instantial fail", e);
 						continue;
 					}
 					if (c.isAnnotationPresent(Deprecated.class)) //
@@ -45,7 +45,7 @@ public final class Fels {
 					else logger.debug("FelEngine function scaned: " + f.getClass().getSimpleName() + "(" + f.getName() + ")");
 					eng.addFun(f);
 				}
-			} else logger.error("FelFunc found func class [" + c.getName() + "] annotated by @Func is not a FelFunc");
+			} else logger.error("FelEngine function scaned [" + c.getName() + "] annotated by @Func is not a FelFunc");
 		return eng;
 	}
 

@@ -3,6 +3,7 @@ package net.butfly.albacore.expr.fel;
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static net.butfly.albacore.expr.fel.Fels.isNull;
+
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
@@ -72,6 +73,37 @@ public abstract class FelFunc<R> extends CommonFunction {
 		@Override
 		public Boolean invoke(Object... args) {
 			return isNull(args[0]) ? isNull(args[1]) : args[0].equals(args[1]);
+		}
+	}
+
+	@Func
+	static class RandomFunc extends FelFunc<Number> {
+		@Override
+		public Number invoke(Object... args) {
+			if (null == args || 0 == args.length) return Math.random();
+			switch (args.length) {
+			case 1:
+				Number n = (Number) args[0];
+				if (n instanceof Integer) return (int) (Math.random() * n.intValue());
+				if (n instanceof Long) return (long) (Math.random() * n.longValue());
+				if (n instanceof Double) return (double) (Math.random() * n.doubleValue());
+				if (n instanceof Float) return (float) (Math.random() * n.floatValue());
+				throw new IllegalArgumentException("Not support random generating for " + n.getClass().getName() + " argument.");
+			case 2:
+				Number n1 = (Number) args[0];
+				Number n2 = (Number) args[0];
+				if (!n1.getClass().equals(n2.getClass())) throw new IllegalArgumentException("Not support random generating for " //
+						+ n1.getClass().getName() + " and " + n2.getClass().getName() + " arguments.");
+				Number r = n2.doubleValue() - n1.doubleValue();
+				if (n1 instanceof Integer) return (int) (Math.random() * r.intValue() + n1.intValue());
+				if (n1 instanceof Long) return (long) (Math.random() * r.longValue() + n1.longValue());
+				if (n1 instanceof Double) return (double) (Math.random() * r.doubleValue() + n1.doubleValue());
+				if (n1 instanceof Float) return (float) (Math.random() * r.floatValue() + n1.floatValue());
+				throw new IllegalArgumentException("Not support random generating for " //
+						+ n1.getClass().getName() + " and " + n2.getClass().getName() + " arguments.");
+			default:
+				throw new IllegalArgumentException("Not support random generating for " + args.length + " arguments.");
+			}
 		}
 	}
 }
