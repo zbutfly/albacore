@@ -130,13 +130,13 @@ public final class Lisdream<E> implements Sdream<E>/* , List<E> */ {
 	}
 
 	@Override
+	public <K> void partition(BiConsumer<K, E> using, Function<E, K> keying) {
+		undly.forEach(e -> using.accept(keying.apply(e), e));
+	}
+
+	@Override
 	public <K> void partition(BiConsumer<K, Sdream<E>> using, Function<E, K> keying, int maxBatchSize) {
-		Map<K, List<E>> m = Maps.of();
-		undly.forEach(e -> {
-			K k = keying.apply(e);
-			m.computeIfAbsent(k, kk -> Colls.list()).add(e);
-		});
-		m.forEach((k, l) -> using.accept(k, new Lisdream<>(l)));
+		Maps.of(undly, keying).forEach((k, l) -> using.accept(k, new Lisdream<>(l)));
 	}
 
 	@Override
@@ -153,11 +153,6 @@ public final class Lisdream<E> implements Sdream<E>/* , List<E> */ {
 		}
 		if (!l.isEmpty()) ll.add(new Lisdream<>(l));
 		return ll;
-	}
-
-	@Override
-	public <K> void partition(BiConsumer<K, E> using, Function<E, K> keying) {
-		undly.forEach(e -> using.accept(keying.apply(e), e));
 	}
 
 	@Override

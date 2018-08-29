@@ -13,12 +13,12 @@ import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+
 import net.butfly.albacore.io.lambda.BiConsumer;
 import net.butfly.albacore.io.lambda.BinaryOperator;
 import net.butfly.albacore.io.lambda.Consumer;
 import net.butfly.albacore.io.lambda.Function;
 import net.butfly.albacore.io.lambda.Predicate;
-
 import net.butfly.albacore.paral.Exeter;
 import net.butfly.albacore.paral.Sdream;
 import net.butfly.albacore.utils.Pair;
@@ -125,31 +125,31 @@ public final class Splidream<E, SELF extends Sdream<E>> extends WrapperSpliterat
 	}
 
 	private <K> void batch1(K k, BlockingQueue<E> l, BiConsumer<K, Sdream<E>> using, int batchSize) {
-		List<E> batch = Colls.list();
-		l.drainTo(batch, batchSize);
-		ex.execute(() -> using.accept(k, Sdream.of(batch)));
+		if (batchSize <= 0) ex.execute(() -> using.accept(k, Sdream.of(l)));
+		else {
+			List<E> batch = Colls.list();
+			l.drainTo(batch, batchSize);
+			ex.execute(() -> using.accept(k, Sdream.of(batch)));
+		}
 	}
 
 	@Override
 	public <K> void partition(BiConsumer<K, Sdream<E>> using, Function<E, K> keying, int maxBatchSize) {
 		// partition(ex, impl, using, keying, maxBatchSize);
-		List<E> all = list();
-		if (all.isEmpty()) return;
 		Map<K, BlockingQueue<E>> map = Maps.of();
-		List<Future<BlockingQueue<E>>> fs = Colls.list();
-		for (E e : all)
-			fs.add(ex.submit(() -> map.compute(keying.apply(e), (k, l) -> {
-				if (null == l) l = new LinkedBlockingQueue<>();
-				l.offer(e);
-				if (l.size() >= maxBatchSize) batch1(k, l, using, maxBatchSize);
-				return l;
-			})));
-		Exeter.get(fs);
-		for (Map.Entry<K, BlockingQueue<E>> e : map.entrySet()) {
-			BlockingQueue<E> l = e.getValue();
+		List<Future<?>> fs = Colls.list();
+		eachs(e -> fs.add(ex.submit(() -> map.compute(keying.apply(e), (k, l) -> {
+			if (null == l) l = new LinkedBlockingQueue<>();
+			l.offer(e);
+			if (l.size() < maxBatchSize) return l;
+			batch1(k, l, using, maxBatchSize);
+			return null;
+		}))));
+		map.forEach((k, l) -> {
 			while (!l.isEmpty())
-				batch1(e.getKey(), e.getValue(), using, maxBatchSize);
-		}
+				fs.add(ex.submit(() -> batch1(k, l, using, maxBatchSize)));
+		});
+		Exeter.getn(fs);
 	}
 
 	@Override
