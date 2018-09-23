@@ -254,8 +254,7 @@ public final class URISpec implements Serializable {
 	}
 
 	public String getHost() {
-		return Arrays.stream(hosts).map(a -> a.getHostName() + (a.getPort() > 0 ? ":" + a.getPort() : "")).collect(Collectors.joining(
-				","));
+		return Arrays.stream(hosts).map(a -> a.getHostName() + (a.getPort() > 0 ? ":" + a.getPort() : "")).collect(Collectors.joining(","));
 	}
 
 	public String[] getPaths() {
@@ -483,7 +482,7 @@ public final class URISpec implements Serializable {
 	}
 
 	public URISpec extra(Map<String, String> extras) {
-		extras.putAll(extras);
+		if (null != extras) this.extras.putAll(extras);
 		return this;
 	}
 }
