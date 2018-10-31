@@ -137,24 +137,31 @@ public class JVM {
 	private static Class<?> parseMainClass() {
 		Class<?> c = guessMainClassByMaven();
 		if (null != c) return c;
-		c = guessMainClassByJava();
-		if (null != c) return c;
-		throw new RuntimeException(new ClassNotFoundException("Can't find main class. It can be define manully by -Dexec.mainClass=..."));
+		try {
+			return guessMainClassByJava();
+		} catch (ClassNotFoundException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
-	static Class<?> guessMainClassByJava() {
-		String[] argus = System.getProperty("sun.java.command").split("[\\s]+");
-		if ("-jar".equals(argus[0])) {
-			try (JarFile jar = new JarFile(Thread.currentThread().getContextClassLoader().getResource(argus[1]).getPath());) {
-				String mn = jar.getManifest().getMainAttributes().getValue(Attributes.Name.MAIN_CLASS);
-				if (null != mn) try {
-					return Class.forName(mn);
-				} catch (ClassNotFoundException e) {}
-			} catch (IOException e) {}
-		} else try {
-			return Class.forName(argus[0]);
-		} catch (ClassNotFoundException e1) {}
-		return null;
+	static Class<?> guessMainClassByJava() throws ClassNotFoundException {
+		String[] args = System.getProperty("sun.java.command").split("[\\s]+");
+		if (args[0].endsWith(".jar")) // run as java -jar xxx.jar
+			return menifestMainClass(args[0]);
+		else if ("-jar".equals(args[0]) && args.length > 1 && args[1].endsWith(".jar")) // run as java -jar xxx.jar
+			return menifestMainClass(args[1]);
+		else return Class.forName(args[0]);
+	}
+
+	private static Class<?> menifestMainClass(String jarFile) throws ClassNotFoundException {
+		try (JarFile jar = new JarFile(Thread.currentThread().getContextClassLoader().getResource(jarFile).getPath());) {
+			String mn = jar.getManifest().getMainAttributes().getValue(Attributes.Name.MAIN_CLASS);
+			if (null == mn) throw new ClassNotFoundException("Can't find main class. It can be define manully by -Dexec.mainClass=...");
+			else return Class.forName(mn);
+		} catch (IOException e) {
+			throw new ClassNotFoundException(
+					"Can't find main class, jar file could not be parsed. It can be define manully by -Dexec.mainClass=...", e);
+		}
 	}
 
 	static Class<?> guessMainClassByMaven() {
