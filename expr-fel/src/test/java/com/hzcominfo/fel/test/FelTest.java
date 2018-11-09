@@ -28,6 +28,18 @@ public class FelTest {
 		// boolean actully = eval("match('001', reg)", Maps.of("reg", regex));
 		// System.out.println("RegExp matching test, expect: " + "001".matches(regex) + ", actually: " + actully);
 
+		single();
+	}
+
+	static void single() {
+		Map<String, Object> m = Maps.of("XM", "王熙凤");
+		String expr = "strfil(2, XM)";
+		System.err.println("Evaluating of \"" + expr + "\" resulted: " + eval(expr, m));
+		String expr1 = "replace(XM, \"王\", \"李\")";
+		System.err.println("Evaluating of \"" + expr1 + "\" resulted: " + eval(expr1, m));
+	}
+
+	static void perf() {
 		System.out.println();
 		System.err.println("======Performance testing.");
 		System.out.println();

@@ -243,7 +243,7 @@ public interface FuncForStr {
 		public String invoke(Object... args) {
 			if (isNull(args[0])) return null;
 			if (isNull(args[1])) return args[0].toString();
-			String r = isNull(args[2]) ? args[2].toString() : "";
+			String r = isNull(args[2]) ? "" : args[2].toString();
 			return args[0].toString().replaceAll(args[1].toString(), r);
 		}
 	}
