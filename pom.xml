@@ -22,6 +22,7 @@
 		<module>valid</module>
 		<module>scala</module>
 		<module>expr-fel</module>
+		<module>expr-fel-import</module><!-- local fel supporting -->
 		<!--<module>extra</module> -->
 		<!--<module>cache</module> -->
 		<module>test</module>

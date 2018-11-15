@@ -11,6 +11,7 @@ import sun.misc.Unsafe;
 /**
  * This class contains black magic stuff based mostly on proprietary APIs and hacks. Use at your own risk.
  */
+@SuppressWarnings("restriction")
 public final class BlackMagic {
 	/**
 	 * Returns Unsafe if available or throw a RuntimeException.

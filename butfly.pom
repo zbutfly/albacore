@@ -504,12 +504,12 @@
 			<dependency>
 				<groupId>net.java.dev.jna</groupId>
 				<artifactId>jna</artifactId>
-				<version>4.4.0</version>
+				<version>5.0.0</version>
 			</dependency>
 			<dependency>
 				<groupId>net.java.dev.jna</groupId>
 				<artifactId>jna-platform</artifactId>
-				<version>4.4.0-RC1</version><!-- fix classpath bug for spring-boot -->
+				<version>5.0.0</version><!-- 4.4.0-RC1 fix classpath bug for spring-boot -->
 				<scope>runtime</scope>
 			</dependency>
 		</dependencies>
