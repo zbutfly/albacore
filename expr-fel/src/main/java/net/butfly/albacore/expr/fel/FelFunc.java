@@ -18,7 +18,8 @@ public abstract class FelFunc<R> extends CommonFunction {
 	@Override
 	public final Object call(Object[] args) {
 		Object r;
-		if (null != args && valid(args.length)) try {
+		if (null == args) args = new Object[0];
+		if (valid(args.length)) try {
 			return null == (r = invoke(args)) ? Fels.NULL : r;
 		} catch (Exception e) {
 			logger.debug("Expression eval fail", e);
