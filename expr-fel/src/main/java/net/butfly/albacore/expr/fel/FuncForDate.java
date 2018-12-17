@@ -55,4 +55,19 @@ public interface FuncForDate {
 			return new Date(ms);
 		}
 	}
+
+	@Func
+	class DateToMillsFunc extends FelFunc<Long> {
+		@Override
+		protected boolean valid(int argl) {
+			return argl == 1;
+		}
+
+		@Override
+		public Long invoke(Object... args) {
+			if (args[0] instanceof Date) {
+				return ((Date) args[0]).getTime();
+			} else throw new RuntimeException("This is not a Date type!");
+		}
+	}
 }
