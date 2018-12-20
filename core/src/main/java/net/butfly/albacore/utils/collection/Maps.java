@@ -31,7 +31,7 @@ public class Maps {
 	@SuppressWarnings("unchecked")
 	public static <K, V> Map<K, V> of(K firstFieldName, Object... firstFieldValueAndOthers) {
 		Map<K, V> map = of();
-		if (firstFieldValueAndOthers != null && firstFieldValueAndOthers.length > 1) {
+		if (firstFieldValueAndOthers != null && firstFieldValueAndOthers.length > 0) {
 			map.put(firstFieldName, (V) firstFieldValueAndOthers[0]);
 			for (int i = 1; i + 1 < firstFieldValueAndOthers.length; i += 2)
 				map.put((K) firstFieldValueAndOthers[i], (V) firstFieldValueAndOthers[i + 1]);

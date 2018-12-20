@@ -39,12 +39,11 @@ public final class Configs {
 		return of().get(key, def);
 	}
 
-	@Deprecated
 	public static String gets(String key) {
 		return of().gets(key);
 	}
 
-	@Deprecated
+	@SuppressWarnings("deprecation")
 	public static String gets(String key, String... def) {
 		return of().gets(key, def);
 	}

@@ -54,7 +54,9 @@ public final class ConfigSet {
 		String fname = null == ann ? null : ann.value();
 		if (Texts.isEmpty(fname)) fname = cname;
 		if (!fname.endsWith(Configs.DEFAULT_PROP_EXT)) fname += Configs.DEFAULT_PROP_EXT;
-		String fnameDef = cl.getPackage().getName().replaceAll("\\.", "/");
+		Package pkg = cl.getPackage();// on jdk8, root package return null
+		String pn = null == pkg ? "" : pkg.getName();
+		String fnameDef = pn.replaceAll("\\.", "/");
 		if (fnameDef.length() > 0) fnameDef += "/";
 		fnameDef += cname + "-default" + Configs.DEFAULT_PROP_EXT;
 
