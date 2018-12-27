@@ -45,7 +45,7 @@ public interface FuncForStr {
 	 * str2l('1234567')
 	 */
 	@Func
-	class Str2lFun extends FelFunc<Long> {
+	class Str2lFunc extends FelFunc<Long> {
 		@Override
 		protected boolean valid(int argl) {
 			return argl == 1;
