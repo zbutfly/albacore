@@ -134,7 +134,6 @@ public final class ConfigSet {
 		return gets(keyWithPrefix(key), def);
 	}
 
-	@Deprecated
 	String gets(String key) {
 		String v = entries.get(key);
 		Configs.logger.debug("Config by key [" + key + "], returned: [" + v + "].");

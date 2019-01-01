@@ -78,17 +78,6 @@ public class Maps {
 		return map;
 	}
 
-	public static <K, V> Map<K, List<V>> of(Sdream<V> values, Function<V, K> keying) {
-		Map<K, List<V>> map = of();
-		values.eachs(v -> {
-			if (null == v) return;
-			K k = keying.apply(v);
-			if (null == k) return;
-			map.computeIfAbsent(k, kk -> Colls.list()).add(v);
-		});
-		return map;
-	}
-
 	public static <K, V, V1> Map<K, List<V1>> of(Iterable<V> values, Function<V, K> keying, Function<V, V1> valuing) {
 		Map<K, List<V1>> map = of();
 		values.forEach(v -> {
@@ -98,6 +87,41 @@ public class Maps {
 			V1 v1 = valuing.apply(v);
 			if (null == v1) return;
 			map.computeIfAbsent(k, kk -> Colls.list()).add(v1);
+		});
+		return map;
+	}
+
+	public static <K, V> Map<K, V> distinct(Iterable<V> values, Function<V, K> keying) {
+		Map<K, V> map = of();
+		values.forEach(v -> {
+			if (null == v) return;
+			K k = keying.apply(v);
+			if (null == k) return;
+			map.putIfAbsent(k, v);
+		});
+		return map;
+	}
+
+	public static <K, V, V1> Map<K, V1> distinct(Iterable<V> values, Function<V, K> keying, Function<V, V1> valuing) {
+		Map<K, V1> map = of();
+		values.forEach(v -> {
+			if (null == v) return;
+			K k = keying.apply(v);
+			if (null == k) return;
+			V1 v1 = valuing.apply(v);
+			if (null == v1) return;
+			map.putIfAbsent(k, v1);
+		});
+		return map;
+	}
+
+	public static <K, V> Map<K, List<V>> of(Sdream<V> values, Function<V, K> keying) {
+		Map<K, List<V>> map = of();
+		values.eachs(v -> {
+			if (null == v) return;
+			K k = keying.apply(v);
+			if (null == k) return;
+			map.computeIfAbsent(k, kk -> Colls.list()).add(v);
 		});
 		return map;
 	}

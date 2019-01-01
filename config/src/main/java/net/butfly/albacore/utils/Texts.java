@@ -3,6 +3,9 @@ package net.butfly.albacore.utils;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -72,7 +75,32 @@ public final class Texts {
 
 	private static final Map<String, LinkedBlockingQueue<DateFormat>> DATE_FORMATS = new ConcurrentHashMap<>();
 	public static final String SEGUST_DATE_FORMAT = "yyyy-MM-dd'T'hh:mm:ss.SSS'Z'";
-	public static final String DEFAULT_DATE_FORMAT = System.getProperty(Albacore.Props.PROP_TEXT_DATE_FORMAT, SEGUST_DATE_FORMAT);
+	public static final String ISO8601_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss:SSSZZ";
+	public static final String DEFAULT_DATE_FORMAT = System.getProperty(Albacore.Props.PROP_TEXT_DATE_FORMAT, ISO8601_DATE_FORMAT);
+	private static final ZoneOffset DEFAULT_OFFSET = OffsetDateTime.now().getOffset();
+
+	public static void main(String... args) {
+		String s = iso8601(new Date());
+		iso8601(s);
+	}
+
+	public static String iso8601(Date date) {
+		return date.toInstant().atOffset(DEFAULT_OFFSET).toString();
+	}
+
+	public static Date iso8601(String str) {
+		Instant i;
+		try {
+			i = OffsetDateTime.parse(str).toInstant();
+		} catch (Exception e1) {
+			try {
+				i = Instant.parse(str);
+			} catch (Exception e2) {
+				throw new RuntimeException("Date parsing failed: \n\t" + e1.toString() + "\n\t" + e2.toString());
+			}
+		}
+		return Date.from(i);
+	}
 
 	public static String formatDate(Date date) {
 		return formatDate(DEFAULT_DATE_FORMAT, date);

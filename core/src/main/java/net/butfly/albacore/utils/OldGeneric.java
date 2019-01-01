@@ -21,11 +21,8 @@ public class OldGeneric extends Utils {
 		if (null == genType) throw new RuntimeException("Counld not found the generic parameter in super classes!");
 		if (genType instanceof ParameterizedType) {
 			Type[] params = ((ParameterizedType) genType).getActualTypeArguments();
-			if (index < params.length && index >= 0) {
-				return (Class<?>) params[index];
-			} else {
-				throw new RuntimeException("Index of parameter out of bound!");
-			}
+			if (index < params.length && index >= 0) return (Class<?>) params[index];
+			else throw new RuntimeException("Index of parameter out of bound!");
 		}
 		return getSuperClassGenricType((Class<?>) genType, index);
 	}
@@ -51,9 +48,7 @@ public class OldGeneric extends Utils {
 		Type bounds[] = typeVariable.getBounds();
 		if (bounds.length == 0) return java.lang.Object.class;
 		Type bound = bounds[0];
-		if (bound instanceof TypeVariable<?>) {
-			bound = extractBoundForTypeVariable((TypeVariable<Class<?>>) bound);
-		}
+		if (bound instanceof TypeVariable<?>) bound = extractBoundForTypeVariable((TypeVariable<Class<?>>) bound);
 		return bound;
 	}
 
@@ -64,14 +59,12 @@ public class OldGeneric extends Utils {
 			if (genericInterface instanceof ParameterizedType) {
 				ParameterizedType pt = (ParameterizedType) genericInterface;
 				populateTypeMapFromParameterizedType(pt, typeVariableMap);
-				if (pt.getRawType() instanceof Class<?>) {
+				if (pt.getRawType() instanceof Class<?>) //
 					extractTypeVariablesFromGenericInterfaces(((Class<?>) pt.getRawType()).getGenericInterfaces(), typeVariableMap);
-				}
 				continue;
 			}
-			if (genericInterface instanceof Class<?>) {
+			if (genericInterface instanceof Class<?>) //
 				extractTypeVariablesFromGenericInterfaces(((Class<?>) genericInterface).getGenericInterfaces(), typeVariableMap);
-			}
 		}
 
 	}
@@ -81,15 +74,9 @@ public class OldGeneric extends Utils {
 		if (genericType instanceof TypeVariable<?>) {
 			TypeVariable<Class<?>> tv = (TypeVariable<Class<?>>) genericType;
 			resolvedType = (Type) typeVariableMap.get(tv);
-			if (resolvedType == null) {
-				resolvedType = extractBoundForTypeVariable(tv);
-			}
+			if (resolvedType == null) resolvedType = extractBoundForTypeVariable(tv);
 		}
-		if (resolvedType instanceof ParameterizedType) {
-			return ((ParameterizedType) resolvedType).getRawType();
-		} else {
-			return resolvedType;
-		}
+		return resolvedType instanceof ParameterizedType ? ((ParameterizedType) resolvedType).getRawType() : resolvedType;
 	}
 
 	private static void populateTypeMapFromParameterizedType(ParameterizedType type, Map<TypeVariable<Class<?>>, Type> typeVariableMap) {
@@ -116,9 +103,7 @@ public class OldGeneric extends Utils {
 				}
 				TypeVariable<Class<?>> typeVariableArgument = (TypeVariable<Class<?>>) actualTypeArgument;
 				Type resolvedType = (Type) typeVariableMap.get(typeVariableArgument);
-				if (resolvedType == null) {
-					resolvedType = extractBoundForTypeVariable(typeVariableArgument);
-				}
+				if (resolvedType == null) resolvedType = extractBoundForTypeVariable(typeVariableArgument);
 				typeVariableMap.put(variable, resolvedType);
 			}
 

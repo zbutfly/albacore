@@ -59,7 +59,7 @@ public final class Reflections extends Utils {
 	public static <T> T construct(final Class<T> cls, Object[] args, Class<?>[] parameterTypes) {
 		final Constructor<T> ctor = Values.getMatchingConstructors(cls, parameterTypes);
 		if (ctor == null) {
-			logger.error("No such constructor on object: " + cls.getName());
+			logger.warn("No such constructor on object: " + cls.getName());
 			return null;
 		}
 		if (!Refs.accessible(ctor)) ctor.setAccessible(true);
