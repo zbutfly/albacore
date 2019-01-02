@@ -49,6 +49,8 @@ public abstract class FelFunc<R> extends CommonFunction {
 	@Retention(RUNTIME)
 	public @interface Func {
 		String value() default "";
+
+		String version() default "";
 	}
 
 	@Func
