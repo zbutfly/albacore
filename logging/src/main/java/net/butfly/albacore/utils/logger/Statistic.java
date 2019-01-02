@@ -179,9 +179,13 @@ public class Statistic {
 		return i;
 	}
 
+	private static boolean empty(Collection<?> l) {
+		return null == l || l.isEmpty();
+	}
+
 	public <E, C extends Collection<E>> C stats(C c) {
 		tryStats(() -> {
-			if (stepSize.get() < 0 || null == c || c.isEmpty()) return;
+			if (stepSize.get() < 0 || empty(c)) return;
 			int b = 0;
 			for (E e : c)
 				if (null != e) {
@@ -229,7 +233,7 @@ public class Statistic {
 		try {
 			return vv = get.get();
 		} finally {
-			if (null == vv || vv.isEmpty()) return vv;
+			if (empty(vv)) return vv;
 			long spent = System.currentTimeMillis() - now;
 			C c = vv;
 			tryStats(() -> {
@@ -274,7 +278,7 @@ public class Statistic {
 			if (null != c && !c.isEmpty()) {
 				long spent = System.currentTimeMillis() - now;
 				tryStats(() -> {
-					if (stepSize.get() < 0 || null == c || c.isEmpty()) return;
+					if (stepSize.get() < 0 || empty(c)) return;
 					spentTotal.addAndGet(spent);
 					if (null != c && !c.isEmpty()) {
 						int b = 0;
@@ -297,7 +301,7 @@ public class Statistic {
 		} finally {
 			long spent = System.currentTimeMillis() - now;
 			tryStats(() -> {
-				if (stepSize.get() < 0 || null == c || c.isEmpty()) return;
+				if (stepSize.get() < 0 || empty(c)) return;
 				spentTotal.addAndGet(spent);
 				if (null != c && !c.isEmpty()) {
 					int b = 0;

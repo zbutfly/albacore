@@ -98,4 +98,24 @@ public interface Colls {
 		l.forEach(l0 -> ll.addAll(l0));
 		return ll;
 	}
+
+	static boolean empty(Map<?, ?> m) {
+		return null == m || m.isEmpty();
+	}
+
+	static boolean empty(Collection<?> l) {
+		return null == l || l.isEmpty();
+	}
+
+	static boolean empty(Iterable<?> l) {
+		return null == l || l.iterator().hasNext();
+	}
+
+	static boolean empty(CharSequence s) {
+		return null == s || s.length() == 0;
+	}
+
+	static <T> boolean empty(T[] l) {
+		return null == l || l.length == 0;
+	}
 }

@@ -13,6 +13,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import com.google.common.reflect.TypeToken;
 
+import net.butfly.albacore.utils.collection.Colls;
 import net.butfly.albacore.utils.collection.Maps;
 
 @SuppressWarnings("unchecked")
@@ -36,8 +37,7 @@ public final class Generics extends OldGeneric {
 	static final Map<Type, Map<Class<?>, Map<String, Class<?>>>> pools = Maps.of();
 
 	public static Map<String, Class<?>> resolveGenericParameters(final Type implType, final Class<?> declareClass) {
-		return pools.computeIfAbsent(implType, tt -> Maps.of()).computeIfAbsent(declareClass, cc -> compute(implType,
-				declareClass));
+		return pools.computeIfAbsent(implType, tt -> Maps.of()).computeIfAbsent(declareClass, cc -> compute(implType, declareClass));
 	}
 
 	private static final Map<String, Class<?>> compute(final Type implType, final Class<?> declareClass) {
@@ -59,7 +59,7 @@ public final class Generics extends OldGeneric {
 	}
 
 	public static <E> E[] toArray(Collection<E> list, Class<E> clazz) {
-		if (null == list || list.isEmpty()) return (E[]) Array.newInstance(clazz, 0);
+		if (Colls.empty(list)) return (E[]) Array.newInstance(clazz, 0);
 		return list.toArray((E[]) Array.newInstance(clazz, list.size()));
 	}
 

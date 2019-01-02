@@ -27,6 +27,7 @@ import com.google.common.collect.ImmutableMap;
 import net.butfly.albacore.utils.Objects;
 import net.butfly.albacore.utils.Pair;
 import net.butfly.albacore.utils.Texts;
+import net.butfly.albacore.utils.collection.Colls;
 import net.butfly.albacore.utils.collection.Maps;
 
 /**
@@ -442,7 +443,7 @@ public final class URISpec implements Serializable {
 	}
 
 	private Pair<String, String> split2last(String spec, char split) {
-		if (null == spec || spec.isEmpty()) return new Pair<>(spec, null);
+		if (Colls.empty(spec)) return new Pair<>(spec, null);
 		while (!spec.isEmpty() && spec.charAt(0) == split)
 			spec = spec.substring(1);
 		int pos = spec.lastIndexOf(split);

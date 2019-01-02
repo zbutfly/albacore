@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import net.butfly.albacore.utils.collection.Colls;
+
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class OldGeneric extends Utils {
 	public static Class<?> getSuperClassGenricType(Class<?> clazz, int index) {
@@ -163,7 +165,7 @@ public class OldGeneric extends Utils {
 	}
 
 	public static <E> E[] toArray(List<E> list, Class<E> clazz) {
-		if (null == list || list.isEmpty()) return (E[]) Array.newInstance(clazz, 0);
+		if (Colls.empty(list)) return (E[]) Array.newInstance(clazz, 0);
 		return list.toArray((E[]) Array.newInstance(clazz, list.size()));
 	}
 
