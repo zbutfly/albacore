@@ -93,7 +93,7 @@ public interface Colls {
 		return new ConcurrentSkipListSet<>();
 	}
 
-	static <E> List<E> flat(List<List<E>> l) {
+	static <E> List<E> flat(Iterable<List<E>> l) {
 		List<E> ll = Colls.list();
 		l.forEach(l0 -> ll.addAll(l0));
 		return ll;
@@ -101,6 +101,10 @@ public interface Colls {
 
 	static boolean empty(Map<?, ?> m) {
 		return null == m || m.isEmpty();
+	}
+
+	static boolean empty(List<?> l) {
+		return null == l || l.isEmpty() || null == (l.get(0)); // TODO: Recursively check first?
 	}
 
 	static boolean empty(Collection<?> l) {
@@ -116,6 +120,6 @@ public interface Colls {
 	}
 
 	static <T> boolean empty(T[] l) {
-		return null == l || l.length == 0;
+		return null == l || l.length == 0 || null == l[0];// TODO: Recursively check first?
 	}
 }
