@@ -107,7 +107,7 @@ public interface Exeter extends ExecutorService {
 		List<T> l = Colls.list();
 		for (Future<T> f : futures) {
 			T t = get(f);
-			if (null != t) l.add(get(f));
+			if (null != t) l.add(t);
 		}
 		return l;
 	}
