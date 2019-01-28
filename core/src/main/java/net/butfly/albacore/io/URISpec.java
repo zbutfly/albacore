@@ -29,6 +29,7 @@ import net.butfly.albacore.utils.Pair;
 import net.butfly.albacore.utils.Texts;
 import net.butfly.albacore.utils.collection.Colls;
 import net.butfly.albacore.utils.collection.Maps;
+import static net.butfly.albacore.io.UriSocketAddress.UNDEFINED_PORT;
 
 /**
  * Parse URI string like:
@@ -41,67 +42,21 @@ import net.butfly.albacore.utils.collection.Maps;
  */
 public final class URISpec implements Serializable {
 	private static final long serialVersionUID = -2912181622902556535L;
-	public static final int UNDEFINED_DEFAULT_PORT = -1;
 	private static final String SLASHS = "/";
 	private final String[] schemes;
 	private final boolean opaque;
 	private final String username;
 	private final String password;
-	private final InetSocketAddress[] hosts;
+	private final UriSocketAddress[] hosts;
 	private final String[] paths;
 	private final String file;
 
 	private final Map<String, String> query;
 	private final String frag;
-	private int defPort;
+	private int defaultPort = UNDEFINED_PORT; // no default port definition
 
-	@Override
-	public boolean equals(Object obj) {
-		if (null == obj || !URISpec.class.isAssignableFrom(obj.getClass())) return false;
-		URISpec uri = (URISpec) obj;
-		if (!eq(schemes, uri.schemes)) return false;
-		if (opaque != uri.opaque) return false;
-		if (!eq(username, uri.username)) return false;
-		if (!eq(password, uri.password)) return false;
-		if (!eq(hosts, uri.hosts)) return false;
-		if (!eq(paths, uri.paths)) return false;
-		if (!eq(file, uri.file)) return false;
-		if (!eq(query, uri.query)) return false;
-		if (!eq(frag, uri.frag)) return false;
-		return true;
-	}
-
-	@Override
-	public int hashCode() {
-		return super.hashCode();
-	}
-
-	private <T> boolean eq(T v1, T v2) {
-		if (null == v1 && null == v2) return true;
-		if (null == v1 || null == v2) return false;
-		return v1.equals(v2);
-	}
-
-	private <T> boolean eq(T[] v1, T[] v2) {
-		if (null == v1 && null == v2) return true;
-		if (null == v1 || null == v2) return false;
-		if (v1.length != v2.length) return false;
-		for (int i = 0; i < v1.length; i++)
-			if (!eq(v1[i], v2[i])) return false;
-		return true;
-	}
-
-	private boolean eq(Map<String, String> v1, Map<String, String> v2) {
-		if (null == v1 && null == v2) return true;
-		if (null == v1 || null == v2) return false;
-		if (v1.size() != v2.size()) return false;
-		for (String k : v1.keySet())
-			if (!eq(v1.get(k), v2.get(k))) return false;
-		return true;
-	}
-
-	public URISpec(String str) {
-		this(str, UNDEFINED_DEFAULT_PORT);
+	public URISpec(String spec) {
+		this(spec, UNDEFINED_PORT);
 	}
 
 	public URISpec(String spec, int defaultPort) {
@@ -153,28 +108,24 @@ public final class URISpec implements Serializable {
 			username = tryDecodeUrl(Texts.orNull(segs[0]));
 		}
 
-		hosts = parseHostPort(remain, defaultPort);
-		defPort = defaultPort;
+		String p = query.remove("port");
+		if (null != p) this.defaultPort = Integer.parseInt(p);
+		if (this.defaultPort <= 0) this.defaultPort = defaultPort;
+		if (this.defaultPort <= 0) this.defaultPort = UNDEFINED_PORT;
+		else if (defaultPort > 0 && defaultPort != this.defaultPort) throw new IllegalArgumentException(
+				"Default port conflicted between uri spec by \"port=\"" + this.defaultPort + " and construct argument " + defaultPort);
+		hosts = parseHostPort(remain);
 	}
 
-	private static String tryDecodeUrl(String v) {
-		if (null == v) return null;
-		try {
-			return URLDecoder.decode(v, Charset.defaultCharset().name());
-		} catch (UnsupportedEncodingException e) {
-			return v;
-		}
-
-	}
-
-	private URISpec(String scheme, boolean opaque, String username, String password, String host, int defPort, String pathfile, String frag,
-			String queryString) {
+	private URISpec(String scheme, boolean opaque, String username, String password, String host, int defaultPort, String pathfile,
+			String frag, String queryString) {
 		super();
+		this.defaultPort = defaultPort;
 		this.opaque = opaque;
-		schemes = parseScheme(scheme);
+		this.schemes = parseScheme(scheme);
 		this.username = username;
 		this.password = password;
-		hosts = parseHostPort(host, defPort);
+		hosts = parseHostPort(host);
 		if (pathfile == null) {
 			paths = new String[0];
 			file = null;
@@ -185,52 +136,6 @@ public final class URISpec implements Serializable {
 		}
 		query = parseQueryMap(queryString);
 		this.frag = frag;
-		this.defPort = defPort;
-	}
-
-	private String[] parseScheme(String scheme) {
-		return of(scheme.split(":")).filter(Texts::notEmpty).array(i -> new String[i]);
-	}
-
-	private Pair<List<String>, String> parsePathFile(String pathfile) {
-		String[] segs = pathfile.split(SLASHS + "+");
-		if (pathfile.endsWith("/")) {
-			segs = Arrays.copyOf(segs, segs.length + 1);
-			segs[segs.length - 1] = "";
-		}
-		List<String> paths = new ArrayList<>();
-		if (segs.length == 0) return new Pair<>(paths, null);
-		String file = segs[segs.length - 1];
-		if (file.isEmpty()) file = null;
-		for (int i = 0; i < segs.length - 1; i++)
-			if (!segs[i].isEmpty()) paths.add(tryDecodeUrl(segs[i]));
-		return new Pair<>(paths, tryDecodeUrl(file));
-	}
-
-	private Map<String, String> parseQueryMap(String query) {
-		if (query == null) return Maps.of();
-		Map<String, String> m = Maps.of();
-		for (String param : query.split("&")) {
-			String[] kv = param.split("=", 2);
-			m.put(kv[0], kv.length > 1 ? tryDecodeUrl(kv[1]) : "");
-		}
-		return m;
-	}
-
-	private InetSocketAddress[] parseHostPort(String remain, int defaultPort) {
-		return Arrays.stream(remain.split(",")).map(s -> {
-			String[] hp = s.split(":", 2);
-			String h;
-			int p;
-			try {
-				p = hp.length == 2 ? Integer.parseInt(hp[1]) : defaultPort;
-				h = Texts.orNull(hp[0]);
-			} catch (NumberFormatException e) {
-				p = defaultPort;
-				h = Texts.orNull(s);
-			}
-			return null == h ? null : new InetSocketAddress(h, p < 0 ? 0 : p);
-		}).filter(o -> null != o).toArray(i -> new InetSocketAddress[i]);
 	}
 
 	public String getScheme() {
@@ -256,6 +161,19 @@ public final class URISpec implements Serializable {
 
 	public String getHost() {
 		return Arrays.stream(hosts).map(a -> a.getHostName() + (a.getPort() > 0 ? ":" + a.getPort() : "")).collect(Collectors.joining(","));
+	}
+
+	/**
+	 * @param secondaryPortIndex
+	 *            0 or not valid: return main port<br>
+	 *            n return nth secondary port (host1:mainport:secondary1:secondary2,host2:mainport:secondary1:secondary2,...)
+	 * @return
+	 */
+	public String getHostWithSecondaryPort(int secondaryPortIndex) {
+		return Arrays.stream(hosts).map(a -> {
+			int p = a.getPort(secondaryPortIndex);
+			return a.getHostName() + (p > 0 ? ":" + p : "");
+		}).collect(Collectors.joining(","));
 	}
 
 	public String[] getPaths() {
@@ -360,11 +278,11 @@ public final class URISpec implements Serializable {
 	}
 
 	public int getDefaultPort() {
-		return defPort;
+		return defaultPort;
 	}
 
 	public void setDefaultPort(int port) {
-		defPort = port;
+		defaultPort = port;
 	}
 
 	public String getRoot() {
@@ -396,29 +314,29 @@ public final class URISpec implements Serializable {
 
 	@Override
 	public URISpec clone() {
-		return new URISpec(getScheme(), opaque, username, password, getHost(), defPort, getPath(), frag, getQuery());
+		return new URISpec(getScheme(), opaque, username, password, getHost(), defaultPort, getPath(), frag, getQuery());
 	}
 
 	public URISpec redirect(String host, int port) {
 		String h = host;
 		if (port >= 0) h += ":" + port;
-		return new URISpec(getScheme(), opaque, username, password, h, defPort, getPath(), frag, getQuery());
+		return new URISpec(getScheme(), opaque, username, password, h, defaultPort, getPath(), frag, getQuery());
 	}
 
 	public URISpec redirect(String host) {
-		return new URISpec(getScheme(), opaque, username, password, host, defPort, getPath(), frag, getQuery());
+		return new URISpec(getScheme(), opaque, username, password, host, defaultPort, getPath(), frag, getQuery());
 	}
 
 	public URISpec reauth(String username) {
 		if (opaque) throw new IllegalArgumentException("opaque uri [" + toString()
 				+ "] could not be reauth since no recoganizable password segment.");
-		return new URISpec(getScheme(), opaque, username, null, getHost(), defPort, getPath(), frag, getQuery());
+		return new URISpec(getScheme(), opaque, username, null, getHost(), defaultPort, getPath(), frag, getQuery());
 	}
 
 	public URISpec reauth(String username, String password) {
 		if (opaque) throw new IllegalArgumentException("opaque uri [" + toString()
 				+ "] could not be reauth since no recoganizable password segment.");
-		return new URISpec(getScheme(), opaque, username, password, getHost(), defPort, getPath(), frag, getQuery());
+		return new URISpec(getScheme(), opaque, username, password, getHost(), defaultPort, getPath(), frag, getQuery());
 	}
 
 	public URISpec resolve(String rel) {
@@ -434,44 +352,12 @@ public final class URISpec implements Serializable {
 		// else if (null != file) np = np.resolve(file);
 		String pp = join(StreamSupport.stream(np.normalize().spliterator(), false).map(s -> s.toString()).toArray(i -> new String[i]))
 				+ SLASHS;
-		return new URISpec(getScheme(), opaque, username, password, getHost(), defPort, pp, frag, getQuery());
+		return new URISpec(getScheme(), opaque, username, password, getHost(), defaultPort, pp, frag, getQuery());
 	}
 
 	public URISpec setFile(String file) {
-		return new URISpec(getScheme(), opaque, username, password, getHost(), defPort, (null == file ? getPathOnly()
+		return new URISpec(getScheme(), opaque, username, password, getHost(), defaultPort, (null == file ? getPathOnly()
 				: getPathOnly() + file), frag, getQuery());
-	}
-
-	private Pair<String, String> split2last(String spec, char split) {
-		if (Colls.empty(spec)) return new Pair<>(spec, null);
-		while (!spec.isEmpty() && spec.charAt(0) == split)
-			spec = spec.substring(1);
-		int pos = spec.lastIndexOf(split);
-		return pos > 0 ? new Pair<>(spec.substring(0, pos), spec.substring(pos + 1)) : new Pair<>(spec, null);
-	}
-
-	public static void main(String... args) throws URISyntaxException {
-		URISpec u;
-		u = new URISpec("mongodb://root:r@@t001!@172.30.10.101:22001/admin");
-		System.out.println(u + "\n\tAuthority: " + u.getAuthority() + "\n\tPath: " + u.getPath());
-		u = new URISpec("s1:s2:s3://hello:world@host1:80,host2:81,host3:82");
-		System.out.println(u + "\n\tAuthority: " + u.getAuthority() + "\n\tPath: " + u.getPath());
-		u = new URISpec("s1:s2:s3://hello:world@host1:80,host2:81,host3:82/");
-		System.out.println(u + "\n\tAuthority: " + u.getAuthority() + "\n\tPath: " + u.getPath());
-		u = new URISpec("s1:s2:s3://hello:world@host1:80,host2:81,host3:82/p1/");
-		System.out.println(u + "\n\tAuthority: " + u.getAuthority() + "\n\tPath: " + u.getPath());
-		System.out.println(u.resolve("/h/a/b/c/d/text.cmd").resolve("../").resolve("../"));
-		u = new URISpec("s1:s2:s3://hello:world@host1:80,host2:81,host3:82/file.ext?q=v#ref");
-		System.out.println(u + "\n\tAuthority: " + u.getAuthority() + "\n\tPath: " + u.getPath());
-		System.out.println(u.resolve("/h/a/b/c/d/text.cmd").resolve("../").resolve("../"));
-		u = u.redirect("redirected");
-		System.out.println(u + "\n\tAuthority: " + u.getAuthority() + "\n\tPath: " + u.getPath());
-		u = new URISpec("file://./hello.txt");
-		System.out.println(u + "\n\tAuthority: " + u.getAuthority() + "\n\tPath: " + u.getPath());
-		u = new URISpec("file:///C:/hello.txt");
-		System.out.println(u + "\n\tAuthority: " + u.getAuthority() + "\n\tPath: " + u.getPath());
-		u = u.redirect("redirected");
-		System.out.println(u + "\n\tAuthority: " + u.getAuthority() + "\n\tPath: " + u.getPath());
 	}
 
 	// ====
@@ -485,5 +371,152 @@ public final class URISpec implements Serializable {
 	public URISpec extra(Map<String, String> extras) {
 		if (null != extras) this.extras.putAll(extras);
 		return this;
+	}
+
+	// internal utils
+	private String[] parseScheme(String scheme) {
+		return of(scheme.split(":")).filter(Texts::notEmpty).array(i -> new String[i]);
+	}
+
+	private Pair<List<String>, String> parsePathFile(String pathfile) {
+		String[] segs = pathfile.split(SLASHS + "+");
+		if (pathfile.endsWith("/")) {
+			segs = Arrays.copyOf(segs, segs.length + 1);
+			segs[segs.length - 1] = "";
+		}
+		List<String> paths = new ArrayList<>();
+		if (segs.length == 0) return new Pair<>(paths, null);
+		String file = segs[segs.length - 1];
+		if (file.isEmpty()) file = null;
+		for (int i = 0; i < segs.length - 1; i++)
+			if (!segs[i].isEmpty()) paths.add(tryDecodeUrl(segs[i]));
+		return new Pair<>(paths, tryDecodeUrl(file));
+	}
+
+	private Map<String, String> parseQueryMap(String query) {
+		if (query == null) return Maps.of();
+		Map<String, String> m = Maps.of();
+		for (String param : query.split("&")) {
+			String[] kv = param.split("=", 2);
+			m.put(kv[0], kv.length > 1 ? tryDecodeUrl(kv[1]) : "");
+		}
+		return m;
+	}
+
+	private UriSocketAddress[] parseHostPort(String remain) {
+		return Arrays.stream(remain.split(",")).map(s -> {
+			String[] hp = s.split(":", 2);
+			String h;
+			String p;
+			try {
+				p = hp.length == 2 ? hp[1] : null;
+				h = Texts.orNull(hp[0]);
+			} catch (NumberFormatException e) {
+				p = null;
+				h = Texts.orNull(s);
+			}
+			if (null == p) p = defaultPort < 0 ? "0" : Integer.toString(defaultPort);
+			String[] ss = p.split(":");
+			int port = Integer.parseInt(ss[0]);
+			int[] ports = new int[ss.length - 1];
+			for (int i = 1; i < ss.length; i++)
+				ports[i - 1] = null == ss[i] || ss[i].trim().isEmpty() ? defaultPort : Integer.parseInt(ss[i]);
+			return null == h ? null : new UriSocketAddress(h, port, ports);
+		}).filter(o -> null != o).toArray(i -> new UriSocketAddress[i]);
+	}
+
+	private Pair<String, String> split2last(String spec, char split) {
+		if (Colls.empty(spec)) return new Pair<>(spec, null);
+		while (!spec.isEmpty() && spec.charAt(0) == split)
+			spec = spec.substring(1);
+		int pos = spec.lastIndexOf(split);
+		return pos > 0 ? new Pair<>(spec.substring(0, pos), spec.substring(pos + 1)) : new Pair<>(spec, null);
+	}
+
+	public static void main(String... args) throws URISyntaxException {
+		URISpec u;
+		u = new URISpec("es://escluster@172.30.10.101:39200:39300,172.30.10.102:39200:39300/index");
+		System.out.println(u + "\n\tHost: " + u.getHost() //
+				+ "\n\tHost0: " + u.getHostWithSecondaryPort(0) //
+				+ "\n\tHost1: " + u.getHostWithSecondaryPort(1)//
+				+ "\n\tHost2: " + u.getHostWithSecondaryPort(2)//
+				+ "\n\tHost3: " + u.getHostWithSecondaryPort(3));
+
+		// u = new URISpec("mongodb://root:r@@t001!@172.30.10.101:22001/admin");
+		// System.out.println(u + "\n\tAuthority: " + u.getAuthority() + "\n\tPath: " + u.getPath());
+		// u = new URISpec("s1:s2:s3://hello:world@host1:80,host2:81,host3:82");
+		// System.out.println(u + "\n\tAuthority: " + u.getAuthority() + "\n\tPath: " + u.getPath());
+		// u = new URISpec("s1:s2:s3://hello:world@host1:80,host2:81,host3:82/");
+		// System.out.println(u + "\n\tAuthority: " + u.getAuthority() + "\n\tPath: " + u.getPath());
+		// u = new URISpec("s1:s2:s3://hello:world@host1:80,host2:81,host3:82/p1/");
+		// System.out.println(u + "\n\tAuthority: " + u.getAuthority() + "\n\tPath: " + u.getPath());
+		// System.out.println(u.resolve("/h/a/b/c/d/text.cmd").resolve("../").resolve("../"));
+		// u = new URISpec("s1:s2:s3://hello:world@host1:80,host2:81,host3:82/file.ext?q=v#ref");
+		// System.out.println(u + "\n\tAuthority: " + u.getAuthority() + "\n\tPath: " + u.getPath());
+		// System.out.println(u.resolve("/h/a/b/c/d/text.cmd").resolve("../").resolve("../"));
+		// u = u.redirect("redirected");
+		// System.out.println(u + "\n\tAuthority: " + u.getAuthority() + "\n\tPath: " + u.getPath());
+		// u = new URISpec("file://./hello.txt");
+		// System.out.println(u + "\n\tAuthority: " + u.getAuthority() + "\n\tPath: " + u.getPath());
+		// u = new URISpec("file:///C:/hello.txt");
+		// System.out.println(u + "\n\tAuthority: " + u.getAuthority() + "\n\tPath: " + u.getPath());
+		// u = u.redirect("redirected");
+		// System.out.println(u + "\n\tAuthority: " + u.getAuthority() + "\n\tPath: " + u.getPath());
+	}
+
+	// system supporting
+	@Override
+	public boolean equals(Object obj) {
+		if (null == obj || !URISpec.class.isAssignableFrom(obj.getClass())) return false;
+		URISpec uri = (URISpec) obj;
+		if (!eq(schemes, uri.schemes)) return false;
+		if (opaque != uri.opaque) return false;
+		if (!eq(username, uri.username)) return false;
+		if (!eq(password, uri.password)) return false;
+		if (!eq(hosts, uri.hosts)) return false;
+		if (!eq(paths, uri.paths)) return false;
+		if (!eq(file, uri.file)) return false;
+		if (!eq(query, uri.query)) return false;
+		if (!eq(frag, uri.frag)) return false;
+		return true;
+	}
+
+	@Override
+	public int hashCode() {
+		return super.hashCode();
+	}
+
+	private <T> boolean eq(T v1, T v2) {
+		if (null == v1 && null == v2) return true;
+		if (null == v1 || null == v2) return false;
+		return v1.equals(v2);
+	}
+
+	private <T> boolean eq(T[] v1, T[] v2) {
+		if (null == v1 && null == v2) return true;
+		if (null == v1 || null == v2) return false;
+		if (v1.length != v2.length) return false;
+		for (int i = 0; i < v1.length; i++)
+			if (!eq(v1[i], v2[i])) return false;
+		return true;
+	}
+
+	private boolean eq(Map<String, String> v1, Map<String, String> v2) {
+		if (null == v1 && null == v2) return true;
+		if (null == v1 || null == v2) return false;
+		if (v1.size() != v2.size()) return false;
+		for (String k : v1.keySet())
+			if (!eq(v1.get(k), v2.get(k))) return false;
+		return true;
+	}
+
+	private static String tryDecodeUrl(String v) {
+		if (null == v) return null;
+		try {
+			return URLDecoder.decode(v, Charset.defaultCharset().name());
+		} catch (UnsupportedEncodingException e) {
+			return v;
+		}
+
 	}
 }
