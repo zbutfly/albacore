@@ -58,6 +58,22 @@ public interface FuncForStr {
 	}
 
 	/**
+	 * str2d('1234567.7654321')
+	 */
+	@Func
+	class Str2dFunc extends FelFunc<Double> {
+		@Override
+		protected boolean valid(int argl) {
+			return argl == 1;
+		}
+
+		@Override
+		public Double invoke(Object... args) {
+			return isNull(args[0]) ? 0 : Double.parseDouble(args[0].toString());
+		}
+	}
+
+	/**
 	 * strrev('1234567')
 	 */
 	@Func
