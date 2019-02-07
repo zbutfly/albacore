@@ -317,6 +317,10 @@ public final class URISpec implements Serializable {
 		return new URISpec(getScheme(), opaque, username, password, getHost(), defaultPort, getPath(), frag, getQuery());
 	}
 
+	public URISpec schema(String... newSchema) {
+		return new URISpec(String.join(":", newSchema), opaque, username, password, getHost(), defaultPort, getPath(), frag, getQuery());
+	}
+
 	public URISpec redirect(String host, int port) {
 		String h = host;
 		if (port >= 0) h += ":" + port;

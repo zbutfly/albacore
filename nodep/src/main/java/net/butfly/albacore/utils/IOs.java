@@ -3,9 +3,11 @@ package net.butfly.albacore.utils;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
 import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.Flushable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -21,10 +23,11 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import net.butfly.albacore.utils.logger.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class IOs {
-	private static final Logger logger = Logger.getLogger(IOs.class);
+	private static final Logger logger = LoggerFactory.getLogger(IOs.class);
 
 	public static InputStream open(String... file) {
 		if (file == null || file.length == 0) return null;
@@ -68,13 +71,13 @@ public final class IOs {
 	public static <S extends OutputStream> S writeBytes(S out, byte[] b) throws IOException {
 		if (null == b) {
 			writeInt(out, -1);
-			logger.trace(() -> "writeBytes: length[-1]");
+			if (logger.isTraceEnabled()) logger.trace("writeBytes: length[-1]");
 		} else {
 			writeInt(out, b.length);
-			logger.trace(() -> "writeBytes: length[" + b.length + "]");
+			if (logger.isTraceEnabled()) logger.trace("writeBytes: length[" + b.length + "]");
 			if (b.length > 0) {
 				out.write(b);
-				logger.trace(() -> "writeBytes: data[" + b.length + "]");
+				if (logger.isTraceEnabled()) logger.trace("writeBytes: data[" + b.length + "]");
 			}
 		}
 		return out;
@@ -82,7 +85,7 @@ public final class IOs {
 
 	public static byte[] readBytes(InputStream in) throws IOException {
 		int l = readInt(in);
-		logger.trace(() -> "readBytes: length[" + l + "]");
+		if (logger.isTraceEnabled()) logger.trace("readBytes: length[" + l + "]");
 		if (l < 0) return null;
 		if (l == 0) return new byte[0];
 		byte[] bytes = new byte[l];
@@ -92,12 +95,12 @@ public final class IOs {
 				throw new EOFException("not full read but no data remained, need [" + l + ", now [" + i + "]]");
 			else bytes[i] = (byte) b;
 		}
-		logger.trace(() -> "readBytes: data[" + l + "]");
+		if (logger.isTraceEnabled()) logger.trace("readBytes: data[" + l + "]");
 		return bytes;
 	}
 
 	public static <S extends OutputStream> S writeBytes(S out, byte[]... bytes) throws IOException {
-		logger.trace(() -> bytes.length > 1 ? "Write bytes list: " + bytes.length : null);
+		if (logger.isTraceEnabled()) logger.trace(bytes.length > 1 ? "Write bytes list: " + bytes.length : null);
 		writeInt(out, bytes.length);
 		for (byte[] b : bytes)
 			writeBytes(out, b);
@@ -106,7 +109,7 @@ public final class IOs {
 
 	@SafeVarargs
 	public static <T, S extends OutputStream> S writeBytes(S out, Function<T, byte[]> ser, T... bytes) throws IOException {
-		logger.trace(() -> bytes.length > 1 ? "Write bytes list: " + bytes.length : null);
+		if (logger.isTraceEnabled()) logger.trace(bytes.length > 1 ? "Write bytes list: " + bytes.length : null);
 		writeInt(out, bytes.length);
 		for (T b : bytes)
 			writeBytes(out, ser.apply(b));
@@ -115,7 +118,7 @@ public final class IOs {
 
 	public static byte[][] readBytesList(InputStream in) throws IOException {
 		int count = readInt(in);
-		logger.trace(() -> count > 1 ? "Read bytes list: " + count : null);
+		if (logger.isTraceEnabled()) logger.trace(count > 1 ? "Read bytes list: " + count : null);
 		byte[][] r = new byte[count][];
 		for (int i = 0; i < count; i++)
 			r[i] = readBytes(in);
@@ -124,7 +127,7 @@ public final class IOs {
 
 	public static <T> List<T> readBytes(InputStream in, Function<byte[], T> der) throws IOException {
 		int count = readInt(in);
-		logger.trace(() -> count > 1 ? "Read bytes list: " + count : null);
+		if (logger.isTraceEnabled()) logger.trace(count > 1 ? "Read bytes list: " + count : null);
 		List<T> r = new ArrayList<>();
 		for (int i = 0; i < count; i++)
 			r.add(der.apply(readBytes(in)));
@@ -149,12 +152,12 @@ public final class IOs {
 		if ((b = in.read()) >= 0) i |= b << (offset += 8);
 		if ((b = in.read()) >= 0) i |= b << (offset += 8);
 		if ((b = in.read()) >= 0) i |= b << (offset += 8);
-		logger.trace("Read int: " + i);
+		if (logger.isTraceEnabled()) logger.trace("Read int: " + i);
 		return i;
 	}
 
 	public static <S extends OutputStream> S writeObj(S out, Object obj) throws IOException {
-		logger.trace(() -> "Write object: " + (null == obj ? null : obj.getClass().getName()));
+		if (logger.isTraceEnabled()) logger.trace("Write object: " + (null == obj ? null : obj.getClass().getName()));
 		try (ByteArrayOutputStream baos = new ByteArrayOutputStream(); ObjectOutputStream is = new ObjectOutputStream(baos)) {
 			is.writeObject(obj);
 			writeBytes(out, baos.toByteArray());
@@ -169,7 +172,7 @@ public final class IOs {
 		try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes); ObjectInputStream is = new ObjectInputStream(bais)) {
 			try {
 				T obj = (T) is.readObject();
-				logger.trace(() -> "Read object: " + (null == obj ? null : obj.getClass().getName()));
+				if (logger.isTraceEnabled()) logger.trace("Read object: " + (null == obj ? null : obj.getClass().getName()));
 				return obj;
 			} catch (ClassNotFoundException e) {
 				throw new IOException(e);
@@ -184,7 +187,7 @@ public final class IOs {
 			while (-1 != (n = Objects.requireNonNull(is, "null byte array not allow").read(buffer)))
 				os.write(buffer, 0, n);
 			byte[] b = os.toByteArray();
-			logger.trace(() -> "Read all: " + b.length);
+			if (logger.isTraceEnabled()) logger.trace("Read all: " + b.length);
 			return b;
 		} catch (IOException e) {
 			throw new RuntimeException(e);
@@ -201,7 +204,7 @@ public final class IOs {
 		try (BufferedReader r = new BufferedReader(new InputStreamReader(Objects.requireNonNull(is, "null byte array not allow")));) {
 			while ((l = r.readLine()) != null)
 				if (!ignore.test(l)) lines.add(l);
-			logger.trace(() -> "Read all: " + lines.size());
+			if (logger.isTraceEnabled()) logger.trace("Read all: " + lines.size());
 			return lines.toArray(new String[lines.size()]);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
@@ -250,6 +253,20 @@ public final class IOs {
 		for (int i = 0; i < 8; i++)
 			l += bytes[i] << (i * 8);
 		return l;
+	}
+
+	public static void flushAndClose(Closeable io) {
+		if (null == io) return;
+		if (io instanceof Flushable) try {
+			((Flushable) io).flush();
+		} catch (IOException e) {
+			logger.trace("Vfs flushing failed on [" + io.toString() + "].", e);
+		}
+		try {
+			io.close();
+		} catch (IOException e) {
+			logger.warn("Close fail on [" + io.toString() + "].", e);
+		}
 	}
 
 	private IOs() {}
