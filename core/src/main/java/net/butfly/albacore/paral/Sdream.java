@@ -157,7 +157,7 @@ public interface Sdream<E> extends Serializable {
 	}
 
 	static <E, S> Sdream<E> of(Iterable<E> impl) {
-		if (!impl.iterator().hasNext()) return of();
+		if (Colls.empty(impl)) return of();
 		if (impl instanceof Collection) return new Lisdream<>(impl);
 		return new Splidream<>(impl.spliterator());
 	}

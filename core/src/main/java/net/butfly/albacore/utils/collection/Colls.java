@@ -112,7 +112,7 @@ public interface Colls {
 	}
 
 	static boolean empty(Iterable<?> l) {
-		return null == l || l.iterator().hasNext();
+		return null == l || !l.iterator().hasNext();
 	}
 
 	static boolean empty(CharSequence s) {
