@@ -93,7 +93,7 @@ public interface Colls {
 		return new ConcurrentSkipListSet<>();
 	}
 
-	static <E> List<E> flat(Iterable<List<E>> l) {
+	static <E, L extends Collection<E>> List<E> flat(Iterable<L> l) {
 		List<E> ll = Colls.list();
 		l.forEach(l0 -> ll.addAll(l0));
 		return ll;
