@@ -174,4 +174,9 @@ public final class Lisdream<E> implements Sdream<E>/* , List<E> */ {
 		if (impl instanceof Collection) return new LinkedBlockingQueue<E>((Collection<E>) impl);
 		return new LinkedBlockingQueue<E>(Colls.list(impl));
 	}
+	
+	@Override
+	public String toString() {
+		return undly.toString();
+	}
 }
