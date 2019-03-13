@@ -1,18 +1,28 @@
 package net.butfly.albacore.utils;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Field;
 import java.nio.file.FileSystems;
+import java.security.CodeSource;
+import java.security.ProtectionDomain;
 import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
+import java.util.jar.JarEntry;
+import java.util.jar.JarOutputStream;
+import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 
 import com.google.common.base.Joiner;
@@ -230,6 +240,51 @@ public final class Systems extends Utils {
 		} catch (IOException e) {
 			logger.error("JVM args config file: [" + confFile + "] read failed.", e);
 			return new ArrayList<>();
+		}
+	}
+
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public static CodeSource[] allCodeSources() {
+		Field f;
+		try {
+			f = java.security.SecureClassLoader.class.getDeclaredField("pdcache");
+		} catch (NoSuchFieldException | SecurityException e1) {
+			return null;
+		}
+		f.setAccessible(true);
+		Collection<ProtectionDomain> domains;
+		try {
+			domains = ((Map) f.get(Thread.currentThread().getContextClassLoader())).values();
+		} catch (IllegalArgumentException | IllegalAccessException e) {
+			return null;
+		}
+		List<CodeSource> css = new ArrayList<>();
+		for (ProtectionDomain d : domains)
+			css.add(d.getCodeSource());
+		return css.toArray(new CodeSource[css.size()]);
+	}
+
+	public static File jar(File jarFile, File... files) throws IOException {
+		if (null == files || files.length == 0) return null;
+		logger.info("Create jar [" + jarFile + "] with: \n\t" + Arrays.toString(files));
+		try (FileOutputStream fo = new FileOutputStream(jarFile); JarOutputStream jo = new JarOutputStream(fo, new Manifest());) {
+			for (File f : files)
+				writeJar(jo, f, "");
+		}
+		return jarFile;
+	}
+
+	private static void writeJar(JarOutputStream jo, File f, String relative) throws IOException {
+		if (f == null || !f.exists()) return;
+		if (f.isDirectory()) for (String n : f.list())
+			writeJar(jo, f.toPath().resolve(n).toFile(), relative + "/" + n);
+		else if (f.isFile()) {
+			JarEntry e = new JarEntry(relative);
+			e.setTime(f.lastModified());
+			jo.putNextEntry(e);
+			try (FileInputStream in = new FileInputStream(f);) {
+				jo.write(IOs.readAll(in));
+			}
 		}
 	}
 }
