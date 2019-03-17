@@ -8,7 +8,7 @@ import net.butfly.albacore.utils.logger.Logger;
 
 public final class Configs {
 	static String DEFAULT_PROP_EXT = "." + System.getProperty(Albacore.Props.PROP_CONFIG_EXTENSION, "properties");
-	static final Logger logger = Logger.getLogger(Configs.class);
+	public static final Logger logger = Logger.getLogger(Configs.class);
 	private static final Map<Class<?>, ConfigSet> CLS_CONF = new ConcurrentHashMap<>();
 
 	public static ConfigSet of() {
@@ -46,6 +46,10 @@ public final class Configs {
 	@SuppressWarnings("deprecation")
 	public static String gets(String key, String... def) {
 		return of().gets(key, def);
+	}
+
+	public static String getss(String comments, String def, String... keys) {
+		return of().getss(comments, def, keys);
 	}
 
 	public static String getn(String priority, String key) {

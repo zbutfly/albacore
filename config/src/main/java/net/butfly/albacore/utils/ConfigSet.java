@@ -13,8 +13,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import com.google.common.base.Joiner;
-
 import net.butfly.albacore.utils.logger.Logger;
 
 public final class ConfigSet {
@@ -136,14 +134,30 @@ public final class ConfigSet {
 
 	String gets(String key) {
 		String v = entries.get(key);
-		Configs.logger.debug("Config by key [" + key + "], returned: [" + v + "].");
+		Configs.logger.info("Config item [" + key + "], returned: [" + v + "].");
 		return v;
+	}
+
+	public String getss(String comments, String def, String... keys) {
+		StringBuilder info = new StringBuilder("Config item [" + String.join(", ", keys) + "]");
+		if (null != comments && comments.length() > 0) info.append(": ").append(comments).append("\n\t");
+		String v;
+		if (null != def) info.append(" default: [" + def + "]");
+		for (String k : keys)
+			if (null != (v = entries.get(k))) {
+				Configs.logger.info(info + " found: [" + v + "].");
+				return v;
+			}
+		info.append(" not found").append(null == def ? "." : " and return: [" + def + "].");
+
+		Configs.logger.info(info);
+		return def;
 	}
 
 	@Deprecated
 	String gets(String key, String... def) {
 		String v = entries.getOrDefault(key, first(def));
-		Configs.logger.debug("Config by key [" + key + "] with default value [" + Joiner.on(',').join(def) + "]"//
+		Configs.logger.info("Config item [" + key + "] with default value [" + String.join(", ", def) + "]"//
 				+ ", returned: [" + v + "].");
 		return v;
 	}
@@ -251,5 +265,4 @@ public final class ConfigSet {
 			s.append("\n\t").append(key).append(": ").append(entries.get(key));
 		return s.append("\n}").toString();
 	}
-
 }
