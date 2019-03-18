@@ -5,7 +5,7 @@
 	<appender name="log-console-stdout" class="net.butfly.albacore.utils.logger.ANSIConsoleAppender">
 		<!-- <appender name="log-console-stdout" class="org.apache.log4j.ConsoleAppender"> -->
 		<layout class="org.apache.log4j.EnhancedPatternLayout">
-			<param name="ConversionPattern" value="%d{HH:mm:ss,SSS} %-5.5p [%t] %-20.20c{1.} - %m%n" />
+			<param name="ConversionPattern" value="%d{HH:mm:ss.SSS} [%t] %-8.8c{2.} - %m%n" />
 		</layout>
 		<!-- <layout class="org.apache.log4j.SimpleLayout" /> -->
 		<!-- <layout class="net.butfly.albacore.logger.ANSIColorPatternLayout"> -->
