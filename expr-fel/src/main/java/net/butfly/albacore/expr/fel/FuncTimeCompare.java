@@ -52,4 +52,22 @@ public interface FuncTimeCompare {
 			return false;
 		}
 	}
+
+	@Func
+	public class IsltFunc extends FelFunc<Boolean> {
+		@Override
+		protected boolean valid(int argl) {
+			return argl == 1;
+		}
+
+		@Override
+		protected Boolean invoke(Object... args) {
+			if (args[0] instanceof Date) {
+				Date d1 = (Date)args[0];
+				Date d2 = new Date();
+				return d1.compareTo(d2) < 0;
+			}
+			return false;
+		}
+	}
 }
