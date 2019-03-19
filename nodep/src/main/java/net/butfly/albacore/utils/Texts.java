@@ -8,6 +8,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -17,6 +18,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import net.butfly.albacore.Albacore;
 
@@ -199,6 +201,51 @@ public final class Texts {
 			return new String(b, "GBK");
 		} catch (UnsupportedEncodingException e) {
 			return "";
+		}
+	}
+
+	public static interface AnsiColor {
+		static final int NORMAL = 0;
+		static final int BRIGHT = 1;
+
+		static final int FG_BLACK = 30;
+		static final int FG_RED = 31;
+		static final int FG_GREEN = 32;
+		static final int FG_YELLOW = 33;
+		static final int FG_BLUE = 34;
+		static final int FG_MAGENTA = 35;
+		static final int FG_CYAN = 36;
+		static final int FG_WHITE = 37;
+
+		static final int BG_BLACK = 40;
+		static final int BG_RED = 41;
+		static final int BG_GREEN = 42;
+		static final int BG_YELLOW = 43;
+		static final int BG_BLUE = 44;
+		static final int BG_MAGENTA = 45;
+		static final int BG_CYAN = 46;
+		static final int BG_WHITE = 47;
+
+		static final String PREFIX = "\u001b[";
+		static final String SUFFIX = "m";
+		static final String SEPARATOR = ";";
+		static final String END_COLOUR = PREFIX + SUFFIX;
+
+		static String colorStart(boolean bright, int... fgAndBgAndOtherCode) {
+			return PREFIX + (bright ? BRIGHT : NORMAL) + SEPARATOR + //
+					Arrays.stream(fgAndBgAndOtherCode).mapToObj(Integer::toString).collect(Collectors.joining(SEPARATOR)) + SUFFIX;
+		}
+
+		static String colorStart(int... fgAndBgAndOtherCode) {
+			return colorStart(false, fgAndBgAndOtherCode);
+		}
+
+		static String colorize(String origin, boolean bright, int... fgAndBgAndOtherCode) {
+			return colorStart(bright, fgAndBgAndOtherCode) + origin + END_COLOUR;
+		}
+
+		static String colorize(String origin, int... fgAndBgAndOtherCode) {
+			return colorStart(fgAndBgAndOtherCode) + origin + END_COLOUR;
 		}
 	}
 }

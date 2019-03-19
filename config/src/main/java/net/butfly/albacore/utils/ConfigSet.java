@@ -1,5 +1,7 @@
 package net.butfly.albacore.utils;
 
+import static net.butfly.albacore.utils.logger.ANSIConsoleAppender.colorize;
+import static net.butfly.albacore.utils.Texts.AnsiColor.*;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,6 +15,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import org.apache.log4j.Level;
+
+import net.butfly.albacore.utils.Texts.AnsiColor;
 import net.butfly.albacore.utils.logger.Logger;
 
 public final class ConfigSet {
@@ -140,7 +145,8 @@ public final class ConfigSet {
 
 	public String getss(String comments, String def, String... keys) {
 		StringBuilder info = new StringBuilder("Config item [" + String.join(", ", keys) + "]");
-		if (null != comments && comments.length() > 0) info.append(": ").append(comments).append("\n\t");
+		if (null != comments && comments.length() > 0) info.append(": ").append(colorize(comments, Level.INFO, BRIGHT, FG_MAGENTA)).append(
+				"\n\t");
 		String v;
 		if (null != def) info.append(" default: [" + def + "]");
 		for (String k : keys)
