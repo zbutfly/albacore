@@ -1,7 +1,9 @@
 package net.butfly.albacore.utils;
 
+import static net.butfly.albacore.utils.Texts.AnsiColor.BRIGHT;
+import static net.butfly.albacore.utils.Texts.AnsiColor.FG_MAGENTA;
 import static net.butfly.albacore.utils.logger.ANSIConsoleAppender.colorize;
-import static net.butfly.albacore.utils.Texts.AnsiColor.*;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,7 +19,6 @@ import java.util.function.Predicate;
 
 import org.apache.log4j.Level;
 
-import net.butfly.albacore.utils.Texts.AnsiColor;
 import net.butfly.albacore.utils.logger.Logger;
 
 public final class ConfigSet {

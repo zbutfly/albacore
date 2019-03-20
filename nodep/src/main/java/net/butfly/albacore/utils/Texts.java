@@ -23,6 +23,10 @@ import java.util.stream.Collectors;
 import net.butfly.albacore.Albacore;
 
 public final class Texts {
+	public static boolean eq(CharSequence s1, CharSequence s2) {
+		return s1 == s2 || (null != s1 && null != s2 ? s1.toString().equals(s2.toString()) : false);
+	}
+
 	public static boolean isEmpty(CharSequence str) {
 		return null == str || str.toString().trim().length() == 0;
 	}
