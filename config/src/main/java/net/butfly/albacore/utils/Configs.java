@@ -39,6 +39,10 @@ public final class Configs {
 		return of().get(key, def);
 	}
 
+	public static void sets(String key, String value) {
+		of().sets(key, value);
+	}
+
 	public static String gets(String key) {
 		return of().gets(key);
 	}

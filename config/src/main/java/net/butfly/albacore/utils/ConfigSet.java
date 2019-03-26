@@ -138,6 +138,11 @@ public final class ConfigSet {
 		return gets(keyWithPrefix(key), def);
 	}
 
+	public void sets(String key, String value) {
+		if (null == value) entries.remove(key);
+		else entries.put(key, value);
+	}
+
 	String gets(String key) {
 		String v = entries.get(key);
 		Configs.logger.info("Config item [" + key + "], returned: [" + v + "].");
@@ -146,16 +151,15 @@ public final class ConfigSet {
 
 	public String getss(String comments, String def, String... keys) {
 		StringBuilder info = new StringBuilder("Config item [" + String.join(", ", keys) + "]");
-		if (null != comments && comments.length() > 0) info.append(": ").append(colorize(comments, Level.INFO, BRIGHT, FG_MAGENTA)).append(
-				"\n\t");
+		if (null != comments && comments.length() > 0) //
+			info.append(": ").append(colorize(comments, Level.INFO, BRIGHT, FG_MAGENTA)).append("\n\t");
 		String v;
-		if (null != def) info.append(" default: [" + def + "]");
-		for (String k : keys)
-			if (null != (v = entries.get(k))) {
-				Configs.logger.info(info + " found: [" + v + "].");
-				return v;
-			}
-		info.append(" not found").append(null == def ? "." : " and return: [" + def + "].");
+		if (null != def) info.append(" default [" + def + "]");
+		for (String k : keys) if (null != (v = entries.get(k))) {
+			Configs.logger.info(info + " found: [" + v + "].");
+			return v;
+		}
+		info.append(" not found").append(null == def ? "." : ", return [" + def + "].");
 
 		Configs.logger.info(info);
 		return def;
@@ -164,8 +168,7 @@ public final class ConfigSet {
 	@Deprecated
 	String gets(String key, String... def) {
 		String v = entries.getOrDefault(key, first(def));
-		Configs.logger.info("Config item [" + key + "] with default value [" + String.join(", ", def) + "]"//
-				+ ", returned: [" + v + "].");
+		Configs.logger.info("Config item [" + key + "] default [" + String.join("],[", def) + "]: [" + v + "].");
 		return v;
 	}
 
@@ -178,8 +181,7 @@ public final class ConfigSet {
 	}
 
 	private String first(String... def) {
-		for (String s : def)
-			if (null != s) return s;
+		for (String s : def) if (null != s) return s;
 		return null;
 	}
 
@@ -194,13 +196,11 @@ public final class ConfigSet {
 	public Map<String, String> prefixed(String prefix) {
 		Configs.logger.debug("Config sub fetch by prefix [" + prefix + "]");
 		Map<String, String> sub = new ConcurrentHashMap<>();
-		for (String k : entries.keySet())
-			if (k.startsWith(prefix)) {
-				String subk = k.substring(prefix.length() - 1);
-				while (!subk.isEmpty() && subk.startsWith("."))
-					subk = subk.substring(1);
-				sub.put(subk, entries.get(k));
-			}
+		for (String k : entries.keySet()) if (k.startsWith(prefix)) {
+			String subk = k.substring(prefix.length() - 1);
+			while (!subk.isEmpty() && subk.startsWith(".")) subk = subk.substring(1);
+			sub.put(subk, entries.get(k));
+		}
 		return sub;
 	}
 
@@ -257,8 +257,7 @@ public final class ConfigSet {
 		if (cl.isAnnotationPresent(Config.class)) return cl.getAnnotation(Config.class);
 		Config c;
 		if (null != (c = findAnnedParent(cl.getSuperclass()))) return c;
-		for (Class<?> cc : cl.getInterfaces())
-			if (null != (c = findAnnedParent(cc.getSuperclass()))) return c;
+		for (Class<?> cc : cl.getInterfaces()) if (null != (c = findAnnedParent(cc.getSuperclass()))) return c;
 		return null;
 	}
 
@@ -268,8 +267,8 @@ public final class ConfigSet {
 		if (null != prefix) s.append("[prefix: " + prefix + "]");
 		if (null != cls) s.append("[class: " + cls.toString() + "]");
 		s.append(" {");
-		for (String key : entries.keySet())
-			s.append("\n\t").append(key).append(": ").append(entries.get(key));
+		for (String key : entries.keySet()) s.append("\n\t").append(key).append(": ").append(entries.get(key));
 		return s.append("\n}").toString();
 	}
+
 }

@@ -10,19 +10,15 @@ public class Objects extends Utils {
 
 	@SafeVarargs
 	public static <T> T or(T one, T... ts) {
-		if (ts == null || ts.length == 0) return one;
-		for (T t : ts)
-			if (null != t) return t;
+		if (null != one || ts == null || ts.length == 0) return one;
+		for (T t : ts) if (null != t) return t;
 		return null;
 	}
-
-	
 
 	public static void noneNull(Object... target) {
 		if (null == target) throw new NullPointerException();
 		if (target.length == 0) return;
-		for (Object o : target)
-			if (null == o) throw new NullPointerException();
+		for (Object o : target) if (null == o) throw new NullPointerException();
 	}
 
 	public static boolean isEmpty(Object target) {
@@ -41,8 +37,7 @@ public class Objects extends Utils {
 	@SuppressWarnings("unchecked")
 	public <T> T[] junction(T[]... arrays) {
 		int len = 0;
-		for (T[] a : arrays)
-			len += a.length;
+		for (T[] a : arrays) len += a.length;
 		T[] result = (T[]) Array.newInstance(arrays.getClass().getComponentType().getComponentType(), len);
 		int pos = 0;
 		for (T[] a : arrays) {
