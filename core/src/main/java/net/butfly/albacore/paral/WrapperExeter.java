@@ -1,7 +1,6 @@
 package net.butfly.albacore.paral;
 
 import static net.butfly.albacore.paral.Exeter.get;
-import static net.butfly.albacore.paral.Exeter.Internal.DEF_EXECUTOR_PARALLELISM;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -13,6 +12,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -30,15 +30,14 @@ class WrapperExeter implements Exeter {
 	@Override
 	public int parallelism() {
 		if (impl instanceof ForkJoinPool) return ((ForkJoinPool) impl).getParallelism();
-		if (DEF_EXECUTOR_PARALLELISM < 0) return -DEF_EXECUTOR_PARALLELISM;
-		return Integer.MAX_VALUE;
+		if (impl instanceof ThreadPoolExecutor) return ((ThreadPoolExecutor) impl).getMaximumPoolSize();
+		return ExeterHandler.DEF_PARALLELISM;
 	}
 
 	@Override
 	public Future<?> collect(final Iterable<Future<?>> futures) {
 		return submit(() -> {
-			for (final Future<?> f : futures)
-				get(f);
+			for (final Future<?> f : futures) get(f);
 		});
 	}
 
@@ -60,24 +59,21 @@ class WrapperExeter implements Exeter {
 	@Override
 	public <T> Future<?> submit(final Runnable... tasks) {
 		final List<Future<?>> fs = new ArrayList<>();
-		for (final Runnable t : tasks)
-			if (null != t) fs.add(submit(t));
+		for (final Runnable t : tasks) if (null != t) fs.add(submit(t));
 		return submit(() -> get(fs.toArray(new Future<?>[fs.size()])));
 	}
 
 	@Override
 	public <T> Future<?> submit(T in, Iterable<? extends Consumer<T>> tasks) {
 		final List<Future<?>> fs = new ArrayList<>();
-		for (Consumer<T> t : tasks)
-			if (null != t) fs.add(submit(() -> t.accept(in)));
+		for (Consumer<T> t : tasks) if (null != t) fs.add(submit(() -> t.accept(in)));
 		return submit(() -> get(fs.toArray(new Future<?>[fs.size()])));
 	}
 
 	@Override
 	public <T> Future<?> submit(Consumer<T> task, Iterable<T> ins) {
 		final List<Future<?>> fs = new ArrayList<>();
-		for (T t : ins)
-			if (null != t) fs.add(submit(() -> task.accept(t)));
+		for (T t : ins) if (null != t) fs.add(submit(() -> task.accept(t)));
 		return submit(() -> get(fs.toArray(new Future<?>[fs.size()])));
 	}
 
@@ -109,8 +105,7 @@ class WrapperExeter implements Exeter {
 	@Override
 	public void join(final Runnable... tasks) {
 		final List<Future<?>> fs = new ArrayList<>();
-		for (final Runnable t : tasks)
-			if (null != t) fs.add(submit(t));
+		for (final Runnable t : tasks) if (null != t) fs.add(submit(t));
 		get(fs.toArray(new Future<?>[fs.size()]));
 	}
 
@@ -139,46 +134,92 @@ class WrapperExeter implements Exeter {
 		return null == o || !(o instanceof ExecutorService) ? ex : realExector((ExecutorService) o);
 	}
 
+	private static long LAST_REJECTED = 0;
+
+	private static void rejected() {
+		if (LAST_REJECTED == 0 || System.currentTimeMillis() - LAST_REJECTED >= 50000) { // 5 seconds
+			logger.error("Task rejected and attempt to retry...");
+			LAST_REJECTED = System.currentTimeMillis();
+		}
+		try {
+			Thread.sleep(10);
+		} catch (InterruptedException ee) {
+			throw new RuntimeException(ee);
+		}
+	}
+
 	// ===========================
 	@Override
 	public void execute(final Runnable command) {
-		impl.execute(command);
+		while (true) try {
+			impl.execute(command);
+		} catch (RejectedExecutionException e) {
+			rejected();
+		}
 	}
 
 	@Override
 	public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks) throws InterruptedException {
-		return impl.invokeAll(tasks);
+		while (true) try {
+			return impl.invokeAll(tasks);
+		} catch (RejectedExecutionException e) {
+			rejected();
+		}
 	}
 
 	@Override
 	public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit) throws InterruptedException {
-		return impl.invokeAll(tasks, timeout, unit);
+		while (true) try {
+			return impl.invokeAll(tasks, timeout, unit);
+		} catch (RejectedExecutionException e) {
+			rejected();
+		}
 	}
 
 	@Override
 	public <T> T invokeAny(Collection<? extends Callable<T>> tasks) throws InterruptedException, ExecutionException {
-		return impl.invokeAny(tasks);
+		while (true) try {
+			return impl.invokeAny(tasks);
+		} catch (RejectedExecutionException e) {
+			rejected();
+		}
 	}
 
 	@Override
 	public <T> T invokeAny(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit) throws InterruptedException,
 			ExecutionException, TimeoutException {
-		return impl.invokeAny(tasks, timeout, unit);
+		while (true) try {
+			return impl.invokeAny(tasks, timeout, unit);
+		} catch (RejectedExecutionException e) {
+			rejected();
+		}
 	}
 
 	@Override
 	public <T> Future<T> submit(Callable<T> task) {
-		return impl.submit(task);
+		while (true) try {
+			return impl.submit(task);
+		} catch (RejectedExecutionException e) {
+			rejected();
+		}
 	}
 
 	@Override
 	public Future<?> submit(Runnable task) {
-		return impl.submit(task);
+		while (true) try {
+			return impl.submit(task);
+		} catch (RejectedExecutionException e) {
+			rejected();
+		}
 	}
 
 	@Override
 	public <T> Future<T> submit(Runnable task, T result) {
-		return impl.submit(task, result);
+		while (true) try {
+			return impl.submit(task, result);
+		} catch (RejectedExecutionException e) {
+			rejected();
+		}
 	}
 
 	// ===========================
