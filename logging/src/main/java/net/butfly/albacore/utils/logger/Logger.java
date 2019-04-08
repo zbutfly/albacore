@@ -31,6 +31,9 @@ import org.slf4j.event.Level;
  */
 public class Logger implements Serializable {
 	private static final long serialVersionUID = -1940330974751419775L;
+	static {
+		Log4jHelper.initLog4J();
+	}
 
 	private final org.slf4j.Logger logger;
 
