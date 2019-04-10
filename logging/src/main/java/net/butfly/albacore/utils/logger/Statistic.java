@@ -4,6 +4,7 @@ import static net.butfly.albacore.utils.logger.LogExec.tryExec;
 import static net.butfly.albacore.utils.logger.StatsUtils.formatKilo;
 import static net.butfly.albacore.utils.logger.StatsUtils.formatMillis;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
@@ -155,11 +156,10 @@ public class Statistic {
 		tryStats(() -> {
 			if (stepSize.get() < 0 || null == v || v.length == 0) return;
 			int b = 0;
-			for (E e : v)
-				if (null != e) {
-					stats(e);
-					b++;
-				}
+			for (E e : v) if (null != e) {
+				stats(e);
+				b++;
+			}
 			if (b > 1) batchs.incrementAndGet();
 		});
 		return v;
@@ -169,11 +169,10 @@ public class Statistic {
 		tryStats(() -> {
 			if (stepSize.get() < 0 || null == i) return;
 			int b = 0;
-			for (E e : i)
-				if (null != e) {
-					stats(e);
-					b++;
-				}
+			for (E e : i) if (null != e) {
+				stats(e);
+				b++;
+			}
 			if (b > 1) batchs.incrementAndGet();
 		});
 		return i;
@@ -187,11 +186,10 @@ public class Statistic {
 		tryStats(() -> {
 			if (stepSize.get() < 0 || empty(c)) return;
 			int b = 0;
-			for (E e : c)
-				if (null != e) {
-					stats(e);
-					b++;
-				}
+			for (E e : c) if (null != e) {
+				stats(e);
+				b++;
+			}
 			if (b > 1) batchs.incrementAndGet();
 		});
 		return c;
@@ -282,11 +280,10 @@ public class Statistic {
 					spentTotal.addAndGet(spent);
 					if (null != c && !c.isEmpty()) {
 						int b = 0;
-						for (E e : c)
-							if (null != e) {
-								stats(e);
-								b++;
-							}
+						for (E e : c) if (null != e) {
+							stats(e);
+							b++;
+						}
 						if (b > 1) batchs.incrementAndGet();
 					}
 				});
@@ -305,11 +302,10 @@ public class Statistic {
 				spentTotal.addAndGet(spent);
 				if (null != c && !c.isEmpty()) {
 					int b = 0;
-					for (E e : c)
-						if (null != e) {
-							stats(e);
-							b++;
-						}
+					for (E e : c) if (null != e) {
+						stats(e);
+						b++;
+					}
 					if (b > 1) batchs.incrementAndGet();
 				}
 			});
@@ -319,7 +315,7 @@ public class Statistic {
 	public void trace(String sampling) {
 		long now = System.currentTimeMillis();
 		Result step, total;
-		total = new Result(packTotal.get(), byteTotal.get(), System.currentTimeMillis() - begin);
+		total = new Result(packTotal.get(), byteTotal.get(), now - begin);
 		if (total.packs <= 0) return;
 		step = new Result(packStep.getAndSet(0), byteStep.getAndSet(0), now - statsed.getAndSet(now));
 		if (step.packs <= 0) return;
@@ -338,41 +334,88 @@ public class Statistic {
 		}
 	}
 
+	public class Snapshot implements Serializable {
+		private static final long serialVersionUID = -7093004807672632693L;
+		public final long stepPacks;
+		public final long stepBytes;
+		public final long stepMillis;
+		public final long stepAvg; // calc
+
+		public final long totalPacks;
+		public final long totalBytes;
+		public final long totalMillis;
+		public final long totalAvg; // calc
+
+		public final long batchsCount;
+		public final long spentTotal;
+		public final long ignoreTotal;
+
+		public final String detail;
+		public final CharSequence extra;
+
+		private Snapshot(long totalPacks, long stepPacks) {
+			// synchronized (Statistic.this) {
+			long now = System.currentTimeMillis();
+			this.stepPacks = stepPacks;
+			this.stepBytes = byteStep.getAndSet(0);
+			this.stepMillis = statsed.getAndSet(now);
+
+			this.totalPacks = totalPacks;
+			this.totalBytes = byteTotal.get();
+			this.totalMillis = now - begin;
+
+			this.stepAvg = stepPacks > 0 && stepMillis > 0 ? stepPacks * 1000 / stepMillis : -1;
+			this.totalAvg = totalPacks > 0 && totalMillis > 0 ? totalPacks * 1000 / totalMillis : -1;
+
+			this.batchsCount = batchs.get();
+			this.spentTotal = Statistic.this.spentTotal.get();
+			this.ignoreTotal = Statistic.this.ignoreTotal.get();
+
+			this.detail = null == detailing || !enabledMore() ? null : detailing.get();
+			this.extra = appendExtra(totalPacks, totalBytes);
+			// }
+		}
+
+		private boolean valid() {
+			return totalPacks > 0 && stepPacks > 0;
+		}
+
+		private CharSequence appendExtra(long totalPacks, long totalBytes) {
+			StringBuilder info = new StringBuilder();
+			long b;
+			if ((b = batchsCount) > 0) info.append("[Average batch size: ").append(totalPacks / b).append("]");
+			if ((b = spentTotal) > 0) {
+				if (info.length() > 0) info.append(", ");
+				info.append("[Average 1000 obj spent: ").append(b * 1000 / totalPacks).append(" ms]");
+			}
+			if ((b = ignoreTotal) > 0) {
+				if (info.length() > 0) info.append(", ");
+				info.append("[Logger ignore: ").append(b).append("]");
+			}
+			return info.length() > 0 ? info : null;
+		}
+
+		@Override
+		public String toString() {
+			if (!valid()) return "no_stats";
+			StringBuilder info = new StringBuilder(name)//
+					.append(":[Step:").append(stepPacks).append("/objs,").append(formatKilo(stepBytes, "B")).append(",")//
+					.append(formatMillis(stepMillis)).append(",").append(stepAvg > 0 ? stepAvg : "no_time").append(" objs/s], ")//
+					.append("[Total: ").append(totalPacks).append("/objs,").append(formatKilo(totalBytes, "B")).append(",")//
+					.append(formatMillis(totalMillis)).append(",").append(totalAvg > 0 ? stepAvg : "no_time").append(" objs/s]");
+			if (null != detail) info.append("\n\t[").append(detail).append("]");
+			if (null != extra) info.append("\n\t").append(extra);
+			return detail;
+		}
+	}
+
+	public Snapshot snapshot() {
+		return new Snapshot(packTotal.get(), packStep.getAndSet(0));
+	}
+
 	private CharSequence traceDetail(Result step, Result total, String sampling) {
-		String stepAvg = step.millis > 0 ? Long.toString(step.packs * 1000 / step.millis) : "no_time";
-		String totalAvg = total.millis > 0 ? Long.toString(total.packs * 1000 / total.millis) : "no_time";
-		StringBuilder info = new StringBuilder(name)//
-				.append(":[Step:").append(step.packs).append("/objs,").append(formatKilo(step.bytes, "B")).append(",").append(formatMillis(
-						step.millis)).append(",").append(stepAvg).append(" objs/s], ")//
-				.append("[Total: ").append(total.packs).append("/objs,").append(formatKilo(total.bytes, "B")).append(",").append(
-						formatMillis(total.millis)).append(",").append(totalAvg).append(" objs/s]");
-		appendDetail(info);
-		CharSequence extra = appendExtra(total);
-		if (extra.length() > 0) info.append("\n\t").append(extra);
-		if (null != sampling && sampling.length() > 0) info.append("\n\t[Sample: ").append(sampling);
-		return info;
-	}
-
-	private void appendDetail(StringBuilder info) {
-		if (null == detailing || !enabledMore()) return;
-		String ss = detailing.get();
-		if (null == ss) return;
-		info.append("\n\t[").append(ss).append("]");
-	}
-
-	private CharSequence appendExtra(Result total) {
-		StringBuilder info = new StringBuilder();
-		long b;
-		if ((b = batchs.get()) > 0) info.append("[Average batch size: ").append(total.packs / b).append("]");
-		if ((b = spentTotal.get()) > 0) {
-			if (info.length() > 0) info.append(", ");
-			info.append("[Average 1000 obj spent: ").append(b * 1000 / total.packs).append(" ms]");
-		}
-		if ((b = ignoreTotal.get()) > 0) {
-			if (info.length() > 0) info.append(", ");
-			info.append("[Logger ignore: ").append(b).append("]");
-		}
-		return info;
+		if (null != sampling && sampling.length() > 0) return snapshot().toString() + "\n\tSample: " + sampling;
+		else return snapshot().toString();
 	}
 
 	private void tryStats(Runnable r) {

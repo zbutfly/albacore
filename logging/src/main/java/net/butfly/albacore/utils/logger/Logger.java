@@ -1,6 +1,8 @@
 package net.butfly.albacore.utils.logger;
 
 import static net.butfly.albacore.utils.logger.LogExec.tryExec;
+import static net.butfly.albacore.utils.logger.Loggers.ing;
+import static net.butfly.albacore.utils.logger.Loggers.shrinkClassname;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -9,6 +11,9 @@ import java.util.function.Supplier;
 
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
+import org.slf4j.impl.Log4jLoggerAdapter;
+
+import net.butfly.albacore.utils.logger.Loggers.Logging;
 
 /**
  * </p>
@@ -45,12 +50,40 @@ public class Logger implements Serializable {
 	static final Map<String, Logger> loggers = new ConcurrentHashMap<>();
 
 	// factory
+	@SuppressWarnings("deprecation")
 	public static final Logger getLogger(CharSequence name) {
-		return loggers.computeIfAbsent(name.toString(), n -> new Logger(LoggerFactory.getLogger(name.toString())));
+		String key = name.toString();
+		Logging ing = null;
+		try {
+			ing = ing(Class.forName(key));
+		} catch (Exception e) { // not class name
+		}
+		if (null == ing) {
+			ClassLoader cl = Thread.currentThread().getContextClassLoader();
+			ing = ing(cl, Package.getPackage(key));
+		}
+		return get(key, ing);
 	}
 
 	public static final Logger getLogger(Class<?> clazz) {
-		return loggers.computeIfAbsent(clazz.getName(), c -> new Logger(LoggerFactory.getLogger(clazz.getName())));
+		String key = clazz.getName();
+		Logging ing;
+		ing = ing(clazz);
+		if (null == ing) ing = ing(clazz.getClassLoader(), clazz.getPackage());
+		return get(key, ing);
+	}
+
+	private static final Logger get(String key, Logging ing) {
+		return loggers.computeIfAbsent(key, k -> {
+			org.slf4j.Logger slf = LoggerFactory.getLogger(key);
+			if (null != ing && ing.force()) {
+				if (slf instanceof Log4jLoggerAdapter) slf = Log4jHelper.changeLevel((Log4jLoggerAdapter) slf, ing.value());
+				else slf.warn("Logging defined on key: [" + ing.toString() + "], " //
+						+ "but not valid for only log4j impl is supported. Impl detected: " + slf.getClass());
+			}
+			return new Logger(slf);
+		});
+
 	}
 
 	public Logger(CharSequence name) {
@@ -188,6 +221,16 @@ public class Logger implements Serializable {
 			CharSequence s = msg.get();
 			if (null != s) logger.error(s.toString());
 		});
+	}
+
+	public static boolean logs(Level level, CharSequence msg) {
+		String c = Thread.currentThread().getStackTrace()[2].getClassName().split("$")[0];
+		return getLogger(shrinkClassname(c)).log(level, () -> msg);
+	}
+
+	public static boolean logs(Level level, CharSequence msg, Throwable t) {
+		String c = Thread.currentThread().getStackTrace()[2].getClassName().split("$")[0];
+		return getLogger(shrinkClassname(c)).log(level, () -> msg, t);
 	}
 
 	// extends args
@@ -397,4 +440,12 @@ public class Logger implements Serializable {
 	// public void error(Marker marker, CharSequence format, Object arg1, Object arg2)
 	// public void error(Marker marker, CharSequence format, Object... arguments)
 	// public void error(Marker marker, CharSequence msg, Throwable t)
+	static Map<org.slf4j.event.Level, org.apache.log4j.Level> LEVELS_SLF_TO_LOG4J = new ConcurrentHashMap<>();
+	static {
+		LEVELS_SLF_TO_LOG4J.put(org.slf4j.event.Level.ERROR, org.apache.log4j.Level.ERROR);
+		LEVELS_SLF_TO_LOG4J.put(org.slf4j.event.Level.WARN, org.apache.log4j.Level.WARN);
+		LEVELS_SLF_TO_LOG4J.put(org.slf4j.event.Level.INFO, org.apache.log4j.Level.INFO);
+		LEVELS_SLF_TO_LOG4J.put(org.slf4j.event.Level.DEBUG, org.apache.log4j.Level.DEBUG);
+		LEVELS_SLF_TO_LOG4J.put(org.slf4j.event.Level.TRACE, org.apache.log4j.Level.TRACE);
+	}
 }

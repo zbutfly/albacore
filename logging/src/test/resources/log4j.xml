@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE log4j:configuration PUBLIC "-//APACHE//DTD LOG4J 1.2//EN" "http://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/xml/doc-files/log4j.dtd">
+<log4j:configuration debug="false" xmlns:log4j="http://jakarta.apache.org/log4j/">
+	<appender class="net.butfly.albacore.utils.logger.ANSIConsoleAppender" name="stdout-color">
+		<layout class="org.apache.log4j.EnhancedPatternLayout">
+			<param name="ConversionPattern" value="%d{HH:mm:ss.SSS} %-8.8c{2.} - %m%n" />
+		</layout>
+	</appender>
+	<appender class="org.apache.log4j.ConsoleAppender" name="stdout-json">
+		<layout class="net.butfly.albacore.utils.logger.log4j.JsonLayout" />
+	</appender>
+	<logger additivity="false" name="net.butfly.albatis">
+		<level value="trace" />
+		<appender-ref ref="stdout-json" />
+	</logger>
+	<logger additivity="false" name="net.butfly">
+		<level value="debug" />
+		<appender-ref ref="stdout-json" />
+	</logger>
+	<logger additivity="false" name="com.hzcominfo">
+		<level value="debug" />
+		<appender-ref ref="stdout-json" />
+	</logger>
+
+	<logger additivity="false" name="com.leansoft.bigqueue">
+		<level value="error" />
+		<appender-ref ref="stdout-json" />
+	</logger>
+	<logger additivity="false" name="kafka">
+		<level value="error" />
+		<appender-ref ref="stdout-json" />
+	</logger>
+	<logger additivity="false" name="org.apache">
+		<level value="error" />
+		<appender-ref ref="stdout-json" />
+	</logger>
+	<root>
+		<level value="warn" />
+		<appender-ref ref="stdout-json" />
+	</root>
+</log4j:configuration>

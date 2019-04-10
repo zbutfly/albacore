@@ -1,11 +1,15 @@
 package net.butfly.albacore.utils.logger;
 
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
+
+import org.apache.log4j.MDC;
 
 public class LogExec {
 	private static final String PROP_LOGGER_ASYNC = "albacore.logger.async.enable";// true
@@ -32,6 +36,7 @@ public class LogExec {
 	}
 
 	public static boolean tryExec(Runnable r) {
+		for (Supplier<Map<String, Object>> mdcing : Loggers.mdcs) mdcing.get().forEach(MDC::put);
 		try {
 			logex.execute(r);
 			return true;

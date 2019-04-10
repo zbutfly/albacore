@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Enumeration;
@@ -17,16 +18,18 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
+import org.slf4j.impl.Log4jLoggerAdapter;
 import org.w3c.dom.Element;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 interface Log4jHelper {
+	static final Logger logger = Logger.getLogger(Logger.class);
+
 	static void initLog4J() {
 		URL res = Thread.currentThread().getContextClassLoader().getResource("log4j.properties");
 		if (null != res) {
-			Logger.getLogger("net.butfly.albacore.utils.logger.Logger").warn("log4j.properties found in CLASSPATH [" + res.toString()
-					+ "], but is not recommended. log4j.xml is recommended.");
+			logger.warn("log4j.properties found in CLASSPATH [" + res.toString() + "], but is not recommended. log4j.xml is recommended.");
 			return;
 		}
 		res = Thread.currentThread().getContextClassLoader().getResource("log4j.xml");
@@ -36,6 +39,8 @@ interface Log4jHelper {
 			// org.apache.log4j.xml.DOMConfigurator.configure(load(res));
 			System.setProperty("log4j.configuration", res.toString());
 		}
+		if (res.getPath().indexOf(".jar!") > 0) //
+			logger.warn("log4j configuration found in jar, dangerous and not recommended: \n" + res.getPath());
 	}
 
 	static Element load(URL res) {
@@ -44,6 +49,19 @@ interface Log4jHelper {
 		} catch (IOException | SAXException | ParserConfigurationException e) {
 			throw new IllegalArgumentException(e);
 		}
+	}
+
+	static org.slf4j.Logger changeLevel(Log4jLoggerAdapter slf, org.slf4j.event.Level level) {
+		org.apache.log4j.Logger ll;
+		try {
+			Field f = Log4jLoggerAdapter.class.getDeclaredField("logger");
+			f.setAccessible(true);
+			ll = (org.apache.log4j.Logger) f.get(slf);
+		} catch (NoSuchFieldException | SecurityException | IllegalAccessException e) {
+			throw new RuntimeException(e);
+		}
+		ll.setLevel(net.butfly.albacore.utils.logger.Logger.LEVELS_SLF_TO_LOG4J.get(level));
+		return slf;
 	}
 
 	static void changeSet(String logNameFilter, String logNameFilterType, String targetOperation, String targetLogger, String targetLogLevel) {
