@@ -1,6 +1,7 @@
 package net.butfly.albacore.expr.fel;
 
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import net.butfly.albacore.expr.fel.FelFunc.Func;
@@ -68,6 +69,21 @@ public interface FuncForDate {
 			if (args[0] instanceof Date) {
 				return ((Date) args[0]).getTime();
 			} else throw new RuntimeException("This is not a Date type!");
+		}
+	}
+	
+	@Func
+	class NowTimeFunc extends FelFunc<String> {
+		@Override
+		protected boolean valid(int argl) {
+			return argl == 0;
+		}
+
+		@Override
+		public String invoke(Object... args) {
+				 SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+				 String time = df.format(new Date());
+				 return time; 
 		}
 	}
 }
