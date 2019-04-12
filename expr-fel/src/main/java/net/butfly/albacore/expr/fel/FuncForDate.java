@@ -73,17 +73,15 @@ public interface FuncForDate {
 	}
 	
 	@Func
-	class NowTimeFunc extends FelFunc<String> {
+	class NowFunc extends FelFunc<Date> {
 		@Override
 		protected boolean valid(int argl) {
 			return argl == 0;
 		}
 
 		@Override
-		public String invoke(Object... args) {
-				 SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-				 String time = df.format(new Date());
-				 return time; 
+		public Date invoke(Object... args) {
+				return new Date();
 		}
 	}
 }
