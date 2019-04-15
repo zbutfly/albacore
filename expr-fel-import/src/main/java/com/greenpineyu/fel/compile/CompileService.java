@@ -89,7 +89,7 @@ public class CompileService {
         try {
             JavaSource src = srcGen.getSource(ctx, node);
             if (src instanceof ConstExpSrc) return ((ConstExpSrc) src).getValue();
-            src.setSource("// 表达式:" + originalExp + "\n" + src.getSource());
+            src.setSource(src.getSource());//"/* 表达式:" + originalExp + "*/\n" will cause exception on invalid char like \n
             // System.out.println("****************\n" + src.getSource());
             return complier.compile(src);
         } catch (Exception e) {
