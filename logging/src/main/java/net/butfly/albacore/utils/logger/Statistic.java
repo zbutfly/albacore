@@ -250,7 +250,12 @@ public class Statistic {
 		}
 	}
 
+	@Deprecated
 	public <E> void statsOut(E v, Consumer<E> use) {
+		statsOutN(v, use);
+	}
+
+	public <E> void statsOutN(E v, Consumer<E> use) {
 		long now = System.currentTimeMillis();
 		try {
 			use.accept(v);
@@ -268,7 +273,7 @@ public class Statistic {
 		});
 	}
 
-	public <E, R> R statsOuts(Collection<E> c, Function<Collection<E>, R> use) {
+	public <E, R, C extends Collection<E>> R statsOuts(C c, Function<C, R> use) {
 		long now = System.currentTimeMillis();
 		try {
 			return use.apply(c);
@@ -291,7 +296,12 @@ public class Statistic {
 		}
 	}
 
-	public <E> void statsOuts(Collection<E> c, Consumer<Collection<E>> use) {
+	@Deprecated
+	public <E, C extends Collection<E>> void statsOuts(C c, Consumer<C> use) {
+		statsOutsN(c, use);
+	}
+
+	public <E, C extends Collection<E>> void statsOutsN(C c, Consumer<C> use) {
 		long now = System.currentTimeMillis();
 		try {
 			use.accept(c);
