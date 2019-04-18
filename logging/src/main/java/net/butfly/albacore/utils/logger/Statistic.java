@@ -14,7 +14,6 @@ import java.util.function.Supplier;
 
 import net.butfly.albacore.base.Named;
 import net.butfly.albacore.utils.SizeOfSupport;
-import net.butfly.albacore.utils.logger.StatsUtils.Result;
 
 public class Statistic {
 	private static final long DEFAULT_STEP = 1000;
@@ -81,8 +80,8 @@ public class Statistic {
 
 	/**
 	 * @param step
-	 *            <li>0: count but print manually
-	 *            <li>less than 0: do not change anything
+	 *             <li>0: count but print manually
+	 *             <li>less than 0: do not change anything
 	 */
 	public final Statistic step(long step) {
 		if (step == 0) stepSize.set(Long.MAX_VALUE);
@@ -264,13 +263,15 @@ public class Statistic {
 		}
 	}
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	private <E> void timing(E v, long start) {
 		if (null == v) return;
 		long spent = System.currentTimeMillis() - start;
-		tryStats(() -> {
-			spentTotal.addAndGet(spent);
-			if (null != v) stats(v);
-		});
+		spentTotal.addAndGet(spent);
+		if (v instanceof Collection) stats((Collection) v);
+		if (v instanceof Iterable) stats((Iterable) v);
+		else if (v.getClass().isArray()) stats((Object[]) v);
+		else stats(v);
 	}
 
 	public <E, R, C extends Collection<E>> R statsOuts(C c, Function<C, R> use) {
@@ -322,14 +323,13 @@ public class Statistic {
 		}
 	}
 
+	public Snapshot snapshot() {
+		return new Snapshot(false);
+	}
+
 	public void trace(String sampling) {
-		long now = System.currentTimeMillis();
-		Result step, total;
-		total = new Result(packTotal.get(), byteTotal.get(), now - begin);
-		if (total.packs <= 0) return;
-		step = new Result(packStep.getAndSet(0), byteStep.getAndSet(0), now - statsed.getAndSet(now));
-		if (step.packs <= 0) return;
-		logger.debug(() -> traceDetail(step, total, sampling));
+		Snapshot s = new Snapshot(true);
+		if (s.stepPacks > 0) logger.debug(s.sample(sampling)::toString);
 	}
 
 	private void stats(Object v, long steps, long bytes) {
@@ -338,7 +338,7 @@ public class Statistic {
 		byteTotal.addAndGet(bytes < 0 ? 0 : bytes);
 		byteStep.addAndGet(bytes < 0 ? 0 : bytes);
 		if (packStep.addAndGet(steps) > stepSize.get() && logger.isInfoEnabled() && lock.tryLock()) try {
-			trace(enabledMore() ? sampling.apply(v) : null);
+			if (packStep.get() > stepSize.get()) trace(null != sampling && enabledMore() ? sampling.apply(v) : null);
 		} finally {
 			lock.unlock();
 		}
@@ -362,15 +362,16 @@ public class Statistic {
 
 		public final String detail;
 		public final CharSequence extra;
+		private String sample = null;
 
-		private Snapshot(long totalPacks, long stepPacks) {
+		private Snapshot(boolean stepped) {
 			// synchronized (Statistic.this) {
 			long now = System.currentTimeMillis();
-			this.stepPacks = stepPacks;
-			this.stepBytes = byteStep.getAndSet(0);
-			this.stepMillis = statsed.getAndSet(now);
+			this.stepPacks = stepped ? packStep.getAndSet(0) : packStep.get();
+			this.stepBytes = stepped ? byteStep.getAndSet(0) : byteStep.get();
+			this.stepMillis = now - (stepped ? statsed.getAndSet(now) : statsed.get());
 
-			this.totalPacks = totalPacks;
+			this.totalPacks = packTotal.get();
 			this.totalBytes = byteTotal.get();
 			this.totalMillis = now - begin;
 
@@ -387,7 +388,7 @@ public class Statistic {
 		}
 
 		private boolean valid() {
-			return totalPacks > 0 && stepPacks > 0;
+			return totalPacks > 0 || stepPacks > 0;
 		}
 
 		private CharSequence appendExtra(long totalPacks, long totalBytes) {
@@ -405,27 +406,30 @@ public class Statistic {
 			return info.length() > 0 ? info : null;
 		}
 
+		public Snapshot sample(String sample) {
+			this.sample = sample;
+			return this;
+		}
+
 		@Override
 		public String toString() {
 			if (!valid()) return "no_stats";
-			StringBuilder info = new StringBuilder(name)//
-					.append(":[Step:").append(stepPacks).append("/objs,").append(formatKilo(stepBytes, "B")).append(",")//
-					.append(formatMillis(stepMillis)).append(",").append(stepAvg > 0 ? stepAvg : "no_time").append(" objs/s], ")//
-					.append("[Total: ").append(totalPacks).append("/objs,").append(formatKilo(totalBytes, "B")).append(",")//
-					.append(formatMillis(totalMillis)).append(",").append(totalAvg > 0 ? stepAvg : "no_time").append(" objs/s]");
+			StringBuilder info = new StringBuilder(name).append(":");
+			if (stepPacks > 0 && stepAvg > 0) {
+				info.append("[Step:").append(stepPacks).append(" objs,");
+				if (stepBytes > 0) info.append(formatKilo(stepBytes, "B")).append(",");
+				if (stepMillis > 0) info.append(formatMillis(stepMillis)).append(",");
+				info.append(stepAvg).append(" objs/s]");
+			}
+			info.append("[Total: ").append(totalPacks).append(" objs,");
+			if (totalBytes > 0) info.append(formatKilo(totalBytes, "B")).append(",");
+			info.append(formatMillis(totalMillis));
+			if (totalAvg > 0) info.append(",").append(totalAvg).append(" objs/s]");
 			if (null != detail) info.append("\n\t[").append(detail).append("]");
 			if (null != extra) info.append("\n\t").append(extra);
-			return detail;
+			if (null != sample && sample.length() > 0) info.append("\n\tSample: ").append(sample);
+			return info.toString();
 		}
-	}
-
-	public Snapshot snapshot() {
-		return new Snapshot(packTotal.get(), packStep.getAndSet(0));
-	}
-
-	private CharSequence traceDetail(Result step, Result total, String sampling) {
-		if (null != sampling && sampling.length() > 0) return snapshot().toString() + "\n\tSample: " + sampling;
-		else return snapshot().toString();
 	}
 
 	private void tryStats(Runnable r) {

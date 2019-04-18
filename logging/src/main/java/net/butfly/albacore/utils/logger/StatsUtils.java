@@ -5,7 +5,7 @@ import static net.butfly.albacore.Albacore.Props.PROP_PARALLEL_POOL_SIZE_OBJECT;
 import java.text.DecimalFormat;
 import java.util.concurrent.LinkedBlockingQueue;
 
-final class StatsUtils {
+public final class StatsUtils {
 	private static final int POOL_SIZE = Integer.parseInt(System.getProperty(PROP_PARALLEL_POOL_SIZE_OBJECT, //
 			Integer.toString(Runtime.getRuntime().availableProcessors() - 1)));
 	private static LinkedBlockingQueue<DecimalFormat> DEC_FORMATS = new LinkedBlockingQueue<>(POOL_SIZE);
@@ -18,7 +18,7 @@ final class StatsUtils {
 	private static int MINUTE = 60 * SECOND;
 	private static int HOUR = 60 * MINUTE;
 
-	static String formatKilo(double d, String unit) {
+	public static String formatKilo(double d, String unit) {
 		DecimalFormat f = DEC_FORMATS.poll();
 		if (null == f) f = new DecimalFormat("#.##");
 		try {
@@ -37,7 +37,7 @@ final class StatsUtils {
 		}
 	}
 
-	static String formatMillis(double millis) {
+	public static String formatMillis(double millis) {
 		DecimalFormat f = DEC_FORMATS.poll();
 		if (null == f) f = new DecimalFormat("#.##");
 		try {
@@ -50,19 +50,6 @@ final class StatsUtils {
 			return f.format(millis) + " MS";
 		} finally {
 			DEC_FORMATS.offer(f);
-		}
-	}
-
-	static class Result {
-		public final long packs;
-		public final long bytes;
-		public final long millis;
-
-		public Result(long packs, long bytes, long millis) {
-			super();
-			this.packs = packs;
-			this.bytes = bytes;
-			this.millis = millis;
 		}
 	}
 }

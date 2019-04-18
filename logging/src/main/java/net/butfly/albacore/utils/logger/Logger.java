@@ -50,7 +50,6 @@ public class Logger implements Serializable {
 	static final Map<String, Logger> loggers = new ConcurrentHashMap<>();
 
 	// factory
-	@SuppressWarnings("deprecation")
 	public static final Logger getLogger(CharSequence name) {
 		String key = name.toString();
 		Logging ing = null;
