@@ -44,7 +44,7 @@ public final class URISpec implements Serializable {
 	private static final long serialVersionUID = -2912181622902556535L;
 	private static final String SLASHS = "/";
 	private final String[] schemas;
-	private final boolean opaque;
+	// private final boolean opaque;
 	private final String username;
 	private final String password;
 	private final UriSocketAddress[] hosts;
@@ -72,16 +72,17 @@ public final class URISpec implements Serializable {
 		remain = divs.v1();
 
 		if ((segs = remain.split("://", 2)).length == 2) {
-			opaque = false;
+			// opaque = false;
 			schemas = parseSchema(segs[0]);
 			remain = segs[1];
 		} else {
-			opaque = true;
-			remain = (divs = split2last(remain, ':')).v1();
-			if (divs.v2() != null) {
-				schemas = parseSchema(remain);
-				remain = divs.v2();
-			} else schemas = new String[0];
+			// opaque = true;
+			// remain = (divs = split2last(remain, ':')).v1();
+			// if (divs.v2() != null) {
+			// schemas = parseSchema(remain);
+			// remain = divs.v2();
+			// } else
+			schemas = new String[0];
 		}
 
 		if ((segs = remain.split(SLASHS, 2)).length == 2) {
@@ -117,11 +118,11 @@ public final class URISpec implements Serializable {
 		hosts = parseHostPort(remain);
 	}
 
-	private URISpec(String schema, boolean opaque, String username, String password, String host, int defaultPort, String pathfile,
+	private URISpec(String schema, /* boolean opaque, */String username, String password, String host, int defaultPort, String pathfile,
 			String frag, String queryString) {
 		super();
 		this.defaultPort = defaultPort;
-		this.opaque = opaque;
+		// this.opaque = opaque;
 		this.schemas = parseSchema(schema);
 		this.username = username;
 		this.password = password;
@@ -151,7 +152,7 @@ public final class URISpec implements Serializable {
 	}
 
 	public URISpec schema(String... schema) {
-		return new URISpec(String.join(":", schema), opaque, username, password, getHost(), defaultPort, getPath(), frag, getQuery());
+		return new URISpec(String.join(":", schema), /* opaque, */username, password, getHost(), defaultPort, getPath(), frag, getQuery());
 	}
 
 	/**
@@ -241,8 +242,8 @@ public final class URISpec implements Serializable {
 
 	public String getQuery() {
 		return query.isEmpty() ? null
-				: query.entrySet().parallelStream().map(e -> e.getKey().toString() + "=" + e.getValue().toString()).collect(Collectors
-						.joining("&"));
+				: query.entrySet().parallelStream().map(e -> e.getKey().toString() + "=" + e.getValue().toString()).collect(Collectors.joining(
+						"&"));
 	}
 
 	public Map<String, String> getParameters(String... excludeKey) {
@@ -278,9 +279,9 @@ public final class URISpec implements Serializable {
 		return frag;
 	}
 
-	public boolean isOpaque() {
-		return opaque;
-	}
+	// public boolean isOpaque() {
+	// return opaque;
+	// }
 
 	public String getFile() {
 		return file;
@@ -308,8 +309,8 @@ public final class URISpec implements Serializable {
 	public String getRoot() {
 		StringBuilder sb = new StringBuilder();
 		String s = getSchema();
-		if (s != null) sb.append(s).append(':');
-		if (!opaque) sb.append("//");
+		if (s != null) sb.append(s).append("://");
+		// if (!opaque) sb.append("//");
 		return sb.append(getAuthority()).append("/").toString();
 	}
 
@@ -334,29 +335,29 @@ public final class URISpec implements Serializable {
 
 	@Override
 	public URISpec clone() {
-		return new URISpec(getSchema(), opaque, username, password, getHost(), defaultPort, getPath(), frag, getQuery());
+		return new URISpec(getSchema()/* , opaque */, username, password, getHost(), defaultPort, getPath(), frag, getQuery());
 	}
 
 	public URISpec redirect(String host, int port) {
 		String h = host;
 		if (port >= 0) h += ":" + port;
-		return new URISpec(getSchema(), opaque, username, password, h, defaultPort, getPath(), frag, getQuery());
+		return new URISpec(getSchema()/* , opaque */, username, password, h, defaultPort, getPath(), frag, getQuery());
 	}
 
 	public URISpec redirect(String host) {
-		return new URISpec(getSchema(), opaque, username, password, host, defaultPort, getPath(), frag, getQuery());
+		return new URISpec(getSchema()/* , opaque */, username, password, host, defaultPort, getPath(), frag, getQuery());
 	}
 
 	public URISpec reauth(String username) {
-		if (opaque) throw new IllegalArgumentException("opaque uri [" + toString()
-				+ "] could not be reauth since no recoganizable password segment.");
-		return new URISpec(getSchema(), opaque, username, null, getHost(), defaultPort, getPath(), frag, getQuery());
+		// if (opaque) throw new IllegalArgumentException("opaque uri [" + toString()
+		// + "] could not be reauth since no recoganizable password segment.");
+		return new URISpec(getSchema()/* , opaque */, username, null, getHost(), defaultPort, getPath(), frag, getQuery());
 	}
 
 	public URISpec reauth(String username, String password) {
-		if (opaque) throw new IllegalArgumentException("opaque uri [" + toString()
-				+ "] could not be reauth since no recoganizable password segment.");
-		return new URISpec(getSchema(), opaque, username, password, getHost(), defaultPort, getPath(), frag, getQuery());
+		// if (opaque) throw new IllegalArgumentException("opaque uri [" + toString()
+		// + "] could not be reauth since no recoganizable password segment.");
+		return new URISpec(getSchema()/* , opaque */, username, password, getHost(), defaultPort, getPath(), frag, getQuery());
 	}
 
 	public URISpec resolve(String rel) {
@@ -370,13 +371,12 @@ public final class URISpec implements Serializable {
 		if (null != p) np = np.resolve(p);
 		// if (null != f) np = np.resolve(f);
 		// else if (null != file) np = np.resolve(file);
-		String pp = join(StreamSupport.stream(np.normalize().spliterator(), false).map(s -> s.toString()).toArray(i -> new String[i]))
-				+ SLASHS;
-		return new URISpec(getSchema(), opaque, username, password, getHost(), defaultPort, pp, frag, getQuery());
+		String pp = join(StreamSupport.stream(np.normalize().spliterator(), false).map(s -> s.toString()).toArray(i -> new String[i])) + SLASHS;
+		return new URISpec(getSchema()/* , opaque */, username, password, getHost(), defaultPort, pp, frag, getQuery());
 	}
 
 	public URISpec setFile(String file) {
-		return new URISpec(getSchema(), opaque, username, password, getHost(), defaultPort, (null == file ? getPathOnly()
+		return new URISpec(getSchema()/* , opaque */, username, password, getHost(), defaultPort, (null == file ? getPathOnly()
 				: getPathOnly() + file), frag, getQuery());
 	}
 
@@ -408,8 +408,7 @@ public final class URISpec implements Serializable {
 		if (segs.length == 0) return new Pair<>(paths, null);
 		String file = segs[segs.length - 1];
 		if (file.isEmpty()) file = null;
-		for (int i = 0; i < segs.length - 1; i++)
-			if (!segs[i].isEmpty()) paths.add(tryDecodeUrl(segs[i]));
+		for (int i = 0; i < segs.length - 1; i++) if (!segs[i].isEmpty()) paths.add(tryDecodeUrl(segs[i]));
 		return new Pair<>(paths, tryDecodeUrl(file));
 	}
 
@@ -439,16 +438,14 @@ public final class URISpec implements Serializable {
 			String[] ss = p.split(":");
 			int port = Integer.parseInt(ss[0]);
 			int[] ports = new int[ss.length - 1];
-			for (int i = 1; i < ss.length; i++)
-				ports[i - 1] = null == ss[i] || ss[i].trim().isEmpty() ? defaultPort : Integer.parseInt(ss[i]);
+			for (int i = 1; i < ss.length; i++) ports[i - 1] = null == ss[i] || ss[i].trim().isEmpty() ? defaultPort : Integer.parseInt(ss[i]);
 			return null == h ? null : new UriSocketAddress(h, port, ports);
 		}).filter(o -> null != o).toArray(i -> new UriSocketAddress[i]);
 	}
 
 	private Pair<String, String> split2last(String spec, char split) {
 		if (Colls.empty(spec)) return new Pair<>(spec, null);
-		while (!spec.isEmpty() && spec.charAt(0) == split)
-			spec = spec.substring(1);
+		while (!spec.isEmpty() && spec.charAt(0) == split) spec = spec.substring(1);
 		int pos = spec.lastIndexOf(split);
 		return pos > 0 ? new Pair<>(spec.substring(0, pos), spec.substring(pos + 1)) : new Pair<>(spec, null);
 	}
@@ -490,7 +487,7 @@ public final class URISpec implements Serializable {
 		if (null == obj || !URISpec.class.isAssignableFrom(obj.getClass())) return false;
 		URISpec uri = (URISpec) obj;
 		if (!eq(schemas, uri.schemas)) return false;
-		if (opaque != uri.opaque) return false;
+		// if (opaque != uri.opaque) return false;
 		if (!eq(username, uri.username)) return false;
 		if (!eq(password, uri.password)) return false;
 		if (!eq(hosts, uri.hosts)) return false;
@@ -516,8 +513,7 @@ public final class URISpec implements Serializable {
 		if (null == v1 && null == v2) return true;
 		if (null == v1 || null == v2) return false;
 		if (v1.length != v2.length) return false;
-		for (int i = 0; i < v1.length; i++)
-			if (!eq(v1[i], v2[i])) return false;
+		for (int i = 0; i < v1.length; i++) if (!eq(v1[i], v2[i])) return false;
 		return true;
 	}
 
@@ -525,8 +521,7 @@ public final class URISpec implements Serializable {
 		if (null == v1 && null == v2) return true;
 		if (null == v1 || null == v2) return false;
 		if (v1.size() != v2.size()) return false;
-		for (String k : v1.keySet())
-			if (!eq(v1.get(k), v2.get(k))) return false;
+		for (String k : v1.keySet()) if (!eq(v1.get(k), v2.get(k))) return false;
 		return true;
 	}
 
