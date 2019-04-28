@@ -16,15 +16,15 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import com.google.common.base.Joiner;
-
-import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
+import io.github.classgraph.ClassGraph;
+import io.github.classgraph.ClassInfo;
+import io.github.classgraph.ClassInfoList;
+import io.github.classgraph.ScanResult;
 import net.butfly.albacore.support.Values;
 import net.butfly.albacore.utils.logger.Logger;
 
 public final class Reflections extends Utils {
 	private static final Logger logger = Logger.getLogger(Reflections.class);
-	private static final Joiner j = Joiner.on(";");
 
 	public static String packageName(Class<?> cl) {
 		Package pkg = cl.getPackage();
@@ -41,13 +41,11 @@ public final class Reflections extends Utils {
 	}
 
 	public static void noneNull(String msg, Object... value) {
-		for (Object v : value)
-			if (null == v) throw new IllegalArgumentException(msg);
+		for (Object v : value) if (null == v) throw new IllegalArgumentException(msg);
 	}
 
 	public static boolean anyNull(Object... value) {
-		for (Object v : value)
-			if (null == v) return true;
+		for (Object v : value) if (null == v) return true;
 		return false;
 	}
 
@@ -143,35 +141,41 @@ public final class Reflections extends Utils {
 		}
 	}
 
+	private static ScanResult cpscaner(String... pkgs) {
+		ClassGraph cg = new ClassGraph();
+		// if (Systems.isDebug()) cg = cg.verbose();
+		return cg.enableAllInfo() // Scan classes, methods, fields, annotations
+				.whitelistPackages(pkgs) // Scan com.xyz and subpackages (omit to scan all packages)
+				.scan();
+	}
+
 	@SuppressWarnings("unchecked")
 	public static <T> Set<Class<? extends T>> getSubClasses(Class<T> parentClass, String... packagePrefix) {
 		if (Modifier.isFinal(parentClass.getModifiers())) return new HashSet<>();
-		boolean full = packagePrefix == null || packagePrefix.length == 0;
-		return Instances.fetch(() -> {
-			final Set<Class<? extends T>> r = new HashSet<>();
-			FastClasspathScanner scaner = full ? new FastClasspathScanner() : new FastClasspathScanner(packagePrefix);
-			if (Modifier.isInterface(parentClass.getModifiers())) scaner.matchClassesImplementing(parentClass, c -> r.add(c)).scan();
-			else scaner.matchSubclassesOf(parentClass, c -> r.add(c)).scan();
-			return r;
-		}, Set.class, parentClass, full ? "" : j.join(packagePrefix));
+		final Set<Class<? extends T>> r = new HashSet<>();
+		try (ScanResult sr = cpscaner(packagePrefix)) {
+			ClassInfo pci = sr.getClassInfo(parentClass.getName());
+			ClassInfoList cli = pci.isInterface() ? pci.getClassesImplementing() : pci.getSubclasses();
+			for (ClassInfo ci : cli) r.add((Class<? extends T>) ci.loadClass());
+		}
+		return r;
 	}
 
-	public static Class<?>[] getClassesAnnotatedWith(Class<? extends Annotation> annotation, String... packagePrefix) {
-		return Instances.fetch(() -> {
-			Set<Class<?>> r = new HashSet<>();
-			new FastClasspathScanner(packagePrefix).matchClassesWithAnnotation(annotation, c -> r.add(c)).scan();
-			return r.toArray(new Class[r.size()]);
-		}, Class[].class, annotation, j.join(packagePrefix));
+	public static Set<Class<?>> getClassesAnnotatedWith(Class<? extends Annotation> annotation, String... packagePrefix) {
+		Set<Class<?>> r = new HashSet<>();
+		try (ScanResult sr = cpscaner(packagePrefix)) {
+			sr.getClassInfo(annotation.getName()).getClassesWithAnnotation().forEach(ci1 -> r.add(ci1.loadClass()));
+		}
+		return r;
 	}
 
 	public static Field getDeclaredField(Class<?> clazz, String name) {
 		noneNull("", clazz, name);
-		while (null != clazz)
-			try {
-				return clazz.getDeclaredField(name);
-			} catch (NoSuchFieldException ex) {
-				clazz = clazz.getSuperclass();
-			}
+		while (null != clazz) try {
+			return clazz.getDeclaredField(name);
+		} catch (NoSuchFieldException ex) {
+			clazz = clazz.getSuperclass();
+		}
 		return null;
 	}
 
@@ -193,8 +197,7 @@ public final class Reflections extends Utils {
 	public static Field[] getDeclaredFieldsAnnotatedWith(Class<?> clazz, Class<? extends Annotation> annotation) {
 		return Instances.fetch(() -> {
 			Set<Field> s = new HashSet<Field>();
-			for (Field f : getDeclaredFields(clazz))
-				if (f.isAnnotationPresent(annotation)) s.add(f);
+			for (Field f : getDeclaredFields(clazz)) if (f.isAnnotationPresent(annotation)) s.add(f);
 			return s.toArray(new Field[s.size()]);
 		}, Field[].class, clazz, annotation);
 	}
@@ -232,8 +235,7 @@ public final class Reflections extends Utils {
 	}
 
 	public static boolean isAny(Class<?> cl, Class<?>... target) {
-		for (Class<?> t : target)
-			if (t.isAssignableFrom(cl)) return true;
+		for (Class<?> t : target) if (t.isAssignableFrom(cl)) return true;
 		return false;
 	}
 

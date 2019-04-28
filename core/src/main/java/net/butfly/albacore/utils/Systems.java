@@ -25,7 +25,6 @@ import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 
-import com.google.common.base.Joiner;
 import com.sun.akuma.Daemon;
 import com.sun.akuma.JavaVMArguments;
 
@@ -68,9 +67,7 @@ public final class Systems extends Utils {
 		return pid;
 	}
 
-	public static Class<?> getMainClass() {
-		return JVM.current().mainClass;
-	}
+	public static Class<?> getMainClass() { return JVM.current().mainClass; }
 
 	public static boolean isDebug() {
 		String c = System.getProperty(Albacore.Props.PROP_DEBUG_FLAG);
@@ -140,9 +137,7 @@ public final class Systems extends Utils {
 		return gc;
 	}
 
-	public static String getDefaultCachePathBase() {
-		return System.getProperty(Albacore.Props.PROP_CACHE_LOCAL_PATH, "./cache/");
-	}
+	public static String getDefaultCachePathBase() { return System.getProperty(Albacore.Props.PROP_CACHE_LOCAL_PATH, "./cache/"); }
 
 	public static class Timeing implements AutoCloseable {
 		private final long begin;
@@ -216,11 +211,8 @@ public final class Systems extends Utils {
 		for (String conf : System.getProperty(Albacore.Props.PROP_APP_FORK_VM_ARGS, "").split(",")) configed.addAll(loadVmArgs(conf));
 		List<String> jvmArgs = new ArrayList<>(jvm.vmArgs);
 		if (configed.isEmpty()) return jvmArgs;
-		if (logger.isDebugEnabled()) {
-			StringBuilder info = new StringBuilder("JVM args original: " + jvmArgs + ", \n\tappending config loaded: " + Joiner.on(" ").join(
-					configed));
-			logger.debug(info);
-		}
+		if (logger.isDebugEnabled()) logger.debug("JVM args original: " + jvmArgs + //
+				", \n\tappending config loaded: " + String.join(" ", configed));
 		jvmArgs.addAll(configed);
 		return jvmArgs.stream().filter(a -> !a.startsWith("-Dalbacore.app.")).collect(Collectors.toList());
 	}

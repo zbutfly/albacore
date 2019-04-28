@@ -15,8 +15,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Stream;
 
-import com.google.common.base.Joiner;
-
 import net.butfly.albacore.io.lambda.BiConsumer;
 import net.butfly.albacore.io.lambda.BinaryOperator;
 import net.butfly.albacore.io.lambda.Consumer;
@@ -119,7 +117,7 @@ public interface Sdream<E> extends Serializable {
 	void each(Consumer<E> using);
 
 	default String joinAsString(Function<E, CharSequence> conv, CharSequence... separators) {
-		return Joiner.on(null == separators || separators.length == 0 ? "" : Joiner.on("").join(separators)).join(map(conv).list());
+		return String.join(null == separators || separators.length == 0 ? "" : String.join("", separators), map(conv).list());
 	}
 
 	default String joinAsString(CharSequence prefix, Function<E, CharSequence> conv, CharSequence... separators) {
