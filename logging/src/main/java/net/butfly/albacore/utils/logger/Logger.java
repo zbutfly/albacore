@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
-import org.apache.log4j.Layout;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
 import org.slf4j.impl.Log4jLoggerAdapter;
@@ -41,7 +40,7 @@ public class Logger implements Serializable {
 		Log4jHelper.initLog4J();
 	}
 
-	private final org.slf4j.Logger logger;
+	final org.slf4j.Logger logger;
 
 	private Logger(org.slf4j.Logger logger) {
 		super();
@@ -437,11 +436,8 @@ public class Logger implements Serializable {
 		LEVELS_SLF_TO_LOG4J.put(org.slf4j.event.Level.TRACE, org.apache.log4j.Level.TRACE);
 	}
 
-	public <L extends Layout> Logger setLayout(Class<L> layout) {
-		return this;
-	}
-
-	public Logger setLevel(org.apache.log4j.Level info) {
+	public Logger setLevel(org.slf4j.event.Level level) {
+		Log4jHelper.changeLevel((Log4jLoggerAdapter) logger, level);
 		return this;
 	}
 }

@@ -51,16 +51,23 @@ interface Log4jHelper {
 		}
 	}
 
-	static org.slf4j.Logger changeLevel(Log4jLoggerAdapter slf, org.slf4j.event.Level level) {
-		org.apache.log4j.Logger ll;
+	static org.apache.log4j.Logger log4j(Log4jLoggerAdapter slf) {
 		try {
 			Field f = Log4jLoggerAdapter.class.getDeclaredField("logger");
 			f.setAccessible(true);
-			ll = (org.apache.log4j.Logger) f.get(slf);
+			return (org.apache.log4j.Logger) f.get(slf);
 		} catch (NoSuchFieldException | SecurityException | IllegalAccessException e) {
-			throw new RuntimeException(e);
+			throw new IllegalArgumentException(e);
 		}
-		ll.setLevel(net.butfly.albacore.utils.logger.Logger.LEVELS_SLF_TO_LOG4J.get(level));
+	}
+	static org.slf4j.Logger changeLayout(Log4jLoggerAdapter slf, org.slf4j.event.Level level) {
+		log4j(slf).getAllAppenders();
+		log4j(slf).setLevel(net.butfly.albacore.utils.logger.Logger.LEVELS_SLF_TO_LOG4J.get(level));
+		return slf;
+	}
+
+	static org.slf4j.Logger changeLevel(Log4jLoggerAdapter slf, org.slf4j.event.Level level) {
+		log4j(slf).setLevel(net.butfly.albacore.utils.logger.Logger.LEVELS_SLF_TO_LOG4J.get(level));
 		return slf;
 	}
 
