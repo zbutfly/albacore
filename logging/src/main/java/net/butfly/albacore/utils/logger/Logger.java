@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
+import org.apache.log4j.Layout;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
 import org.slf4j.impl.Log4jLoggerAdapter;
@@ -94,9 +95,7 @@ public class Logger implements Serializable {
 		this(LoggerFactory.getLogger(clazz.getName()));
 	}
 
-	public CharSequence getName() {
-		return logger.getName();
-	}
+	public CharSequence getName() { return logger.getName(); }
 
 	public boolean isLoggable(Level level) {
 		switch (level) {
@@ -137,9 +136,7 @@ public class Logger implements Serializable {
 	}
 
 	// slf4j style
-	public boolean isTraceEnabled() {
-		return logger.isTraceEnabled();
-	}
+	public boolean isTraceEnabled() { return logger.isTraceEnabled(); }
 
 	public boolean trace(CharSequence msg) {
 		if (null == msg) return false;
@@ -154,9 +151,7 @@ public class Logger implements Serializable {
 		});
 	}
 
-	public boolean isDebugEnabled() {
-		return logger.isDebugEnabled();
-	}
+	public boolean isDebugEnabled() { return logger.isDebugEnabled(); }
 
 	public boolean debug(CharSequence msg) {
 		if (null == msg) return false;
@@ -171,9 +166,7 @@ public class Logger implements Serializable {
 		});
 	}
 
-	public boolean isInfoEnabled() {
-		return logger.isInfoEnabled();
-	}
+	public boolean isInfoEnabled() { return logger.isInfoEnabled(); }
 
 	public boolean info(CharSequence msg) {
 		if (null == msg) return false;
@@ -188,9 +181,7 @@ public class Logger implements Serializable {
 		});
 	}
 
-	public boolean isWarnEnabled() {
-		return logger.isWarnEnabled();
-	}
+	public boolean isWarnEnabled() { return logger.isWarnEnabled(); }
 
 	public boolean warn(CharSequence msg) {
 		if (null == msg) return false;
@@ -205,9 +196,7 @@ public class Logger implements Serializable {
 		});
 	}
 
-	public boolean isErrorEnabled() {
-		return logger.isErrorEnabled();
-	}
+	public boolean isErrorEnabled() { return logger.isErrorEnabled(); }
 
 	public boolean error(CharSequence msg) {
 		if (null == msg) return false;
@@ -446,5 +435,13 @@ public class Logger implements Serializable {
 		LEVELS_SLF_TO_LOG4J.put(org.slf4j.event.Level.INFO, org.apache.log4j.Level.INFO);
 		LEVELS_SLF_TO_LOG4J.put(org.slf4j.event.Level.DEBUG, org.apache.log4j.Level.DEBUG);
 		LEVELS_SLF_TO_LOG4J.put(org.slf4j.event.Level.TRACE, org.apache.log4j.Level.TRACE);
+	}
+
+	public <L extends Layout> Logger setLayout(Class<L> layout) {
+		return this;
+	}
+
+	public Logger setLevel(org.apache.log4j.Level info) {
+		return this;
 	}
 }

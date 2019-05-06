@@ -7,6 +7,7 @@ import static net.butfly.albacore.utils.logger.StatsUtils.formatMillis;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -80,8 +81,8 @@ public class Statistic {
 
 	/**
 	 * @param step
-	 *             <li>0: count but print manually
-	 *             <li>less than 0: do not change anything
+	 *            <li>0: count but print manually
+	 *            <li>less than 0: do not change anything
 	 */
 	public final Statistic step(long step) {
 		if (step == 0) stepSize.set(Long.MAX_VALUE);
@@ -249,11 +250,6 @@ public class Statistic {
 		}
 	}
 
-	@Deprecated
-	public <E> void statsOut(E v, Consumer<E> use) {
-		statsOutN(v, use);
-	}
-
 	public <E> void statsOutN(E v, Consumer<E> use) {
 		long now = System.currentTimeMillis();
 		try {
@@ -263,51 +259,23 @@ public class Statistic {
 		}
 	}
 
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-	private <E> void timing(E v, long start) {
-		if (null == v) return;
-		long spent = System.currentTimeMillis() - start;
-		spentTotal.addAndGet(spent);
-		if (v instanceof Collection) stats((Collection) v);
-		if (v instanceof Iterable) stats((Iterable) v);
-		else if (v.getClass().isArray()) stats((Object[]) v);
-		else stats(v);
+	public <E, R, C extends Collection<E>> R statsOut(C c, Function<C, R> use) {
+		AtomicReference<R> r = new AtomicReference<>();
+		statsOuts(c, cc -> r.set(use.apply(cc)));
+		return r.get();
 	}
 
-	public <E, R, C extends Collection<E>> R statsOuts(C c, Function<C, R> use) {
-		long now = System.currentTimeMillis();
-		try {
-			return use.apply(c);
-		} finally {
-			if (null != c && !c.isEmpty()) {
-				long spent = System.currentTimeMillis() - now;
-				tryStats(() -> {
-					if (stepSize.get() < 0 || empty(c)) return;
-					spentTotal.addAndGet(spent);
-					if (null != c && !c.isEmpty()) {
-						int b = 0;
-						for (E e : c) if (null != e) {
-							stats(e);
-							b++;
-						}
-						if (b > 1) batchs.incrementAndGet();
-					}
-				});
-			}
-		}
-	}
-
-	@Deprecated
 	public <E, C extends Collection<E>> void statsOuts(C c, Consumer<C> use) {
-		statsOutsN(c, use);
-	}
-
-	public <E, C extends Collection<E>> void statsOutsN(C c, Consumer<C> use) {
 		long now = System.currentTimeMillis();
 		try {
 			use.accept(c);
 		} finally {
-			long spent = System.currentTimeMillis() - now;
+			timing(c, System.currentTimeMillis() - now);
+		}
+	}
+
+	public <E, C extends Collection<E>> void timing(C c, long spent) {
+		if (null != c && !c.isEmpty()) {
 			tryStats(() -> {
 				if (stepSize.get() < 0 || empty(c)) return;
 				spentTotal.addAndGet(spent);
@@ -323,12 +291,26 @@ public class Statistic {
 		}
 	}
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public <E> void timing(E v, long start) {
+		if (null == v) return;
+		long spent = System.currentTimeMillis() - start;
+		spentTotal.addAndGet(spent);
+		if (v instanceof Collection) stats((Collection) v);
+		if (v instanceof Iterable) stats((Iterable) v);
+		else if (v.getClass().isArray()) stats((Object[]) v);
+		else stats(v);
+	}
+
 	public Snapshot snapshot() {
 		return new Snapshot(false);
 	}
+	public Snapshot snapshotAndStep() {
+		return new Snapshot(true);
+	}
 
 	public void trace(String sampling) {
-		Snapshot s = new Snapshot(true);
+		Snapshot s = snapshotAndStep();
 		if (s.stepPacks > 0) logger.debug(s.sample(sampling)::toString);
 	}
 

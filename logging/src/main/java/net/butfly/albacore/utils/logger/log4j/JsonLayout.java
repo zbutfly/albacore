@@ -38,12 +38,12 @@ public class JsonLayout extends Layout {
 		// v.put("DPC_STATS_IN_TOTAL", Texts.formatDate(timeFormat, new Date(event.timeStamp)));
 		// v.put("DPC_STATS_OUT_TOTAL", Texts.formatDate(timeFormat, new Date(event.timeStamp)));
 		v.put("OP_TIME", Texts.formatDate(timeFormat, new Date(event.timeStamp)));
-		v.put("LOG_NAME", event.getLoggerName());
 		ThrowableInformation thi = event.getThrowableInformation();
 		if (null != thi) {
 			v.put("ERR_MESSAGE", thi.getThrowable().getMessage());
 			if (debug) v.put("ERR_STACKTRACE", thi.getThrowableStrRep());
 		}
+		v.put("LOG_MESSAGE", event.getMessage());
 		return Jsonx.json(v);
 	}
 
