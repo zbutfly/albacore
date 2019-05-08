@@ -85,7 +85,7 @@ public class Statistic {
 	 *            <li>less than 0: do not change anything
 	 */
 	public final Statistic step(long step) {
-		if (step == 0) stepSize.set(Long.MAX_VALUE);
+		if (step <= 0) stepSize.set(Long.MAX_VALUE);
 		else if (step > 0) stepSize.set(step - 1);
 		return this;
 	}
@@ -246,7 +246,7 @@ public class Statistic {
 		try {
 			return use.apply(v);
 		} finally {
-			timing(v, now);
+			stats(v, System.currentTimeMillis() - now);
 		}
 	}
 
@@ -255,7 +255,7 @@ public class Statistic {
 		try {
 			use.accept(v);
 		} finally {
-			timing(v, now);
+			stats(v, System.currentTimeMillis() - now);
 		}
 	}
 
@@ -270,11 +270,11 @@ public class Statistic {
 		try {
 			use.accept(c);
 		} finally {
-			timing(c, System.currentTimeMillis() - now);
+			stats(c, System.currentTimeMillis() - now);
 		}
 	}
 
-	public <E, C extends Collection<E>> void timing(C c, long spent) {
+	public <E, C extends Collection<E>> void stats(C c, long spent) {
 		if (null != c && !c.isEmpty()) {
 			tryStats(() -> {
 				if (stepSize.get() < 0 || empty(c)) return;
@@ -292,9 +292,9 @@ public class Statistic {
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public <E> void timing(E v, long start) {
+	public <E> void stats(E v, long spent) {
 		if (null == v) return;
-		long spent = System.currentTimeMillis() - start;
+
 		spentTotal.addAndGet(spent);
 		if (v instanceof Collection) stats((Collection) v);
 		if (v instanceof Iterable) stats((Iterable) v);
@@ -305,6 +305,7 @@ public class Statistic {
 	public Snapshot snapshot() {
 		return new Snapshot(false);
 	}
+
 	public Snapshot snapshotAndStep() {
 		return new Snapshot(true);
 	}

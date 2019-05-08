@@ -24,14 +24,11 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 interface Log4jHelper {
-	static final Logger logger = Logger.getLogger(Logger.class);
-
 	static void initLog4J() {
 		URL res = Thread.currentThread().getContextClassLoader().getResource("log4j.properties");
-		if (null != res) {
-			logger.warn("log4j.properties found in CLASSPATH [" + res.toString() + "], but is not recommended. log4j.xml is recommended.");
-			return;
-		}
+		if (null != res) //
+			System.err.println("log4j.properties found in CLASSPATH [" + res.toString()
+					+ "], but is not recommended. log4j.xml is recommended.");
 		res = Thread.currentThread().getContextClassLoader().getResource("log4j.xml");
 		if (null == res) {
 			res = Thread.currentThread().getContextClassLoader().getResource("net/butfly/albacore/utils/logger/log4j-default.xml");
@@ -40,7 +37,24 @@ interface Log4jHelper {
 			System.setProperty("log4j.configuration", res.toString());
 		}
 		if (res.getPath().indexOf(".jar!") > 0) //
-			logger.warn("log4j configuration found in jar, dangerous and not recommended: \n" + res.getPath());
+			System.err.println("log4j configuration found in jar, dangerous and not recommended: \n" + res.getPath());
+		fixMDC();
+	}
+
+	static void fixMDC() {
+		Class<?> c;
+		try {
+			c = Class.forName("org.apache.log4j.helpers.Loader");
+		} catch (ClassNotFoundException e) {
+			return;
+		}
+		try {
+			Field f = c.getDeclaredField("java1");
+			f.setAccessible(true);
+			if (f.getBoolean(null)) f.set(null, false);
+		} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
+			throw new IllegalAccessError();
+		}
 	}
 
 	static Element load(URL res) {
@@ -60,6 +74,7 @@ interface Log4jHelper {
 			throw new IllegalArgumentException(e);
 		}
 	}
+
 	static org.slf4j.Logger changeLayout(Log4jLoggerAdapter slf, org.slf4j.event.Level level) {
 		log4j(slf).getAllAppenders();
 		log4j(slf).setLevel(net.butfly.albacore.utils.logger.Logger.LEVELS_SLF_TO_LOG4J.get(level));

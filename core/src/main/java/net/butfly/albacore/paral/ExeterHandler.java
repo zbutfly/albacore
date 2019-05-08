@@ -1,13 +1,13 @@
 package net.butfly.albacore.paral;
 
-import static java.util.concurrent.ForkJoinPool.*;
+import static java.util.concurrent.ForkJoinPool.defaultForkJoinWorkerThreadFactory;
+import static java.util.concurrent.ForkJoinPool.getCommonPoolParallelism;
 import static net.butfly.albacore.Albacore.Props.PROP_PARALLEL_FACTOR;
 import static net.butfly.albacore.paral.Exeter.logger;
 import static net.butfly.albacore.paral.Exeter.tracePool;
 
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.Date;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinWorkerThread;
@@ -23,10 +23,9 @@ import net.butfly.albacore.Albacore;
 import net.butfly.albacore.utils.Configs;
 import net.butfly.albacore.utils.Systems;
 import net.butfly.albacore.utils.Texts;
-import net.butfly.albacore.utils.collection.Maps;
 
 class ExeterHandler implements RejectedExecutionHandler, UncaughtExceptionHandler, ThreadFactory {
-	private static final Map<String, ThreadGroup> g = Maps.of();
+//	private static final Map<String, ThreadGroup> g = Maps.of();
 	final String name;
 	private final boolean throwException;
 
@@ -38,7 +37,7 @@ class ExeterHandler implements RejectedExecutionHandler, UncaughtExceptionHandle
 
 	@Override
 	public Thread newThread(Runnable r) {
-		Thread t = new Thread(g.computeIfAbsent(name, n -> new ThreadGroup(name + "ThreadGroup")), r);
+		Thread t = new Thread(/* g.computeIfAbsent(name, n -> name + "ThreadGroup")), */r);
 		t.setName(name + "#" + t.getId() + "@" + Texts.iso8601(new Date()) + "");
 		t.setUncaughtExceptionHandler(this);
 		return t;

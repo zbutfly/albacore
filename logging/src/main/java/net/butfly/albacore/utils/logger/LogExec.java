@@ -36,7 +36,9 @@ public class LogExec {
 	}
 
 	public static boolean tryExec(Runnable r) {
-		for (Supplier<Map<String, Object>> mdcing : Loggers.mdcs) mdcing.get().forEach(MDC::put);
+		for (Supplier<Map<String, Object>> mdcing : Loggers.mdcs) mdcing.get().forEach((k, o) -> {
+			if (null != o) MDC.put(k, o.toString());
+		});
 		try {
 			logex.execute(r);
 			return true;
