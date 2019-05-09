@@ -18,7 +18,7 @@ public class Sub extends StableFunction {
 		sb.append("(");
 		if (ReflectUtil.isPrimitiveOrWrapNumber(t))
 			// 数值型和字符型时，直接添加
-			sb.append(argMethod.source(ctx, node));
+			sb.append("((").append(t.getName()).append(")").append(argMethod.source(ctx, node)).append(")");
 		else if (CharSequence.class.isAssignableFrom(t)) {
 			// FIXME 处理1-"1"的
 		}

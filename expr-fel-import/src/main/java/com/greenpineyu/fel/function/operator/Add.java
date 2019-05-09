@@ -106,7 +106,7 @@ public class Add extends StableFunction {
 		sb.append("(");
 		if (ReflectUtil.isPrimitiveOrWrapNumber(t) || CharSequence.class.isAssignableFrom(t)) {
 			// 数值型和字符型时，直接添加
-			sb.append(argMethod.source(ctx, node));
+			sb.append("((").append(t.getName()).append(")").append(argMethod.source(ctx, node)).append(")");
 		} else {
 			sb.append("ObjectUtils.toString(").append(argMethod.source(ctx, node)).append(")");
 		}
