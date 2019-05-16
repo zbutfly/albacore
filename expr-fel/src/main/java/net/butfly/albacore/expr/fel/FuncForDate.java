@@ -1,7 +1,6 @@
 package net.butfly.albacore.expr.fel;
 
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import net.butfly.albacore.expr.fel.FelFunc.Func;
