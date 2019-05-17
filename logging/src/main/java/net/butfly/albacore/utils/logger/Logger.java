@@ -5,10 +5,15 @@ import static net.butfly.albacore.utils.logger.Loggers.ing;
 import static net.butfly.albacore.utils.logger.Loggers.shrinkClassname;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
+import org.apache.log4j.Appender;
+import org.apache.log4j.FileAppender;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
 import org.slf4j.impl.Log4jLoggerAdapter;
@@ -36,11 +41,13 @@ import net.butfly.albacore.utils.logger.Loggers.Logging;
  */
 public class Logger implements Serializable {
 	private static final long serialVersionUID = -1940330974751419775L;
+	private static Logger normalLogger = Logger.getLogger(Log4jHelper.class);
 	static {
-		Log4jHelper.initLog4J();
+		Log4jHelper.checkConf();
+		Log4jHelper.fixMDC();
 	}
 
-	final org.slf4j.Logger logger;
+	public final org.slf4j.Logger logger;
 
 	private Logger(org.slf4j.Logger logger) {
 		super();
@@ -436,8 +443,43 @@ public class Logger implements Serializable {
 		LEVELS_SLF_TO_LOG4J.put(org.slf4j.event.Level.TRACE, org.apache.log4j.Level.TRACE);
 	}
 
-	public Logger setLevel(org.slf4j.event.Level level) {
-		Log4jHelper.changeLevel((Log4jLoggerAdapter) logger, level);
-		return this;
+	public final Log4js impl4j = new Log4js();
+
+	public class Log4js {
+		public org.apache.log4j.Logger logger() {
+			return Log4jHelper.log4j((Log4jLoggerAdapter) logger);
+		}
+
+		// find appender for log (with setting prefix)
+		@SuppressWarnings("unchecked")
+		public List<Appender> appenders() {
+			org.apache.log4j.Logger l = logger();
+			Enumeration<Appender> apds;
+			// find appender for log (with setting prefix)
+			List<Appender> r = new ArrayList<>();
+			while (!(apds = l.getAllAppenders()).hasMoreElements()) if (null == (l = (org.apache.log4j.Logger) l.getParent())) //
+				return r;
+			while (apds.hasMoreElements()) r.add(apds.nextElement());
+			return r;
+		}
+
+		public Appender appender() {
+			List<Appender> apds = appenders();
+			if (apds.isEmpty()) return null;
+			if (apds.size() > 1) normalLogger.warn("More appenders defined on JsonLogger, only first is force to JsonLayout");
+			return apds.get(0);
+		}
+
+		public void suffix(String suffix) {
+			Appender a = appender();
+			if (a instanceof FileAppender) {
+				FileAppender fa = (FileAppender) a;
+				String[] segs = fa.getFile().split("\\.", 2);
+				String fn = segs.length == 2 ? segs[0] + suffix + "." + segs[1] : fa.getFile() + suffix;
+				normalLogger.info("Logger [" + logger.getName() + "] has been binded on FileAppender [" + fa.getName()
+						+ "], filename of the appender has been adjusted from [" + fa.getFile() + "] into [" + fn + "].");
+				fa.setFile(fn);
+			}
+		}
 	}
 }

@@ -24,11 +24,10 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 interface Log4jHelper {
-	static void initLog4J() {
+	static void checkConf() {
 		URL res = Thread.currentThread().getContextClassLoader().getResource("log4j.properties");
-		if (null != res) //
-			System.err.println("log4j.properties found in CLASSPATH [" + res.toString()
-					+ "], but is not recommended. log4j.xml is recommended.");
+		if (null != res) System.err.println("log4j.properties found in CLASSPATH [" + res.toString()
+				+ "], but is not recommended. log4j.xml is recommended.");
 		res = Thread.currentThread().getContextClassLoader().getResource("log4j.xml");
 		if (null == res) {
 			res = Thread.currentThread().getContextClassLoader().getResource("net/butfly/albacore/utils/logger/log4j-default.xml");
@@ -38,7 +37,6 @@ interface Log4jHelper {
 		}
 		if (res.getPath().indexOf(".jar!") > 0) //
 			System.err.println("log4j configuration found in jar, dangerous and not recommended: \n" + res.getPath());
-		fixMDC();
 	}
 
 	static void fixMDC() {
