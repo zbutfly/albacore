@@ -41,6 +41,7 @@ import net.butfly.albacore.utils.logger.Loggers.Logging;
  */
 public class Logger implements Serializable {
 	private static final long serialVersionUID = -1940330974751419775L;
+	static final Map<String, Logger> loggers = new ConcurrentHashMap<>();
 	private static Logger normalLogger = Logger.getLogger(Log4jHelper.class);
 	static {
 		Log4jHelper.checkConf();
@@ -54,7 +55,6 @@ public class Logger implements Serializable {
 		this.logger = logger;
 	}
 
-	static final Map<String, Logger> loggers = new ConcurrentHashMap<>();
 
 	// factory
 	public static final Logger getLogger(CharSequence name) {
