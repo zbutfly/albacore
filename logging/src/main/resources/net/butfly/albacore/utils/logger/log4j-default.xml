@@ -25,7 +25,7 @@
 		<level value="info" />
 		<appender-ref ref="log-console-stdout" />
 	</logger>
-	<logger additivity="false" name="com.hzcominfo.dataggr.Dpcinginging.config">
+	<logger additivity="false" name="com.hzcominfo.dpc.invalid">
 		<level value="warn" />
 		<appender-ref ref="log-dpc-invalid-file" />
 	</logger><!--dpc field invalid log -->

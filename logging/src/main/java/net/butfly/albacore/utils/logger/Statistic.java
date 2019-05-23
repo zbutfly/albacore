@@ -21,15 +21,20 @@ public class Statistic {
 	private static final Supplier<String> DEFAULT_EMPTY_DETAILING = () -> null;
 	private final ReentrantLock lock;
 
+	private String name;
 	protected final Logger logger;
 	private AtomicLong stepSize;
 	private Supplier<String> detailing;
 	private Function<Object, Long> sizing;
 	private Function<Object, Long> batchSizing;
-	private Function<Object, String> sampling;
-	private String name;
 
-	private final long begin;
+	private Function<Object, String> infoing;
+	private long sampleStep;
+	private final AtomicLong sampleCounter = new AtomicLong();
+	@SuppressWarnings("rawtypes")
+	private Consumer sampling = null;
+
+	public final long begin;
 
 	private final AtomicLong statsed;
 	private final AtomicLong packStep;
@@ -57,7 +62,8 @@ public class Statistic {
 		begin = System.currentTimeMillis();
 		statsed = new AtomicLong(begin);
 		sizing = o -> o instanceof SizeOfSupport ? ((SizeOfSupport) o)._sizeOf() : SizeOfSupport.sizeOf(o);
-		sampling = e -> null;
+		infoing = e -> null;
+		sampleStep = -1;
 		detailing = DEFAULT_EMPTY_DETAILING;
 		batchSizing = e -> 1L;
 		name = "[STATISTIC]";
@@ -115,15 +121,21 @@ public class Statistic {
 	}
 
 	@SuppressWarnings("unchecked")
-	public final <E> Statistic sampling(Function<E, String> sampling) {
-		this.sampling = o -> {
+	public final <E> Statistic infoing(Function<E, String> infoing) {
+		this.infoing = o -> {
 			try {
-				return sampling.apply((E) o);
+				return infoing.apply((E) o);
 			} catch (Exception e) {
 				return null;
 			}
 
 		};
+		return this;
+	}
+
+	public final <E> Statistic sampling(long step, Consumer<E> sampling) {
+		this.sampleStep = step;
+		this.sampling = sampling;
 		return this;
 	}
 
@@ -134,21 +146,23 @@ public class Statistic {
 
 	// stating
 	public <E> E stats(E v) {
-		tryStats(() -> {
-			if (stepSize.get() < 0 || null == v) return;
-			long size;
-			if (sizing == null || !enabledMore()) size = 0;
-			else try {
-				Long s = sizing.apply(v);
-				size = null == s ? 0 : s.longValue();
-			} catch (Throwable t) {
-				size = 0;
-			}
-			long s = batchSizing.apply(v);
-			if (s > 1) batchs.incrementAndGet();
-			stats(v, s, size);
-		});
+		tryStats(() -> stats0(v));
 		return v;
+	}
+
+	protected <E> void stats0(E v) {
+		if (stepSize.get() < 0 || null == v) return;
+		long size;
+		if (sizing == null || !enabledMore()) size = 0;
+		else try {
+			Long s = sizing.apply(v);
+			size = null == s ? 0 : s.longValue();
+		} catch (Throwable t) {
+			size = 0;
+		}
+		long s = batchSizing.apply(v);
+		if (s > 1) batchs.incrementAndGet();
+		stats0(v, s, size);
 	}
 
 	@SafeVarargs
@@ -312,19 +326,38 @@ public class Statistic {
 
 	public void trace(String sampling) {
 		Snapshot s = snapshotAndStep();
-		if (s.stepPacks > 0) logger.debug(s.sample(sampling)::toString);
+		if (s.stepPacks > 0) logger.debug(s.info(sampling)::toString);
 	}
 
-	private void stats(Object v, long steps, long bytes) {
+	private String getSampleInfo(Object v) {
+		return null != infoing && enabledMore() ? infoing.apply(v) : null;
+	}
+
+	public final AtomicReference<Object> last=new AtomicReference<>();
+
+	@SuppressWarnings("unchecked")
+	protected void stats0(Object v, long steps, long bytes) {
+		last.lazySet(v);
 		if (stepSize.get() < 0) return;
 		packTotal.addAndGet(steps);
 		byteTotal.addAndGet(bytes < 0 ? 0 : bytes);
 		byteStep.addAndGet(bytes < 0 ? 0 : bytes);
-		if (packStep.addAndGet(steps) > stepSize.get() && logger.isInfoEnabled() && lock.tryLock()) try {
-			if (packStep.get() > stepSize.get()) trace(null != sampling && enabledMore() ? sampling.apply(v) : null);
+		if (null != sampling && accu(sampleCounter, steps, sampleStep) == 0) //
+			sampling.accept(v);
+		if (accu(packStep, steps, stepSize.get()) == 0 && logger.isInfoEnabled() && lock.tryLock()) try {
+			if (packStep.get() > stepSize.get()) trace(getSampleInfo(v));
 		} finally {
 			lock.unlock();
 		}
+	}
+
+	private long accu(AtomicLong atomic, long step, long limit) {
+		return atomic.accumulateAndGet(step, (o, s) -> {
+			long ss = o + s;
+			if (ss > limit) return 0;
+			else return ss;
+		});
+
 	}
 
 	public class Snapshot implements Serializable {
@@ -389,7 +422,7 @@ public class Statistic {
 			return info.length() > 0 ? info : null;
 		}
 
-		public Snapshot sample(String sample) {
+		public Snapshot info(String sample) {
 			this.sample = sample;
 			return this;
 		}

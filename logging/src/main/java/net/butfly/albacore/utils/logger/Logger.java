@@ -55,7 +55,6 @@ public class Logger implements Serializable {
 		this.logger = logger;
 	}
 
-
 	// factory
 	public static final Logger getLogger(CharSequence name) {
 		String key = name.toString();
@@ -457,7 +456,7 @@ public class Logger implements Serializable {
 			Enumeration<Appender> apds;
 			// find appender for log (with setting prefix)
 			List<Appender> r = new ArrayList<>();
-			while (!(apds = l.getAllAppenders()).hasMoreElements()) if (null == (l = (org.apache.log4j.Logger) l.getParent())) //
+			while (null == (apds = l.getAllAppenders()) || !apds.hasMoreElements()) if (null == (l = (org.apache.log4j.Logger) l.getParent())) //
 				return r;
 			while (apds.hasMoreElements()) r.add(apds.nextElement());
 			return r;
