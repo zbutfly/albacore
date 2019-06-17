@@ -1,6 +1,9 @@
 package net.butfly.albacore.expr.fel;
 
 import java.text.ParseException;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
 import net.butfly.albacore.expr.fel.FelFunc.Func;
@@ -83,4 +86,24 @@ public interface FuncForDate {
 				return new Date();
 		}
 	}
+
+	@Func
+	class DateTimeFormatterToLongFunc extends FelFunc<Long> {
+		@Override
+		protected boolean valid(int argl) {
+			return argl == 3;
+		}
+
+		@Override
+		public Long invoke(Object... args) {
+			if (Fels.isNull(args[1])) throw new RuntimeException("Time Formatter should not be null");
+			if (args[0] instanceof CharSequence && args[1] instanceof CharSequence && args[2] instanceof CharSequence) {
+				DateTimeFormatter dtf = DateTimeFormatter.ofPattern(args[1].toString());
+				LocalDateTime ldt = LocalDateTime.parse(args[0].toString(), dtf);
+				return ldt.atOffset(ZoneOffset.of(args[2].toString())).toInstant().toEpochMilli();
+			}
+			throw new IllegalArgumentException("params are illegal");
+		}
+	}
+	
 }
