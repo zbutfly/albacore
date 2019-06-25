@@ -121,6 +121,89 @@ public interface FuncForStr {
 		}
 	}
 
+	@Func
+	class AndFunc extends FelFunc<Object> {
+		@Override
+		protected boolean valid(int argl) {
+			return argl > 0;
+		}
+
+		@Override
+		public Boolean invoke(Object... args) {
+			if(args.length<1){
+				return false;
+			}
+			boolean b = true;
+			for(int j = 0; j<args.length;j++) {
+				if (!match(b, args[j])) {
+					return false;
+				}
+			}
+			return true;
+		}
+
+		private boolean match(Object v, Object cas) {
+			boolean nv = isNull(v), nc = isNull(cas);
+			if (nv && nc) return true;
+			if (!nv && !nc) return v.equals(cas);
+			return false;
+		}
+	}
+
+	@Func
+	class OrFunc extends FelFunc<Object> {
+		@Override
+		protected boolean valid(int argl) {
+			return argl > 0;
+		}
+
+		@Override
+		public Boolean invoke(Object... args) {
+			if(args.length<1){
+				return false;
+			}
+			boolean b = true;
+			for(int j = 0; j<args.length;j++) {
+				if (match(b, args[j])) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+		private boolean match(Object v, Object cas) {
+			boolean nv = isNull(v), nc = isNull(cas);
+			if (nv && nc) return true;
+			if (!nv && !nc) return v.equals(cas);
+			return false;
+		}
+	}
+
+	@Func
+	class TransformLatAndLonFunc extends FelFunc<Object> {
+		@Override
+		protected boolean valid(int argl) {
+			return argl > 0;
+		}
+
+		@Override
+		public Float invoke(Object... args) {
+			int data = ((Number)args[0]).intValue();
+			String str = args[1].toString();
+			int degree = data/(3600*100);
+			int min = (data%(60*100))/(60*100);
+			double sec = (data%(60*100))*1.0/100;
+			if(sec>59.9){
+				sec=59.9;
+			}
+			float fData = degree+(float)min/60+(float)sec/3600;
+			if ("W".endsWith(str)||"S".equals(str)){
+				fData=-1*fData;
+			}
+			return fData;
+		}
+	}
+
 	/**
 	 * match(value, regularExpression)
 	 */
