@@ -455,4 +455,47 @@ public interface FuncForStr {
 			return result.toString();
 		}
 	}
+
+	/**
+	 * hash(int)：hash值
+	 */
+	@Func
+	class HashFunc extends FelFunc<String> {
+		@Override
+		protected boolean valid(int argl) {
+			return argl == 1;
+		}
+
+		@Override
+		public String invoke(Object... args) {
+			if (isNull(args[0])) return null;
+			int hashCode = args[0].toString().hashCode();
+			if (hashCode == Integer.MIN_VALUE) {
+				return String.valueOf(hashCode);
+			}
+			return String.valueOf(Math.abs(hashCode));
+		}
+	}
+
+	/**
+	 * hash(int)：hash值2位
+	 */
+	@Func
+	class Hash2Func extends FelFunc<String> {
+		@Override
+		protected boolean valid(int argl) {
+			return argl == 1;
+		}
+
+		@Override
+		public String invoke(Object... args) {
+			if (isNull(args[0])) return null;
+			int hashCode = args[0].toString().hashCode();
+			if (hashCode == Integer.MIN_VALUE) {
+				return "0" + hashCode%3;
+			}
+			return "0" + Math.abs(hashCode)%3;
+		}
+	}
+
 }
