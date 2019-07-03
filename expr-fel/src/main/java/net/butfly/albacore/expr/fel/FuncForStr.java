@@ -3,6 +3,8 @@ package net.butfly.albacore.expr.fel;
 import static net.butfly.albacore.expr.fel.Fels.NULL;
 import static net.butfly.albacore.expr.fel.Fels.isNull;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -495,6 +497,41 @@ public interface FuncForStr {
 				return "0" + hashCode%3;
 			}
 			return "0" + Math.abs(hashCode)%3;
+		}
+	}
+
+	/**
+	 * md5
+	 */
+	@Func
+	class GetStringMD5Func extends FelFunc<String> {
+		@Override
+		protected boolean valid(int argl) {
+			return argl == 1;
+		}
+
+		@Override
+		public String invoke(Object... args) {
+			if (isNull(args[0])) return null;
+			final char[] hexDigits = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
+			MessageDigest mdInst;
+			try {
+				mdInst = MessageDigest.getInstance("MD5");
+			} catch (NoSuchAlgorithmException e) {
+				e.printStackTrace();
+				return "";
+			}
+			byte[] btInput = args[0].toString().getBytes();
+			mdInst.update(btInput);
+			byte[] md = mdInst.digest();
+			int length = md.length;
+			char str[] = new char[length * 2];
+			int k = 0;
+			for (byte b : md) {
+				str[k++] = hexDigits[b >>> 4 & 0xf];
+				str[k++] = hexDigits[b & 0xf];
+			}
+			return new String(str);
 		}
 	}
 
