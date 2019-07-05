@@ -535,4 +535,20 @@ public interface FuncForStr {
 		}
 	}
 
+	@Func
+	class Seq4Func extends FelFunc<String> {
+		@Override
+		protected boolean valid(int argl) {
+			return argl == 1;
+		}
+
+		@Override
+		public String invoke(Object... args) {
+			if (isNull(args[0])) return null;
+			String date = args[0].toString();
+			int num = (Integer.valueOf(date.substring(date.length()-2))-1)/8+1;
+			return "0" + num +"00";
+		}
+	}
+
 }
