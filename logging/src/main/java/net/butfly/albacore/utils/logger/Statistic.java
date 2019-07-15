@@ -317,15 +317,15 @@ public class Statistic {
 	}
 
 	public Snapshot snapshot() {
-		return new Snapshot(false);
+		return new Snapshot(0);
 	}
 
-	public Snapshot snapshotAndStep() {
-		return new Snapshot(true);
+	protected Snapshot snapshot(long step) {
+		return new Snapshot(step);
 	}
 
-	public void trace(String sampling) {
-		Snapshot s = snapshotAndStep();
+	public void trace(long step, String sampling) {
+		Snapshot s = snapshot(step);
 		if (s.stepPacks > 0) logger.debug(s.info(sampling)::toString);
 	}
 
@@ -333,7 +333,7 @@ public class Statistic {
 		return null != infoing && enabledMore() ? infoing.apply(v) : null;
 	}
 
-	public final AtomicReference<Object> last=new AtomicReference<>();
+	public final AtomicReference<Object> last = new AtomicReference<>();
 
 	@SuppressWarnings("unchecked")
 	protected void stats0(Object v, long steps, long bytes) {
@@ -344,20 +344,24 @@ public class Statistic {
 		byteStep.addAndGet(bytes < 0 ? 0 : bytes);
 		if (null != sampling && accu(sampleCounter, steps, sampleStep) == 0) //
 			sampling.accept(v);
-		if (accu(packStep, steps, stepSize.get()) == 0 && logger.isInfoEnabled() && lock.tryLock()) try {
-			if (packStep.get() > stepSize.get()) trace(getSampleInfo(v));
+		long step = accu(packStep, steps, stepSize.get());
+		if (step > 0 && logger.isInfoEnabled() && lock.tryLock()) try {
+			// if (packStep.get() > stepSize.get())
+			trace(step, getSampleInfo(v));
 		} finally {
 			lock.unlock();
 		}
 	}
 
 	private long accu(AtomicLong atomic, long step, long limit) {
-		return atomic.accumulateAndGet(step, (o, s) -> {
+		AtomicLong r = new AtomicLong();
+		atomic.accumulateAndGet(step, (o, s) -> {
 			long ss = o + s;
-			if (ss > limit) return 0;
-			else return ss;
+			if (ss <= limit) return ss;
+			r.set(ss);
+			return 0;
 		});
-
+		return r.get();
 	}
 
 	public class Snapshot implements Serializable {
@@ -380,12 +384,12 @@ public class Statistic {
 		public final CharSequence extra;
 		private String sample = null;
 
-		private Snapshot(boolean stepped) {
+		private Snapshot(long step) {
 			// synchronized (Statistic.this) {
 			long now = System.currentTimeMillis();
-			this.stepPacks = stepped ? packStep.getAndSet(0) : packStep.get();
-			this.stepBytes = stepped ? byteStep.getAndSet(0) : byteStep.get();
-			this.stepMillis = now - (stepped ? statsed.getAndSet(now) : statsed.get());
+			this.stepPacks = step > 0 ? step : packStep.get();
+			this.stepBytes = step > 0 ? byteStep.getAndSet(0) : byteStep.get();
+			this.stepMillis = now - (step > 0 ? statsed.getAndSet(now) : statsed.get());
 
 			this.totalPacks = packTotal.get();
 			this.totalBytes = byteTotal.get();

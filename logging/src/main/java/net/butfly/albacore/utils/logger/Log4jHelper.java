@@ -9,12 +9,14 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.apache.log4j.FileAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -124,5 +126,29 @@ interface Log4jHelper {
 			}
 		}
 
+	}
+
+	@SuppressWarnings("rawtypes")
+	static void flushAll() {
+		Set<FileAppender> flushedFileAppenders = new HashSet<FileAppender>();
+		Enumeration currentLoggers = LogManager.getLoggerRepository().getCurrentLoggers();
+		Object nextLogger;
+		Enumeration allAppenders;
+		while (currentLoggers.hasMoreElements()) if ((nextLogger = currentLoggers.nextElement()) instanceof Logger) {
+			Logger currentLogger = (Logger) nextLogger;
+			allAppenders = currentLogger.getAllAppenders();
+			while (allAppenders.hasMoreElements()) {
+				Object nextElement = allAppenders.nextElement();
+				if (nextElement instanceof FileAppender) {
+					FileAppender fileAppender = (FileAppender) nextElement;
+					net.butfly.albacore.utils.logger.Logger.normalLogger.info("Logger[log4j] flushing : " + fileAppender.getName());
+					if (!flushedFileAppenders.contains(fileAppender) && !fileAppender.getImmediateFlush()) {
+						flushedFileAppenders.add(fileAppender);
+						fileAppender.setImmediateFlush(true);
+						currentLogger.info(null);
+					} else {}
+				}
+			}
+		}
 	}
 }

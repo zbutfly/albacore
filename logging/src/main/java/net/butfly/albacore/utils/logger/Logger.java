@@ -7,6 +7,7 @@ import static net.butfly.albacore.utils.logger.Loggers.shrinkClassname;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,6 +15,7 @@ import java.util.function.Supplier;
 
 import org.apache.log4j.Appender;
 import org.apache.log4j.FileAppender;
+import org.apache.log4j.MDC;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
 import org.slf4j.impl.Log4jLoggerAdapter;
@@ -42,7 +44,7 @@ import net.butfly.albacore.utils.logger.Loggers.Logging;
 public class Logger implements Serializable {
 	private static final long serialVersionUID = -1940330974751419775L;
 	static final Map<String, Logger> loggers = new ConcurrentHashMap<>();
-	private static Logger normalLogger = Logger.getLogger(Log4jHelper.class);
+	static Logger normalLogger = Logger.getLogger(Log4jHelper.class);
 	static {
 		Log4jHelper.checkConf();
 		Log4jHelper.fixMDC();
@@ -145,12 +147,12 @@ public class Logger implements Serializable {
 
 	public boolean trace(CharSequence msg) {
 		if (null == msg) return false;
-		return tryExec(() -> logger.trace(msg.toString()));
+		return trylog(() -> logger.trace(msg.toString()));
 	}
 
 	public boolean trace(Supplier<CharSequence> msg) {
 		if (null == msg) return false;
-		return tryExec(() -> {
+		return trylog(() -> {
 			CharSequence s = msg.get();
 			if (null != s) logger.trace(s.toString());
 		});
@@ -160,12 +162,12 @@ public class Logger implements Serializable {
 
 	public boolean debug(CharSequence msg) {
 		if (null == msg) return false;
-		return tryExec(() -> logger.debug(msg.toString()));
+		return trylog(() -> logger.debug(msg.toString()));
 	}
 
 	public boolean debug(Supplier<CharSequence> msg) {
 		if (null == msg) return false;
-		return tryExec(() -> {
+		return trylog(() -> {
 			CharSequence s = msg.get();
 			if (null != s) logger.debug(s.toString());
 		});
@@ -175,12 +177,12 @@ public class Logger implements Serializable {
 
 	public boolean info(CharSequence msg) {
 		if (null == msg) return false;
-		return tryExec(() -> logger.info(msg.toString()));
+		return trylog(() -> logger.info(msg.toString()));
 	}
 
 	public boolean info(Supplier<CharSequence> msg) {
 		if (null == msg) return false;
-		return tryExec(() -> {
+		return trylog(() -> {
 			CharSequence s = msg.get();
 			if (null != s) logger.info(s.toString());
 		});
@@ -190,12 +192,12 @@ public class Logger implements Serializable {
 
 	public boolean warn(CharSequence msg) {
 		if (null == msg) return false;
-		return tryExec(() -> logger.warn(msg.toString()));
+		return trylog(() -> logger.warn(msg.toString()));
 	}
 
 	public boolean warn(Supplier<CharSequence> msg) {
 		if (null == msg) return false;
-		return tryExec(() -> {
+		return trylog(() -> {
 			CharSequence s = msg.get();
 			if (null != s) logger.warn(s.toString());
 		});
@@ -205,12 +207,12 @@ public class Logger implements Serializable {
 
 	public boolean error(CharSequence msg) {
 		if (null == msg) return false;
-		return tryExec(() -> logger.error(msg.toString()));
+		return trylog(() -> logger.error(msg.toString()));
 	}
 
 	public boolean error(Supplier<CharSequence> msg) {
 		if (null == msg) return false;
-		return tryExec(() -> {
+		return trylog(() -> {
 			CharSequence s = msg.get();
 			if (null != s) logger.error(s.toString());
 		});
@@ -246,27 +248,27 @@ public class Logger implements Serializable {
 
 	public boolean trace(CharSequence msg, Throwable t) {
 		if (null == msg) return false;
-		return tryExec(() -> logger.trace(msg.toString(), t));
+		return trylog(() -> logger.trace(msg.toString(), t));
 	}
 
 	public boolean debug(CharSequence msg, Throwable t) {
 		if (null == msg) return false;
-		return tryExec(() -> logger.debug(msg.toString(), t));
+		return trylog(() -> logger.debug(msg.toString(), t));
 	}
 
 	public boolean info(CharSequence msg, Throwable t) {
 		if (null == msg) return false;
-		return tryExec(() -> logger.info(msg.toString(), t));
+		return trylog(() -> logger.info(msg.toString(), t));
 	}
 
 	public boolean warn(CharSequence msg, Throwable t) {
 		if (null == msg) return false;
-		return tryExec(() -> logger.warn(msg.toString(), t));
+		return trylog(() -> logger.warn(msg.toString(), t));
 	}
 
 	public boolean error(CharSequence msg, Throwable t) {
 		if (null == msg) return false;
-		return tryExec(() -> logger.error(msg.toString(), t));
+		return trylog(() -> logger.error(msg.toString(), t));
 	}
 
 	public boolean log(Level level, Supplier<CharSequence> msg, Throwable t) {
@@ -288,7 +290,7 @@ public class Logger implements Serializable {
 
 	public boolean trace(Supplier<CharSequence> msg, Throwable t) {
 		if (null == msg) return false;
-		return tryExec(() -> {
+		return trylog(() -> {
 			CharSequence s = msg.get();
 			if (null != s) logger.trace(s.toString(), t);
 		});
@@ -296,7 +298,7 @@ public class Logger implements Serializable {
 
 	public boolean debug(Supplier<CharSequence> msg, Throwable t) {
 		if (null == msg) return false;
-		return tryExec(() -> {
+		return trylog(() -> {
 			CharSequence s = msg.get();
 			if (null != s) logger.debug(s.toString(), t);
 		});
@@ -304,7 +306,7 @@ public class Logger implements Serializable {
 
 	public boolean info(Supplier<CharSequence> msg, Throwable t) {
 		if (null == msg) return false;
-		return tryExec(() -> {
+		return trylog(() -> {
 			CharSequence s = msg.get();
 			if (null != s) logger.info(s.toString(), t);
 		});
@@ -312,7 +314,7 @@ public class Logger implements Serializable {
 
 	public boolean warn(Supplier<CharSequence> msg, Throwable t) {
 		if (null == msg) return false;
-		return tryExec(() -> {
+		return trylog(() -> {
 			CharSequence s = msg.get();
 			if (null != s) logger.warn(s.toString(), t);
 		});
@@ -320,7 +322,7 @@ public class Logger implements Serializable {
 
 	public boolean error(Supplier<CharSequence> msg, Throwable t) {
 		if (null == msg) return false;
-		return tryExec(() -> {
+		return trylog(() -> {
 			CharSequence s = msg.get();
 			if (null != s) logger.error(s.toString(), t);
 		});
@@ -480,5 +482,19 @@ public class Logger implements Serializable {
 				fa.setFile(fn);
 			}
 		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private boolean trylog(Runnable r) {
+		@SuppressWarnings("rawtypes")
+		Hashtable mdc = MDC.getContext();
+		return tryExec(() -> {
+			if (null != mdc) mdc.forEach((k, v) -> MDC.put(k.toString(), v));
+			r.run();
+		});
+	}
+
+	public static void flushAll() {
+		Log4jHelper.flushAll();
 	}
 }

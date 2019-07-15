@@ -45,7 +45,8 @@ public class JsonLayout extends Layout {
 			v.put("ERR_MESSAGE", thi.getThrowable().getMessage());
 			if (debug) v.put("ERR_STACKTRACE", thi.getThrowableStrRep());
 		}
-		v.put("LOG_MESSAGE", event.getMessage());
+		Object m = event.getMessage();
+		if (null != m) v.put("LOG_MESSAGE", m);
 		return Jsonx.json(v) + "\n";
 	}
 
