@@ -366,6 +366,7 @@ public class Statistic {
 
 	public class Snapshot implements Serializable {
 		private static final long serialVersionUID = -7093004807672632693L;
+		public String table = null;
 		public final long stepPacks;
 		public final long stepBytes;
 		public final long stepMillis;
