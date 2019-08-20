@@ -21,6 +21,7 @@ import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ClassInfoList;
 import io.github.classgraph.ScanResult;
 import net.butfly.albacore.support.Values;
+import net.butfly.albacore.utils.collection.Maps;
 import net.butfly.albacore.utils.logger.Logger;
 
 public final class Reflections extends Utils {
@@ -141,31 +142,43 @@ public final class Reflections extends Utils {
 		}
 	}
 
+	private static final Map<String, ScanResult> CGS = Maps.of();
+
 	private static ScanResult cpscaner(String... pkgs) {
-		ClassGraph cg = new ClassGraph();
-		// if (Systems.isDebug()) cg = cg.verbose();
-		return cg.enableAllInfo() // Scan classes, methods, fields, annotations
-				.whitelistPackages(pkgs) // Scan com.xyz and subpackages (omit to scan all packages)
-				.scan();
+		Arrays.sort(pkgs);
+		return CGS.computeIfAbsent(String.join(",", pkgs), k -> {
+			long s = System.currentTimeMillis();
+			logger.debug("Classpath scan on [" + k + "] begining....");
+			try {
+				ClassGraph cg = new ClassGraph();
+				// if (Systems.isDebug()) cg = cg.verbose();
+				return cg.enableAllInfo() // Scan classes, methods, fields, annotations
+						.whitelistPackages(pkgs) // Scan com.xyz and subpackages (omit to scan all packages)
+						.scan();
+			} finally {
+				logger.debug("Classpath scan on [" + k + "] finished in (" + (System.currentTimeMillis() - s) + ") ms.");
+			}
+		});
+
 	}
 
 	@SuppressWarnings("unchecked")
 	public static <T> Set<Class<? extends T>> getSubClasses(Class<T> parentClass, String... packagePrefix) {
 		if (Modifier.isFinal(parentClass.getModifiers())) return new HashSet<>();
 		final Set<Class<? extends T>> r = new HashSet<>();
-		try (ScanResult sr = cpscaner(packagePrefix)) {
-			ClassInfo pci = sr.getClassInfo(parentClass.getName());
-			ClassInfoList cli = pci.isInterface() ? pci.getClassesImplementing() : pci.getSubclasses();
-			for (ClassInfo ci : cli) r.add((Class<? extends T>) ci.loadClass());
-		}
+		// try (ScanResult sr = cpscaner(packagePrefix)) {
+		ClassInfo pci = cpscaner(packagePrefix).getClassInfo(parentClass.getName());
+		ClassInfoList cli = pci.isInterface() ? pci.getClassesImplementing() : pci.getSubclasses();
+		for (ClassInfo ci : cli) r.add((Class<? extends T>) ci.loadClass());
+		// }
 		return r;
 	}
 
 	public static Set<Class<?>> getClassesAnnotatedWith(Class<? extends Annotation> annotation, String... packagePrefix) {
 		Set<Class<?>> r = new HashSet<>();
-		try (ScanResult sr = cpscaner(packagePrefix)) {
-			sr.getClassInfo(annotation.getName()).getClassesWithAnnotation().forEach(ci1 -> r.add(ci1.loadClass()));
-		}
+		// try (ScanResult sr = cpscaner(packagePrefix)) {
+		cpscaner(packagePrefix).getClassInfo(annotation.getName()).getClassesWithAnnotation().forEach(ci1 -> r.add(ci1.loadClass()));
+		// }
 		return r;
 	}
 

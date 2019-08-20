@@ -42,8 +42,8 @@ public class JsonLayout extends Layout {
 		v.put("OP_TIME", Texts.formatDate(timeFormat, new Date(event.timeStamp)));
 		ThrowableInformation thi = event.getThrowableInformation();
 		if (null != thi) {
-			v.put("ERR_MESSAGE", thi.getThrowable().getMessage());
-			if (debug) v.put("ERR_STACKTRACE", thi.getThrowableStrRep());
+			if (null != thi.getThrowable().getMessage()) v.put("ERR_MESSAGE", thi.getThrowable().getMessage());
+			if (debug && null != thi.getThrowableStrRep()) v.put("ERR_STACKTRACE", thi.getThrowableStrRep());
 		}
 		Object m = event.getMessage();
 		if (null != m) v.put("LOG_MESSAGE", m);
