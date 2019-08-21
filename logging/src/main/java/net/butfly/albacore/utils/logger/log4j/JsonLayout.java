@@ -39,6 +39,7 @@ public class JsonLayout extends Layout {
 		if (null != mdc) mdc.forEach((k, vv) -> {
 			if (null != vv) v.put(k.toString(), vv);
 		});
+		if (!v.containsKey("STATS_TABLE")) return "";
 		v.put("OP_TIME", Texts.formatDate(timeFormat, new Date(event.timeStamp)));
 		ThrowableInformation thi = event.getThrowableInformation();
 		if (null != thi) {
