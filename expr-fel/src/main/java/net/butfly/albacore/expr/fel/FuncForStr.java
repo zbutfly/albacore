@@ -3,9 +3,11 @@ package net.butfly.albacore.expr.fel;
 import static net.butfly.albacore.expr.fel.Fels.NULL;
 import static net.butfly.albacore.expr.fel.Fels.isNull;
 
+import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -109,16 +111,20 @@ public interface FuncForStr {
 				Object case1 = args[i++];
 				if (i < args.length) { // pair case/result, test match and process
 					Object value1 = args[i++];
-					if (match(v0, case1)) return value1;
-				} else return case1;// odd args, with default value, match default value
+					if (match(v0, case1))
+						return value1;
+				} else
+					return case1;// odd args, with default value, match default value
 			}
 			return NULL; // no matchs and no default
 		}
 
 		private boolean match(Object v, Object cas) {
 			boolean nv = isNull(v), nc = isNull(cas);
-			if (nv && nc) return true;
-			if (!nv && !nc) return v.equals(cas);
+			if (nv && nc)
+				return true;
+			if (!nv && !nc)
+				return v.equals(cas);
 			return false;
 		}
 	}
@@ -132,11 +138,11 @@ public interface FuncForStr {
 
 		@Override
 		public Boolean invoke(Object... args) {
-			if(args.length<1){
+			if (args.length < 1) {
 				return false;
 			}
 			boolean b = true;
-			for(int j = 0; j<args.length;j++) {
+			for (int j = 0; j < args.length; j++) {
 				if (!match(b, args[j])) {
 					return false;
 				}
@@ -146,8 +152,10 @@ public interface FuncForStr {
 
 		private boolean match(Object v, Object cas) {
 			boolean nv = isNull(v), nc = isNull(cas);
-			if (nv && nc) return true;
-			if (!nv && !nc) return v.equals(cas);
+			if (nv && nc)
+				return true;
+			if (!nv && !nc)
+				return v.equals(cas);
 			return false;
 		}
 	}
@@ -161,11 +169,11 @@ public interface FuncForStr {
 
 		@Override
 		public Boolean invoke(Object... args) {
-			if(args.length<1){
+			if (args.length < 1) {
 				return false;
 			}
 			boolean b = true;
-			for(int j = 0; j<args.length;j++) {
+			for (int j = 0; j < args.length; j++) {
 				if (match(b, args[j])) {
 					return true;
 				}
@@ -175,8 +183,10 @@ public interface FuncForStr {
 
 		private boolean match(Object v, Object cas) {
 			boolean nv = isNull(v), nc = isNull(cas);
-			if (nv && nc) return true;
-			if (!nv && !nc) return v.equals(cas);
+			if (nv && nc)
+				return true;
+			if (!nv && !nc)
+				return v.equals(cas);
 			return false;
 		}
 	}
@@ -190,17 +200,17 @@ public interface FuncForStr {
 
 		@Override
 		public Float invoke(Object... args) {
-			int data = ((Number)args[0]).intValue();
+			int data = ((Number) args[0]).intValue();
 			String str = args[1].toString();
-			int degree = data/(3600*100);
-			int min = (data%(60*100))/(60*100);
-			double sec = (data%(60*100))*1.0/100;
-			if(sec>59.9){
-				sec=59.9;
+			int degree = data / (3600 * 100);
+			int min = (data % (60 * 100)) / (60 * 100);
+			double sec = (data % (60 * 100)) * 1.0 / 100;
+			if (sec > 59.9) {
+				sec = 59.9;
 			}
-			float fData = degree+(float)min/60+(float)sec/3600;
-			if ("W".endsWith(str)||"S".equals(str)){
-				fData=-1*fData;
+			float fData = degree + (float) min / 60 + (float) sec / 3600;
+			if ("W".endsWith(str) || "S".equals(str)) {
+				fData = -1 * fData;
 			}
 			return fData;
 		}
@@ -251,7 +261,8 @@ public interface FuncForStr {
 		public String invoke(Object... args) {
 			String s = isNull(args[0]) ? "" : args[0].toString();
 			int l = isNull(args[1]) ? 0 : ((Number) args[1]).intValue();
-			if (l <= s.length()) return s;
+			if (l <= s.length())
+				return s;
 			char c = 3 == args.length ? StrfilFunc.checkChar(args[2]) : ' ';
 			return StrfilFunc.fill(c, l - s.length()) + s;
 		}
@@ -271,7 +282,8 @@ public interface FuncForStr {
 		public String invoke(Object... args) {
 			String s = isNull(args[0]) ? "" : args[0].toString();
 			int l = isNull(args[1]) ? 0 : ((Number) args[1]).intValue();
-			if (l <= s.length()) return s;
+			if (l <= s.length())
+				return s;
 			char c = 3 == args.length ? StrfilFunc.checkChar(args[2]) : ' ';
 			return s + StrfilFunc.fill(c, l - s.length());
 		}
@@ -290,16 +302,21 @@ public interface FuncForStr {
 		@Override
 		public String invoke(Object... args) {
 			int n = ((Number) args[0]).intValue();
-			if (0 == n) return "";
+			if (0 == n)
+				return "";
 			return fill(1 == args.length ? ' ' : checkChar(args[1]), n);
 		}
 
 		static char checkChar(Object object) {
-			if (isNull(object)) return ' ';
+			if (isNull(object))
+				return ' ';
 			Class<?> cl = object.getClass();
-			if (Character.class.isAssignableFrom(cl)) return ((Character) object).charValue();
-			else if (char.class.isAssignableFrom(cl)) return (char) object;
-			else if (Number.class.isAssignableFrom(cl)) return (char) ((Number) object).intValue();
+			if (Character.class.isAssignableFrom(cl))
+				return ((Character) object).charValue();
+			else if (char.class.isAssignableFrom(cl))
+				return (char) object;
+			else if (Number.class.isAssignableFrom(cl))
+				return (char) ((Number) object).intValue();
 			else if (CharSequence.class.isAssignableFrom(cl)) {
 				CharSequence cs = ((CharSequence) object);
 				return cs.length() == 0 ? ' ' : ((CharSequence) object).charAt(0);
@@ -342,8 +359,10 @@ public interface FuncForStr {
 
 		@Override
 		public String invoke(Object... args) {
-			if (isNull(args[0])) return null;
-			if (isNull(args[1])) return args[0].toString();
+			if (isNull(args[0]))
+				return null;
+			if (isNull(args[1]))
+				return args[0].toString();
 			String r = isNull(args[2]) ? "" : args[2].toString();
 			return args[0].toString().replaceAll(args[1].toString(), r);
 		}
@@ -361,12 +380,14 @@ public interface FuncForStr {
 
 		@Override
 		public String invoke(Object... args) {
-			if (isNull(args[0])) return null;
+			if (isNull(args[0]))
+				return null;
 			String s = args[0].toString();
 			int i = 0;
 			for (; i < s.length(); i++) {
 				char c = s.charAt(i);
-				if (c != '\t' && c != ' ') break;
+				if (c != '\t' && c != ' ')
+					break;
 			}
 			return s.substring(i);
 		}
@@ -384,12 +405,14 @@ public interface FuncForStr {
 
 		@Override
 		public String invoke(Object... args) {
-			if (isNull(args[0])) return null;
+			if (isNull(args[0]))
+				return null;
 			String s = args[0].toString();
 			int i = s.length() - 1;
 			for (; i >= 0; i--) {
 				char c = s.charAt(i);
-				if (c != '\t' && c != ' ') break;
+				if (c != '\t' && c != ' ')
+					break;
 			}
 			return s.substring(0, i + 1);
 		}
@@ -439,9 +462,11 @@ public interface FuncForStr {
 
 		@Override
 		public List<String> invoke(Object... args) {
-			if (isNull(args[0])) return null;
+			if (isNull(args[0]))
+				return null;
 			String s = args[0].toString();
-			if (isNull(args[1])) return Colls.list(s);
+			if (isNull(args[1]))
+				return Colls.list(s);
 			return Colls.list(s.split(args[1].toString()));
 		}
 	}
@@ -470,7 +495,8 @@ public interface FuncForStr {
 
 		@Override
 		public String invoke(Object... args) {
-			if (isNull(args[0])) return null;
+			if (isNull(args[0]))
+				return null;
 			int hashCode = args[0].toString().hashCode();
 			if (hashCode == Integer.MIN_VALUE) {
 				return String.valueOf(hashCode);
@@ -491,12 +517,13 @@ public interface FuncForStr {
 
 		@Override
 		public String invoke(Object... args) {
-			if (isNull(args[0])) return null;
+			if (isNull(args[0]))
+				return null;
 			int hashCode = args[0].toString().hashCode();
 			if (hashCode == Integer.MIN_VALUE) {
-				return "0" + hashCode%3;
+				return "0" + hashCode % 3;
 			}
-			return "0" + Math.abs(hashCode)%3;
+			return "0" + Math.abs(hashCode) % 3;
 		}
 	}
 
@@ -512,7 +539,8 @@ public interface FuncForStr {
 
 		@Override
 		public String invoke(Object... args) {
-			if (isNull(args[0])) return null;
+			if (isNull(args[0]))
+				return null;
 			final char[] hexDigits = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
 			MessageDigest mdInst;
 			try {
@@ -544,11 +572,65 @@ public interface FuncForStr {
 
 		@Override
 		public String invoke(Object... args) {
-			if (isNull(args[0])) return null;
+			if (isNull(args[0]))
+				return null;
 			String date = args[0].toString();
-			int num = (Integer.valueOf(date.substring(date.length()-2))-1)/8+1;
-			return "0" + num +"00";
+			int num = (Integer.valueOf(date.substring(date.length() - 2)) - 1) / 8 + 1;
+			return "0" + num + "00";
 		}
 	}
 
+	@Func
+	class ByteString2Base64Func extends FelFunc<String> {
+		@Override
+		protected boolean valid(int argl) {
+			return argl == 1;
+		}
+
+		@Override
+		public String invoke(Object... args) {
+			if (isNull(args[0]))
+				return null;
+			if (args[0] instanceof byte[])
+				return new String(Base64.getEncoder().encode((byte[]) args[0]));
+			else {
+				try {
+					return new String(Base64.getEncoder().encode(args[0].toString().getBytes("UTF-8")));
+				} catch (UnsupportedEncodingException e) {
+					e.printStackTrace();
+				}
+			}
+			return null;
+		}
+	}
+
+	@Func
+	class Base642ByteFunc extends FelFunc<byte[]> {
+		@Override
+		protected boolean valid(int argl) {
+			return argl == 1;
+		}
+
+		@Override
+		public byte[] invoke(Object... args) {
+			if (isNull(args[0]))
+				return null;
+			return Base64.getDecoder().decode(args[0].toString());
+		}
+	}
+
+	@Func
+	class Base642StringFunc extends FelFunc<String> {
+		@Override
+		protected boolean valid(int argl) {
+			return argl == 1;
+		}
+
+		@Override
+		public String invoke(Object... args) {
+			if (isNull(args[0]))
+				return null;
+			return new String(Base64.getDecoder().decode(args[0].toString()));
+		}
+	}
 }
