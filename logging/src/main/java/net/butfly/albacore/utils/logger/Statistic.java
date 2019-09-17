@@ -46,9 +46,11 @@ public class Statistic {
 
 	private final AtomicLong spentTotal;
 	private final AtomicLong ignoreTotal;
+	private final String loggerName;
 
 	protected Statistic(String loggerName) {
 		lock = new ReentrantLock();
+		this.loggerName = loggerName;
 		logger = Logger.getLogger(loggerName);
 		stepSize = new AtomicLong(DEFAULT_STEP - 1);
 		packStep = new AtomicLong(0);
@@ -463,5 +465,18 @@ public class Statistic {
 
 	public boolean enabledMore() {
 		return logger.isTraceEnabled();
+	}
+
+	public void flush() {
+		trace(0, null);
+		packStep.set(0);
+		byteStep.set(0);
+		packTotal.set(0);
+		byteTotal.set(0);
+		spentTotal.set(0);
+		ignoreTotal.set(0);
+		batchs.set(0);
+		statsed.set(begin);
+		logger.warn("Statistic [" + loggerName + "] flushed!!");
 	}
 }
