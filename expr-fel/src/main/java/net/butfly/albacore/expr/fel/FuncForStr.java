@@ -633,4 +633,19 @@ public interface FuncForStr {
 			return new String(Base64.getDecoder().decode(args[0].toString()));
 		}
 	}
+
+	@Func
+	class Str2DoubleFunc extends FelFunc<Double> {
+		@Override
+		protected boolean valid(int argl) {
+			return argl == 1;
+		}
+
+		@Override
+		public Double invoke(Object... args) {
+			if (isNull(args[0]))
+				return null;
+			return Double.parseDouble(args[0].toString());
+		}
+	}
 }
