@@ -17,6 +17,8 @@ import net.butfly.albacore.base.Named;
 import net.butfly.albacore.utils.SizeOfSupport;
 
 public class Statistic {
+	protected static final Logger COMMON_LOG = Logger.getLogger(Statistic.class);
+
 	private static final long DEFAULT_STEP = 1000;
 	private static final Supplier<String> DEFAULT_EMPTY_DETAILING = () -> null;
 	private final ReentrantLock lock;
@@ -69,7 +71,7 @@ public class Statistic {
 		detailing = DEFAULT_EMPTY_DETAILING;
 		batchSizing = e -> 1L;
 		name = "[STATISTIC]";
-		if (!enabled()) logger.warn("Statistic [" + loggerName + "] registered but the logging level DEBUG disabled!!");
+		if (!enabled()) COMMON_LOG.warn("Statistic [" + loggerName + "] registered but the logging level DEBUG disabled!!");
 	}
 
 	public Statistic(Class<?> ownerClass) {
@@ -477,6 +479,6 @@ public class Statistic {
 		ignoreTotal.set(0);
 		batchs.set(0);
 		statsed.set(begin);
-		logger.warn("Statistic [" + loggerName + "] flushed!!");
+		COMMON_LOG.debug("Statistic [" + loggerName + "] flushed!!");
 	}
 }
