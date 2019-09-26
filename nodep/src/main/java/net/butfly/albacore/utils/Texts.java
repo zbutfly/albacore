@@ -115,6 +115,7 @@ public final class Texts {
 	}
 
 	public static String formatDate(String format, Date date) {
+		if (null == date) return null;
 		LinkedBlockingQueue<DateFormat> cache = DATE_FORMATS.computeIfAbsent(format, f -> new LinkedBlockingQueue<>(POOL_SIZE));
 		DateFormat f = cache.poll();
 		if (null == f) f = new SimpleDateFormat(format);
