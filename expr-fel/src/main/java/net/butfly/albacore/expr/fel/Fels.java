@@ -42,7 +42,7 @@ public final class Fels {
 					if (c.isAnnotationPresent(Deprecated.class)) //
 						logger.warn("FelEngine function scaned: " + f.getClass().getSimpleName() + "(" + f.getName()
 								+ ") but marked as Deprecated, don't use it.");
-					else logger.info("FelEngine function scaned: " + f.getClass().getSimpleName() + "(" + f.getName() + ")");
+					else logger.debug("FelEngine function scaned: " + f.getClass().getSimpleName() + "(" + f.getName() + ")");
 					eng.addFun(f);
 				}
 			} else logger.error("FelEngine function scaned [" + c.getName() + "] annotated by @Func is not a FelFunc");

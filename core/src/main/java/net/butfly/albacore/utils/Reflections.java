@@ -20,6 +20,7 @@ import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ClassInfoList;
 import io.github.classgraph.ScanResult;
+import net.butfly.albacore.Albacore;
 import net.butfly.albacore.support.Values;
 import net.butfly.albacore.utils.collection.Maps;
 import net.butfly.albacore.utils.logger.Logger;
@@ -143,21 +144,26 @@ public final class Reflections extends Utils {
 	}
 
 	private static final Map<String, ScanResult> CGS = Maps.of();
+	private static final int CG_WORKER_NUM = Integer.parseInt(System.getProperty(Albacore.Props.PROP_CLASS_SCAN_WORKERS_NUM, "0"));
 
 	private static ScanResult cpscaner(String... pkgs) {
 		Arrays.sort(pkgs);
 		return CGS.computeIfAbsent(String.join(",", pkgs), k -> {
 			long s = System.currentTimeMillis();
-			logger.debug("Classpath scan on [" + k + "] begining....");
+			logger.info("Classpath scan on [" + k + "] begining....");
+			ScanResult r = null;
 			try {
 				ClassGraph cg = new ClassGraph();
 				// if (Systems.isDebug()) cg = cg.verbose();
-				return cg.enableAllInfo() // Scan classes, methods, fields, annotations
-						.whitelistPackages(pkgs) // Scan com.xyz and subpackages (omit to scan all packages)
-						.scan();
+				cg = cg.enableAllInfo();// Scan classes, methods, fields, annotations
+				if (pkgs.length > 0) cg = cg.whitelistPackages(pkgs); // Scan com.xyz and subpackages (omit to scan all packages)
+				r = CG_WORKER_NUM > 0 ? cg.scan(CG_WORKER_NUM) : cg.scan();
 			} finally {
-				logger.debug("Classpath scan on [" + k + "] finished in (" + (System.currentTimeMillis() - s) + ") ms.");
+				logger.info("Classpath scan on [" + k + "] finished in (" + (System.currentTimeMillis() - s) + ") ms with [" + (null == r ? 0
+						: r.getClasspathURIs().size()) + "] entries.");
 			}
+			if (null != r) r.getClasspathURIs().forEach(u -> logger.debug("Classpath entry: " + u));
+			return r;
 		});
 
 	}
