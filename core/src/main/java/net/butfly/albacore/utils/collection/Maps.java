@@ -33,9 +33,9 @@ public class Maps {
 		Map<K, V> map = of();
 		V v;
 		if (firstFieldValueAndOthers != null && firstFieldValueAndOthers.length > 0) {
-			map.put(firstFieldName, (V) firstFieldValueAndOthers[0]);
-			for (int i = 1; i + 1 < firstFieldValueAndOthers.length; i += 2)
-				if (null != (v = (V) firstFieldValueAndOthers[i + 1])) map.put((K) firstFieldValueAndOthers[i], v);
+			if (null != firstFieldValueAndOthers[0]) map.put(firstFieldName, (V) firstFieldValueAndOthers[0]);
+			for (int i = 1; i + 1 < firstFieldValueAndOthers.length; i += 2) if (null != (v = (V) firstFieldValueAndOthers[i + 1])) map.put(
+					(K) firstFieldValueAndOthers[i], v);
 		}
 		return map;
 	}
@@ -129,19 +129,17 @@ public class Maps {
 
 	public static Map<String, String> of(Properties props) {
 		Map<String, String> m = of();
-		for (String key : props.stringPropertyNames())
-			m.put(key, props.getProperty(key));
+		for (String key : props.stringPropertyNames()) m.put(key, props.getProperty(key));
 		return m;
 	}
 
 	public static <K, V> Pair<List<K>, List<V>> lists(Map<K, V> map) {
 		List<K> keys = Colls.list();
 		List<V> values = Colls.list();
-		for (Entry<K, V> e : map.entrySet())
-			if (null != e.getKey() && null != e.getValue()) {
-				keys.add(e.getKey());
-				values.add(e.getValue());
-			}
+		for (Entry<K, V> e : map.entrySet()) if (null != e.getKey() && null != e.getValue()) {
+			keys.add(e.getKey());
+			values.add(e.getValue());
+		}
 		return new Pair<>(keys, values);
 	}
 
@@ -269,8 +267,8 @@ public class Maps {
 			}
 			map.compute(k, (key, orig) -> {
 				if (orig == null) return v;
-				logger.warn("Duplication key [" + (key.isEmpty() ? "EMPTY" : key) + "] in query string, new value [" + v
-						+ "], original value [" + orig + "] lost.");
+				logger.warn("Duplication key [" + (key.isEmpty() ? "EMPTY" : key) + "] in query string, new value [" + v + "], original value ["
+						+ orig + "] lost.");
 				return v;
 			});
 		}
