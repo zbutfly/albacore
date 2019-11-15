@@ -14,6 +14,7 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 
 import net.butfly.albacore.expr.fel.FelFunc.Func;
+import net.butfly.albacore.serder.JsonSerder;
 import net.butfly.albacore.utils.collection.Colls;
 import net.butfly.albacore.utils.collection.Maps;
 
@@ -646,6 +647,20 @@ public interface FuncForStr {
 			if (isNull(args[0]))
 				return null;
 			return Double.parseDouble(args[0].toString());
+		}
+	}
+
+	@Func
+	class Map2JsonstrFunc extends FelFunc<String> {
+		@Override
+		protected boolean valid(int argl) {
+			return argl == 1;
+		}
+
+		@Override
+		public String invoke(Object... args) {
+			if (isNull(args[0]))return "";
+			return JsonSerder.JSON_MAPPER.ser((Map<String, Object>) args[0]);
 		}
 	}
 }
