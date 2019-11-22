@@ -70,8 +70,7 @@ public class OpenableThread extends Thread implements Openable {
 	@Override
 	public void open() {
 		Openable.super.open();
-		while (runned.get() <= 0)
-			waitSleep(10);
+		while (runned.get() <= 0) waitSleep(10);
 	}
 
 	@Override
@@ -82,7 +81,6 @@ public class OpenableThread extends Thread implements Openable {
 	@Override
 	public void close() {
 		Openable.super.close();
-		while (runned.get() < 2)
-			waitSleep(100);
+		while (runned.get() < 2) waitSleep(100);
 	}
 }

@@ -159,4 +159,8 @@ public final class Jsonx {
 
 		System.out.print(m);
 	}
+
+	public static String pretty(String json) {
+		return json;
+	}
 }
