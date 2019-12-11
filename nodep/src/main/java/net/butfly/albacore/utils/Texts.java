@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.BlockingQueue;
@@ -128,6 +129,17 @@ public final class Texts {
 
 	public static Date parseDate(String date) throws ParseException {
 		return parseDate(DEFAULT_DATE_FORMAT, date);
+	}
+
+	public static Date parseDate(String format, String date, Locale locale) throws ParseException {
+		LinkedBlockingQueue<DateFormat> cache = DATE_FORMATS.computeIfAbsent(format, f -> new LinkedBlockingQueue<>(POOL_SIZE));
+		DateFormat f = cache.poll();
+		if (null == f) f = new SimpleDateFormat(format, locale);
+		try {
+			return f.parse(date);
+		} finally {
+			cache.offer(f);
+		}
 	}
 
 	public static Date parseDate(String format, String date) throws ParseException {

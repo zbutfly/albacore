@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
+import java.util.Locale;
 
 import net.butfly.albacore.expr.fel.FelFunc.Func;
 import net.butfly.albacore.utils.Texts;
@@ -34,6 +35,30 @@ public interface FuncForDate {
 		public Date invoke(Object... args) {
 			try {
 				return Texts.parseDate((String) args[1], (String) args[0]);
+			} catch (ParseException e) {
+				throw new RuntimeException("Expression eval for date parsing fail", e);
+			}
+		}
+	}
+
+	@Func
+	class StrToDateByLocaleFunc extends FelFunc<Date> {
+		@Override
+		protected boolean valid(int argl) {
+			return argl == 3;
+		}
+
+		@Override
+		public Date invoke(Object... args) {
+			if (null == args[2] || !(args[2] instanceof CharSequence)) throw new IllegalArgumentException("please support legal locale type like:[US], [EN], ...");
+			Locale locale;
+			switch ((String) args[2]) {
+			case "US": locale = Locale.US;
+			break;
+			default:locale = Locale.getDefault(Locale.Category.FORMAT);
+			}
+			try {
+				return Texts.parseDate((String) args[1], (String) args[0], locale);
 			} catch (ParseException e) {
 				throw new RuntimeException("Expression eval for date parsing fail", e);
 			}

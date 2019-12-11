@@ -19,6 +19,7 @@ public class FelEngine implements Engine {
 	@Override
 	public <T> T exec(String felExpr, Map<String, Object> context) {
 		FelContext ctx = new MapContext();
+		context.put("FEL_ENGINE_CONTEXT", context);
 		if (null != context && !context.isEmpty()) for (Entry<String, Object> e : context.entrySet())
 			ctx.set(e.getKey(), e.getValue());
 		Expression ex = exprs.computeIfAbsent(felExpr, expr -> engine.compile(expr, ctx));
