@@ -23,8 +23,7 @@ public interface Colls {
 	static <E> List<E> list(E... eles) {
 		if (null == eles || eles.length == 0) return list();
 		List<E> l = list();
-		for (E e : eles)
-			if (null != e) l.add(e);
+		for (E e : eles) if (null != e) l.add(e);
 		return l;
 	}
 
@@ -32,8 +31,7 @@ public interface Colls {
 	static <E, E1> List<E1> list(Function<E, E1> conv, E... eles) {
 		if (null == eles) return list();
 		List<Future<E1>> l = list();
-		for (E e : eles)
-			if (null != e) l.add(Exeter.of().submit(() -> conv.apply(e)));
+		for (E e : eles) if (null != e) l.add(Exeter.of().submit(() -> conv.apply(e)));
 		return Exeter.get(l);
 	}
 
@@ -71,6 +69,19 @@ public interface Colls {
 
 	static <E, E1> List<E1> list(Iterable<E> eles, Function<E, E1> conv) {
 		return list(eles.iterator(), conv);
+	}
+
+	static <E, E1> List<E1> list0(Iterable<E> eles, Function<E, E1> conv) {
+		return list0(eles.iterator(), conv);
+	}
+
+	static <E, E1> List<E1> list0(Iterator<E> eles, Function<E, E1> conv) {
+		if (null == eles) return list();
+		List<E1> l = list();
+		eles.forEachRemaining(e -> {
+			if (null != e) l.add(conv.apply(e));
+		});
+		return l;
 	}
 
 	static <K, E, E1> List<E1> list(Map<K, E> eles, BiFunction<K, E, E1> conv) {

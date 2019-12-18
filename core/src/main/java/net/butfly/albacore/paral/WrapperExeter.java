@@ -229,14 +229,10 @@ class WrapperExeter implements Exeter {
 	}
 
 	@Override
-	public boolean isShutdown() {
-		return impl.isShutdown();
-	}
+	public boolean isShutdown() { return impl.isShutdown(); }
 
 	@Override
-	public boolean isTerminated() {
-		return impl.isTerminated();
-	}
+	public boolean isTerminated() { return impl.isTerminated(); }
 
 	@Override
 	public void shutdown() {
