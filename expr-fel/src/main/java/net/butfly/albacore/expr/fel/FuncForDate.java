@@ -98,7 +98,33 @@ public interface FuncForDate {
 			} else throw new RuntimeException("This is not a Date type!");
 		}
 	}
-	
+
+	@Func
+	class DateValidFunc extends FelFunc<Boolean> {
+
+		@Override
+		protected boolean valid(int argl) {
+			return argl == 4;
+		}
+
+		@Override
+		protected Boolean invoke(Object... args) {
+			long timestamp = 0l;
+			if (args[0] instanceof Number) timestamp = ((Number) args[0]).longValue();
+			else if (args[0] instanceof Date) timestamp = ((Date) args[0]).getTime();
+			else throw new UnsupportedOperationException("1st parameter must be Date or Long");
+			if (!(args[1] instanceof Date)) 
+				throw new UnsupportedOperationException("2nd parameter must be Date");
+			long compareTimestamp = ((Date) args[1]).getTime();
+			if (!(args[2] instanceof Number) || !(args[3] instanceof Number)) 
+				throw new UnsupportedOperationException("3rd and 4th parameter must be Integer");
+			int lower = ((Number)args[2]).intValue();
+			int upper = ((Number)args[3]).intValue();
+			return timestamp >= (compareTimestamp - (lower * 24 * 3600000)) 
+					&& timestamp <= (compareTimestamp + (upper * 24 * 3600000));
+		}
+	}
+
 	@Func
 	class NowFunc extends FelFunc<Date> {
 		@Override
