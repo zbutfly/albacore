@@ -663,4 +663,23 @@ public interface FuncForStr {
 			return JsonSerder.JSON_MAPPER.ser((Map<String, Object>) args[0]);
 		}
 	}
+
+	/**
+	 * split by dot：按 '.' split
+	 */
+	@Func
+	class SplitByDotFunc extends FelFunc<List<String>> {
+		@Override
+		protected boolean valid(int argl) {
+			return argl == 1;
+		}
+
+		@Override
+		public List<String> invoke(Object... args) {
+			if (isNull(args[0]))
+				return null;
+			String s = args[0].toString();
+			return Colls.list(s.split("\\."));
+		}
+	}
 }

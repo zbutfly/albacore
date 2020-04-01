@@ -24,8 +24,12 @@ public interface FuncForConstruction {
 			if (isNull(args[0]) || isNull(args[1]) || args.length % 2 != 0)
 				return null;
 			Map<String, Object> map = new HashMap<>();
-			for (int i = 0; i < args.length; i++)
-				map.put(args[i].toString(), args[++i]);
+			for (int i = 0; i < args.length; i++) {
+				String k = args[i].toString();
+				Object v = args[++i];
+				if (!isNull(k) && !isNull(v))
+				map.put(k, v);
+			}
 			return map;
 		}
 	}
