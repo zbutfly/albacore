@@ -349,7 +349,8 @@ public class Statistic {
 		if (null != sampling && accu(sampleCounter, steps, sampleStep) == 0) //
 			sampling.accept(v);
 		long step = accu(packStep, steps, stepSize.get());
-		if (step > 0 && logger.isInfoEnabled() && lock.tryLock()) try {
+		if (step > 0 && logger.isInfoEnabled()) try {
+			lock.lock();
 			// if (packStep.get() > stepSize.get())
 			trace(step, getSampleInfo(v));
 		} finally {
