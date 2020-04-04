@@ -60,14 +60,27 @@ public interface Sdream<E> extends Serializable {
 		});
 	}
 
-	<R> Sdream<R> map(Function<E, R> conv);
+	default <R> Sdream<R> map(Function<E, R> conv) {
+		return map(conv, r -> null);
+	}
+
+	<R> Sdream<R> map(Function<E, R> conv, Function<? super R, ?> dstschema);
 
 	@Deprecated
 	default <R> Sdream<R> map(Function<Sdream<E>, Sdream<R>> conv, int maxBatchSize) {
+		return map(conv, maxBatchSize, r -> null);
+	}
+
+	@Deprecated
+	default <R> Sdream<R> map(Function<Sdream<E>, Sdream<R>> conv, int maxBatchSize, Function<? super R, ?> dstschema) {
 		return conv.apply(this);
 	}
 
-	<R> Sdream<R> mapFlat(Function<E, Sdream<R>> flat);
+	default <R> Sdream<R> mapFlat(Function<E, Sdream<R>> flat) {
+		return mapFlat(flat, r -> null);
+	}
+
+	<R> Sdream<R> mapFlat(Function<E, Sdream<R>> flat, Function<? super R, ?> dstschema);
 
 	E reduce(BinaryOperator<E> accumulator);
 

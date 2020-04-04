@@ -46,17 +46,17 @@ public class Emdream<E> implements Sdream<E> {
 	}
 
 	@Override
-	public <R> Sdream<R> map(Function<E, R> conv) {
+	public <R> Sdream<R> map(Function<E, R> conv, Function<? super R, ?> dstschema) {
 		return Sdream.of();
 	}
 
 	@Override
-	public <R> Sdream<R> map(Function<Sdream<E>, Sdream<R>> conv, int maxBatchSize) {
+	public <R> Sdream<R> map(Function<Sdream<E>, Sdream<R>> conv, int maxBatchSize, Function<? super R, ?> dstschema) {
 		return Sdream.of();
 	}
 
 	@Override
-	public <R> Sdream<R> mapFlat(Function<E, Sdream<R>> flat) {
+	public <R> Sdream<R> mapFlat(Function<E, Sdream<R>> flat, Function<? super R, ?> dstschema) {
 		return Sdream.of();
 	}
 

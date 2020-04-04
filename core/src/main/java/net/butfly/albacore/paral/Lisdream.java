@@ -71,7 +71,7 @@ public final class Lisdream<E> implements Sdream<E>/* , List<E> */ {
 	}
 
 	@Override
-	public <R> Sdream<R> map(Function<E, R> conv) {
+	public <R> Sdream<R> map(Function<E, R> conv, Function<? super R, ?> dstschema) {
 		List<R> l = Colls.list();
 		undly.forEach(e -> {
 			R r = conv.apply(e);
@@ -82,12 +82,12 @@ public final class Lisdream<E> implements Sdream<E>/* , List<E> */ {
 
 	@Override
 	@Deprecated
-	public <R> Sdream<R> map(Function<Sdream<E>, Sdream<R>> conv, int maxBatchSize) {
+	public <R> Sdream<R> map(Function<Sdream<E>, Sdream<R>> conv, int maxBatchSize, Function<? super R, ?> dstschema) {
 		return conv.apply(this);
 	}
 
 	@Override
-	public <R> Sdream<R> mapFlat(Function<E, Sdream<R>> flat) {
+	public <R> Sdream<R> mapFlat(Function<E, Sdream<R>> flat, Function<? super R, ?> dstschema) {
 		List<R> l = Colls.list();
 		undly.forEach(e -> {
 			flat.apply(e).eachs(r -> {
@@ -174,7 +174,7 @@ public final class Lisdream<E> implements Sdream<E>/* , List<E> */ {
 		if (impl instanceof Collection) return new LinkedBlockingQueue<E>((Collection<E>) impl);
 		return new LinkedBlockingQueue<E>(Colls.list(impl));
 	}
-	
+
 	@Override
 	public String toString() {
 		return undly.toString();

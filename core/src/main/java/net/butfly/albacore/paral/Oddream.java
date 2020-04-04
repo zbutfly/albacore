@@ -60,18 +60,18 @@ public class Oddream<E> implements Sdream<E> {
 	}
 
 	@Override
-	public <R> Sdream<R> map(Function<E, R> conv) {
+	public <R> Sdream<R> map(Function<E, R> conv, Function<? super R, ?> dstschema) {
 		return of(conv.apply(undly));
 	}
 
 	@Override
 	@Deprecated
-	public <R> Sdream<R> map(Function<Sdream<E>, Sdream<R>> conv, int maxBatchSize) {
+	public <R> Sdream<R> map(Function<Sdream<E>, Sdream<R>> conv, int maxBatchSize, Function<? super R, ?> dstschema) {
 		return conv.apply(of1(undly));
 	}
 
 	@Override
-	public <R> Sdream<R> mapFlat(Function<E, Sdream<R>> flat) {
+	public <R> Sdream<R> mapFlat(Function<E, Sdream<R>> flat, Function<? super R, ?> dstschema) {
 		return flat.apply(undly);
 	}
 

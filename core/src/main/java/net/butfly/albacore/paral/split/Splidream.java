@@ -65,18 +65,18 @@ public final class Splidream<E, SELF extends Sdream<E>> extends WrapperSpliterat
 	}
 
 	@Override
-	public <R> Sdream<R> map(Function<E, R> conv) {
+	public <R> Sdream<R> map(Function<E, R> conv, Function<? super R, ?> dstschema) {
 		return of(new ConvedSpliterator<>(impl, conv));
 	}
 
 	@Override
 	@Deprecated
-	public <R> Sdream<R> map(Function<Sdream<E>, Sdream<R>> conv, int maxBatchSize) {
+	public <R> Sdream<R> map(Function<Sdream<E>, Sdream<R>> conv, int maxBatchSize, Function<? super R, ?> dstschema) {
 		return of(new BatchSpliterator<E>(impl, maxBatchSize)).map(conv).mapFlat(r -> r);
 	}
 
 	@Override
-	public <R> Sdream<R> mapFlat(Function<E, Sdream<R>> flat) {
+	public <R> Sdream<R> mapFlat(Function<E, Sdream<R>> flat, Function<? super R, ?> dstschema) {
 		return of(new FlatedSpliterator<>(map(flat).spliterator()));
 	}
 
