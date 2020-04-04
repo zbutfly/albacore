@@ -446,7 +446,9 @@ public class Logger implements Serializable {
 
 	public final Log4js impl4j = new Log4js();
 
-	public class Log4js {
+	public class Log4js implements Serializable {
+		private static final long serialVersionUID = 4847321081922151380L;
+
 		public org.apache.log4j.Logger logger() {
 			return Log4jHelper.log4j((Log4jLoggerAdapter) logger);
 		}
