@@ -120,8 +120,8 @@ public interface FuncForDate {
 				throw new UnsupportedOperationException("3rd and 4th parameter must be Integer");
 			int lower = ((Number)args[2]).intValue();
 			int upper = ((Number)args[3]).intValue();
-			return timestamp >= (compareTimestamp - (lower * 24 * 3600000)) 
-					&& timestamp <= (compareTimestamp + (upper * 24 * 3600000));
+			return timestamp >= (compareTimestamp - (lower * 24 * 3600000l)) 
+					&& timestamp <= (compareTimestamp + (upper * 24 * 3600000l));
 		}
 	}
 
