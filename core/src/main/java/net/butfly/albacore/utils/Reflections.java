@@ -43,11 +43,13 @@ public final class Reflections extends Utils {
 	}
 
 	public static void noneNull(String msg, Object... value) {
-		for (Object v : value) if (null == v) throw new IllegalArgumentException(msg);
+		for (Object v : value)
+			if (null == v) throw new IllegalArgumentException(msg);
 	}
 
 	public static boolean anyNull(Object... value) {
-		for (Object v : value) if (null == v) return true;
+		for (Object v : value)
+			if (null == v) return true;
 		return false;
 	}
 
@@ -72,7 +74,8 @@ public final class Reflections extends Utils {
 	}
 
 	public static <T> T construct(String className, Object... parameters) {
-		return construct(forClassName(className), parameters);
+		Class<T> c = forClassName(className);
+		return null == c ? null : construct(c, parameters);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -175,7 +178,8 @@ public final class Reflections extends Utils {
 		// try (ScanResult sr = cpscaner(packagePrefix)) {
 		ClassInfo pci = cpscaner(packagePrefix).getClassInfo(parentClass.getName());
 		ClassInfoList cli = pci.isInterface() ? pci.getClassesImplementing() : pci.getSubclasses();
-		for (ClassInfo ci : cli) r.add((Class<? extends T>) ci.loadClass());
+		for (ClassInfo ci : cli)
+			r.add((Class<? extends T>) ci.loadClass());
 		// }
 		return r;
 	}
@@ -190,11 +194,12 @@ public final class Reflections extends Utils {
 
 	public static Field getDeclaredField(Class<?> clazz, String name) {
 		noneNull("", clazz, name);
-		while (null != clazz) try {
-			return clazz.getDeclaredField(name);
-		} catch (NoSuchFieldException ex) {
-			clazz = clazz.getSuperclass();
-		}
+		while (null != clazz)
+			try {
+				return clazz.getDeclaredField(name);
+			} catch (NoSuchFieldException ex) {
+				clazz = clazz.getSuperclass();
+			}
 		return null;
 	}
 
@@ -216,7 +221,8 @@ public final class Reflections extends Utils {
 	public static Field[] getDeclaredFieldsAnnotatedWith(Class<?> clazz, Class<? extends Annotation> annotation) {
 		return Instances.fetch(() -> {
 			Set<Field> s = new HashSet<Field>();
-			for (Field f : getDeclaredFields(clazz)) if (f.isAnnotationPresent(annotation)) s.add(f);
+			for (Field f : getDeclaredFields(clazz))
+				if (f.isAnnotationPresent(annotation)) s.add(f);
 			return s.toArray(new Field[s.size()]);
 		}, Field[].class, clazz, annotation);
 	}
@@ -254,7 +260,8 @@ public final class Reflections extends Utils {
 	}
 
 	public static boolean isAny(Class<?> cl, Class<?>... target) {
-		for (Class<?> t : target) if (t.isAssignableFrom(cl)) return true;
+		for (Class<?> t : target)
+			if (t.isAssignableFrom(cl)) return true;
 		return false;
 	}
 
