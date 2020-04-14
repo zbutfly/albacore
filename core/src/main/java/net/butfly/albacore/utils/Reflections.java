@@ -1,5 +1,9 @@
 package net.butfly.albacore.utils;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
@@ -152,18 +156,58 @@ public final class Reflections extends Utils {
 	private static ScanResult cpscaner(String... pkgs) {
 		Arrays.sort(pkgs);
 		return CGS.computeIfAbsent(String.join(",", pkgs), k -> {
-			long s = System.currentTimeMillis();
-			logger.info("Classpath scan on [" + k + "] begining....");
+			boolean caching = Boolean.parseBoolean(Configs.gets(Albacore.Props.PROP_CLASS_SCAN_CACHING, Boolean.toString(Systems.isDebug())));
+			File fcache = caching ? Systems.vardir().resolve("classgraphy.json").toFile() : null;
+			long now;
 			ScanResult r = null;
-			try {
+			if (caching && fcache.exists()) {
+				String[] lines = null;
+				try (FileInputStream fs = new FileInputStream(fcache);) {
+					lines = IOs.readLines(fs);
+				} catch (Exception e) {
+					fcache.delete(); // invalid;
+				}
+
+				if (null != lines) try {
+					now = System.currentTimeMillis();
+					try {
+						r = ScanResult.fromJSON(String.join("\n", lines));
+					} finally {
+						logger.info("Classpath ScanResult loaded from [" + fcache.toString() + "] finished in (" //
+								+ (System.currentTimeMillis() - now) + ") ms with [" //
+								+ (null == r ? 0 : r.getClasspathURIs().size()) + "] entries.");
+					}
+				} catch (IllegalArgumentException e) {
+					fcache.delete(); // invalid;
+				}
+			}
+			if (null == r) {
 				ClassGraph cg = new ClassGraph();
-				// if (Systems.isDebug()) cg = cg.verbose();
 				cg = cg.enableAllInfo();// Scan classes, methods, fields, annotations
+				// cg = cg.blacklistPackages("org.apache", "java", "sun").blacklistPaths("*/org/", "*/io/", System.getenv("JAVA_HOME"));
 				if (pkgs.length > 0) cg = cg.whitelistPackages(pkgs); // Scan com.xyz and subpackages (omit to scan all packages)
-				r = CG_WORKER_NUM > 0 ? cg.scan(CG_WORKER_NUM) : cg.scan();
-			} finally {
-				logger.info("Classpath scan on [" + k + "] finished in (" + (System.currentTimeMillis() - s) + ") ms with [" + (null == r ? 0
-						: r.getClasspathURIs().size()) + "] entries.");
+				// else cg = cg.whitelistPackages("com.hzcominfo", "net.butfly", "com.hikvision", "com.hik");
+				// if (Systems.isDebug()) cg = cg.verbose();
+				logger.info("Classpath scan on [" + k + "] begining....");
+				now = System.currentTimeMillis();
+				try {
+					r = CG_WORKER_NUM > 0 ? cg.scan(CG_WORKER_NUM) : cg.scan();
+				} finally {
+					logger.info("Classpath scan on [" + k + "] finished in (" + (System.currentTimeMillis() - now) + ") ms with [" //
+							+ (null == r ? 0 : r.getClasspathURIs().size()) + "] entries.");
+				}
+				if (caching) {
+					if (fcache.exists()) fcache.delete();
+					now = System.currentTimeMillis();
+					try (PrintWriter w = new PrintWriter(fcache);) {
+						w.println(r.toJSON());
+						logger.info("ClassGraph for package(s) [" + k + "] writing into file [" + fcache.toString() + "] as cache (" //
+								+ (System.currentTimeMillis() - now) + " ms).");
+					} catch (IOException e) {
+						logger.info("ClassGraph for package(s) [" + k + "] caching failed.");
+						fcache.delete();
+					}
+				}
 			}
 			if (null != r) r.getClasspathURIs().forEach(u -> logger.debug("Classpath entry: " + u));
 			return r;

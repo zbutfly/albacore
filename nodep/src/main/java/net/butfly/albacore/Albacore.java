@@ -9,6 +9,7 @@ public @interface Albacore {
 		final String PROP_APP_DAEMON = "albacore.app.daemon";// false
 		final String PROP_APP_FORK_HARD = "albacore.app.fork.hard";// true
 		final String PROP_CLASS_SCAN_WORKERS_NUM = "albacore.classpath.scan.worker.num";
+		final String PROP_CLASS_SCAN_CACHING = "albacore.classpath.scan.cache.enable";
 		final String PROP_APP_FORK_VM_ARGS = "albacore.app.vmconfig";
 		final String PROP_CACHE_LOCAL_PATH = "albacore.cache.local.path";// "./cache/"
 		final String PROP_STREAM_PARALLES = "albacore.parallel.stream.enable";// true

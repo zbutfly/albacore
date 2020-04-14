@@ -7,6 +7,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
 import java.text.MessageFormat;
@@ -40,7 +43,21 @@ public final class Systems extends Utils {
 	public static void main(String... args) throws Throwable {
 		System.err.println("Hello world, I'm " + Systems.pid());
 		int i = 0;
-		for (String a : args) System.err.println("\targs[" + (++i) + "]: " + a);
+		for (String a : args)
+			System.err.println("\targs[" + (++i) + "]: " + a);
+	}
+
+	public static Path vardir() {
+		String dir = System.getProperty("albacore.runtime.var.dir.base");
+		Path p;
+		if (null == dir) {
+			dir = "/var";
+			if (Files.notExists(p = Paths.get(dir))) dir = System.getProperty("user.dir");
+		}
+		p = Paths.get(dir).resolve(getMainClass().getSimpleName().replaceAll("\\$", "").replaceAll("\\.", ""));
+		File f = p.toFile();
+		f.mkdirs();
+		return p;
 	}
 
 	public static Sdream<Thread> threadsRunning() {
@@ -67,7 +84,9 @@ public final class Systems extends Utils {
 		return pid;
 	}
 
-	public static Class<?> getMainClass() { return JVM.current().mainClass; }
+	public static Class<?> getMainClass() {
+		return JVM.current().mainClass;
+	}
 
 	public static boolean isDebug() {
 		String c = System.getProperty(Albacore.Props.PROP_DEBUG_FLAG);
@@ -92,15 +111,17 @@ public final class Systems extends Utils {
 	private static final Map<String, BlockingQueue<Consumer<Signal>>> SIGNAL_HANDLERS = Maps.of();
 
 	public static void handleSignal(Consumer<Signal> handler, String... signal) {
-		for (String sig : signal) SIGNAL_HANDLERS.computeIfAbsent(sig, s -> {
-			Signal.handle(new Signal(s), ss -> {
-				BlockingQueue<Consumer<Signal>> handlers = SIGNAL_HANDLERS.get(ss.getName());
-				logger.error(MessageFormat.format("Signal [{0}][{1}] caught, [{2}] handlers registered and will be invoking.", //
-						ss.getName(), ss.getNumber(), handlers.size()));
-				if (null != handlers) for (Consumer<Signal> h : handlers) h.accept(ss);
-			});
-			return new LinkedBlockingQueue<>();
-		}).add(handler);
+		for (String sig : signal)
+			SIGNAL_HANDLERS.computeIfAbsent(sig, s -> {
+				Signal.handle(new Signal(s), ss -> {
+					BlockingQueue<Consumer<Signal>> handlers = SIGNAL_HANDLERS.get(ss.getName());
+					logger.error(MessageFormat.format("Signal [{0}][{1}] caught, [{2}] handlers registered and will be invoking.", //
+							ss.getName(), ss.getNumber(), handlers.size()));
+					if (null != handlers) for (Consumer<Signal> h : handlers)
+						h.accept(ss);
+				});
+				return new LinkedBlockingQueue<>();
+			}).add(handler);
 	}
 
 	private static class GC extends OpenableThread {
@@ -116,13 +137,14 @@ public final class Systems extends Utils {
 
 		@Override
 		protected void exec() {
-			while (opened()) try {
-				sleep(cms);
-				System.gc();
-			} catch (InterruptedException e) {
-				logger.warn(getName() + " interrupted.");
-				return;
-			}
+			while (opened())
+				try {
+					sleep(cms);
+					System.gc();
+				} catch (InterruptedException e) {
+					logger.warn(getName() + " interrupted.");
+					return;
+				}
 		}
 	}
 
@@ -137,7 +159,9 @@ public final class Systems extends Utils {
 		return gc;
 	}
 
-	public static String getDefaultCachePathBase() { return System.getProperty(Albacore.Props.PROP_CACHE_LOCAL_PATH, "./cache/"); }
+	public static String getDefaultCachePathBase() {
+		return System.getProperty(Albacore.Props.PROP_CACHE_LOCAL_PATH, "./cache/");
+	}
 
 	public static class Timeing implements AutoCloseable {
 		private final long begin;
@@ -208,7 +232,8 @@ public final class Systems extends Utils {
 
 	private static List<String> loadVmArgsConfig(JVM jvm) {
 		List<String> configed = new ArrayList<>();
-		for (String conf : System.getProperty(Albacore.Props.PROP_APP_FORK_VM_ARGS, "").split(",")) configed.addAll(loadVmArgs(conf));
+		for (String conf : System.getProperty(Albacore.Props.PROP_APP_FORK_VM_ARGS, "").split(","))
+			configed.addAll(loadVmArgs(conf));
 		List<String> jvmArgs = new ArrayList<>(jvm.vmArgs);
 		if (configed.isEmpty()) return jvmArgs;
 		if (logger.isDebugEnabled()) logger.debug("JVM args original: " + jvmArgs + //
@@ -247,7 +272,8 @@ public final class Systems extends Utils {
 			return null;
 		}
 		List<CodeSource> css = new ArrayList<>();
-		for (ProtectionDomain d : domains) css.add(d.getCodeSource());
+		for (ProtectionDomain d : domains)
+			css.add(d.getCodeSource());
 		return css.toArray(new CodeSource[css.size()]);
 	}
 
@@ -255,14 +281,16 @@ public final class Systems extends Utils {
 		if (null == files || files.length == 0) return null;
 		logger.info("Create jar [" + jarFile + "] with: \n\t" + Arrays.toString(files));
 		try (FileOutputStream fo = new FileOutputStream(jarFile); JarOutputStream jo = new JarOutputStream(fo, new Manifest());) {
-			for (File f : files) writeJar(jo, f, "");
+			for (File f : files)
+				writeJar(jo, f, "");
 		}
 		return jarFile;
 	}
 
 	private static void writeJar(JarOutputStream jo, File f, String relative) throws IOException {
 		if (f == null || !f.exists()) return;
-		if (f.isDirectory()) for (String n : f.list()) writeJar(jo, f.toPath().resolve(n).toFile(), relative + "/" + n);
+		if (f.isDirectory()) for (String n : f.list())
+			writeJar(jo, f.toPath().resolve(n).toFile(), relative + "/" + n);
 		else if (f.isFile()) {
 			JarEntry e = new JarEntry(relative);
 			e.setTime(f.lastModified());
