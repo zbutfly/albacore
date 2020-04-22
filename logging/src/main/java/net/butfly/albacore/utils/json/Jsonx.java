@@ -124,6 +124,7 @@ public final class Jsonx {
 					map.forEach((k, v) -> g.write(k.toString(), er.o(v)));
 				} finally {
 					g.writeEnd();
+					g.flush();
 				}
 			}
 			return w.toString();
@@ -141,6 +142,7 @@ public final class Jsonx {
 					list.forEach((v) -> g.write(er.it((Iterable) v)));
 				} finally {
 					g.writeEnd();
+					g.flush();
 				}
 			}
 			return w.toString();
