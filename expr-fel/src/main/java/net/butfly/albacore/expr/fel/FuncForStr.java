@@ -63,6 +63,22 @@ public interface FuncForStr {
 	}
 
 	/**
+	 * str2i
+	 */
+	@Func
+	class Str2iFunc extends FelFunc<Integer> {
+		@Override
+		protected boolean valid(int argl) {
+			return argl == 1;
+		}
+
+		@Override
+		public Integer invoke(Object... args) {
+			return isNull(args[0]) ? 0 : Integer.parseInt((args[0].toString()));
+		}
+	}
+
+	/**
 	 * str2d('1234567.7654321')
 	 */
 	@Func
@@ -659,7 +675,8 @@ public interface FuncForStr {
 
 		@Override
 		public String invoke(Object... args) {
-			if (isNull(args[0]))return "";
+			if (isNull(args[0]))
+				return "";
 			return JsonSerder.JSON_MAPPER.ser((Map<String, Object>) args[0]);
 		}
 	}
