@@ -36,7 +36,8 @@ public interface FuncForDate {
 			try {
 				return Texts.parseDate((String) args[1], (String) args[0]);
 			} catch (ParseException e) {
-				throw new RuntimeException("Expression eval for date parsing fail", e);
+				logger.debug("Expression eval for date parsing fail", e);
+				return null;
 			}
 		}
 	}
@@ -95,7 +96,10 @@ public interface FuncForDate {
 		public Long invoke(Object... args) {
 			if (args[0] instanceof Date) {
 				return ((Date) args[0]).getTime();
-			} else throw new RuntimeException("This is not a Date type!");
+			} else {
+				logger.debug("This is not a Date type! value:" + args[0]);
+				return null;
+			}
 		}
 	}
 
@@ -156,5 +160,57 @@ public interface FuncForDate {
 			throw new IllegalArgumentException("params are illegal");
 		}
 	}
-	
+
+	@Func
+	class DateToStrU2CFunc extends FelFunc<String> {
+		@Override
+		protected boolean valid(int argl) {
+			return argl == 2;
+		}
+
+		@Override
+		public String invoke(Object... args) {
+			String format = ((String) args[1]).replaceAll("_", ":");
+			return Texts.formatDate(format, (Date) args[0]);
+		}
+	}
+
+	@Func
+	class StrToDateU2CFunc extends FelFunc<Date> {
+		@Override
+		protected boolean valid(int argl) {
+			return argl == 2;
+		}
+
+		@Override
+		public Date invoke(Object... args) {
+			try {
+				String format = ((String) args[1]).replaceAll("_", ":");
+				return Texts.parseDate(format, (String) args[0]);
+			} catch (ParseException e) {
+				logger.debug("Expression eval for date parsing fail", e);
+				return null;
+			}
+		}
+	}
+
+	@Func
+	class DateTimeFormatterToLongU2CFunc extends FelFunc<Long> {
+		@Override
+		protected boolean valid(int argl) {
+			return argl == 3;
+		}
+
+		@Override
+		public Long invoke(Object... args) {
+			if (Fels.isNull(args[1])) throw new RuntimeException("Time Formatter should not be null");
+			if (args[0] instanceof CharSequence && args[1] instanceof CharSequence && args[2] instanceof CharSequence) {
+				String format = args[1].toString().replaceAll("_", ":");
+				DateTimeFormatter dtf = DateTimeFormatter.ofPattern(format);
+				LocalDateTime ldt = LocalDateTime.parse(args[0].toString(), dtf);
+				return ldt.atOffset(ZoneOffset.of(args[2].toString())).toInstant().toEpochMilli();
+			}
+			throw new IllegalArgumentException("params are illegal");
+		}
+	}
 }

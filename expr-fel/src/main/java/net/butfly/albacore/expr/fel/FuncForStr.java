@@ -699,4 +699,27 @@ public interface FuncForStr {
 			return Colls.list(s.split("\\."));
 		}
 	}
+
+	/**
+	 * cancat by colon
+	 */
+	@Func
+	class ConcatByColonFunc extends FelFunc<String> {
+
+		@Override
+		protected boolean valid(int argl) {
+			return argl > 1;
+		}
+
+		@Override
+		public String invoke(Object... args) {
+			if (null == args) return null;
+			String[] arr = new String[args.length];
+			for (int i = 0; i < args.length; i ++) {
+				if (isNull(args[i])) return null;
+				arr[i] = args[i].toString();
+			}
+			return String.join(":", arr);
+		}
+	}
 }
