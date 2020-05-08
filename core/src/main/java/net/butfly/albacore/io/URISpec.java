@@ -430,6 +430,7 @@ public final class URISpec implements Serializable {
 			try {
 				p = hp.length == 2 ? hp[1] : null;
 				h = Texts.orNull(hp[0]);
+				Integer.parseInt(p);
 			} catch (NumberFormatException e) {
 				p = null;
 				h = Texts.orNull(s);
