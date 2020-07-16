@@ -34,8 +34,8 @@ public class Maps {
 		V v;
 		if (firstFieldValueAndOthers != null && firstFieldValueAndOthers.length > 0) {
 			if (null != firstFieldValueAndOthers[0]) map.put(firstFieldName, (V) firstFieldValueAndOthers[0]);
-			for (int i = 1; i + 1 < firstFieldValueAndOthers.length; i += 2) if (null != (v = (V) firstFieldValueAndOthers[i + 1])) map.put(
-					(K) firstFieldValueAndOthers[i], v);
+			for (int i = 1; i + 1 < firstFieldValueAndOthers.length; i += 2)
+				if (null != (v = (V) firstFieldValueAndOthers[i + 1])) map.put((K) firstFieldValueAndOthers[i], v);
 		}
 		return map;
 	}
@@ -129,17 +129,19 @@ public class Maps {
 
 	public static Map<String, String> of(Properties props) {
 		Map<String, String> m = of();
-		for (String key : props.stringPropertyNames()) m.put(key, props.getProperty(key));
+		for (String key : props.stringPropertyNames())
+			m.put(key, props.getProperty(key));
 		return m;
 	}
 
 	public static <K, V> Pair<List<K>, List<V>> lists(Map<K, V> map) {
 		List<K> keys = Colls.list();
 		List<V> values = Colls.list();
-		for (Entry<K, V> e : map.entrySet()) if (null != e.getKey() && null != e.getValue()) {
-			keys.add(e.getKey());
-			values.add(e.getValue());
-		}
+		for (Entry<K, V> e : map.entrySet())
+			if (null != e.getKey() && null != e.getValue()) {
+				keys.add(e.getKey());
+				values.add(e.getValue());
+			}
 		return new Pair<>(keys, values);
 	}
 
@@ -181,6 +183,20 @@ public class Maps {
 
 	public static <T> T getFlat(Map<String, Object> map, String key) {
 		return getFlat(map, key.split("\\."));
+	}
+
+	@SuppressWarnings("unchecked")
+	public static Map<String, Object> flatize(Map<String, Object> map) {
+		Map<String, Object> r = Maps.of();
+		for (String key : map.keySet()) {
+			Object v0 = map.get(key);
+			if (null == v0) continue;
+			if (v0 instanceof Map) flatize((Map<String, Object>) v0).forEach((kk, vv) -> r.put(key + "." + kk, vv));
+			// else if (v0 instanceof List) throw new NotImplementedException();
+			// else if (v0.getClass().isArray()) throw new NotImplementedException();
+			else r.put(key, v0);
+		}
+		return r;
 	}
 
 	@SuppressWarnings("unchecked")
